@@ -10,20 +10,6 @@
   }
 }
 
-body.search-open #page-content {
-  padding-top: 140px;
-}
-
-@media (min-width: 900px) {
-  body.search-open #page-content {
-    padding-top: 148px;
-  }
-}
-
-body.menu-open #page-content {
-  /* mobile menu overlays; keep content padded by header only */
-}
-
 .route-fallback {
   max-width: var(--content-max);
   margin: 0 auto;

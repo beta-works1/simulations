@@ -7,7 +7,15 @@ function SearchIcon() {
   return (
     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" />
-      <line x1="15" y1="15" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line
+        x1="15"
+        y1="15"
+        x2="21"
+        y2="21"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   )
 }
@@ -31,7 +39,7 @@ export function Header({ onSearch }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [isWide, setIsWide] = useState(true)
   const inputRef = useRef<HTMLInputElement>(null)
-  const searchPanelRef = useRef<HTMLDivElement>(null)
+  const searchWrapRef = useRef<HTMLDivElement>(null)
   const searchInputId = useId()
   const location = useLocation()
 
@@ -49,18 +57,13 @@ export function Header({ onSearch }: HeaderProps) {
   }, [menuOpen, isWide])
 
   useEffect(() => {
-    document.body.classList.toggle('search-open', searchOpen)
-    return () => document.body.classList.remove('search-open')
-  }, [searchOpen])
-
-  useEffect(() => {
     if (isWide) setMenuOpen(false)
   }, [isWide])
 
-  // Close panels on route change
   useEffect(() => {
     setMenuOpen(false)
     setSearchOpen(false)
+    setSearchQuery('')
   }, [location.pathname])
 
   useEffect(() => {
@@ -68,12 +71,15 @@ export function Header({ onSearch }: HeaderProps) {
     inputRef.current?.focus()
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSearchOpen(false)
+      if (e.key === 'Escape') {
+        setSearchOpen(false)
+        setSearchQuery('')
+      }
     }
     const onPointer = (e: MouseEvent) => {
-      const target = e.target as Node
-      if (searchPanelRef.current?.contains(target)) return
-      if ((e.target as HTMLElement).closest?.('#search-toggle-button')) return
+      const el = e.target as HTMLElement
+      if (searchWrapRef.current?.contains(el)) return
+      if (el.closest?.('#search-toggle-button')) return
       setSearchOpen(false)
     }
     window.addEventListener('keydown', onKey)
@@ -100,12 +106,17 @@ export function Header({ onSearch }: HeaderProps) {
 
       <header id="site-header" className={isWide ? 'is-wide' : 'is-narrow'}>
         <div className="header-bar">
-          <Link to="/" className="brand-link" onClick={closeMenu} aria-label="SimLab home">
+          <Link
+            to="/"
+            className="brand-link"
+            onClick={closeMenu}
+            aria-label="SimLab home"
+          >
             <Logo />
           </Link>
 
           <div className="header-actions">
-            {isWide && (
+            {isWide && !searchOpen && (
               <nav className="primary-nav" aria-label="Primary">
                 <NavLink
                   to="/simulations"
@@ -116,20 +127,56 @@ export function Header({ onSearch }: HeaderProps) {
               </nav>
             )}
 
-            <button
-              id="search-toggle-button"
-              type="button"
-              className="icon-button"
-              aria-label={searchOpen ? 'Close search' : 'Open search'}
-              aria-expanded={searchOpen}
-              aria-controls="header-search-panel"
-              onClick={() => {
-                setSearchOpen((o) => !o)
-                setMenuOpen(false)
-              }}
+            <div
+              className={`header-search${searchOpen ? ' is-open' : ''}`}
+              ref={searchWrapRef}
             >
-              {searchOpen ? <CloseIcon /> : <SearchIcon />}
-            </button>
+              {searchOpen ? (
+                <form className="inline-search-form" role="search" onSubmit={handleSearchSubmit}>
+                  <label htmlFor={searchInputId} className="screen-reader-only">
+                    Search simulations
+                  </label>
+                  <input
+                    ref={inputRef}
+                    id={searchInputId}
+                    type="search"
+                    placeholder="Search experiments…"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoComplete="off"
+                    enterKeyHint="search"
+                  />
+                  <button type="submit" className="icon-button" aria-label="Submit search">
+                    <SearchIcon />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label="Close search"
+                    onClick={() => {
+                      setSearchOpen(false)
+                      setSearchQuery('')
+                    }}
+                  >
+                    <CloseIcon />
+                  </button>
+                </form>
+              ) : (
+                <button
+                  id="search-toggle-button"
+                  type="button"
+                  className="icon-button"
+                  aria-label="Open search"
+                  aria-expanded={false}
+                  onClick={() => {
+                    setSearchOpen(true)
+                    setMenuOpen(false)
+                  }}
+                >
+                  <SearchIcon />
+                </button>
+              )}
+            </div>
 
             {!isWide && (
               <button
@@ -159,34 +206,6 @@ export function Header({ onSearch }: HeaderProps) {
               Simulations
             </NavLink>
           </nav>
-        )}
-
-        {searchOpen && (
-          <div
-            id="header-search-panel"
-            className="search-panel"
-            ref={searchPanelRef}
-            role="search"
-          >
-            <form className="search-form" onSubmit={handleSearchSubmit}>
-              <label htmlFor={searchInputId} className="screen-reader-only">
-                Search simulations
-              </label>
-              <input
-                ref={inputRef}
-                id={searchInputId}
-                type="search"
-                placeholder="Search science experiment simulations…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoComplete="off"
-                enterKeyHint="search"
-              />
-              <button type="submit" className="search-submit" aria-label="Search">
-                <SearchIcon />
-              </button>
-            </form>
-          </div>
         )}
       </header>
     </>
