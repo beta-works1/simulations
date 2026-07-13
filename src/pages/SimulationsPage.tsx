@@ -6,10 +6,18 @@ import {
   GRADES,
   gradeLabel,
   getSimulationsByGrade,
+  groupSimulationsByChapter,
   isGrade,
   type Grade,
 } from '../data/simulations'
 import './SimulationsPage.css'
+
+function chapterAnchorId(chapter: string): string {
+  return `chapter-${chapter
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')}`
+}
 
 export function SimulationsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -18,9 +26,19 @@ export function SimulationsPage() {
     gradeParam && isGrade(gradeParam) ? (Number(gradeParam) as Grade) : 1
 
   const sims = useMemo(() => getSimulationsByGrade(activeGrade), [activeGrade])
+  const chapterGroups = useMemo(
+    () => (activeGrade === 8 ? groupSimulationsByChapter(sims) : []),
+    [activeGrade, sims],
+  )
+  const useChapters = activeGrade === 8 && chapterGroups.length > 0
 
   const selectGrade = (grade: Grade) => {
     setSearchParams({ grade: String(grade) }, { replace: true })
+  }
+
+  const jumpToChapter = (chapter: string) => {
+    const el = document.getElementById(chapterAnchorId(chapter))
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   return (
@@ -67,10 +85,48 @@ export function SimulationsPage() {
         <section className="grade-sims" aria-labelledby="grade-sims-heading">
           <h2 id="grade-sims-heading">{gradeLabel(activeGrade)} simulations</h2>
           <p className="grade-sims-desc">
-            Science experiment simulations for {gradeLabel(activeGrade)}.
+            {useChapters
+              ? 'Browse Grade 8 chapter by chapter — jump to Ch 1, Ch 2, Ch 3, Ch 4, and more.'
+              : `Science experiment simulations for ${gradeLabel(activeGrade)}.`}
           </p>
 
-          {sims.length > 0 ? (
+          {useChapters ? (
+            <>
+              <nav className="chapter-jump" aria-label="Grade 8 chapters">
+                {chapterGroups.map((group) => (
+                  <button
+                    key={group.chapter}
+                    type="button"
+                    className="chapter-jump-btn"
+                    onClick={() => jumpToChapter(group.chapter)}
+                  >
+                    <span className="chapter-jump-short">{group.shortLabel}</span>
+                    <span className="chapter-jump-count">{group.items.length}</span>
+                  </button>
+                ))}
+              </nav>
+
+              <div className="chapter-sections">
+                {chapterGroups.map((group) => (
+                  <section
+                    key={group.chapter}
+                    id={chapterAnchorId(group.chapter)}
+                    className="chapter-section"
+                    aria-labelledby={`${chapterAnchorId(group.chapter)}-heading`}
+                  >
+                    <header className="chapter-section-head">
+                      <p className="chapter-kicker">{group.shortLabel}</p>
+                      <h3 id={`${chapterAnchorId(group.chapter)}-heading`}>{group.chapter}</h3>
+                      <p className="chapter-count">
+                        {group.items.length} simulation{group.items.length !== 1 ? 's' : ''}
+                      </p>
+                    </header>
+                    <SimulationGrid items={group.items} showTags />
+                  </section>
+                ))}
+              </div>
+            </>
+          ) : sims.length > 0 ? (
             <SimulationGrid items={sims} showTags />
           ) : (
             <div className="grade-empty" role="status">

@@ -44,6 +44,7 @@ export function SimulationGrid({ items, title, showTags = true }: SimulationGrid
               {showTags && (
                 <span className="simulation-card-tags">
                   <span className="tag tag-grade">{gradeLabel(sim.grade)}</span>
+                  {sim.chapter ? <span className="tag">{sim.chapter}</span> : null}
                 </span>
               )}
             </Link>

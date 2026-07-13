@@ -140,6 +140,103 @@
   border-radius: var(--radius-md);
 }
 
+.chapter-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 var(--space-lg);
+}
+
+.chapter-jump-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #c5ccd8;
+  background: #fff;
+  color: #1a1a1a;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chapter-jump-btn:hover {
+  border-color: #2a326a;
+  background: #eef1f8;
+}
+
+.chapter-jump-btn:focus-visible {
+  outline: 3px solid #6acef5;
+  outline-offset: 2px;
+}
+
+.chapter-jump-short {
+  color: #2a326a;
+}
+
+.chapter-jump-count {
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #2a326a;
+  color: #fff;
+  font-size: 0.72rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chapter-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.chapter-section {
+  scroll-margin-top: 96px;
+  padding: 18px 16px 8px;
+  border: 1px solid #d5dbe5;
+  border-radius: 12px;
+  background: #fbfbfd;
+}
+
+.chapter-section-head {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e2e6ef;
+}
+
+.chapter-kicker {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2a326a;
+}
+
+.chapter-section-head h3 {
+  margin: 0;
+  font-size: clamp(1.05rem, 2.4vw, 1.35rem);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.chapter-count {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.chapter-section .simulation-grid-section {
+  padding: 0;
+}
+
 @media (max-width: 899px) {
   .grade-layout {
     grid-template-columns: 1fr;

@@ -149,6 +149,7 @@ export const simulations: Simulation[] = [
     id: 'graphing-lines',
     title: 'Graphing Lines',
     grade: 8,
+    chapter: 'More Grade 8',
     description: 'Investigate linear equations, slope, intercepts, and graphs.',
     learningGoals: [
       'Graph y = mx + b from slope and intercept',
@@ -163,6 +164,7 @@ export const simulations: Simulation[] = [
     id: 'gravity-and-orbits',
     title: 'Gravity and Orbits',
     grade: 8,
+    chapter: 'More Grade 8',
     description: 'Move the sun, earth, and moon to see how mass and distance affect gravity.',
     learningGoals: [
       'Relate gravity to mass and distance',
@@ -177,6 +179,7 @@ export const simulations: Simulation[] = [
     id: 'natural-selection',
     title: 'Natural Selection',
     grade: 8,
+    chapter: 'More Grade 8',
     description: 'Observe how traits spread in a population under environmental pressure.',
     learningGoals: [
       'Explain variation and selection',
@@ -684,12 +687,64 @@ export function getSimulationsByGrade(grade: Grade): Simulation[] {
   return simulations.filter((s) => s.grade === grade)
 }
 
+/** Ordered Grade 8 chapter labels for browse UI. */
+export const GRADE_8_CHAPTERS = [
+  'Ch 1 – Ecology',
+  'Ch 2 – Human Nervous System',
+  'Ch 3 – Variation, Heredity, Cell Division',
+  'Ch 4 – Biotechnology',
+  'Ch 9 – Light: Reflection & Refraction',
+  'Ch 10 – Electricity & Magnetism',
+  'Ch 11 – Technology in Everyday Life',
+  'Ch 12 – Our Universe',
+  'More Grade 8',
+] as const
+
+export type ChapterGroup = {
+  chapter: string
+  shortLabel: string
+  items: Simulation[]
+}
+
+export function chapterShortLabel(chapter: string): string {
+  const match = chapter.match(/^Ch\s+(\d+)/i)
+  if (match) return `Ch ${match[1]}`
+  if (chapter === 'More Grade 8') return 'More'
+  return chapter
+}
+
+export function groupSimulationsByChapter(sims: Simulation[]): ChapterGroup[] {
+  const map = new Map<string, Simulation[]>()
+  for (const sim of sims) {
+    const key = sim.chapter?.trim() || 'More Grade 8'
+    const list = map.get(key) ?? []
+    list.push(sim)
+    map.set(key, list)
+  }
+
+  const groups: ChapterGroup[] = []
+  for (const chapter of GRADE_8_CHAPTERS) {
+    const items = map.get(chapter)
+    if (items?.length) {
+      groups.push({ chapter, shortLabel: chapterShortLabel(chapter), items })
+      map.delete(chapter)
+    }
+  }
+  for (const [chapter, items] of map) {
+    groups.push({ chapter, shortLabel: chapterShortLabel(chapter), items })
+  }
+  return groups
+}
+
 export function getRelatedSimulations(sim: Simulation, limit = 4): Simulation[] {
   const sameChapter = sim.chapter
     ? simulations.filter((s) => s.id !== sim.id && s.chapter === sim.chapter)
     : []
   const sameGrade = simulations.filter(
-    (s) => s.id !== sim.id && s.grade === sim.grade && s.chapter !== sim.chapter,
+    (s) =>
+      s.id !== sim.id &&
+      s.grade === sim.grade &&
+      (!sim.chapter || s.chapter !== sim.chapter),
   )
   return [...sameChapter, ...sameGrade].slice(0, limit)
 }
