@@ -1,19 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="520" height="340" viewBox="0 0 520 340">
   <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0e6655"/>
       <stop offset="100%" stop-color="#f4d03f"/>
     </linearGradient>
   </defs>
-  <rect width="520" height="340" rx="18" fill="url(#g)"/>
-  <rect x="18" y="18" width="484" height="304" rx="12" fill="rgba(0,0,0,0.18)"/>
-  <g transform="translate(160,80) scale(1.15)">
+  <rect width="520" height="340" rx="16" fill="url(#bg)"/>
+  <rect x="16" y="14" width="488" height="250" rx="12" fill="rgba(0,0,0,0.28)"/>
+  <svg x="60" y="40" width="400" height="200" viewBox="0 0 200 120">
     
-      <path d="M70 25 C90 45 90 65 70 85" stroke="#f4d03f" stroke-width="4" fill="none"/>
-      <path d="M130 25 C110 45 110 65 130 85" stroke="#fff" stroke-width="4" fill="none"/>
-      <line x1="78" y1="40" x2="122" y2="40" stroke="#f4d03f" stroke-width="2"/>
-      <line x1="78" y1="55" x2="122" y2="55" stroke="#f4d03f" stroke-width="2"/>
-      <line x1="78" y1="70" x2="122" y2="70" stroke="#f4d03f" stroke-width="2"/>
-  </g>
-  <text x="260" y="290" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="#ffffff">Genetic Engineering</text>
+    <circle cx="70" cy="60" r="28" fill="none" stroke="#58d68d" stroke-width="4"/>
+    <path d="M70 32 A28 28 0 0 1 95 75" stroke="#f4d03f" stroke-width="5" fill="none"/>
+    <rect x="120" y="40" width="50" height="40" rx="8" fill="#1abc9c" opacity="0.8"/>
+    <circle cx="145" cy="60" r="10" fill="#0e6655"/>
+    <path d="M98 70 L120 60" stroke="#f4d03f" stroke-width="2"/>
+    <text x="55" y="110" fill="#fff" font-size="10" font-family="Arial">plasmid → bacterium</text>
+  </svg>
+  <text x="260" y="305" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" fill="#ffffff">Genetic Engineering</text>
 </svg>

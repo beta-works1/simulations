@@ -1,19 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="520" height="340" viewBox="0 0 520 340">
   <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0d0d0d"/>
       <stop offset="100%" stop-color="#5dade2"/>
     </linearGradient>
   </defs>
-  <rect width="520" height="340" rx="18" fill="url(#g)"/>
-  <rect x="18" y="18" width="484" height="304" rx="12" fill="rgba(0,0,0,0.18)"/>
-  <g transform="translate(160,80) scale(1.15)">
+  <rect width="520" height="340" rx="16" fill="url(#bg)"/>
+  <rect x="16" y="14" width="488" height="250" rx="12" fill="rgba(0,0,0,0.28)"/>
+  <svg x="60" y="40" width="400" height="200" viewBox="0 0 200 120">
     
-      <circle cx="100" cy="60" r="18" fill="#5dade2"/>
-      <circle cx="100" cy="60" r="28" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.5"/>
-      <circle cx="145" cy="45" r="6" fill="#fff"/>
-      <circle cx="55" cy="80" r="4" fill="#f4d03f"/>
-      <circle cx="160" cy="85" r="3" fill="#85c1e9"/>
-  </g>
-  <text x="260" y="290" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="#ffffff">Black Hole &amp; Light Bending</text>
+    <!-- accretion disk -->
+    <ellipse cx="100" cy="62" rx="70" ry="18" fill="none" stroke="#f39c12" stroke-width="6" opacity="0.85"/>
+    <ellipse cx="100" cy="62" rx="55" ry="12" fill="none" stroke="#e74c3c" stroke-width="4" opacity="0.7"/>
+    <!-- event horizon -->
+    <circle cx="100" cy="60" r="22" fill="#000"/>
+    <circle cx="100" cy="60" r="22" fill="none" stroke="#5dade2" stroke-width="2" opacity="0.5"/>
+    <!-- light bending -->
+    <path d="M25 40 Q70 55 25 75" fill="none" stroke="#85c1e9" stroke-width="2"/>
+    <path d="M175 35 Q130 55 175 80" fill="none" stroke="#85c1e9" stroke-width="2"/>
+    <path d="M20 55 Q60 60 20 65" fill="none" stroke="#f4d03f" stroke-width="1.5"/>
+    <circle cx="22" cy="40" r="3" fill="#fff"/>
+    <circle cx="178" cy="35" r="3" fill="#fff"/>
+    <text x="55" y="105" fill="#5dade2" font-size="10" font-family="Arial">light bends near horizon</text>
+  </svg>
+  <text x="260" y="305" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" fill="#ffffff">Black Hole &amp; Light Bending</text>
 </svg>
