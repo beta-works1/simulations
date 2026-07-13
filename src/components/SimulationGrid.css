@@ -129,30 +129,9 @@
   text-decoration: none;
 }
 
-.tag-subject {
+.tag-grade {
+  background: #2a326a;
   color: #fff;
-}
-
-.tag-physics {
-  background: #1a5276;
-}
-.tag-chemistry {
-  background: #6c3483;
-}
-.tag-biology {
-  background: #145a32;
-}
-.tag-earth-and-space {
-  background: #1c2833;
-}
-.tag-math-and-statistics {
-  background: #7b241c;
-}
-
-.tag-chapter {
-  background: #eef1f6;
-  color: #1a1a1a;
-  border: 1px solid #c5cdd8;
 }
 
 @media (max-width: 374px) {

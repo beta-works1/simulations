@@ -24,61 +24,151 @@
   line-height: 1.6;
 }
 
-.sims-subject-grid {
+.grade-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.grade-panel {
+  display: block;
+  background: #f4f6fb;
+  border: 2px solid #2a326a;
+  border-radius: 10px;
+  padding: 16px 12px 18px;
+  position: sticky;
+  top: 88px;
+  box-shadow: 0 4px 14px rgba(42, 50, 106, 0.1);
+}
+
+.grade-panel-head {
+  padding: 0 8px 12px;
+  border-bottom: 1px solid #d5dbe5;
+  margin-bottom: 10px;
+}
+
+.grade-panel-title {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #2a326a;
+  font-weight: 700;
+}
+
+.grade-panel-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.grade-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
-  max-width: 960px;
-  margin-inline: auto;
-}
-
-.sims-subject-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 8px;
-  padding: 28px 16px;
-  text-decoration: none;
-  color: var(--color-text);
+}
+
+.grade-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid #cfd6e4;
   background: #fff;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
-  text-align: center;
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.sims-subject-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-brand);
-  box-shadow: var(--shadow-card);
+.grade-item:hover {
+  border-color: #2a326a;
 }
 
-.sims-subject-card:focus-visible {
-  outline: 3px solid var(--color-focus);
+.grade-item.is-active {
+  border-color: #2a326a;
+  background: #eef1f8;
+  box-shadow: inset 3px 0 0 #2a326a;
+}
+
+.grade-item:focus-visible {
+  outline: 3px solid #6acef5;
   outline-offset: 2px;
 }
 
-.sims-subject-icon {
-  font-size: 2rem;
-  line-height: 1;
+.grade-item-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1a1a1a;
 }
 
-.sims-subject-name {
+.grade-item.is-active .grade-item-title {
+  color: #2a326a;
+}
+
+.grade-item-count {
+  font-size: 0.75rem;
+  color: #555;
   font-weight: 600;
-  font-size: 1.05rem;
 }
 
-.sims-subject-meta {
-  font-size: 0.8rem;
+.grade-sims h2 {
+  margin: 0 0 8px;
+  font-size: var(--text-xl);
+  color: var(--color-text);
+}
+
+.grade-sims-desc {
+  margin: 0 0 var(--space-md);
   color: var(--color-muted);
 }
 
-.sims-total {
+.grade-sims .simulation-grid-section {
+  padding: 0;
+}
+
+.grade-empty {
+  padding: var(--space-xl);
   text-align: center;
   color: var(--color-muted);
-  font-size: var(--text-sm);
-  margin: var(--space-xl) 0 0;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 899px) {
+  .grade-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .grade-panel {
+    position: static;
+    order: -1;
+  }
+
+  .grade-list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .grade-item {
+    align-items: center;
+    text-align: center;
+    padding: 10px 6px;
+  }
+
+  .grade-item-count {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .grade-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

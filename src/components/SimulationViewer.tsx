@@ -1,17 +1,13 @@
-import { useEffect, useState } from 'react'
 import type { Simulation } from '../data/simulations'
-import { SUBJECT_ICONS, SUBJECT_LABELS } from '../data/simulations'
+import { gradeLabel } from '../data/simulations'
 import { ViewerSkeleton } from './Skeleton'
+import { useEffect, useState } from 'react'
 import './SimulationViewer.css'
 
 interface SimulationViewerProps {
   sim: Simulation
 }
 
-/**
- * Placeholder host for future canvas/WebGL sims.
- * Lazy-loaded from the detail page so the browse grid stays light.
- */
 export function SimulationViewer({ sim }: SimulationViewerProps) {
   const [ready, setReady] = useState(false)
 
@@ -45,12 +41,12 @@ export function SimulationViewer({ sim }: SimulationViewerProps) {
     >
       <div className="viewer-content">
         <span className="viewer-icon" aria-hidden="true">
-          {SUBJECT_ICONS[sim.subject]}
+          🔬
         </span>
         <p className="viewer-title">{sim.title}</p>
         <p className="viewer-note">
-          Interactive {SUBJECT_LABELS[sim.subject].toLowerCase()} simulation will load here.
-          Content coming soon.
+          Interactive {gradeLabel(sim.grade)} science experiment will load here. Content coming
+          soon.
         </p>
       </div>
     </div>

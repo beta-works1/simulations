@@ -2,13 +2,7 @@ import { Link } from 'react-router-dom'
 import { HeroCarousel } from '../components/HeroCarousel'
 import { PageMeta } from '../components/PageMeta'
 import { SimulationGrid } from '../components/SimulationGrid'
-import {
-  SUBJECT_ICONS,
-  SUBJECT_LABELS,
-  SUBJECT_ORDER,
-  getSimulationsBySubject,
-  simulations,
-} from '../data/simulations'
+import { GRADES, gradeLabel, getSimulationsByGrade, simulations } from '../data/simulations'
 import './HomePage.css'
 
 export function HomePage() {
@@ -17,8 +11,8 @@ export function HomePage() {
   return (
     <div className="home-page">
       <PageMeta
-        title="SimLab: Free online physics, chemistry, biology, earth science and math simulations"
-        description="Free interactive science experiment simulations. Browse by subject, open a sim, and learn through exploration — inspired by PhET."
+        title="SimLab: Science experiment simulations for Grades 1–8"
+        description="Free interactive science experiment simulations organized by grade level from Grade 1 to Grade 8."
         path="/"
       />
 
@@ -35,27 +29,25 @@ export function HomePage() {
           <div id="what-is-simlab">
             <h2>What is SimLab?</h2>
             <p>
-              Learn by discovery: choose a subject, open a chapter, then run a science experiment
-              simulation.
+              SimLab creates free interactive science experiment simulations for students in Grades
+              1–8. Pick a grade from the panel, then open an experiment and learn by discovery.
             </p>
           </div>
         </section>
 
-        <section className="subjects-section" aria-labelledby="subjects-heading">
-          <h2 id="subjects-heading">Browse by subject</h2>
-          <p className="subjects-intro">
-            Jump straight into a subject catalog — just like PhET’s Simulations menu.
-          </p>
+        <section className="subjects-section" aria-labelledby="grades-heading">
+          <h2 id="grades-heading">Browse by grade</h2>
+          <p className="subjects-intro">Jump into Grade 1 through Grade 8.</p>
           <ul className="subject-cards">
-            {SUBJECT_ORDER.map((subject) => {
-              const count = getSimulationsBySubject(subject).length
+            {GRADES.map((grade) => {
+              const count = getSimulationsByGrade(grade).length
               return (
-                <li key={subject}>
-                  <Link to={`/simulations/${subject}`} className="subject-card">
+                <li key={grade}>
+                  <Link to={`/simulations?grade=${grade}`} className="subject-card">
                     <span className="subject-card-icon" aria-hidden="true">
-                      {SUBJECT_ICONS[subject]}
+                      {grade}
                     </span>
-                    <span className="subject-card-name">{SUBJECT_LABELS[subject]}</span>
+                    <span className="subject-card-name">{gradeLabel(grade)}</span>
                     <span className="subject-card-count">
                       {count} sim{count !== 1 ? 's' : ''}
                     </span>
@@ -70,7 +62,7 @@ export function HomePage() {
 
         <section className="cta-section">
           <Link to="/simulations" className="btn btn-primary btn-lg">
-            View All Simulations
+            Open Grade Panel
           </Link>
           <Link to="/about" className="btn btn-secondary btn-lg">
             About SimLab

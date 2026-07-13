@@ -21,10 +21,10 @@ const slides = [
   },
   {
     id: 3,
-    title: 'Browse by Subject',
-    subtitle: 'Physics, Chemistry, Biology, Earth Science, and Math',
-    cta: 'View Physics Sims',
-    href: '/simulations/physics',
+    title: 'Browse by Grade',
+    subtitle: 'Science experiment simulations for Grades 1–8',
+    cta: 'Open Grade Panel',
+    href: '/simulations',
     gradient: 'linear-gradient(135deg, #1e8449 0%, #27ae60 50%, #2ecc71 100%)',
   },
 ]

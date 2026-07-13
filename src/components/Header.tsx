@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { Logo } from './Logo'
-import { SUBJECT_LABELS, SUBJECT_ORDER } from '../data/simulations'
+import { GRADES, gradeLabel } from '../data/simulations'
 import './Header.css'
 
 function SearchIcon() {
@@ -123,11 +123,15 @@ export function Header({ onSearch }: HeaderProps) {
   const simsLinks = (
     <>
       <NavLink to="/simulations" end onClick={closeAll}>
-        All Sims
+        All Grades
       </NavLink>
-      {SUBJECT_ORDER.map((subject) => (
-        <NavLink key={subject} to={`/simulations/${subject}`} onClick={closeAll}>
-          {SUBJECT_LABELS[subject]}
+      {GRADES.map((grade) => (
+        <NavLink
+          key={grade}
+          to={`/simulations?grade=${grade}`}
+          onClick={closeAll}
+        >
+          {gradeLabel(grade)}
         </NavLink>
       ))}
     </>

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { Simulation } from '../data/simulations'
-import { SUBJECT_ICONS, SUBJECT_LABELS } from '../data/simulations'
+import { gradeLabel } from '../data/simulations'
 import './SimulationGrid.css'
 
 function SimulationThumbnail({ sim }: { sim: Simulation }) {
@@ -13,8 +13,8 @@ function SimulationThumbnail({ sim }: { sim: Simulation }) {
       aria-hidden="true"
     >
       <div className="simulation-thumbnail-inner">
-        <span className="simulation-subject">{SUBJECT_LABELS[sim.subject]}</span>
-        <div className="simulation-icon">{SUBJECT_ICONS[sim.subject]}</div>
+        <span className="simulation-subject">{gradeLabel(sim.grade)}</span>
+        <div className="simulation-icon">🔬</div>
       </div>
       <span className="sim-badge">HTML5</span>
     </div>
@@ -37,15 +37,13 @@ export function SimulationGrid({ items, title, showTags = true }: SimulationGrid
             <Link
               to={`/play/${sim.id}`}
               className="simulation-link"
-              aria-label={`${sim.title}, ${SUBJECT_LABELS[sim.subject]}`}
+              aria-label={`${sim.title}, ${gradeLabel(sim.grade)}`}
             >
               <SimulationThumbnail sim={sim} />
               <span className="simulation-list-title">{sim.title}</span>
               {showTags && (
                 <span className="simulation-card-tags">
-                  <span className={`tag tag-subject tag-${sim.subject}`}>
-                    {SUBJECT_LABELS[sim.subject]}
-                  </span>
+                  <span className="tag tag-grade">{gradeLabel(sim.grade)}</span>
                 </span>
               )}
             </Link>

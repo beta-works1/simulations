@@ -47,10 +47,10 @@
   text-decoration: none;
 }
 
-.detail-tags a.tag-chapter {
-  background: #eef1f6;
-  color: #1a1a1a;
-  border: 1px solid #c5cdd8;
+.detail-tags .tag-grade {
+  background: #2a326a;
+  color: #fff;
+  border: none;
 }
 
 .detail-tags .tag:hover {
