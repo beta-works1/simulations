@@ -4,24 +4,12 @@ import { PageMeta } from '../components/PageMeta'
 import { SimulationGrid } from '../components/SimulationGrid'
 import { SimulationGridSkeleton } from '../components/Skeleton'
 import {
-  GRADE_LABELS,
   SUBJECT_LABELS,
+  SUBJECT_ORDER,
   simulations,
-  type GradeLevel,
   type Subject,
 } from '../data/simulations'
 import './SimulationsPage.css'
-
-const subjects: (Subject | 'all')[] = [
-  'all',
-  'physics',
-  'chemistry',
-  'biology',
-  'earth-and-space',
-  'math-and-statistics',
-]
-
-const grades: (GradeLevel | 'all')[] = ['all', '6-8', '9-10', '11-12']
 
 function matchesQuery(haystack: string, query: string): boolean {
   const tokens = query
@@ -40,7 +28,6 @@ export function SimulationsPage() {
   const [loading, setLoading] = useState(true)
 
   const activeSubject = (searchParams.get('subject') as Subject | 'all' | null) ?? 'all'
-  const activeGrade = (searchParams.get('grade') as GradeLevel | 'all' | null) ?? 'all'
 
   useEffect(() => {
     setSearchQuery(searchParams.get('q') ?? '')
@@ -48,44 +35,36 @@ export function SimulationsPage() {
 
   useEffect(() => {
     setLoading(true)
-    const id = window.setTimeout(() => setLoading(false), 180)
+    const id = window.setTimeout(() => setLoading(false), 160)
     return () => window.clearTimeout(id)
-  }, [activeSubject, activeGrade, searchQuery])
+  }, [activeSubject, searchQuery])
 
   const filtered = useMemo(() => {
     return simulations.filter((sim) => {
       const matchesSubject = activeSubject === 'all' || sim.subject === activeSubject
-      const matchesGrade = activeGrade === 'all' || sim.grades.includes(activeGrade)
       const haystack = [
         sim.title,
         sim.description,
         SUBJECT_LABELS[sim.subject],
         ...sim.keywords,
         ...sim.learningGoals,
-        ...sim.grades.map((g) => GRADE_LABELS[g]),
       ].join(' ')
-      return matchesSubject && matchesGrade && matchesQuery(haystack, searchQuery)
+      return matchesSubject && matchesQuery(haystack, searchQuery)
     })
-  }, [activeSubject, activeGrade, searchQuery])
+  }, [activeSubject, searchQuery])
 
-  const updateParam = (key: string, value: string) => {
+  const setSubject = (subject: Subject | 'all') => {
     const params = new URLSearchParams(searchParams)
-    if (value === 'all' || value === '') {
-      params.delete(key)
-    } else {
-      params.set(key, value)
-    }
+    if (subject === 'all') params.delete('subject')
+    else params.set('subject', subject)
     setSearchParams(params, { replace: true })
   }
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value)
     const params = new URLSearchParams(searchParams)
-    if (value.trim()) {
-      params.set('q', value.trim())
-    } else {
-      params.delete('q')
-    }
+    if (value.trim()) params.set('q', value.trim())
+    else params.delete('q')
     setSearchParams(params, { replace: true })
   }
 
@@ -94,19 +73,22 @@ export function SimulationsPage() {
     setSearchParams({}, { replace: true })
   }
 
+  const subjectTitle =
+    activeSubject === 'all' ? 'All Simulations' : SUBJECT_LABELS[activeSubject]
+
   return (
     <div className="simulations-page page-content">
       <PageMeta
-        title="Science Experiment Simulations"
-        description="Browse SimLab science experiment simulations. Filter by subject and Punjab SNC grade level."
+        title={subjectTitle}
+        description={`Browse ${subjectTitle.toLowerCase()} on SimLab — free interactive science experiment simulations.`}
         path="/simulations"
       />
 
       <header className="simulations-header">
-        <h1>Science Experiment Simulations</h1>
+        <h1>{subjectTitle}</h1>
         <p>
-          This is where interactive science experiment simulations will live. Browse the catalog,
-          search by topic, and filter by subject or Punjab SNC grade level.
+          Explore interactive science experiment simulations. Filter by subject, search by topic,
+          then open a simulation to learn by discovery — the same workflow as PhET.
         </p>
       </header>
 
@@ -118,7 +100,7 @@ export function SimulationsPage() {
           <input
             id="sim-search"
             type="search"
-            placeholder="Search experiments by title or keyword…"
+            placeholder="Search by title or keyword…"
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             autoComplete="off"
@@ -131,34 +113,23 @@ export function SimulationsPage() {
             Subject
           </p>
           <div className="filter-chips" role="group" aria-labelledby="subject-filter-label">
-            {subjects.map((subject) => (
+            <button
+              type="button"
+              className={activeSubject === 'all' ? 'active' : ''}
+              aria-pressed={activeSubject === 'all'}
+              onClick={() => setSubject('all')}
+            >
+              All Sims
+            </button>
+            {SUBJECT_ORDER.map((subject) => (
               <button
                 key={subject}
                 type="button"
                 className={activeSubject === subject ? 'active' : ''}
                 aria-pressed={activeSubject === subject}
-                onClick={() => updateParam('subject', subject)}
+                onClick={() => setSubject(subject)}
               >
-                {subject === 'all' ? 'All subjects' : SUBJECT_LABELS[subject]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="filter-group">
-          <p className="filter-label" id="grade-filter-label">
-            Grade level (Punjab SNC)
-          </p>
-          <div className="filter-chips" role="group" aria-labelledby="grade-filter-label">
-            {grades.map((grade) => (
-              <button
-                key={grade}
-                type="button"
-                className={activeGrade === grade ? 'active' : ''}
-                aria-pressed={activeGrade === grade}
-                onClick={() => updateParam('grade', grade)}
-              >
-                {grade === 'all' ? 'All grades' : GRADE_LABELS[grade]}
+                {SUBJECT_LABELS[subject]}
               </button>
             ))}
           </div>
@@ -178,10 +149,7 @@ export function SimulationsPage() {
       ) : (
         <div className="no-results" role="status">
           <h2>No simulations found</h2>
-          <p>
-            Nothing matches your search or filters. Try a different keyword, subject, or grade
-            level.
-          </p>
+          <p>Nothing matches your search or subject filter. Try another keyword or subject.</p>
           <button type="button" className="btn btn-primary" onClick={clearFilters}>
             Clear filters
           </button>

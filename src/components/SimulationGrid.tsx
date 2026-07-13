@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { Simulation } from '../data/simulations'
-import { GRADE_LABELS, SUBJECT_ICONS, SUBJECT_LABELS } from '../data/simulations'
+import { SUBJECT_ICONS, SUBJECT_LABELS } from '../data/simulations'
 import './SimulationGrid.css'
 
 function SimulationThumbnail({ sim }: { sim: Simulation }) {
@@ -37,7 +37,7 @@ export function SimulationGrid({ items, title, showTags = true }: SimulationGrid
             <Link
               to={`/simulations/${sim.id}`}
               className="simulation-link"
-              aria-label={`${sim.title}, ${SUBJECT_LABELS[sim.subject]}, ${sim.grades.map((g) => GRADE_LABELS[g]).join(', ')}`}
+              aria-label={`${sim.title}, ${SUBJECT_LABELS[sim.subject]}`}
             >
               <SimulationThumbnail sim={sim} />
               <span className="simulation-list-title">{sim.title}</span>
@@ -46,11 +46,6 @@ export function SimulationGrid({ items, title, showTags = true }: SimulationGrid
                   <span className={`tag tag-subject tag-${sim.subject}`}>
                     {SUBJECT_LABELS[sim.subject]}
                   </span>
-                  {sim.grades.map((g) => (
-                    <span key={g} className="tag tag-grade">
-                      {GRADE_LABELS[g]}
-                    </span>
-                  ))}
                 </span>
               )}
             </Link>

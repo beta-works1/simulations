@@ -4,6 +4,7 @@ import { Header } from './components/Header'
 import { Footer } from './components/Footer'
 import { HomePage } from './pages/HomePage'
 import { SimulationsPage } from './pages/SimulationsPage'
+import { AboutPage } from './pages/AboutPage'
 import './App.css'
 
 const SimulationDetailPage = lazy(() =>
@@ -28,6 +29,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/simulations" element={<SimulationsPage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route
             path="/simulations/:id"
             element={

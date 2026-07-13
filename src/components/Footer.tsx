@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SUBJECT_LABELS, SUBJECT_ORDER } from '../data/simulations'
 import './Footer.css'
 
 export function Footer() {
@@ -10,9 +11,8 @@ export function Footer() {
             <strong>SimLab Interactive Simulations</strong>
           </p>
           <p>
-            Free science and math simulations for students, aligned with Punjab SNC learning
-            outcomes — explore physics, chemistry, biology, earth science, and math through
-            discovery.
+            Free science experiment simulations for students — browse by subject, open a sim, and
+            learn through exploration.
           </p>
         </div>
       </div>
@@ -27,7 +27,23 @@ export function Footer() {
               |
             </span>
             <Link to="/simulations" className="inline-link">
-              Simulations
+              All Sims
+            </Link>
+            {SUBJECT_ORDER.map((subject) => (
+              <span key={subject}>
+                <span className="footer-separator" aria-hidden="true">
+                  |
+                </span>
+                <Link to={`/simulations?subject=${subject}`} className="inline-link">
+                  {SUBJECT_LABELS[subject]}
+                </Link>
+              </span>
+            ))}
+            <span className="footer-separator" aria-hidden="true">
+              |
+            </span>
+            <Link to="/about" className="inline-link">
+              About
             </Link>
           </nav>
 

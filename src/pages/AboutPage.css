@@ -1,0 +1,51 @@
+.about-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-md) var(--space-2xl);
+}
+
+.about-header h1 {
+  font-size: var(--text-2xl);
+  margin: 0 0 var(--space-md);
+  color: var(--color-text);
+}
+
+.about-header p {
+  font-size: var(--text-md);
+  line-height: 1.7;
+  color: var(--color-muted);
+  margin: 0 0 var(--space-xl);
+}
+
+.about-section {
+  margin-bottom: var(--space-xl);
+}
+
+.about-section h2 {
+  font-size: var(--text-lg);
+  margin: 0 0 var(--space-md);
+  color: var(--color-text);
+}
+
+.about-section p {
+  line-height: 1.7;
+  color: var(--color-muted);
+}
+
+.workflow-steps {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--color-muted);
+  line-height: 1.75;
+}
+
+.workflow-steps li {
+  margin-bottom: 10px;
+}
+
+.about-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: var(--space-lg);
+}

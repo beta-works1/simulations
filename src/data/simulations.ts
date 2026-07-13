@@ -5,14 +5,10 @@ export type Subject =
   | 'earth-and-space'
   | 'math-and-statistics'
 
-/** Punjab Student Learning Outcomes / SNC-aligned grade bands */
-export type GradeLevel = '6-8' | '9-10' | '11-12'
-
 export interface Simulation {
   id: string
   title: string
   subject: Subject
-  grades: GradeLevel[]
   description: string
   learningGoals: string[]
   keywords: string[]
@@ -28,12 +24,6 @@ export const SUBJECT_LABELS: Record<Subject, string> = {
   'math-and-statistics': 'Math',
 }
 
-export const GRADE_LABELS: Record<GradeLevel, string> = {
-  '6-8': 'Grades 6–8',
-  '9-10': 'Grades 9–10',
-  '11-12': 'Grades 11–12',
-}
-
 export const SUBJECT_ICONS: Record<Subject, string> = {
   physics: '⚛',
   chemistry: '🧪',
@@ -42,18 +32,25 @@ export const SUBJECT_ICONS: Record<Subject, string> = {
   'math-and-statistics': '📐',
 }
 
+export const SUBJECT_ORDER: Subject[] = [
+  'physics',
+  'chemistry',
+  'biology',
+  'earth-and-space',
+  'math-and-statistics',
+]
+
 export const simulations: Simulation[] = [
   {
     id: 'projectile-motion',
     title: 'Projectile Motion',
     subject: 'physics',
-    grades: ['9-10', '11-12'],
     description:
       'Blast a car out of a cannon and challenge yourself to hit a target. Explore how angle, speed, and gravity affect trajectories.',
     learningGoals: [
       'Describe the path of a projectile under gravity',
       'Relate launch angle and speed to range and height',
-      'Apply 2D motion concepts from Punjab SNC Physics',
+      'Apply two-dimensional motion concepts',
     ],
     keywords: ['motion', 'gravity', 'trajectory', 'kinematics', 'forces'],
     color: '#1a5276',
@@ -63,7 +60,6 @@ export const simulations: Simulation[] = [
     id: 'circuit-construction',
     title: 'Circuit Construction Kit',
     subject: 'physics',
-    grades: ['6-8', '9-10'],
     description:
       'Build circuits with batteries, resistors, light bulbs, and switches. See current and voltage change in real time.',
     learningGoals: [
@@ -79,7 +75,6 @@ export const simulations: Simulation[] = [
     id: 'balancing-act',
     title: 'Balancing Act',
     subject: 'physics',
-    grades: ['6-8', '9-10'],
     description:
       'Play with objects on a teeter-totter to learn about balance, torque, and centre of mass.',
     learningGoals: [
@@ -95,7 +90,6 @@ export const simulations: Simulation[] = [
     id: 'ph-scale',
     title: 'pH Scale',
     subject: 'chemistry',
-    grades: ['9-10', '11-12'],
     description:
       'Test the pH of everyday liquids and explore acid–base chemistry on a logarithmic scale.',
     learningGoals: [
@@ -111,7 +105,6 @@ export const simulations: Simulation[] = [
     id: 'build-an-atom',
     title: 'Build an Atom',
     subject: 'chemistry',
-    grades: ['6-8', '9-10'],
     description:
       'Build atoms out of protons, neutrons, and electrons. Discover isotopes, ions, and the periodic table.',
     learningGoals: [
@@ -127,7 +120,6 @@ export const simulations: Simulation[] = [
     id: 'molecule-shapes',
     title: 'Molecule Shapes',
     subject: 'chemistry',
-    grades: ['9-10', '11-12'],
     description:
       'Explore molecule shapes by building molecules in 3D and relating electron domains to geometry.',
     learningGoals: [
@@ -143,13 +135,12 @@ export const simulations: Simulation[] = [
     id: 'natural-selection',
     title: 'Natural Selection',
     subject: 'biology',
-    grades: ['9-10', '11-12'],
     description:
       'Observe evolution in a population of rabbits with different traits under changing environments.',
     learningGoals: [
       'Explain how variation and selection drive adaptation',
       'Predict population change under environmental pressure',
-      'Connect Punnett ideas to phenotype frequencies',
+      'Connect genetics ideas to phenotype frequencies',
     ],
     keywords: ['evolution', 'adaptation', 'genes', 'traits', 'ecology'],
     color: '#5b2c6f',
@@ -159,7 +150,6 @@ export const simulations: Simulation[] = [
     id: 'gene-expression',
     title: 'Gene Expression Essentials',
     subject: 'biology',
-    grades: ['11-12'],
     description:
       'Explore how genes are transcribed and translated, and how expression can be regulated in cells.',
     learningGoals: [
@@ -175,7 +165,6 @@ export const simulations: Simulation[] = [
     id: 'gravity-and-orbits',
     title: 'Gravity and Orbits',
     subject: 'earth-and-space',
-    grades: ['6-8', '9-10'],
     description:
       'Move the sun, earth, moon, and space station to see how mass and distance affect gravity and orbits.',
     learningGoals: [
@@ -191,7 +180,6 @@ export const simulations: Simulation[] = [
     id: 'greenhouse-effect',
     title: 'The Greenhouse Effect',
     subject: 'earth-and-space',
-    grades: ['6-8', '9-10', '11-12'],
     description:
       'Learn how greenhouse gases interact with sunlight and infrared radiation to warm Earth’s atmosphere.',
     learningGoals: [
@@ -207,7 +195,6 @@ export const simulations: Simulation[] = [
     id: 'graphing-lines',
     title: 'Graphing Lines',
     subject: 'math-and-statistics',
-    grades: ['6-8', '9-10'],
     description:
       'Investigate the relationships between linear equations, slope, intercepts, and graphs.',
     learningGoals: [
@@ -223,7 +210,6 @@ export const simulations: Simulation[] = [
     id: 'fraction-matcher',
     title: 'Fraction Matcher',
     subject: 'math-and-statistics',
-    grades: ['6-8'],
     description:
       'Match shapes and numbers to earn stars while building fluency with equivalent fractions.',
     learningGoals: [
@@ -241,8 +227,16 @@ export function getSimulationById(id: string): Simulation | undefined {
   return simulations.find((s) => s.id === id)
 }
 
+export function getSimulationsBySubject(subject: Subject): Simulation[] {
+  return simulations.filter((s) => s.subject === subject)
+}
+
 export function getRelatedSimulations(sim: Simulation, limit = 4): Simulation[] {
   return simulations
     .filter((s) => s.id !== sim.id && s.subject === sim.subject)
     .slice(0, limit)
+}
+
+export function isSimulationId(id: string): boolean {
+  return simulations.some((s) => s.id === id)
 }

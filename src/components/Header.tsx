@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { Logo } from './Logo'
+import { SUBJECT_LABELS, SUBJECT_ORDER } from '../data/simulations'
 import './Header.css'
 
 function SearchIcon() {
@@ -35,11 +36,13 @@ interface HeaderProps {
 
 export function Header({ onSearch }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [simsOpen, setSimsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isWide, setIsWide] = useState(true)
   const inputRef = useRef<HTMLInputElement>(null)
   const searchWrapRef = useRef<HTMLDivElement>(null)
+  const simsRef = useRef<HTMLDivElement>(null)
   const searchInputId = useId()
   const location = useLocation()
 
@@ -62,14 +65,14 @@ export function Header({ onSearch }: HeaderProps) {
 
   useEffect(() => {
     setMenuOpen(false)
+    setSimsOpen(false)
     setSearchOpen(false)
     setSearchQuery('')
-  }, [location.pathname])
+  }, [location.pathname, location.search])
 
   useEffect(() => {
     if (!searchOpen) return
     inputRef.current?.focus()
-
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setSearchOpen(false)
@@ -90,13 +93,49 @@ export function Header({ onSearch }: HeaderProps) {
     }
   }, [searchOpen])
 
-  const closeMenu = () => setMenuOpen(false)
+  useEffect(() => {
+    if (!simsOpen || !isWide) return
+    const onPointer = (e: MouseEvent) => {
+      if (!simsRef.current?.contains(e.target as Node)) setSimsOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSimsOpen(false)
+    }
+    window.addEventListener('mousedown', onPointer)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('mousedown', onPointer)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [simsOpen, isWide])
+
+  const closeAll = () => {
+    setMenuOpen(false)
+    setSimsOpen(false)
+  }
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSearch?.(searchQuery)
     setSearchOpen(false)
   }
+
+  const simsLinks = (
+    <>
+      <NavLink to="/simulations" end onClick={closeAll}>
+        All Sims
+      </NavLink>
+      {SUBJECT_ORDER.map((subject) => (
+        <NavLink
+          key={subject}
+          to={`/simulations?subject=${subject}`}
+          onClick={closeAll}
+        >
+          {SUBJECT_LABELS[subject]}
+        </NavLink>
+      ))}
+    </>
+  )
 
   return (
     <>
@@ -106,31 +145,36 @@ export function Header({ onSearch }: HeaderProps) {
 
       <header id="site-header" className={isWide ? 'is-wide' : 'is-narrow'}>
         <div className="header-bar">
-          <Link
-            to="/"
-            className="brand-link"
-            onClick={closeMenu}
-            aria-label="SimLab home"
-          >
+          <Link to="/" className="brand-link" onClick={closeAll} aria-label="SimLab home">
             <Logo />
           </Link>
 
           <div className="header-actions">
             {isWide && !searchOpen && (
               <nav className="primary-nav" aria-label="Primary">
+                <div className="nav-dropdown" ref={simsRef}>
+                  <button
+                    type="button"
+                    className={`nav-link dropdown-trigger${simsOpen || location.pathname.startsWith('/simulations') ? ' is-active' : ''}`}
+                    aria-expanded={simsOpen}
+                    aria-haspopup="true"
+                    onClick={() => setSimsOpen((o) => !o)}
+                  >
+                    Simulations
+                    <span className="caret" aria-hidden="true" />
+                  </button>
+                  {simsOpen && <div className="dropdown-menu">{simsLinks}</div>}
+                </div>
                 <NavLink
-                  to="/simulations"
+                  to="/about"
                   className={({ isActive }) => `nav-link${isActive ? ' is-active' : ''}`}
                 >
-                  Simulations
+                  About
                 </NavLink>
               </nav>
             )}
 
-            <div
-              className={`header-search${searchOpen ? ' is-open' : ''}`}
-              ref={searchWrapRef}
-            >
+            <div className={`header-search${searchOpen ? ' is-open' : ''}`} ref={searchWrapRef}>
               {searchOpen ? (
                 <form className="inline-search-form" role="search" onSubmit={handleSearchSubmit}>
                   <label htmlFor={searchInputId} className="screen-reader-only">
@@ -171,6 +215,7 @@ export function Header({ onSearch }: HeaderProps) {
                   onClick={() => {
                     setSearchOpen(true)
                     setMenuOpen(false)
+                    setSimsOpen(false)
                   }}
                 >
                   <SearchIcon />
@@ -198,12 +243,14 @@ export function Header({ onSearch }: HeaderProps) {
 
         {!isWide && menuOpen && (
           <nav id="mobile-nav-panel" className="mobile-nav" aria-label="Primary">
+            <p className="mobile-nav-label">Simulations</p>
+            <div className="mobile-sims-links">{simsLinks}</div>
             <NavLink
-              to="/simulations"
+              to="/about"
               className={({ isActive }) => `nav-link${isActive ? ' is-active' : ''}`}
-              onClick={closeMenu}
+              onClick={closeAll}
             >
-              Simulations
+              About
             </NavLink>
           </nav>
         )}

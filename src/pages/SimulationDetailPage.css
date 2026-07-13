@@ -43,6 +43,19 @@
   margin-bottom: var(--space-lg);
 }
 
+.detail-tags .tag {
+  text-decoration: none;
+}
+
+.detail-tags .tag:hover {
+  filter: brightness(1.08);
+}
+
+.detail-tags .tag:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .simulation-viewer {
   margin: 0 0 var(--space-lg);
   position: relative;

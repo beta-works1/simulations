@@ -1,43 +1,31 @@
 # SimLab — Interactive Simulations
 
-A PhET-inspired web application for browsing science and math simulations, aligned with Punjab SNC grade bands.
+PhET-inspired multi-page site for browsing science experiment simulations.
 
-**Stack:** Vite + React + TypeScript (SPA). Deployed at [simulations-ivory.vercel.app](https://simulations-ivory.vercel.app).
+**Stack:** Vite + React + TypeScript · Repo: [beta-works1/simulations](https://github.com/beta-works1/simulations)
 
-## Features
+## Pages (PhET-style workflow)
 
-- Home page with hero carousel and featured sims
-- `/simulations` browse page — search, subject + grade filters, skeletons, empty state
-- Simulation detail pages — fullscreen viewer shell, learning goals, related sims
-- Shared header: logo + **Simulations** only (desktop & mobile)
-- Per-route meta / Open Graph via `react-helmet-async`
-- Self-hosted Roboto (`@fontsource/roboto`)
+1. **Home (`/`)** — hero carousel, Play with Sims, browse-by-subject cards, featured sims  
+2. **Simulations (`/simulations`)** — search + subject filters (Physics, Chemistry, Biology, Earth Science, Math)  
+3. **Simulation detail (`/simulations/:id`)** — viewer shell, learning goals, related sims  
+4. **About (`/about`)** — how the discovery workflow works  
 
-## Getting Started
+## Nav
+
+- **Simulations** dropdown → All Sims + each subject  
+- **About**  
+- Inline header search (never covers the logo)
+
+## Run
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+Open http://localhost:5173
 
-## Build
+## Add simulations later
 
-```bash
-npm run build
-npm run preview
-```
-
-## Project Structure
-
-```
-src/
-  components/   # Header, Footer, grids, viewer, SEO meta
-  pages/        # Home, Simulations, Simulation detail
-  data/         # Simulation catalog (Punjab SNC grades)
-```
-
-## Adding Simulations
-
-Edit `src/data/simulations.ts`. Interactive embeds will plug into `SimulationViewer` later.
+Edit `src/data/simulations.ts` and plug interactive embeds into `src/components/SimulationViewer.tsx`.

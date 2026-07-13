@@ -4,7 +4,6 @@ import { PageMeta } from '../components/PageMeta'
 import { SimulationGrid } from '../components/SimulationGrid'
 import { ViewerSkeleton } from '../components/Skeleton'
 import {
-  GRADE_LABELS,
   SUBJECT_ICONS,
   SUBJECT_LABELS,
   getRelatedSimulations,
@@ -69,19 +68,21 @@ export function SimulationDetailPage() {
           <span aria-hidden="true">/</span>
           <Link to="/simulations">Simulations</Link>
           <span aria-hidden="true">/</span>
+          <Link to={`/simulations?subject=${sim.subject}`}>
+            {SUBJECT_LABELS[sim.subject]}
+          </Link>
+          <span aria-hidden="true">/</span>
           <span aria-current="page">{sim.title}</span>
         </nav>
 
         <h1>{sim.title}</h1>
         <div className="detail-tags">
-          <span className={`tag tag-subject tag-${sim.subject}`}>
+          <Link
+            to={`/simulations?subject=${sim.subject}`}
+            className={`tag tag-subject tag-${sim.subject}`}
+          >
             {SUBJECT_LABELS[sim.subject]}
-          </span>
-          {sim.grades.map((g) => (
-            <span key={g} className="tag tag-grade">
-              {GRADE_LABELS[g]}
-            </span>
-          ))}
+          </Link>
         </div>
       </div>
 
@@ -102,15 +103,14 @@ export function SimulationDetailPage() {
       </div>
 
       <div className="simulation-actions">
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => setFullscreen(true)}
-        >
+        <button type="button" className="btn btn-primary" onClick={() => setFullscreen(true)}>
           Open fullscreen
         </button>
+        <Link to={`/simulations?subject=${sim.subject}`} className="btn btn-secondary">
+          More {SUBJECT_LABELS[sim.subject]}
+        </Link>
         <Link to="/simulations" className="btn btn-secondary">
-          Back to Simulations
+          All Simulations
         </Link>
       </div>
 
