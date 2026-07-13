@@ -1,22 +1,22 @@
-import { useEffect, useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { useEffect, useId, useRef, useState } from 'react'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { Logo } from './Logo'
 import './Header.css'
 
 function SearchIcon() {
   return (
-    <svg viewBox="-1 -1 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle className="search-shape" cx="30" cy="30" r="29" />
-      <line className="search-shape" x1="75" y1="75" x2="50" y2="50" />
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" />
+      <line x1="15" y1="15" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   )
 }
 
 function CloseIcon() {
   return (
-    <svg viewBox="-1 -1 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <line className="search-shape" x1="75" y1="75" x2="25" y2="25" />
-      <line className="search-shape" x1="75" y1="25" x2="25" y2="75" />
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   )
 }
@@ -30,6 +30,10 @@ export function Header({ onSearch }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isWide, setIsWide] = useState(true)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const searchPanelRef = useRef<HTMLDivElement>(null)
+  const searchInputId = useId()
+  const location = useLocation()
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 900px)')
@@ -45,8 +49,42 @@ export function Header({ onSearch }: HeaderProps) {
   }, [menuOpen, isWide])
 
   useEffect(() => {
+    document.body.classList.toggle('search-open', searchOpen)
+    return () => document.body.classList.remove('search-open')
+  }, [searchOpen])
+
+  useEffect(() => {
     if (isWide) setMenuOpen(false)
   }, [isWide])
+
+  // Close panels on route change
+  useEffect(() => {
+    setMenuOpen(false)
+    setSearchOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!searchOpen) return
+    inputRef.current?.focus()
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSearchOpen(false)
+    }
+    const onPointer = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (searchPanelRef.current?.contains(target)) return
+      if ((e.target as HTMLElement).closest?.('#search-toggle-button')) return
+      setSearchOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('mousedown', onPointer)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('mousedown', onPointer)
+    }
+  }, [searchOpen])
+
+  const closeMenu = () => setMenuOpen(false)
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,120 +92,103 @@ export function Header({ onSearch }: HeaderProps) {
     setSearchOpen(false)
   }
 
-  const closeMenu = () => setMenuOpen(false)
-
   return (
     <>
       <div id="skip-nav">
         <a href="#page-content">Skip to Main Content</a>
       </div>
 
-      <div id="page-header" className="ltr">
-        <div
-          id="page-header-container-wrapper"
-          className={isWide ? 'expanded' : 'collapsed'}
-        >
-          <header id="page-header-container" role="banner">
-            <div id="page-header-left">
-              <Link to="/" className="phet-logo-link" onClick={closeMenu} aria-label="SimLab home">
-                <div className="phet-logo">
-                  <Logo />
-                </div>
-              </Link>
-            </div>
+      <header id="site-header" className={isWide ? 'is-wide' : 'is-narrow'}>
+        <div className="header-bar">
+          <Link to="/" className="brand-link" onClick={closeMenu} aria-label="SimLab home">
+            <Logo />
+          </Link>
+
+          <div className="header-actions">
+            {isWide && (
+              <nav className="primary-nav" aria-label="Primary">
+                <NavLink
+                  to="/simulations"
+                  className={({ isActive }) => `nav-link${isActive ? ' is-active' : ''}`}
+                >
+                  Simulations
+                </NavLink>
+              </nav>
+            )}
+
+            <button
+              id="search-toggle-button"
+              type="button"
+              className="icon-button"
+              aria-label={searchOpen ? 'Close search' : 'Open search'}
+              aria-expanded={searchOpen}
+              aria-controls="header-search-panel"
+              onClick={() => {
+                setSearchOpen((o) => !o)
+                setMenuOpen(false)
+              }}
+            >
+              {searchOpen ? <CloseIcon /> : <SearchIcon />}
+            </button>
 
             {!isWide && (
               <button
-                id="collapsible-menu-toggle"
                 type="button"
-                className={menuOpen ? 'open' : ''}
+                className={`icon-button hamburger${menuOpen ? ' is-open' : ''}`}
                 aria-label={menuOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={menuOpen}
-                aria-controls="page-header-menus"
-                onClick={() => setMenuOpen((o) => !o)}
+                aria-controls="mobile-nav-panel"
+                onClick={() => {
+                  setMenuOpen((o) => !o)
+                  setSearchOpen(false)
+                }}
               >
-                <div id="toggle-container" aria-hidden="true">
-                  <span id="nw-rotate" className="rotate">
-                    <span id="nw-translate" className="line" />
-                  </span>
-                  <span id="ne-rotate" className="rotate">
-                    <span id="ne-translate" className="line" />
-                  </span>
-                  <span id="sw-rotate" className="rotate">
-                    <span id="sw-translate" className="line" />
-                  </span>
-                  <span id="se-rotate" className="rotate">
-                    <span id="se-translate" className="line" />
-                  </span>
-                  <span id="east-center-line" className="line center-line" />
-                  <span id="west-center-line" className="line center-line" />
-                </div>
+                <span className="hamburger-lines" aria-hidden="true" />
               </button>
             )}
-
-            <div
-              id="page-header-menus"
-              className={`ltr ${!isWide && menuOpen ? 'open' : ''}`}
-            >
-              <div id="collapsible-menu">
-                <nav id="page-nav-menu" aria-label="Primary">
-                  <ul>
-                    <li className="nav-menu-item">
-                      <NavLink
-                        to="/simulations"
-                        className={({ isActive }) =>
-                          `nav-menu-parent${isActive ? ' is-active' : ''}`
-                        }
-                        onClick={closeMenu}
-                      >
-                        <span className="nav-menu-parent-text">Simulations</span>
-                      </NavLink>
-                    </li>
-                  </ul>
-                </nav>
-
-                <div id="search" role="search">
-                  <div className="search-toggle-container">
-                    <button
-                      id="search-toggle-button"
-                      type="button"
-                      aria-label={searchOpen ? 'Close search' : 'Open search'}
-                      aria-expanded={searchOpen}
-                      onClick={() => setSearchOpen((o) => !o)}
-                    >
-                      {searchOpen ? <CloseIcon /> : <SearchIcon />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </header>
+          </div>
         </div>
+
+        {!isWide && menuOpen && (
+          <nav id="mobile-nav-panel" className="mobile-nav" aria-label="Primary">
+            <NavLink
+              to="/simulations"
+              className={({ isActive }) => `nav-link${isActive ? ' is-active' : ''}`}
+              onClick={closeMenu}
+            >
+              Simulations
+            </NavLink>
+          </nav>
+        )}
 
         {searchOpen && (
           <div
-            id="search-container-desktop"
-            className={isWide ? 'wide-search' : 'mobile-search'}
+            id="header-search-panel"
+            className="search-panel"
+            ref={searchPanelRef}
+            role="search"
           >
-            <form onSubmit={handleSearchSubmit} id="page-nav-search">
-              <label htmlFor="search-input" className="screen-reader-only">
+            <form className="search-form" onSubmit={handleSearchSubmit}>
+              <label htmlFor={searchInputId} className="screen-reader-only">
                 Search simulations
               </label>
               <input
-                id="search-input"
+                ref={inputRef}
+                id={searchInputId}
                 type="search"
-                placeholder="Search simulations…"
+                placeholder="Search science experiment simulations…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                autoFocus
+                autoComplete="off"
+                enterKeyHint="search"
               />
-              <button type="submit" id="search-submit" aria-label="Submit search">
+              <button type="submit" className="search-submit" aria-label="Search">
                 <SearchIcon />
               </button>
             </form>
           </div>
         )}
-      </div>
+      </header>
     </>
   )
 }

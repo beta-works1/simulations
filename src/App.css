@@ -1,18 +1,27 @@
 #page-content {
-  padding-top: 100px;
-  min-height: calc(100vh - 100px);
+  padding-top: 64px;
+  min-height: calc(100vh - 64px);
 }
 
 @media (min-width: 900px) {
   #page-content {
-    padding-top: 133px;
+    padding-top: 72px;
+    min-height: calc(100vh - 72px);
   }
 }
 
-@media (max-width: 899px) {
-  #page-content {
-    padding-top: 63px;
+body.search-open #page-content {
+  padding-top: 140px;
+}
+
+@media (min-width: 900px) {
+  body.search-open #page-content {
+    padding-top: 148px;
   }
+}
+
+body.menu-open #page-content {
+  /* mobile menu overlays; keep content padded by header only */
 }
 
 .route-fallback {

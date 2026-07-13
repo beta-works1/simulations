@@ -1,50 +1,36 @@
 import { Link } from 'react-router-dom'
-import { HeroCarousel } from '../components/HeroCarousel'
 import { PageMeta } from '../components/PageMeta'
 import { SimulationGrid } from '../components/SimulationGrid'
 import { simulations } from '../data/simulations'
 import './HomePage.css'
 
 export function HomePage() {
-  const featured = simulations.slice(0, 8)
-
   return (
     <div className="home-page">
       <PageMeta
-        title="SimLab: Free online physics, chemistry, biology, earth science and math simulations"
-        description="Free interactive science and math simulations for students. Explore STEM topics aligned with Punjab SNC through game-like discovery."
+        title="SimLab: Science experiment simulations"
+        description="Free interactive science experiment simulations for students. Browse physics, chemistry, biology, earth science, and math."
         path="/"
       />
 
-      <HeroCarousel />
+      <section className="home-hero page-content">
+        <h1>SimLab</h1>
+        <p>
+          Free interactive science experiment simulations for students — explore, experiment, and
+          discover.
+        </p>
+        <Link to="/simulations" className="btn btn-primary btn-lg">
+          Browse Simulations
+        </Link>
+      </section>
 
-      <div id="main-content" className="page-content">
-        <section className="intro-section">
-          <div className="intro-buttons">
-            <Link to="/simulations" className="btn btn-primary btn-lg play-with-sims-button">
-              Play with Sims
-            </Link>
-          </div>
+      <SimulationGrid items={simulations} title="Science Experiment Simulations" />
 
-          <div id="what-is-simlab">
-            <h2>What is SimLab?</h2>
-            <p>
-              SimLab Interactive Simulations creates free interactive math and science
-              simulations for students. Sims are designed for exploration and discovery — an
-              intuitive, game-like environment that supports Punjab SNC learning goals across
-              physics, chemistry, biology, earth science, and math.
-            </p>
-          </div>
-        </section>
-
-        <SimulationGrid items={featured} title="Featured Simulations" />
-
-        <section className="cta-section">
-          <Link to="/simulations" className="btn btn-primary btn-lg">
-            View All Simulations
-          </Link>
-        </section>
-      </div>
+      <section className="cta-section">
+        <Link to="/simulations" className="btn btn-secondary btn-lg">
+          Open full catalog with search &amp; filters
+        </Link>
+      </section>
     </div>
   )
 }

@@ -1,45 +1,26 @@
-.intro-section {
-  max-width: 800px;
+.home-hero {
+  max-width: 720px;
   margin: 0 auto;
   padding: var(--space-2xl) var(--space-md) var(--space-lg);
   text-align: center;
 }
 
-.intro-buttons {
-  margin-bottom: var(--space-2xl);
-}
-
-.play-with-sims-button::before {
-  content: '';
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236acef5'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E");
-  background-size: 28px 28px;
-  width: 28px;
-  height: 28px;
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 10px;
-  flex-shrink: 0;
-}
-
-#what-is-simlab {
-  text-align: left;
-}
-
-#what-is-simlab h2 {
-  font-size: var(--text-lg);
-  font-weight: 400;
-  color: var(--color-text);
+.home-hero h1 {
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 500;
+  color: var(--color-brand);
   margin: 0 0 var(--space-md);
 }
 
-#what-is-simlab p {
+.home-hero p {
   font-size: var(--text-md);
-  line-height: 1.7;
+  line-height: 1.65;
   color: var(--color-muted);
-  margin: 0;
+  margin: 0 auto var(--space-xl);
+  max-width: 34rem;
 }
 
 .cta-section {
   text-align: center;
-  padding: var(--space-lg) var(--space-md) var(--space-2xl);
+  padding: var(--space-md) var(--space-md) var(--space-2xl);
 }
