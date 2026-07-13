@@ -395,6 +395,285 @@ export const simulations: Simulation[] = [
     color: '#7e5109',
     accent: '#f1c40f',
   },
+
+  // Grade 8 — Ch 9 Light: Reflection & Refraction
+  {
+    id: 'laws-of-reflection',
+    title: 'Laws of Reflection',
+    grade: 8,
+    chapter: 'Ch 9 – Light: Reflection & Refraction',
+    description:
+      'Explore how light reflects from a plane mirror and verify that the angle of incidence equals the angle of reflection.',
+    learningGoals: [
+      'Identify incident ray, reflected ray, and normal',
+      'Verify ∠i = ∠r for a plane mirror',
+      'Predict reflected ray direction from incidence angle',
+    ],
+    keywords: ['light', 'reflection', 'mirror', 'optics'],
+    color: '#1a5276',
+    accent: '#f4d03f',
+  },
+  {
+    id: 'regular-vs-diffuse',
+    title: 'Regular vs Diffuse Reflection',
+    grade: 8,
+    chapter: 'Ch 9 – Light: Reflection & Refraction',
+    description:
+      'Compare smooth and rough surfaces to see how regular reflection forms clear images and diffuse reflection scatters light.',
+    learningGoals: [
+      'Distinguish regular and diffuse reflection',
+      'Relate surface texture to image clarity',
+      'Explain why most everyday surfaces do not form sharp images',
+    ],
+    keywords: ['light', 'diffuse', 'regular', 'surface'],
+    color: '#154360',
+    accent: '#85c1e9',
+  },
+  {
+    id: 'plane-mirror-periscope',
+    title: 'Plane Mirror & Periscope',
+    grade: 8,
+    chapter: 'Ch 9 – Light: Reflection & Refraction',
+    description:
+      'Form a virtual image in a plane mirror, then trace rays through a two-mirror periscope.',
+    learningGoals: [
+      'Locate the virtual image behind a plane mirror',
+      'Describe image properties (erect, same size)',
+      'Explain how a periscope uses two reflections',
+    ],
+    keywords: ['mirror', 'periscope', 'image', 'optics'],
+    color: '#1b4f72',
+    accent: '#48c9b0',
+  },
+  {
+    id: 'refraction-media',
+    title: 'Refraction Through Media',
+    grade: 8,
+    chapter: 'Ch 9 – Light: Reflection & Refraction',
+    description:
+      'Bend a light ray as it travels from air into water or glass and apply Snell’s law live.',
+    learningGoals: [
+      'Describe refraction toward/away from the normal',
+      'Relate refractive index to bending',
+      'Predict ray direction when entering denser media',
+    ],
+    keywords: ['refraction', 'Snell', 'optics', 'glass', 'water'],
+    color: '#0e6655',
+    accent: '#5dade2',
+  },
+  {
+    id: 'rainbow-dispersion',
+    title: 'Rainbow Formation',
+    grade: 8,
+    chapter: 'Ch 9 – Light: Reflection & Refraction',
+    description:
+      'Watch white light disperse into a spectrum inside a raindrop to understand rainbow colors.',
+    learningGoals: [
+      'Explain dispersion of white light',
+      'Relate droplet refraction and reflection to rainbows',
+      'Order spectrum colors from the model',
+    ],
+    keywords: ['rainbow', 'dispersion', 'spectrum', 'optics'],
+    color: '#6c3483',
+    accent: '#f5b041',
+  },
+  {
+    id: 'curved-mirrors',
+    title: 'Concave & Convex Mirrors',
+    grade: 8,
+    chapter: 'Ch 9 – Light: Reflection & Refraction',
+    description:
+      'Move an object in front of concave and convex mirrors to see how image type and position change.',
+    learningGoals: [
+      'Identify focus and center of curvature',
+      'Predict real vs virtual images from object distance',
+      'Compare concave and convex mirror behavior',
+    ],
+    keywords: ['concave', 'convex', 'mirror', 'optics'],
+    color: '#1a5276',
+    accent: '#e74c3c',
+  },
+
+  // Grade 8 — Ch 10 Electricity & Magnetism
+  {
+    id: 'ohm-law-circuit',
+    title: "Ohm's Law Circuit",
+    grade: 8,
+    chapter: 'Ch 10 – Electricity & Magnetism',
+    description:
+      'Build a simple circuit and relate voltage, current, and resistance with a glowing bulb.',
+    learningGoals: [
+      'Apply I = V / R',
+      'Explain open vs closed circuits',
+      'Relate current to bulb brightness',
+    ],
+    keywords: ['electricity', 'Ohm', 'current', 'voltage'],
+    color: '#922b21',
+    accent: '#f4d03f',
+  },
+  {
+    id: 'series-parallel',
+    title: 'Series vs Parallel Circuits',
+    grade: 8,
+    chapter: 'Ch 10 – Electricity & Magnetism',
+    description:
+      'Compare two-bulb series and parallel circuits to see how current and brightness change.',
+    learningGoals: [
+      'Contrast series and parallel paths',
+      'Predict brightness differences',
+      'Explain shared vs divided current',
+    ],
+    keywords: ['series', 'parallel', 'circuits', 'electricity'],
+    color: '#7b241c',
+    accent: '#f39c12',
+  },
+  {
+    id: 'short-circuit-fuse',
+    title: 'Short Circuit & Fuse',
+    grade: 8,
+    chapter: 'Ch 10 – Electricity & Magnetism',
+    description:
+      'Create a short circuit, watch current spike, and see how a fuse protects the circuit.',
+    learningGoals: [
+      'Describe what a short circuit is',
+      'Explain the role of a fuse',
+      'Relate overload to fuse blowing',
+    ],
+    keywords: ['fuse', 'short circuit', 'safety', 'electricity'],
+    color: '#641e16',
+    accent: '#ec7063',
+  },
+  {
+    id: 'electric-motor',
+    title: 'Electric Motor',
+    grade: 8,
+    chapter: 'Ch 10 – Electricity & Magnetism',
+    description:
+      'See how current in a magnetic field produces continuous rotation in a simple motor.',
+    learningGoals: [
+      'Relate current and magnetic field to force',
+      'Explain conversion of electrical to mechanical energy',
+      'Describe the role of the coil and magnets',
+    ],
+    keywords: ['motor', 'magnetism', 'electromagnetism'],
+    color: '#1a5276',
+    accent: '#e67e22',
+  },
+  {
+    id: 'speaker-mechanism',
+    title: 'Speaker Mechanism',
+    grade: 8,
+    chapter: 'Ch 10 – Electricity & Magnetism',
+    description:
+      'Drive an electromagnet with alternating current and watch the diaphragm launch sound waves.',
+    learningGoals: [
+      'Connect AC current to diaphragm motion',
+      'Relate frequency to sound pitch',
+      'Model electromagnet + coil speaker action',
+    ],
+    keywords: ['speaker', 'sound', 'electromagnet'],
+    color: '#4a235a',
+    accent: '#5dade2',
+  },
+
+  // Grade 8 — Ch 11 Technology in Everyday Life
+  {
+    id: 'solar-cooker',
+    title: 'Solar Cooker',
+    grade: 8,
+    chapter: 'Ch 11 – Technology in Everyday Life',
+    description:
+      'Align a parabolic reflector so sunlight concentrates on a pot and temperature rises.',
+    learningGoals: [
+      'Explain concentration of solar energy by reflection',
+      'Relate alignment to heating rate',
+      'Connect renewable heat to everyday technology',
+    ],
+    keywords: ['solar', 'reflection', 'energy', 'technology'],
+    color: '#b9770e',
+    accent: '#f9e79f',
+  },
+  {
+    id: 'wind-turbine',
+    title: 'Wind Turbine',
+    grade: 8,
+    chapter: 'Ch 11 – Technology in Everyday Life',
+    description:
+      'Change wind speed to spin turbine blades and convert wind energy into electrical power.',
+    learningGoals: [
+      'Trace wind → mechanical → electrical conversion',
+      'Relate wind speed to power output',
+      'Describe renewable electricity generation',
+    ],
+    keywords: ['wind', 'turbine', 'energy', 'technology'],
+    color: '#1e8449',
+    accent: '#85c1e9',
+  },
+
+  // Grade 8 — Ch 12 Our Universe
+  {
+    id: 'star-life-cycle',
+    title: 'Star Life Cycle',
+    grade: 8,
+    chapter: 'Ch 12 – Our Universe',
+    description:
+      'Follow a star from nebula to remnant and compare low-mass and high-mass death paths.',
+    learningGoals: [
+      'Sequence major stages of stellar evolution',
+      'Compare low-mass and high-mass outcomes',
+      'Identify white dwarf, neutron star, and black hole endpoints',
+    ],
+    keywords: ['star', 'nebula', 'supernova', 'universe'],
+    color: '#1a252f',
+    accent: '#f5b041',
+  },
+  {
+    id: 'galaxy-types',
+    title: 'Galaxy Types',
+    grade: 8,
+    chapter: 'Ch 12 – Our Universe',
+    description: 'Compare spiral, elliptical, and irregular galaxies and their main features.',
+    learningGoals: [
+      'Classify galaxies by shape',
+      'Describe spiral arm structure',
+      'Contrast stellar distributions across types',
+    ],
+    keywords: ['galaxy', 'spiral', 'elliptical', 'universe'],
+    color: '#0b5345',
+    accent: '#a569bd',
+  },
+  {
+    id: 'black-hole',
+    title: 'Black Hole & Light Bending',
+    grade: 8,
+    chapter: 'Ch 12 – Our Universe',
+    description:
+      'Watch stellar collapse form a black hole and see how nearby light paths bend.',
+    learningGoals: [
+      'Describe black hole formation from massive stars',
+      'Explain the idea of an event horizon',
+      'Visualize gravitational bending of light',
+    ],
+    keywords: ['black hole', 'gravity', 'light', 'universe'],
+    color: '#0d0d0d',
+    accent: '#5dade2',
+  },
+  {
+    id: 'solar-system-timeline',
+    title: 'Solar System Timeline',
+    grade: 8,
+    chapter: 'Ch 12 – Our Universe',
+    description:
+      'Scrub a space exploration timeline from solar system formation to modern observatories.',
+    learningGoals: [
+      'Place major solar system eras in order',
+      'Connect exploration milestones to discovery',
+      'Appreciate scale of cosmic time',
+    ],
+    keywords: ['solar system', 'timeline', 'space', 'exploration'],
+    color: '#1a252f',
+    accent: '#58d68d',
+  },
 ]
 
 export function getSimulationById(id: string): Simulation | undefined {
@@ -406,7 +685,13 @@ export function getSimulationsByGrade(grade: Grade): Simulation[] {
 }
 
 export function getRelatedSimulations(sim: Simulation, limit = 4): Simulation[] {
-  return simulations.filter((s) => s.id !== sim.id && s.grade === sim.grade).slice(0, limit)
+  const sameChapter = sim.chapter
+    ? simulations.filter((s) => s.id !== sim.id && s.chapter === sim.chapter)
+    : []
+  const sameGrade = simulations.filter(
+    (s) => s.id !== sim.id && s.grade === sim.grade && s.chapter !== sim.chapter,
+  )
+  return [...sameChapter, ...sameGrade].slice(0, limit)
 }
 
 export function isGrade(value: string | number): value is Grade {

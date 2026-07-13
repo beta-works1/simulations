@@ -37,6 +37,52 @@ const loaders: Record<string, () => Promise<{ default: SimComponent }>> = {
     import('./grade8/biotech/PlasmidInsertionSim').then((m) => ({ default: m.PlasmidInsertionSim })),
   fermentation: () =>
     import('./grade8/biotech/FermentationSim').then((m) => ({ default: m.FermentationSim })),
+
+  // Grade 8 — Ch 9 Light (React + Canvas 2D under src/simulations)
+  'laws-of-reflection': () =>
+    import('../simulations/laws-of-reflection').then((m) => ({ default: m.LawsOfReflectionSim })),
+  'regular-vs-diffuse': () =>
+    import('../simulations/regular-vs-diffuse').then((m) => ({ default: m.RegularVsDiffuseSim })),
+  'plane-mirror-periscope': () =>
+    import('../simulations/plane-mirror-periscope').then((m) => ({
+      default: m.PlaneMirrorPeriscopeSim,
+    })),
+  'refraction-media': () =>
+    import('../simulations/refraction-media').then((m) => ({ default: m.RefractionMediaSim })),
+  'rainbow-dispersion': () =>
+    import('../simulations/rainbow-dispersion').then((m) => ({ default: m.RainbowDispersionSim })),
+  'curved-mirrors': () =>
+    import('../simulations/curved-mirrors').then((m) => ({ default: m.CurvedMirrorsSim })),
+
+  // Grade 8 — Ch 10 Electricity & Magnetism
+  'ohm-law-circuit': () =>
+    import('../simulations/ohm-law-circuit').then((m) => ({ default: m.OhmLawCircuitSim })),
+  'series-parallel': () =>
+    import('../simulations/series-parallel').then((m) => ({ default: m.SeriesParallelSim })),
+  'short-circuit-fuse': () =>
+    import('../simulations/short-circuit-fuse').then((m) => ({ default: m.ShortCircuitFuseSim })),
+  'electric-motor': () =>
+    import('../simulations/electric-motor').then((m) => ({ default: m.ElectricMotorSim })),
+  'speaker-mechanism': () =>
+    import('../simulations/speaker-mechanism').then((m) => ({ default: m.SpeakerMechanismSim })),
+
+  // Grade 8 — Ch 11 Technology
+  'solar-cooker': () =>
+    import('../simulations/solar-cooker').then((m) => ({ default: m.SolarCookerSim })),
+  'wind-turbine': () =>
+    import('../simulations/wind-turbine').then((m) => ({ default: m.WindTurbineSim })),
+
+  // Grade 8 — Ch 12 Universe
+  'star-life-cycle': () =>
+    import('../simulations/star-life-cycle').then((m) => ({ default: m.StarLifeCycleSim })),
+  'galaxy-types': () =>
+    import('../simulations/galaxy-types').then((m) => ({ default: m.GalaxyTypesSim })),
+  'black-hole': () =>
+    import('../simulations/black-hole').then((m) => ({ default: m.BlackHoleSim })),
+  'solar-system-timeline': () =>
+    import('../simulations/solar-system-timeline').then((m) => ({
+      default: m.SolarSystemTimelineSim,
+    })),
 }
 
 const cache = new Map<string, SimComponent>()

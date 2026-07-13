@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense } from 'react'
 import type { Simulation } from '../data/simulations'
 import { gradeLabel } from '../data/simulations'
 import { getLazySim, hasInteractiveSim } from '../sims/registry'
@@ -9,43 +9,7 @@ interface SimulationViewerProps {
   sim: Simulation
 }
 
-export function SimulationViewer({ sim }: SimulationViewerProps) {
-  const Interactive = hasInteractiveSim(sim.id) ? getLazySim(sim.id) : null
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => {
-    if (Interactive) {
-      setReady(true)
-      return
-    }
-    setReady(false)
-    let raf = 0
-    const start = performance.now()
-    const tick = (now: number) => {
-      if (now - start >= 350) {
-        setReady(true)
-        return
-      }
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [sim.id, Interactive])
-
-  if (!ready) {
-    return <ViewerSkeleton />
-  }
-
-  if (Interactive) {
-    return (
-      <div className="simulation-viewer-stage simulation-viewer-live">
-        <Suspense fallback={<ViewerSkeleton />}>
-          <Interactive />
-        </Suspense>
-      </div>
-    )
-  }
-
+function Placeholder({ sim }: { sim: Simulation }) {
   return (
     <div
       className="simulation-viewer-stage"
@@ -65,6 +29,22 @@ export function SimulationViewer({ sim }: SimulationViewerProps) {
           soon.
         </p>
       </div>
+    </div>
+  )
+}
+
+export function SimulationViewer({ sim }: SimulationViewerProps) {
+  const Interactive = hasInteractiveSim(sim.id) ? getLazySim(sim.id) : null
+
+  if (!Interactive) {
+    return <Placeholder sim={sim} />
+  }
+
+  return (
+    <div className="simulation-viewer-stage simulation-viewer-live">
+      <Suspense fallback={<ViewerSkeleton />}>
+        <Interactive />
+      </Suspense>
     </div>
   )
 }
