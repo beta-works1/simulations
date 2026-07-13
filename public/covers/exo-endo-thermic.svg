@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="340" viewBox="0 0 520 340">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#922b21"/>
+      <stop offset="100%" stop-color="#3498db"/>
+    </linearGradient>
+  </defs>
+  <rect width="520" height="340" rx="16" fill="url(#bg)"/>
+  <rect x="16" y="14" width="488" height="250" rx="12" fill="rgba(0,0,0,0.28)"/>
+  <svg x="60" y="40" width="400" height="200" viewBox="0 0 200 120">
+    
+      <path d="M70 25 h30 v12 l14 55 a28 28 0 0 1 -58 0 l14 -55 z" fill="#e67e22" opacity="0.9"/>
+      <rect x="145" y="30" width="14" height="70" rx="4" fill="#fff" opacity="0.3"/>
+      <rect x="148" y="55" width="8" height="40" fill="#e74c3c"/>
+      <circle cx="152" cy="95" r="10" fill="#e74c3c"/>
+      <path d="M50 50 L30 40" stroke="#f1c40f" stroke-width="3"/><text x="22" y="38" fill="#f1c40f" font-size="14">↘</text>
+  </svg>
+  <text x="260" y="305" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" fill="#ffffff">Exo vs Endothermic</text>
+</svg>

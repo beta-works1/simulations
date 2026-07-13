@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="340" viewBox="0 0 520 340">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7d3c98"/>
+      <stop offset="100%" stop-color="#58d68d"/>
+    </linearGradient>
+  </defs>
+  <rect width="520" height="340" rx="16" fill="url(#bg)"/>
+  <rect x="16" y="14" width="488" height="250" rx="12" fill="rgba(0,0,0,0.28)"/>
+  <svg x="60" y="40" width="400" height="200" viewBox="0 0 200 120">
+    
+      <ellipse cx="70" cy="45" rx="22" ry="14" fill="#9b59b6"/>
+      <ellipse cx="58" cy="55" rx="10" ry="8" fill="#8e44ad"/>
+      <path d="M120 25 h28 v12 l12 50 a22 22 0 0 1 -52 0 l12 -50 z" fill="#e91e63" opacity="0.85"/>
+      <text x="70" y="95" text-anchor="middle" fill="#fff" font-size="10" font-family="Arial">cabbage</text>
+      <text x="134" y="105" text-anchor="middle" fill="#fff" font-size="10" font-family="Arial">acid → pink</text>
+  </svg>
+  <text x="260" y="305" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" fill="#ffffff">Natural Indicators</text>
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="340" viewBox="0 0 520 340">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e8449"/>
+      <stop offset="100%" stop-color="#e74c3c"/>
+    </linearGradient>
+  </defs>
+  <rect width="520" height="340" rx="16" fill="url(#bg)"/>
+  <rect x="16" y="14" width="488" height="250" rx="12" fill="rgba(0,0,0,0.28)"/>
+  <svg x="60" y="40" width="400" height="200" viewBox="0 0 200 120">
+    
+      <path d="M35 30 h28 v10 l12 45 a20 20 0 0 1 -52 0 l12 -45 z" fill="#e74c3c" opacity="0.75"/>
+      <path d="M137 30 h28 v10 l12 45 a20 20 0 0 1 -52 0 l12 -45 z" fill="#3498db" opacity="0.75"/>
+      <path d="M85 55 h30 v12 l10 35 a18 18 0 0 1 -50 0 l10 -35 z" fill="#58d68d" opacity="0.9"/>
+      <text x="100" y="45" text-anchor="middle" fill="#f1c40f" font-size="14" font-family="Arial">+</text>
+  </svg>
+  <text x="260" y="305" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" fill="#ffffff">Acid–Base Neutralization</text>
+</svg>

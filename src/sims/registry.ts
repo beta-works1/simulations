@@ -38,6 +38,44 @@ const loaders: Record<string, () => Promise<{ default: SimComponent }>> = {
   fermentation: () =>
     import('./grade8/biotech/FermentationSim').then((m) => ({ default: m.FermentationSim })),
 
+  // Grade 8 — Ch 5 Periodic Table
+  'periodic-table-builder': () =>
+    import('./grade8/periodic/PeriodicTableSim').then((m) => ({ default: m.PeriodicTableSim })),
+  'metal-nonmetal': () =>
+    import('./grade8/periodic/MetalNonmetalSim').then((m) => ({ default: m.MetalNonmetalSim })),
+
+  // Grade 8 — Ch 6 Chemical Reactions
+  'balance-equations': () =>
+    import('./grade8/reactions/BalanceEquationsSim').then((m) => ({ default: m.BalanceEquationsSim })),
+  'exo-endo-thermic': () =>
+    import('./grade8/reactions/ExoEndoThermicSim').then((m) => ({ default: m.ExoEndoThermicSim })),
+  'ionic-covalent-bonds': () =>
+    import('./grade8/reactions/IonicCovalentSim').then((m) => ({ default: m.IonicCovalentSim })),
+  'conservation-of-mass': () =>
+    import('./grade8/reactions/ConservationOfMassSim').then((m) => ({
+      default: m.ConservationOfMassSim,
+    })),
+
+  // Grade 8 — Ch 7 Acids, Bases, Salts
+  'acids-ph-scale': () =>
+    import('./grade8/acids/PhScaleSim').then((m) => ({ default: m.PhScaleSim })),
+  'acid-base-neutralization': () =>
+    import('./grade8/acids/NeutralizationSim').then((m) => ({ default: m.NeutralizationSim })),
+  'natural-indicator': () =>
+    import('./grade8/acids/NaturalIndicatorSim').then((m) => ({ default: m.NaturalIndicatorSim })),
+
+  // Grade 8 — Ch 8 Force and Pressure
+  'balanced-unbalanced-forces': () =>
+    import('./grade8/forces/BalancedForcesSim').then((m) => ({ default: m.BalancedForcesSim })),
+  'floating-sinking': () =>
+    import('./grade8/forces/FloatingSinkingSim').then((m) => ({ default: m.FloatingSinkingSim })),
+  'pressure-force-area': () =>
+    import('./grade8/forces/PressureForceAreaSim').then((m) => ({ default: m.PressureForceAreaSim })),
+  'hydraulic-lift': () =>
+    import('./grade8/forces/HydraulicLiftSim').then((m) => ({ default: m.HydraulicLiftSim })),
+  'water-pressure-depth': () =>
+    import('./grade8/forces/WaterPressureSim').then((m) => ({ default: m.WaterPressureSim })),
+
   // Grade 8 — Ch 9 Light (React + Canvas 2D under src/simulations)
   'laws-of-reflection': () =>
     import('../simulations/laws-of-reflection').then((m) => ({ default: m.LawsOfReflectionSim })),

@@ -426,6 +426,252 @@ export const simulations: Simulation[] = [
     image: '/covers/fermentation.svg',
   },
 
+  // Grade 8 — Ch 5 Periodic Table
+  {
+    id: 'periodic-table-builder',
+    title: 'First 18 Elements',
+    grade: 8,
+    chapter: 'Ch 5 – Periodic Table',
+    description:
+      'Explore the first 18 elements on an interactive periodic table with Bohr models and electron configurations.',
+    learningGoals: [
+      'Locate elements in periods and groups',
+      'Read electron configurations for simple atoms',
+      'Relate atomic number to identity',
+    ],
+    keywords: ['periodic table', 'elements', 'electron configuration', 'atom'],
+    color: '#1a5276',
+    accent: '#58d68d',
+    image: '/covers/periodic-table-builder.svg',
+  },
+  {
+    id: 'metal-nonmetal',
+    title: 'Metals vs Non-metals',
+    grade: 8,
+    chapter: 'Ch 5 – Periodic Table',
+    description:
+      'Compare conductivity and reactivity of metals and non-metals with animated electron flow and reaction demos.',
+    learningGoals: [
+      'Contrast metal and non-metal properties',
+      'Relate conductivity to free electrons',
+      'Describe reactivity trends qualitatively',
+    ],
+    keywords: ['metals', 'non-metals', 'conductivity', 'reactivity'],
+    color: '#7b241c',
+    accent: '#5dade2',
+    image: '/covers/metal-nonmetal.svg',
+  },
+
+  // Grade 8 — Ch 6 Chemical Reactions
+  {
+    id: 'balance-equations',
+    title: 'Balancing Equations',
+    grade: 8,
+    chapter: 'Ch 6 – Chemical Reactions',
+    description:
+      'Adjust coefficients until atoms match on both sides and see molecules rearrange while mass is conserved.',
+    learningGoals: [
+      'Balance simple chemical equations',
+      'Count atoms on each side of a reaction',
+      'Connect balancing to conservation of atoms',
+    ],
+    keywords: ['equations', 'balancing', 'stoichiometry', 'atoms'],
+    color: '#0e6655',
+    accent: '#f39c12',
+    image: '/covers/balance-equations.svg',
+  },
+  {
+    id: 'exo-endo-thermic',
+    title: 'Exo vs Endothermic',
+    grade: 8,
+    chapter: 'Ch 6 – Chemical Reactions',
+    description:
+      'Watch a thermometer rise or fall as energy is released or absorbed during a reaction.',
+    learningGoals: [
+      'Distinguish exothermic and endothermic changes',
+      'Relate temperature change to energy flow',
+      'Interpret energy arrows into or out of a system',
+    ],
+    keywords: ['exothermic', 'endothermic', 'energy', 'thermometer'],
+    color: '#922b21',
+    accent: '#3498db',
+    image: '/covers/exo-endo-thermic.svg',
+  },
+  {
+    id: 'ionic-covalent-bonds',
+    title: 'Ionic vs Covalent Bonds',
+    grade: 8,
+    chapter: 'Ch 6 – Chemical Reactions',
+    description:
+      'Animate electron transfer for ionic bonds and shared pairs for covalent bonds.',
+    learningGoals: [
+      'Describe electron transfer in ionic bonding',
+      'Describe electron sharing in covalent bonding',
+      'Contrast ionic and covalent models',
+    ],
+    keywords: ['ionic', 'covalent', 'bonds', 'electrons'],
+    color: '#5b2c6f',
+    accent: '#f4d03f',
+    image: '/covers/ionic-covalent-bonds.svg',
+  },
+  {
+    id: 'conservation-of-mass',
+    title: 'Conservation of Mass',
+    grade: 8,
+    chapter: 'Ch 6 – Chemical Reactions',
+    description:
+      'Compare sealed and open systems to see why mass stays constant when nothing escapes.',
+    learningGoals: [
+      'State the law of conservation of mass',
+      'Explain why sealed containers matter',
+      'Relate reactants and products to total mass',
+    ],
+    keywords: ['conservation', 'mass', 'closed system', 'reaction'],
+    color: '#1a252f',
+    accent: '#58d68d',
+    image: '/covers/conservation-of-mass.svg',
+  },
+
+  // Grade 8 — Ch 7 Acids, Bases, Salts
+  {
+    id: 'acids-ph-scale',
+    title: 'Interactive pH Scale',
+    grade: 8,
+    chapter: 'Ch 7 – Acids, Bases, Salts',
+    description:
+      'Drag everyday substances onto a 0–14 pH scale and watch indicator colors change.',
+    learningGoals: [
+      'Classify substances as acid, base, or neutral',
+      'Relate pH numbers to strength',
+      'Predict indicator color from pH',
+    ],
+    keywords: ['pH', 'acids', 'bases', 'indicator'],
+    color: '#6c3483',
+    accent: '#e67e22',
+    image: '/covers/acids-ph-scale.svg',
+  },
+  {
+    id: 'acid-base-neutralization',
+    title: 'Acid–Base Neutralization',
+    grade: 8,
+    chapter: 'Ch 7 – Acids, Bases, Salts',
+    description:
+      'Mix acid and base volumes and see the mixture approach salt, water, and pH 7.',
+    learningGoals: [
+      'Describe neutralization products',
+      'Relate volumes to leftover acid or base',
+      'Track pH toward neutral',
+    ],
+    keywords: ['neutralization', 'acid', 'base', 'salt'],
+    color: '#1e8449',
+    accent: '#e74c3c',
+    image: '/covers/acid-base-neutralization.svg',
+  },
+  {
+    id: 'natural-indicator',
+    title: 'Natural Indicators',
+    grade: 8,
+    chapter: 'Ch 7 – Acids, Bases, Salts',
+    description:
+      'Test cabbage juice and turmeric indicators as acid or base drips change beaker color.',
+    learningGoals: [
+      'Explain how natural indicators work',
+      'Link color change to acidic or basic media',
+      'Compare cabbage and turmeric responses',
+    ],
+    keywords: ['indicator', 'cabbage', 'turmeric', 'color change'],
+    color: '#7d3c98',
+    accent: '#58d68d',
+    image: '/covers/natural-indicator.svg',
+  },
+
+  // Grade 8 — Ch 8 Force and Pressure
+  {
+    id: 'balanced-unbalanced-forces',
+    title: 'Balanced vs Unbalanced Forces',
+    grade: 8,
+    chapter: 'Ch 8 – Force and Pressure',
+    description:
+      'Change left and right forces on an object and see when it stays still or accelerates.',
+    learningGoals: [
+      'Identify balanced and unbalanced forces',
+      'Relate net force to acceleration',
+      'Predict motion from opposing forces',
+    ],
+    keywords: ['force', 'balanced', 'unbalanced', 'motion'],
+    color: '#1a5276',
+    accent: '#e74c3c',
+    image: '/covers/balanced-unbalanced-forces.svg',
+  },
+  {
+    id: 'floating-sinking',
+    title: 'Floating and Sinking',
+    grade: 8,
+    chapter: 'Ch 8 – Force and Pressure',
+    description:
+      'Adjust object and fluid density to see objects float, sink, or suspend in a tank.',
+    learningGoals: [
+      'Relate density to floating and sinking',
+      'Compare object density to fluid density',
+      'Predict equilibrium depth qualitatively',
+    ],
+    keywords: ['density', 'buoyancy', 'float', 'sink'],
+    color: '#1a5276',
+    accent: '#5dade2',
+    image: '/covers/floating-sinking.svg',
+  },
+  {
+    id: 'pressure-force-area',
+    title: 'Pressure = Force / Area',
+    grade: 8,
+    chapter: 'Ch 8 – Force and Pressure',
+    description:
+      'Vary force and contact area to see how pressure concentrates under a nail tip or spreads under a shoe.',
+    learningGoals: [
+      'Compute pressure from force and area',
+      'Explain why sharp tips pierce more easily',
+      'Connect everyday tools to P = F/A',
+    ],
+    keywords: ['pressure', 'force', 'area', 'contact'],
+    color: '#7e5109',
+    accent: '#f39c12',
+    image: '/covers/pressure-force-area.svg',
+  },
+  {
+    id: 'hydraulic-lift',
+    title: 'Hydraulic Lift',
+    grade: 8,
+    chapter: 'Ch 8 – Force and Pressure',
+    description:
+      'Explore Pascal’s principle by changing piston areas and watching a small force lift a heavy load.',
+    learningGoals: [
+      'State Pascal’s principle qualitatively',
+      'Relate F₁/A₁ to F₂/A₂',
+      'Explain force multiplication in hydraulics',
+    ],
+    keywords: ['hydraulics', 'Pascal', 'pressure', 'pistons'],
+    color: '#1a252f',
+    accent: '#3498db',
+    image: '/covers/hydraulic-lift.svg',
+  },
+  {
+    id: 'water-pressure-depth',
+    title: 'Water Pressure and Depth',
+    grade: 8,
+    chapter: 'Ch 8 – Force and Pressure',
+    description:
+      'Probe a water tank at different depths and see jets get stronger as pressure rises with depth.',
+    learningGoals: [
+      'Relate pressure to depth in a fluid',
+      'Interpret P = ρgh qualitatively',
+      'Compare jet strength at different depths',
+    ],
+    keywords: ['water pressure', 'depth', 'fluid', 'Pascal'],
+    color: '#154360',
+    accent: '#5dade2',
+    image: '/covers/water-pressure-depth.svg',
+  },
+
   // Grade 8 — Ch 9 Light: Reflection & Refraction
   {
     id: 'laws-of-reflection',
@@ -737,6 +983,10 @@ export const GRADE_8_CHAPTERS = [
   'Ch 2 – Human Nervous System',
   'Ch 3 – Variation, Heredity, Cell Division',
   'Ch 4 – Biotechnology',
+  'Ch 5 – Periodic Table',
+  'Ch 6 – Chemical Reactions',
+  'Ch 7 – Acids, Bases, Salts',
+  'Ch 8 – Force and Pressure',
   'Ch 9 – Light: Reflection & Refraction',
   'Ch 10 – Electricity & Magnetism',
   'Ch 11 – Technology in Everyday Life',
