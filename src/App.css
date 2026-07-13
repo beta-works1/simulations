@@ -1,0 +1,16 @@
+#page-content {
+  padding-top: 100px;
+  min-height: calc(100vh - 100px);
+}
+
+@media (min-width: 900px) {
+  #page-content {
+    padding-top: 133px;
+  }
+}
+
+@media (max-width: 899px) {
+  #page-content {
+    padding-top: 63px;
+  }
+}

@@ -1,0 +1,77 @@
+.intro-section {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px 20px;
+  text-align: center;
+}
+
+.intro-buttons {
+  margin-bottom: 40px;
+}
+
+.front-page-button,
+.play-with-sims-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #2a326a;
+  color: white;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: Roboto, sans-serif;
+  font-size: 20px;
+  text-decoration: none;
+  padding: 12px 30px;
+  min-width: 280px;
+  transition: background 0.2s;
+}
+
+.front-page-button::before,
+.play-with-sims-button::before {
+  content: '';
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236acef5'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E");
+  background-size: 30px 30px;
+  width: 30px;
+  height: 30px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 10px;
+}
+
+.play-with-sims-button:hover {
+  background: #203599;
+  text-decoration: underline;
+  color: white;
+}
+
+#what-is-phet {
+  text-align: left;
+}
+
+#what-is-phet h2 {
+  font-size: 22px;
+  font-weight: 400;
+  color: #333;
+  margin: 0 0 15px;
+}
+
+#what-is-phet p {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #555;
+  margin: 0;
+}
+
+#what-is-phet a {
+  color: #2345a1;
+}
+
+.cta-section {
+  text-align: center;
+  padding: 20px 20px 40px;
+}
+
+.play-with-sims-button.large {
+  min-width: 320px;
+}

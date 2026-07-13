@@ -1,0 +1,99 @@
+.simulation-grid-section {
+  padding: 30px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.simulation-grid-title {
+  font-size: 24px;
+  font-weight: 400;
+  color: #333;
+  margin: 0 0 25px;
+  text-align: center;
+}
+
+.simulation-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.simulation-list-item {
+  text-align: center;
+  padding: 10px 20px;
+  width: 150px;
+  vertical-align: top;
+  font-size: 12px;
+  font-weight: bold;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  position: relative;
+}
+
+.simulation-link {
+  position: relative;
+  display: block;
+  text-decoration: none;
+  color: #888;
+}
+
+.simulation-link:hover {
+  text-decoration: none;
+}
+
+.simulation-link:hover .simulation-list-title {
+  color: #2345a1;
+  text-decoration: underline;
+}
+
+.simulation-thumbnail {
+  width: 130px;
+  height: 85px;
+  margin: 0 auto 5px;
+  border-radius: 4px;
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.simulation-thumbnail-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 8px;
+}
+
+.simulation-subject {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.simulation-icon {
+  font-size: 28px;
+  margin-top: 4px;
+}
+
+.sim-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 8px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-weight: normal;
+}
+
+.simulation-list-title {
+  display: block;
+  color: #888;
+  font-size: 12px;
+  line-height: 1.3;
+  transition: color 0.2s;
+}

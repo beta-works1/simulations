@@ -1,0 +1,142 @@
+.simulation-detail {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+.breadcrumb {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 15px;
+}
+
+.breadcrumb a {
+  color: #2345a1;
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb span {
+  margin: 0 6px;
+}
+
+.simulation-detail-header h1 {
+  font-size: 32px;
+  font-weight: 400;
+  color: #333;
+  margin: 0 0 10px;
+}
+
+.subject-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #f0f0f0;
+  border-radius: 15px;
+  font-size: 13px;
+  color: #666;
+}
+
+.simulation-viewer {
+  margin: 30px 0;
+}
+
+.simulation-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder-content {
+  text-align: center;
+  color: white;
+}
+
+.placeholder-icon {
+  font-size: 64px;
+  display: block;
+  margin-bottom: 15px;
+}
+
+.placeholder-content p {
+  margin: 5px 0;
+  font-size: 18px;
+}
+
+.placeholder-note {
+  font-size: 14px !important;
+  opacity: 0.8;
+}
+
+.simulation-info h2 {
+  font-size: 20px;
+  font-weight: 500;
+  color: #333;
+  margin: 0 0 10px;
+}
+
+.simulation-info p {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #555;
+  margin: 0 0 25px;
+}
+
+.simulation-actions {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.phet-button {
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: 5px;
+  font-family: Roboto, sans-serif;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s;
+}
+
+.phet-button.primary {
+  background: #2a326a;
+  color: white;
+}
+
+.phet-button.primary:hover {
+  background: #203599;
+}
+
+.phet-button.secondary {
+  background: white;
+  color: #2a326a;
+  border: 1px solid #2a326a;
+}
+
+.phet-button.secondary:hover {
+  border-color: #203599;
+  color: #203599;
+}
+
+.not-found {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.not-found h1 {
+  font-size: 28px;
+  font-weight: 400;
+  color: #333;
+}
+
+.not-found a {
+  color: #2345a1;
+}

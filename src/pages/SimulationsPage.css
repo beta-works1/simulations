@@ -1,0 +1,90 @@
+.simulations-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+.simulations-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.simulations-header h1 {
+  font-size: 32px;
+  font-weight: 400;
+  color: #333;
+  margin: 0 0 10px;
+}
+
+.simulations-header p {
+  font-size: 16px;
+  color: #666;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.simulations-filters {
+  margin-bottom: 20px;
+}
+
+.filter-search input {
+  width: 100%;
+  max-width: 400px;
+  display: block;
+  margin: 0 auto 20px;
+  padding: 10px 15px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-family: Roboto, sans-serif;
+  box-sizing: border-box;
+}
+
+.filter-search input:focus {
+  outline: 2px solid #6acef5;
+  border-color: #6acef5;
+}
+
+.filter-subjects {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.filter-subjects button {
+  padding: 8px 16px;
+  border: 1px solid #15337f;
+  border-radius: 15px;
+  background: white;
+  color: #15337f;
+  font-family: Roboto, sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-subjects button:hover,
+.filter-subjects button.active {
+  background: #2a326a;
+  color: white;
+  border-color: #2a326a;
+}
+
+.results-count {
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.no-results {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+}
+
+.no-results p {
+  font-size: 16px;
+}

@@ -1,0 +1,84 @@
+#page-footer {
+  margin-top: 40px;
+}
+
+.footer-highlight-background {
+  background: #f0f0f0;
+  text-align: center;
+  padding: 30px 20px;
+}
+
+.footer-top p {
+  margin: 0 0 10px;
+  color: #333;
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 700px;
+  margin-inline: auto;
+}
+
+.main-footer {
+  background: white;
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.footer-links {
+  margin-bottom: 15px;
+}
+
+.inline-link {
+  color: #6c6c6c;
+  text-decoration: none;
+  font-weight: 300;
+  font-size: 14px;
+}
+
+.inline-link:hover,
+.inline-link:focus {
+  color: #e01e5a;
+  text-decoration: underline;
+}
+
+.footer-separator {
+  color: #ccc;
+  margin: 0 8px;
+}
+
+.footer-social {
+  margin-bottom: 15px;
+}
+
+.footer-social a {
+  display: inline-block;
+  margin: 0 10px;
+  color: #6c6c6c;
+  font-size: 20px;
+  text-decoration: none;
+}
+
+.footer-social a:hover {
+  color: #6acef5;
+}
+
+.footer-copyright {
+  color: #888;
+  font-size: 12px;
+  margin: 0;
+}
+
+/* Simple icon placeholders using unicode */
+.fa::before {
+  font-style: normal;
+}
+
+.fa-facebook::before { content: 'f'; font-weight: bold; }
+.fa-twitter::before { content: '𝕏'; }
+.fa-youtube-play::before { content: '▶'; }
+.fa-envelope-o::before { content: '✉'; }
