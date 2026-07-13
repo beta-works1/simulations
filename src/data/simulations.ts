@@ -700,10 +700,26 @@ export const GRADE_8_CHAPTERS = [
   'More Grade 8',
 ] as const
 
+export const OTHER_CHAPTER_ID = 'other'
+
+export type GradeChapter = {
+  id: string
+  title: string
+}
+
 export type ChapterGroup = {
   chapter: string
   shortLabel: string
   items: Simulation[]
+}
+
+export function chapterIdFromTitle(chapter: string): string {
+  if (chapter === 'More Grade 8') return OTHER_CHAPTER_ID
+  return chapter
+    .toLowerCase()
+    .replace(/[–—]/g, '-')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
 
 export function chapterShortLabel(chapter: string): string {
@@ -711,6 +727,62 @@ export function chapterShortLabel(chapter: string): string {
   if (match) return `Ch ${match[1]}`
   if (chapter === 'More Grade 8') return 'More'
   return chapter
+}
+
+function chapterSortKey(title: string): number {
+  const match = title.match(/Ch\s*(\d+)/i)
+  return match ? Number(match[1]) : title === 'More Grade 8' ? 1000 : 999
+}
+
+/** Chapters available for a grade (empty when that grade has no chapter tags). */
+export function getChaptersForGrade(grade: Grade): GradeChapter[] {
+  const gradeSims = getSimulationsByGrade(grade)
+  const byId = new Map<string, string>()
+  let hasUntagged = false
+
+  for (const sim of gradeSims) {
+    if (sim.chapter?.trim()) {
+      byId.set(chapterIdFromTitle(sim.chapter), sim.chapter.trim())
+    } else {
+      hasUntagged = true
+    }
+  }
+
+  // Prefer textbook order for known Grade 8 chapters.
+  const ordered: GradeChapter[] = []
+  if (grade === 8) {
+    for (const title of GRADE_8_CHAPTERS) {
+      if (title === 'More Grade 8') continue
+      const id = chapterIdFromTitle(title)
+      if (byId.has(id)) {
+        ordered.push({ id, title })
+        byId.delete(id)
+      }
+    }
+  }
+
+  const extras = [...byId.entries()]
+    .map(([id, title]) => ({ id, title }))
+    .sort(
+      (a, b) =>
+        chapterSortKey(a.title) - chapterSortKey(b.title) || a.title.localeCompare(b.title),
+    )
+
+  const chapters = [...ordered, ...extras]
+  if (chapters.length > 0 && hasUntagged) {
+    chapters.push({ id: OTHER_CHAPTER_ID, title: 'More Grade 8' })
+  }
+  return chapters
+}
+
+export function getSimulationsByGradeChapter(
+  grade: Grade,
+  chapterId: string | null,
+): Simulation[] {
+  const all = getSimulationsByGrade(grade)
+  if (!chapterId) return all
+  if (chapterId === OTHER_CHAPTER_ID) return all.filter((s) => !s.chapter?.trim())
+  return all.filter((s) => s.chapter && chapterIdFromTitle(s.chapter) === chapterId)
 }
 
 export function groupSimulationsByChapter(sims: Simulation[]): ChapterGroup[] {

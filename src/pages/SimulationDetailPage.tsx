@@ -4,6 +4,7 @@ import { PageMeta } from '../components/PageMeta'
 import { SimulationGrid } from '../components/SimulationGrid'
 import { ViewerSkeleton } from '../components/Skeleton'
 import {
+  chapterIdFromTitle,
   getRelatedSimulations,
   getSimulationById,
   gradeLabel,
@@ -53,6 +54,9 @@ export function SimulationDetailPage() {
 
   const related = getRelatedSimulations(sim)
   const gradePath = `/simulations?grade=${sim.grade}`
+  const chapterPath = sim.chapter
+    ? `/simulations?grade=${sim.grade}&chapter=${encodeURIComponent(chapterIdFromTitle(sim.chapter))}`
+    : gradePath
 
   return (
     <div className="simulation-detail page-content">
@@ -65,6 +69,12 @@ export function SimulationDetailPage() {
           <Link to="/simulations">Simulations</Link>
           <span aria-hidden="true">/</span>
           <Link to={gradePath}>{gradeLabel(sim.grade)}</Link>
+          {sim.chapter ? (
+            <>
+              <span aria-hidden="true">/</span>
+              <Link to={chapterPath}>{sim.chapter}</Link>
+            </>
+          ) : null}
           <span aria-hidden="true">/</span>
           <span aria-current="page">{sim.title}</span>
         </nav>
@@ -74,7 +84,11 @@ export function SimulationDetailPage() {
           <Link to={gradePath} className="tag tag-grade">
             {gradeLabel(sim.grade)}
           </Link>
-          {sim.chapter ? <span className="tag">{sim.chapter}</span> : null}
+          {sim.chapter ? (
+            <Link to={chapterPath} className="tag">
+              {sim.chapter}
+            </Link>
+          ) : null}
         </div>
       </div>
 

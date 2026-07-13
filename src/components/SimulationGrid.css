@@ -134,6 +134,11 @@
   color: #fff;
 }
 
+.simulation-card-tags .tag:not(.tag-grade) {
+  background: #e8ecf5;
+  color: #2a326a;
+}
+
 @media (max-width: 374px) {
   .simulation-list-item {
     width: 140px;

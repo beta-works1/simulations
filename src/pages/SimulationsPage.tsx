@@ -5,40 +5,49 @@ import { SimulationGrid } from '../components/SimulationGrid'
 import {
   GRADES,
   gradeLabel,
+  getChaptersForGrade,
   getSimulationsByGrade,
-  groupSimulationsByChapter,
+  getSimulationsByGradeChapter,
   isGrade,
   type Grade,
 } from '../data/simulations'
 import './SimulationsPage.css'
 
-function chapterAnchorId(chapter: string): string {
-  return `chapter-${chapter
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')}`
-}
-
 export function SimulationsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const gradeParam = searchParams.get('grade')
+  const chapterParam = searchParams.get('chapter')
   const activeGrade: Grade =
     gradeParam && isGrade(gradeParam) ? (Number(gradeParam) as Grade) : 1
 
-  const sims = useMemo(() => getSimulationsByGrade(activeGrade), [activeGrade])
-  const chapterGroups = useMemo(
-    () => (activeGrade === 8 ? groupSimulationsByChapter(sims) : []),
-    [activeGrade, sims],
+  const chapters = useMemo(() => getChaptersForGrade(activeGrade), [activeGrade])
+  const hasChapters = chapters.length > 0
+
+  const activeChapterId = useMemo(() => {
+    if (!hasChapters) return null
+    if (chapterParam && chapters.some((c) => c.id === chapterParam)) return chapterParam
+    return chapters[0]?.id ?? null
+  }, [hasChapters, chapterParam, chapters])
+
+  const activeChapter = chapters.find((c) => c.id === activeChapterId)
+
+  const sims = useMemo(
+    () =>
+      hasChapters
+        ? getSimulationsByGradeChapter(activeGrade, activeChapterId)
+        : getSimulationsByGrade(activeGrade),
+    [activeGrade, activeChapterId, hasChapters],
   )
-  const useChapters = activeGrade === 8 && chapterGroups.length > 0
 
   const selectGrade = (grade: Grade) => {
-    setSearchParams({ grade: String(grade) }, { replace: true })
+    const nextChapters = getChaptersForGrade(grade)
+    const next: Record<string, string> = { grade: String(grade) }
+    if (nextChapters[0]) next.chapter = nextChapters[0].id
+    setSearchParams(next, { replace: true })
   }
 
-  const jumpToChapter = (chapter: string) => {
-    const el = document.getElementById(chapterAnchorId(chapter))
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const selectChapter = (chapterId: string) => {
+    setSearchParams({ grade: String(activeGrade), chapter: chapterId }, { replace: true })
   }
 
   return (
@@ -51,10 +60,13 @@ export function SimulationsPage() {
 
       <header className="simulations-header">
         <h1>Simulations</h1>
-        <p>Choose a grade in the panel, then open a science experiment simulation.</p>
+        <p>
+          Choose a grade
+          {hasChapters ? ', then a chapter,' : ''} then open a science experiment simulation.
+        </p>
       </header>
 
-      <div className="grade-layout">
+      <div className={`grade-layout${hasChapters ? ' has-chapters' : ''}`}>
         <aside className="grade-panel" aria-label="Grades">
           <div className="grade-panel-head">
             <h2 className="grade-panel-title">Grade panel</h2>
@@ -82,55 +94,52 @@ export function SimulationsPage() {
           </ul>
         </aside>
 
+        {hasChapters && (
+          <aside className="chapter-panel" aria-label="Chapters">
+            <div className="chapter-panel-head">
+              <h2 className="chapter-panel-title">Chapter panel</h2>
+              <p className="chapter-panel-hint">{gradeLabel(activeGrade)} textbook chapters</p>
+            </div>
+            <ul className="chapter-list" role="listbox" aria-label={`${gradeLabel(activeGrade)} chapters`}>
+              {chapters.map((chapter) => {
+                const count = getSimulationsByGradeChapter(activeGrade, chapter.id).length
+                const selected = chapter.id === activeChapterId
+                return (
+                  <li key={chapter.id} role="option" aria-selected={selected}>
+                    <button
+                      type="button"
+                      className={`chapter-item${selected ? ' is-active' : ''}`}
+                      onClick={() => selectChapter(chapter.id)}
+                    >
+                      <span className="chapter-item-title">{chapter.title}</span>
+                      <span className="chapter-item-count">
+                        {count} sim{count !== 1 ? 's' : ''}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </aside>
+        )}
+
         <section className="grade-sims" aria-labelledby="grade-sims-heading">
-          <h2 id="grade-sims-heading">{gradeLabel(activeGrade)} simulations</h2>
+          <h2 id="grade-sims-heading">
+            {activeChapter
+              ? activeChapter.title
+              : `${gradeLabel(activeGrade)} simulations`}
+          </h2>
           <p className="grade-sims-desc">
-            {useChapters
-              ? 'Browse Grade 8 chapter by chapter — jump to Ch 1, Ch 2, Ch 3, Ch 4, and more.'
+            {activeChapter
+              ? `Science experiment simulations for ${activeChapter.title} (${gradeLabel(activeGrade)}).`
               : `Science experiment simulations for ${gradeLabel(activeGrade)}.`}
           </p>
 
-          {useChapters ? (
-            <>
-              <nav className="chapter-jump" aria-label="Grade 8 chapters">
-                {chapterGroups.map((group) => (
-                  <button
-                    key={group.chapter}
-                    type="button"
-                    className="chapter-jump-btn"
-                    onClick={() => jumpToChapter(group.chapter)}
-                  >
-                    <span className="chapter-jump-short">{group.shortLabel}</span>
-                    <span className="chapter-jump-count">{group.items.length}</span>
-                  </button>
-                ))}
-              </nav>
-
-              <div className="chapter-sections">
-                {chapterGroups.map((group) => (
-                  <section
-                    key={group.chapter}
-                    id={chapterAnchorId(group.chapter)}
-                    className="chapter-section"
-                    aria-labelledby={`${chapterAnchorId(group.chapter)}-heading`}
-                  >
-                    <header className="chapter-section-head">
-                      <p className="chapter-kicker">{group.shortLabel}</p>
-                      <h3 id={`${chapterAnchorId(group.chapter)}-heading`}>{group.chapter}</h3>
-                      <p className="chapter-count">
-                        {group.items.length} simulation{group.items.length !== 1 ? 's' : ''}
-                      </p>
-                    </header>
-                    <SimulationGrid items={group.items} showTags />
-                  </section>
-                ))}
-              </div>
-            </>
-          ) : sims.length > 0 ? (
+          {sims.length > 0 ? (
             <SimulationGrid items={sims} showTags />
           ) : (
             <div className="grade-empty" role="status">
-              <p>No simulations for this grade yet. Check back soon.</p>
+              <p>No simulations for this {hasChapters ? 'chapter' : 'grade'} yet. Check back soon.</p>
             </div>
           )}
         </section>

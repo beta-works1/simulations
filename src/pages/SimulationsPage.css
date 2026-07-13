@@ -31,6 +31,99 @@
   align-items: start;
 }
 
+.grade-layout.has-chapters {
+  grid-template-columns: minmax(180px, 220px) minmax(220px, 280px) 1fr;
+}
+
+.chapter-panel {
+  display: block;
+  background: #f4f6fb;
+  border: 2px solid #2a326a;
+  border-radius: 10px;
+  padding: 16px 12px 18px;
+  position: sticky;
+  top: 88px;
+  box-shadow: 0 4px 14px rgba(42, 50, 106, 0.1);
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+}
+
+.chapter-panel-head {
+  padding: 0 8px 12px;
+  border-bottom: 1px solid #d5dbe5;
+  margin-bottom: 10px;
+}
+
+.chapter-panel-title {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #2a326a;
+  font-weight: 700;
+}
+
+.chapter-panel-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.chapter-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chapter-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid #cfd6e4;
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chapter-item:hover {
+  border-color: #2a326a;
+}
+
+.chapter-item.is-active {
+  border-color: #2a326a;
+  background: #eef1f8;
+  box-shadow: inset 3px 0 0 #2a326a;
+}
+
+.chapter-item:focus-visible {
+  outline: 3px solid #6acef5;
+  outline-offset: 2px;
+}
+
+.chapter-item-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #1a1a1a;
+  line-height: 1.35;
+}
+
+.chapter-item.is-active .chapter-item-title {
+  color: #2a326a;
+}
+
+.chapter-item-count {
+  font-size: 0.75rem;
+  color: #555;
+  font-weight: 600;
+}
+
 .grade-panel {
   display: block;
   background: #f4f6fb;
@@ -237,13 +330,43 @@
   padding: 0;
 }
 
+@media (max-width: 1100px) {
+  .grade-layout.has-chapters {
+    grid-template-columns: minmax(180px, 220px) 1fr;
+  }
+
+  .grade-layout.has-chapters .chapter-panel {
+    grid-column: 1 / -1;
+    position: static;
+    max-height: none;
+    order: 0;
+  }
+
+  .grade-layout.has-chapters .grade-panel {
+    order: -1;
+  }
+
+  .grade-layout.has-chapters .chapter-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+}
+
 @media (max-width: 899px) {
-  .grade-layout {
+  .grade-layout,
+  .grade-layout.has-chapters {
     grid-template-columns: 1fr;
   }
 
   .grade-panel {
     position: static;
+    order: -2;
+  }
+
+  .chapter-panel {
+    position: static;
+    max-height: none;
     order: -1;
   }
 
@@ -261,6 +384,12 @@
 
   .grade-item-count {
     display: none;
+  }
+
+  .chapter-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 }
 
