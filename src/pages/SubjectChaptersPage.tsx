@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { PageMeta } from '../components/PageMeta'
 import { SimulationGrid } from '../components/SimulationGrid'
@@ -17,7 +17,6 @@ import './SubjectChaptersPage.css'
 export function SubjectChaptersPage() {
   const { subject: subjectParam } = useParams<{ subject: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [mobileChaptersOpen, setMobileChaptersOpen] = useState(false)
 
   const valid = Boolean(subjectParam && isSubject(subjectParam))
   const subject = (valid ? subjectParam : 'physics') as Subject
@@ -42,7 +41,6 @@ export function SubjectChaptersPage() {
 
   const selectChapter = (chapterId: string) => {
     setSearchParams({ chapter: chapterId }, { replace: true })
-    setMobileChaptersOpen(false)
   }
 
   return (
@@ -68,36 +66,26 @@ export function SubjectChaptersPage() {
           </span>
           <div>
             <h1>{SUBJECT_LABELS[subject]}</h1>
-            <p>Select a chapter, then open a simulation experiment.</p>
+            <p>Use the chapter panel to pick a unit, then open a simulation.</p>
           </div>
         </div>
-
-        <button
-          type="button"
-          className="chapters-toggle"
-          aria-expanded={mobileChaptersOpen}
-          onClick={() => setMobileChaptersOpen((o) => !o)}
-        >
-          {mobileChaptersOpen ? 'Hide chapters' : 'Show chapters'}
-        </button>
       </header>
 
       <div className="subject-chapters-layout">
-        <aside
-          className={`chapter-panel${mobileChaptersOpen ? ' is-open' : ''}`}
-          aria-label="Chapters"
-        >
-          <h2 className="chapter-panel-title">Chapters</h2>
-          <ul className="chapter-list">
+        <aside className="chapter-panel" aria-label="Chapters">
+          <div className="chapter-panel-head">
+            <h2 className="chapter-panel-title">Chapter panel</h2>
+            <p className="chapter-panel-hint">Select a chapter</p>
+          </div>
+          <ul className="chapter-list" role="listbox" aria-label="Chapters">
             {subjectChapters.map((chapter) => {
               const count = getSimulationsByChapter(chapter.id).length
               const selected = chapter.id === activeChapterId
               return (
-                <li key={chapter.id}>
+                <li key={chapter.id} role="option" aria-selected={selected}>
                   <button
                     type="button"
                     className={`chapter-item${selected ? ' is-active' : ''}`}
-                    aria-current={selected ? 'true' : undefined}
                     onClick={() => selectChapter(chapter.id)}
                   >
                     <span className="chapter-item-title">{chapter.title}</span>

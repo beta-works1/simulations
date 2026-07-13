@@ -22,7 +22,8 @@ export function SimulationsPage() {
       <header className="simulations-header">
         <h1>Simulations</h1>
         <p>
-          Start with a subject, then open its chapter panel to find science experiment simulations.
+          Choose a subject below. On the next page you’ll see the <strong>chapter panel</strong>,
+          then pick a simulation.
         </p>
       </header>
 
