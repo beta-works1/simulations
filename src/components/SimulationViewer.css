@@ -1,0 +1,39 @@
+.simulation-viewer-stage {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+}
+
+.viewer-content {
+  text-align: center;
+  color: #fff;
+  padding: var(--space-lg);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.viewer-icon {
+  font-size: 3.5rem;
+  display: block;
+  margin-bottom: var(--space-sm);
+  line-height: 1;
+}
+
+.viewer-title {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--text-xl);
+  font-weight: 500;
+}
+
+.viewer-note {
+  margin: 0;
+  font-size: var(--text-sm);
+  opacity: 0.95;
+  max-width: 360px;
+  margin-inline: auto;
+  line-height: 1.5;
+}

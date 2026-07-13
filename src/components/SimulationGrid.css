@@ -1,14 +1,14 @@
 .simulation-grid-section {
-  padding: 30px 20px;
-  max-width: 1200px;
+  padding: var(--space-lg) var(--space-md);
+  max-width: var(--content-max);
   margin: 0 auto;
 }
 
 .simulation-grid-title {
-  font-size: 24px;
+  font-size: var(--text-xl);
   font-weight: 400;
-  color: #333;
-  margin: 0 0 25px;
+  color: var(--color-text);
+  margin: 0 0 var(--space-lg);
   text-align: center;
 }
 
@@ -16,17 +16,17 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
+  gap: var(--space-sm);
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .simulation-list-item {
   text-align: center;
-  padding: 10px 20px;
-  width: 150px;
+  padding: var(--space-sm) var(--space-md);
+  width: 170px;
   vertical-align: top;
-  font-size: 12px;
-  font-weight: bold;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   position: relative;
 }
 
@@ -34,26 +34,36 @@
   position: relative;
   display: block;
   text-decoration: none;
-  color: #888;
+  color: var(--color-muted);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  transition: transform 0.15s ease;
 }
 
 .simulation-link:hover {
   text-decoration: none;
+  transform: translateY(-2px);
 }
 
 .simulation-link:hover .simulation-list-title {
-  color: #2345a1;
+  color: var(--color-link);
   text-decoration: underline;
+}
+
+.simulation-link:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .simulation-thumbnail {
   width: 130px;
   height: 85px;
-  margin: 0 auto 5px;
-  border-radius: 4px;
-  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.4);
+  margin: 0 auto 8px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .simulation-thumbnail-inner {
@@ -66,34 +76,87 @@
 }
 
 .simulation-subject {
-  font-size: 9px;
-  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.65rem;
+  color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-weight: 500;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
 .simulation-icon {
-  font-size: 28px;
+  font-size: 1.75rem;
   margin-top: 4px;
+  line-height: 1;
 }
 
 .sim-badge {
   position: absolute;
   bottom: 4px;
   right: 4px;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  font-size: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 0.55rem;
   padding: 2px 5px;
   border-radius: 3px;
-  font-weight: normal;
+  font-weight: 500;
 }
 
 .simulation-list-title {
   display: block;
-  color: #888;
-  font-size: 12px;
-  line-height: 1.3;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.35;
   transition: color 0.2s;
+  margin-bottom: 6px;
+}
+
+.simulation-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.3;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.tag-subject {
+  color: #fff;
+}
+
+.tag-physics {
+  background: #1a5276;
+}
+.tag-chemistry {
+  background: #6c3483;
+}
+.tag-biology {
+  background: #145a32;
+}
+.tag-earth-and-space {
+  background: #1c2833;
+}
+.tag-math-and-statistics {
+  background: #7b241c;
+}
+
+.tag-grade {
+  background: #eef1f6;
+  color: #1a1a1a;
+  border: 1px solid #c5cdd8;
+}
+
+@media (max-width: 374px) {
+  .simulation-list-item {
+    width: 140px;
+    padding: 8px;
+  }
 }

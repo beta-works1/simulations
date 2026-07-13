@@ -14,3 +14,11 @@
     padding-top: 63px;
   }
 }
+
+.route-fallback {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-2xl) var(--space-md);
+  text-align: center;
+  color: var(--color-muted);
+}

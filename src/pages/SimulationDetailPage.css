@@ -1,17 +1,21 @@
 .simulation-detail {
   max-width: 900px;
   margin: 0 auto;
-  padding: 30px 20px;
+  padding: var(--space-xl) var(--space-md);
 }
 
 .breadcrumb {
-  font-size: 13px;
-  color: #888;
-  margin-bottom: 15px;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  margin-bottom: var(--space-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
 }
 
 .breadcrumb a {
-  color: #2345a1;
+  color: var(--color-link);
   text-decoration: none;
 }
 
@@ -19,124 +23,136 @@
   text-decoration: underline;
 }
 
-.breadcrumb span {
-  margin: 0 6px;
+.breadcrumb a:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .simulation-detail-header h1 {
-  font-size: 32px;
+  font-size: var(--text-2xl);
   font-weight: 400;
-  color: #333;
-  margin: 0 0 10px;
+  color: var(--color-text);
+  margin: 0 0 var(--space-sm);
 }
 
-.subject-tag {
-  display: inline-block;
-  padding: 4px 12px;
-  background: #f0f0f0;
-  border-radius: 15px;
-  font-size: 13px;
-  color: #666;
+.detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--space-lg);
 }
 
 .simulation-viewer {
-  margin: 30px 0;
+  margin: 0 0 var(--space-lg);
+  position: relative;
 }
 
-.simulation-placeholder {
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+.simulation-viewer.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  margin: 0;
+  background: #111;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: var(--space-lg);
 }
 
-.placeholder-content {
-  text-align: center;
-  color: white;
+.simulation-viewer.is-fullscreen .simulation-viewer-stage,
+.simulation-viewer.is-fullscreen .viewer-skeleton {
+  max-width: 1200px;
+  width: 100%;
+  height: auto;
+  max-height: calc(100vh - 80px);
 }
 
-.placeholder-icon {
-  font-size: 64px;
-  display: block;
-  margin-bottom: 15px;
+.fullscreen-close {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  z-index: 1;
+  padding: 10px 16px;
+  border: 1px solid #fff;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
 }
 
-.placeholder-content p {
-  margin: 5px 0;
-  font-size: 18px;
-}
-
-.placeholder-note {
-  font-size: 14px !important;
-  opacity: 0.8;
-}
-
-.simulation-info h2 {
-  font-size: 20px;
-  font-weight: 500;
-  color: #333;
-  margin: 0 0 10px;
-}
-
-.simulation-info p {
-  font-size: 16px;
-  line-height: 1.7;
-  color: #555;
-  margin: 0 0 25px;
+.fullscreen-close:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .simulation-actions {
   display: flex;
-  gap: 15px;
+  gap: var(--space-md);
   flex-wrap: wrap;
+  margin-bottom: var(--space-xl);
 }
 
-.phet-button {
-  display: inline-block;
-  padding: 12px 24px;
-  border-radius: 5px;
-  font-family: Roboto, sans-serif;
-  font-size: 16px;
-  text-decoration: none;
-  cursor: pointer;
-  border: none;
-  transition: background 0.2s;
+.simulation-info h2 {
+  font-size: var(--text-lg);
+  font-weight: 500;
+  color: var(--color-text);
+  margin: 0 0 var(--space-sm);
 }
 
-.phet-button.primary {
-  background: #2a326a;
-  color: white;
+.simulation-info p {
+  font-size: var(--text-md);
+  line-height: 1.7;
+  color: var(--color-muted);
+  margin: 0 0 var(--space-lg);
 }
 
-.phet-button.primary:hover {
-  background: #203599;
+.learning-goals {
+  margin: 0 0 var(--space-xl);
+  padding-left: 1.25rem;
+  color: var(--color-muted);
+  line-height: 1.7;
 }
 
-.phet-button.secondary {
-  background: white;
-  color: #2a326a;
-  border: 1px solid #2a326a;
+.learning-goals li {
+  margin-bottom: 6px;
 }
 
-.phet-button.secondary:hover {
-  border-color: #203599;
-  color: #203599;
+.related-sims {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-xl);
+  margin-top: var(--space-md);
+}
+
+.related-sims h2 {
+  font-size: var(--text-xl);
+  text-align: center;
+  margin: 0 0 var(--space-md);
+  font-weight: 400;
+}
+
+.related-sims .simulation-grid-section {
+  padding-top: 0;
+}
+
+.subject-hint {
+  display: none;
 }
 
 .not-found {
   text-align: center;
-  padding: 60px 20px;
+  padding: var(--space-2xl) var(--space-md);
 }
 
 .not-found h1 {
-  font-size: 28px;
+  font-size: var(--text-xl);
   font-weight: 400;
-  color: #333;
+  color: var(--color-text);
 }
 
-.not-found a {
-  color: #2345a1;
+.not-found p {
+  color: var(--color-muted);
+  margin-bottom: var(--space-lg);
 }

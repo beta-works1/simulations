@@ -1,0 +1,16 @@
+---
+description: After any code update the user requests, commit and push to GitHub
+alwaysApply: true
+---
+
+# Auto-push to GitHub
+
+When the user asks you to update, fix, add, or change anything in the code for this project:
+
+1. Make the code changes.
+2. Commit with a concise message focused on why.
+3. Push to `origin` on the current branch (default: `main` → `https://github.com/beta-works1/simulations`).
+
+Do this without waiting for a separate "push" or "commit" request, unless the user explicitly says not to push.
+
+Still follow normal git safety: no force-push, no amending others' commits, no committing secrets.

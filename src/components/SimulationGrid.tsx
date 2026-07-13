@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { Simulation } from '../data/simulations'
-import { SUBJECT_LABELS } from '../data/simulations'
+import { GRADE_LABELS, SUBJECT_ICONS, SUBJECT_LABELS } from '../data/simulations'
 import './SimulationGrid.css'
 
 function SimulationThumbnail({ sim }: { sim: Simulation }) {
@@ -10,16 +10,11 @@ function SimulationThumbnail({ sim }: { sim: Simulation }) {
       style={{
         background: `linear-gradient(145deg, ${sim.color} 0%, ${sim.accent} 100%)`,
       }}
+      aria-hidden="true"
     >
       <div className="simulation-thumbnail-inner">
         <span className="simulation-subject">{SUBJECT_LABELS[sim.subject]}</span>
-        <div className="simulation-icon">
-          {sim.subject === 'physics' && '⚛'}
-          {sim.subject === 'chemistry' && '🧪'}
-          {sim.subject === 'biology' && '🧬'}
-          {sim.subject === 'earth-and-space' && '🌍'}
-          {sim.subject === 'math-and-statistics' && '📐'}
-        </div>
+        <div className="simulation-icon">{SUBJECT_ICONS[sim.subject]}</div>
       </div>
       <span className="sim-badge">HTML5</span>
     </div>
@@ -29,22 +24,39 @@ function SimulationThumbnail({ sim }: { sim: Simulation }) {
 interface SimulationGridProps {
   items: Simulation[]
   title?: string
+  showTags?: boolean
 }
 
-export function SimulationGrid({ items, title }: SimulationGridProps) {
+export function SimulationGrid({ items, title, showTags = true }: SimulationGridProps) {
   return (
     <div className="simulation-grid-section">
       {title && <h2 className="simulation-grid-title">{title}</h2>}
-      <div className="simulation-grid">
+      <ul className="simulation-grid">
         {items.map((sim) => (
-          <div key={sim.id} className="simulation-list-item">
-            <Link to={`/simulations/${sim.id}`} className="simulation-link">
+          <li key={sim.id} className="simulation-list-item">
+            <Link
+              to={`/simulations/${sim.id}`}
+              className="simulation-link"
+              aria-label={`${sim.title}, ${SUBJECT_LABELS[sim.subject]}, ${sim.grades.map((g) => GRADE_LABELS[g]).join(', ')}`}
+            >
               <SimulationThumbnail sim={sim} />
               <span className="simulation-list-title">{sim.title}</span>
+              {showTags && (
+                <span className="simulation-card-tags">
+                  <span className={`tag tag-subject tag-${sim.subject}`}>
+                    {SUBJECT_LABELS[sim.subject]}
+                  </span>
+                  {sim.grades.map((g) => (
+                    <span key={g} className="tag tag-grade">
+                      {GRADE_LABELS[g]}
+                    </span>
+                  ))}
+                </span>
+              )}
             </Link>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   )
 }

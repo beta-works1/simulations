@@ -405,3 +405,27 @@
     justify-content: flex-end;
   }
 }
+
+
+/* Shared focus + active nav */
+.nav-menu-parent:focus-visible,
+#search-toggle-button:focus-visible,
+#collapsible-menu-toggle:focus-visible {
+  outline: 3px solid #6acef5;
+  outline-offset: 2px;
+}
+
+.nav-menu-parent.is-active .nav-menu-parent-text {
+  color: #e01e5a;
+  font-weight: 500;
+}
+
+#page-nav-search input:focus-visible {
+  outline: 3px solid #6acef5;
+  outline-offset: 2px;
+}
+
+/* Reserve hamburger space — avoid layout shift */
+#collapsible-menu-toggle {
+  flex-shrink: 0;
+}

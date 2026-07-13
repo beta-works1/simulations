@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { Logo } from './Logo'
 import './Header.css'
 
@@ -29,12 +29,14 @@ export function Header({ onSearch }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [isWide, setIsWide] = useState(window.innerWidth >= 900)
+  const [isWide, setIsWide] = useState(true)
 
   useEffect(() => {
-    const handleResize = () => setIsWide(window.innerWidth >= 900)
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    const mq = window.matchMedia('(min-width: 900px)')
+    const apply = () => setIsWide(mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
   }, [])
 
   useEffect(() => {
@@ -42,10 +44,17 @@ export function Header({ onSearch }: HeaderProps) {
     return () => document.body.classList.remove('menu-open')
   }, [menuOpen, isWide])
 
+  useEffect(() => {
+    if (isWide) setMenuOpen(false)
+  }, [isWide])
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSearch?.(searchQuery)
+    setSearchOpen(false)
   }
+
+  const closeMenu = () => setMenuOpen(false)
 
   return (
     <>
@@ -60,23 +69,11 @@ export function Header({ onSearch }: HeaderProps) {
         >
           <header id="page-header-container" role="banner">
             <div id="page-header-left">
-              <Link to="/" className="phet-logo-link">
+              <Link to="/" className="phet-logo-link" onClick={closeMenu} aria-label="SimLab home">
                 <div className="phet-logo">
                   <Logo />
                 </div>
               </Link>
-              <div className="cu-logo">
-                <a href="#" target="_blank" rel="noreferrer">
-                  <div className="cu-logo-image-clip">
-                    <svg viewBox="0 0 120 24" xmlns="http://www.w3.org/2000/svg" aria-label="University">
-                      <rect x="0" y="2" width="20" height="20" fill="#CFB87C" rx="2" />
-                      <text x="26" y="17" fontFamily="Roboto, sans-serif" fontSize="11" fill="#000">
-                        UNIVERSITY
-                      </text>
-                    </svg>
-                  </div>
-                </a>
-              </div>
             </div>
 
             {!isWide && (
@@ -84,11 +81,12 @@ export function Header({ onSearch }: HeaderProps) {
                 id="collapsible-menu-toggle"
                 type="button"
                 className={menuOpen ? 'open' : ''}
-                aria-label="Toggle Primary Menu"
+                aria-label={menuOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={menuOpen}
-                onClick={() => setMenuOpen(!menuOpen)}
+                aria-controls="page-header-menus"
+                onClick={() => setMenuOpen((o) => !o)}
               >
-                <div id="toggle-container">
+                <div id="toggle-container" aria-hidden="true">
                   <span id="nw-rotate" className="rotate">
                     <span id="nw-translate" className="line" />
                   </span>
@@ -112,13 +110,18 @@ export function Header({ onSearch }: HeaderProps) {
               className={`ltr ${!isWide && menuOpen ? 'open' : ''}`}
             >
               <div id="collapsible-menu">
-                <nav id="page-nav-menu" role="navigation">
-                  <span className="screen-reader-only">Website Navigation</span>
-                  <ul role="menubar">
+                <nav id="page-nav-menu" aria-label="Primary">
+                  <ul>
                     <li className="nav-menu-item">
-                      <Link to="/simulations" className="nav-menu-parent nav0" role="menuitem">
+                      <NavLink
+                        to="/simulations"
+                        className={({ isActive }) =>
+                          `nav-menu-parent${isActive ? ' is-active' : ''}`
+                        }
+                        onClick={closeMenu}
+                      >
                         <span className="nav-menu-parent-text">Simulations</span>
-                      </Link>
+                      </NavLink>
                     </li>
                   </ul>
                 </nav>
@@ -128,9 +131,9 @@ export function Header({ onSearch }: HeaderProps) {
                     <button
                       id="search-toggle-button"
                       type="button"
-                      aria-label="Search"
+                      aria-label={searchOpen ? 'Close search' : 'Open search'}
                       aria-expanded={searchOpen}
-                      onClick={() => setSearchOpen(!searchOpen)}
+                      onClick={() => setSearchOpen((o) => !o)}
                     >
                       {searchOpen ? <CloseIcon /> : <SearchIcon />}
                     </button>
@@ -148,17 +151,17 @@ export function Header({ onSearch }: HeaderProps) {
           >
             <form onSubmit={handleSearchSubmit} id="page-nav-search">
               <label htmlFor="search-input" className="screen-reader-only">
-                Search the SimLab Website
+                Search simulations
               </label>
               <input
                 id="search-input"
                 type="search"
-                placeholder="Search the SimLab Website"
+                placeholder="Search simulations…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
               />
-              <button type="submit" id="search-submit" aria-label="Search">
+              <button type="submit" id="search-submit" aria-label="Submit search">
                 <SearchIcon />
               </button>
             </form>

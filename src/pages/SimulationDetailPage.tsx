@@ -1,74 +1,141 @@
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { simulations, SUBJECT_LABELS } from '../data/simulations'
+import { PageMeta } from '../components/PageMeta'
+import { SimulationGrid } from '../components/SimulationGrid'
+import { ViewerSkeleton } from '../components/Skeleton'
+import {
+  GRADE_LABELS,
+  SUBJECT_ICONS,
+  SUBJECT_LABELS,
+  getRelatedSimulations,
+  getSimulationById,
+} from '../data/simulations'
 import './SimulationDetailPage.css'
+
+const SimulationViewer = lazy(() =>
+  import('../components/SimulationViewer').then((m) => ({ default: m.SimulationViewer })),
+)
 
 export function SimulationDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const sim = simulations.find((s) => s.id === id)
+  const sim = id ? getSimulationById(id) : undefined
+  const [fullscreen, setFullscreen] = useState(false)
+
+  useEffect(() => {
+    if (!fullscreen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullscreen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
+  }, [fullscreen])
 
   if (!sim) {
     return (
       <div className="simulation-detail page-content">
+        <PageMeta
+          title="Simulation Not Found"
+          description="The requested SimLab simulation could not be found."
+          path="/simulations"
+        />
         <div className="not-found">
           <h1>Simulation Not Found</h1>
           <p>The simulation you are looking for does not exist.</p>
-          <Link to="/simulations">Browse all simulations</Link>
+          <Link to="/simulations" className="btn btn-primary">
+            Browse all simulations
+          </Link>
         </div>
       </div>
     )
   }
 
+  const related = getRelatedSimulations(sim)
+
   return (
     <div className="simulation-detail page-content">
+      <PageMeta
+        title={sim.title}
+        description={sim.description}
+        path={`/simulations/${sim.id}`}
+      />
+
       <div className="simulation-detail-header">
-        <nav className="breadcrumb">
+        <nav className="breadcrumb" aria-label="Breadcrumb">
           <Link to="/">Home</Link>
-          <span>/</span>
+          <span aria-hidden="true">/</span>
           <Link to="/simulations">Simulations</Link>
-          <span>/</span>
-          <span>{sim.title}</span>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">{sim.title}</span>
         </nav>
 
         <h1>{sim.title}</h1>
-        <span className="subject-tag">{SUBJECT_LABELS[sim.subject]}</span>
+        <div className="detail-tags">
+          <span className={`tag tag-subject tag-${sim.subject}`}>
+            {SUBJECT_LABELS[sim.subject]}
+          </span>
+          {sim.grades.map((g) => (
+            <span key={g} className="tag tag-grade">
+              {GRADE_LABELS[g]}
+            </span>
+          ))}
+        </div>
       </div>
 
-      <div className="simulation-viewer">
-        <div
-          className="simulation-placeholder"
-          style={{
-            background: `linear-gradient(145deg, ${sim.color} 0%, ${sim.accent} 100%)`,
-          }}
+      <div className={`simulation-viewer ${fullscreen ? 'is-fullscreen' : ''}`}>
+        {fullscreen && (
+          <button
+            type="button"
+            className="fullscreen-close"
+            onClick={() => setFullscreen(false)}
+            aria-label="Exit fullscreen"
+          >
+            Close
+          </button>
+        )}
+        <Suspense fallback={<ViewerSkeleton />}>
+          <SimulationViewer sim={sim} />
+        </Suspense>
+      </div>
+
+      <div className="simulation-actions">
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => setFullscreen(true)}
         >
-          <div className="placeholder-content">
-            <span className="placeholder-icon">
-              {sim.subject === 'physics' && '⚛'}
-              {sim.subject === 'chemistry' && '🧪'}
-              {sim.subject === 'biology' && '🧬'}
-              {sim.subject === 'earth-and-space' && '🌍'}
-              {sim.subject === 'math-and-statistics' && '📐'}
-            </span>
-            <p>Simulation loading area</p>
-            <p className="placeholder-note">
-              Interactive simulation will be embedded here
-            </p>
-          </div>
-        </div>
+          Open fullscreen
+        </button>
+        <Link to="/simulations" className="btn btn-secondary">
+          Back to Simulations
+        </Link>
       </div>
 
       <div className="simulation-info">
         <h2>About this simulation</h2>
         <p>{sim.description}</p>
 
-        <div className="simulation-actions">
-          <button type="button" className="phet-button primary">
-            Run Simulation
-          </button>
-          <Link to="/simulations" className="phet-button secondary">
-            Back to Simulations
-          </Link>
-        </div>
+        <h2>Learning goals</h2>
+        <ul className="learning-goals">
+          {sim.learningGoals.map((goal) => (
+            <li key={goal}>{goal}</li>
+          ))}
+        </ul>
       </div>
+
+      {related.length > 0 && (
+        <section className="related-sims" aria-labelledby="related-heading">
+          <h2 id="related-heading">Related {SUBJECT_LABELS[sim.subject]} simulations</h2>
+          <SimulationGrid items={related} />
+        </section>
+      )}
+
+      <p className="subject-hint" aria-hidden="true">
+        {SUBJECT_ICONS[sim.subject]}
+      </p>
     </div>
   )
 }

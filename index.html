@@ -6,18 +6,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Free interactive science and math simulations for teaching STEM topics through exploration and discovery."
+      content="Free interactive science and math simulations for students. Explore STEM topics aligned with Punjab SNC through game-like discovery."
     />
     <title>SimLab: Free online physics, chemistry, biology, earth science and math simulations</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
-      rel="stylesheet"
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SimLab Interactive Simulations" />
+    <meta
+      property="og:title"
+      content="SimLab: Free online physics, chemistry, biology, earth science and math simulations"
     />
+    <meta
+      property="og:description"
+      content="Free interactive science and math simulations for students. Explore STEM topics aligned with Punjab SNC through game-like discovery."
+    />
+    <meta property="og:url" content="https://simulations-ivory.vercel.app/" />
+    <meta property="og:image" content="https://simulations-ivory.vercel.app/og-image.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href="https://simulations-ivory.vercel.app/" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static shell for first paint / no-JS: Vite SPA hydrates this root -->
+      <header style="font-family: system-ui, sans-serif; padding: 1rem 1.25rem; border-bottom: 1px solid #e0e0e0">
+        <strong style="color: #2a326a">SimLab</strong>
+        <nav style="display: inline; margin-left: 1.5rem">
+          <a href="/simulations" style="color: #1a1a1a; text-transform: uppercase; text-decoration: none; font-size: 0.85rem"
+            >Simulations</a
+          >
+        </nav>
+      </header>
+      <main style="font-family: system-ui, sans-serif; padding: 2rem 1.25rem; max-width: 40rem">
+        <h1 style="font-weight: 400; font-size: 1.75rem; color: #1a1a1a">
+          Free interactive science &amp; math simulations
+        </h1>
+        <p style="color: #444; line-height: 1.6">
+          Explore physics, chemistry, biology, earth science, and math through game-like discovery —
+          aligned with Punjab SNC learning outcomes.
+        </p>
+        <p>
+          <a href="/simulations" style="color: #fff; background: #2a326a; padding: 0.75rem 1.25rem; text-decoration: none; border-radius: 4px; display: inline-block"
+            >Browse Simulations</a
+          >
+        </p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,13 +1,17 @@
 # SimLab — Interactive Simulations
 
-A PhET-inspired web application for browsing and running science and math experiment simulations.
+A PhET-inspired web application for browsing science and math simulations, aligned with Punjab SNC grade bands.
+
+**Stack:** Vite + React + TypeScript (SPA). Deployed at [simulations-ivory.vercel.app](https://simulations-ivory.vercel.app).
 
 ## Features
 
-- **PhET-style design** — Header, navigation, hero carousel, simulation grid, and footer modeled after [PhET Colorado](https://phet.colorado.edu/)
-- **Simulations page** — Browse, search, and filter simulations by subject (Physics, Chemistry, Biology, Earth & Space, Math)
-- **Simulation detail pages** — Placeholder viewer ready for embedding interactive sims
-- **Responsive layout** — Works on desktop and mobile
+- Home page with hero carousel and featured sims
+- `/simulations` browse page — search, subject + grade filters, skeletons, empty state
+- Simulation detail pages — fullscreen viewer shell, learning goals, related sims
+- Shared header: logo + **Simulations** only (desktop & mobile)
+- Per-route meta / Open Graph via `react-helmet-async`
+- Self-hosted Roboto (`@fontsource/roboto`)
 
 ## Getting Started
 
@@ -16,7 +20,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Open [http://localhost:5173](http://localhost:5173).
 
 ## Build
 
@@ -29,11 +33,11 @@ npm run preview
 
 ```
 src/
-  components/   # Header, Footer, HeroCarousel, SimulationGrid, Logo
-  pages/        # HomePage, SimulationsPage, SimulationDetailPage
-  data/         # Simulation catalog
+  components/   # Header, Footer, grids, viewer, SEO meta
+  pages/        # Home, Simulations, Simulation detail
+  data/         # Simulation catalog (Punjab SNC grades)
 ```
 
 ## Adding Simulations
 
-Edit `src/data/simulations.ts` to add new entries. Each simulation needs an `id`, `title`, `subject`, `description`, and color theme.
+Edit `src/data/simulations.ts`. Interactive embeds will plug into `SimulationViewer` later.

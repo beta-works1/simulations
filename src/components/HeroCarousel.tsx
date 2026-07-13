@@ -33,6 +33,8 @@ export function HeroCarousel() {
   const [current, setCurrent] = useState(0)
 
   useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduce) return
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % slides.length)
     }, 6000)

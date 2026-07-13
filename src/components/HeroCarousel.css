@@ -66,6 +66,11 @@
   text-decoration: none;
 }
 
+.jumbotron-item a:focus-visible {
+  outline: 3px solid #6acef5;
+  outline-offset: 3px;
+}
+
 .jumbotron-dots {
   position: absolute;
   bottom: 15px;
@@ -79,7 +84,7 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: none;
+  border: 2px solid transparent;
   background: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   padding: 0;
@@ -90,6 +95,11 @@
   background: white;
   opacity: 1;
   transform: scale(1.2);
+}
+
+.jumbotron-dots button:focus-visible {
+  outline: 3px solid #6acef5;
+  outline-offset: 2px;
 }
 
 @media (min-width: 900px) {
