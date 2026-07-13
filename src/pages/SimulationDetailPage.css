@@ -126,6 +126,23 @@
   margin: 0 0 var(--space-sm);
 }
 
+.simulation-info-cover {
+  margin: 0 0 var(--space-lg);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  max-width: 520px;
+  background: #1a2332;
+}
+
+.simulation-info-cover img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 520 / 340;
+  object-fit: cover;
+}
+
 .simulation-info p {
   font-size: var(--text-md);
   line-height: 1.7;

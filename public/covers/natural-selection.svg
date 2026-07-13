@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="340" viewBox="0 0 520 340">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5b2c6f"/>
+      <stop offset="100%" stop-color="#f39c12"/>
+    </linearGradient>
+  </defs>
+  <rect width="520" height="340" rx="18" fill="url(#g)"/>
+  <rect x="18" y="18" width="484" height="304" rx="12" fill="rgba(0,0,0,0.18)"/>
+  <g transform="translate(160,80) scale(1.15)">
+    
+      <circle cx="100" cy="35" r="14" fill="#5dade2"/>
+      <circle cx="55" cy="80" r="16" fill="#58d68d"/>
+      <circle cx="145" cy="80" r="16" fill="#e74c3c"/>
+      <path d="M100 49 L55 64 M100 49 L145 64 M55 80 L145 80" stroke="#fff" stroke-width="2" opacity="0.7"/>
+  </g>
+  <text x="260" y="290" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="#ffffff">Natural Selection</text>
+</svg>

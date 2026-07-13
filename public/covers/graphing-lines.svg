@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="340" viewBox="0 0 520 340">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7b241c"/>
+      <stop offset="100%" stop-color="#2980b9"/>
+    </linearGradient>
+  </defs>
+  <rect width="520" height="340" rx="18" fill="url(#g)"/>
+  <rect x="18" y="18" width="484" height="304" rx="12" fill="rgba(0,0,0,0.18)"/>
+  <g transform="translate(160,80) scale(1.15)">
+    
+    <path d="M80 30 h40 v20 l20 45 a25 25 0 0 1 -80 0 l20 -45 z" fill="#2980b9" opacity="0.9"/>
+    <rect x="88" y="22" width="24" height="12" rx="2" fill="#fff"/>
+    <circle cx="95" cy="75" r="4" fill="#fff" opacity="0.8"/>
+    <circle cx="110" cy="82" r="3" fill="#fff" opacity="0.7"/>
+  </g>
+  <text x="260" y="290" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="22" font-weight="700" fill="#ffffff">Graphing Lines</text>
+</svg>

@@ -1,21 +1,23 @@
 import { Link } from 'react-router-dom'
 import type { Simulation } from '../data/simulations'
-import { gradeLabel } from '../data/simulations'
+import { chapterShortLabel, gradeLabel } from '../data/simulations'
 import './SimulationGrid.css'
 
 function SimulationThumbnail({ sim }: { sim: Simulation }) {
+  const label = sim.chapter ? chapterShortLabel(sim.chapter) : gradeLabel(sim.grade)
+
   return (
-    <div
-      className="simulation-thumbnail"
-      style={{
-        background: `linear-gradient(145deg, ${sim.color} 0%, ${sim.accent} 100%)`,
-      }}
-      aria-hidden="true"
-    >
-      <div className="simulation-thumbnail-inner">
-        <span className="simulation-subject">{gradeLabel(sim.grade)}</span>
-        <div className="simulation-icon">🔬</div>
-      </div>
+    <div className="simulation-thumbnail" aria-hidden="true">
+      <img
+        className="simulation-cover"
+        src={sim.image}
+        alt=""
+        width={130}
+        height={85}
+        loading="lazy"
+        decoding="async"
+      />
+      <span className="simulation-subject">{label}</span>
       <span className="sim-badge">HTML5</span>
     </div>
   )

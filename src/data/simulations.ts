@@ -10,6 +10,8 @@ export interface Simulation {
   keywords: string[]
   color: string
   accent: string
+  /** Cover image path (served from /public) */
+  image: string
 }
 
 export const GRADES: Grade[] = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -32,6 +34,7 @@ export const simulations: Simulation[] = [
     keywords: ['shapes', 'colors', 'sorting', 'primary'],
     color: '#c0392b',
     accent: '#f1c40f',
+    image: '/covers/shapes-and-colors.svg',
   },
   {
     id: 'counting-1-to-20',
@@ -46,6 +49,7 @@ export const simulations: Simulation[] = [
     keywords: ['counting', 'numbers', 'math'],
     color: '#2980b9',
     accent: '#2ecc71',
+    image: '/covers/counting-1-to-20.svg',
   },
   {
     id: 'plant-life',
@@ -60,6 +64,7 @@ export const simulations: Simulation[] = [
     keywords: ['plants', 'seeds', 'growth', 'biology'],
     color: '#1e8449',
     accent: '#a3e4d7',
+    image: '/covers/plant-life.svg',
   },
   {
     id: 'fraction-matcher',
@@ -74,6 +79,7 @@ export const simulations: Simulation[] = [
     keywords: ['fractions', 'equivalence', 'ratio', 'numbers'],
     color: '#a04000',
     accent: '#8e44ad',
+    image: '/covers/fraction-matcher.svg',
   },
   {
     id: 'balancing-act',
@@ -88,6 +94,7 @@ export const simulations: Simulation[] = [
     keywords: ['balance', 'mass', 'forces'],
     color: '#1e8449',
     accent: '#3498db',
+    image: '/covers/balancing-act.svg',
   },
   {
     id: 'build-an-atom',
@@ -102,6 +109,7 @@ export const simulations: Simulation[] = [
     keywords: ['atom', 'electron', 'proton', 'chemistry'],
     color: '#0e6655',
     accent: '#e74c3c',
+    image: '/covers/build-an-atom.svg',
   },
   {
     id: 'circuit-construction',
@@ -116,6 +124,7 @@ export const simulations: Simulation[] = [
     keywords: ['electricity', 'current', 'circuits'],
     color: '#922b21',
     accent: '#f1c40f',
+    image: '/covers/circuit-construction.svg',
   },
   {
     id: 'projectile-motion',
@@ -130,6 +139,7 @@ export const simulations: Simulation[] = [
     keywords: ['motion', 'gravity', 'trajectory'],
     color: '#1a5276',
     accent: '#f5a623',
+    image: '/covers/projectile-motion.svg',
   },
   {
     id: 'ph-scale',
@@ -144,6 +154,7 @@ export const simulations: Simulation[] = [
     keywords: ['acids', 'bases', 'pH', 'chemistry'],
     color: '#6c3483',
     accent: '#e67e22',
+    image: '/covers/ph-scale.svg',
   },
   {
     id: 'graphing-lines',
@@ -159,6 +170,7 @@ export const simulations: Simulation[] = [
     keywords: ['algebra', 'slope', 'graph', 'linear'],
     color: '#7b241c',
     accent: '#2980b9',
+    image: '/covers/graphing-lines.svg',
   },
   {
     id: 'gravity-and-orbits',
@@ -174,6 +186,7 @@ export const simulations: Simulation[] = [
     keywords: ['gravity', 'orbit', 'planets', 'space'],
     color: '#1a252f',
     accent: '#5dade2',
+    image: '/covers/gravity-and-orbits.svg',
   },
   {
     id: 'natural-selection',
@@ -189,6 +202,7 @@ export const simulations: Simulation[] = [
     keywords: ['evolution', 'adaptation', 'traits'],
     color: '#5b2c6f',
     accent: '#f39c12',
+    image: '/covers/natural-selection.svg',
   },
 
   // Grade 8 — Ch 1 Ecology
@@ -207,6 +221,7 @@ export const simulations: Simulation[] = [
     keywords: ['ecology', 'photosynthesis', 'respiration', 'atmosphere'],
     color: '#1e8449',
     accent: '#5dade2',
+    image: '/covers/carbon-oxygen-cycle.svg',
   },
   {
     id: 'food-web-builder',
@@ -223,6 +238,7 @@ export const simulations: Simulation[] = [
     keywords: ['food web', 'energy flow', 'trophic', 'ecology'],
     color: '#196f3d',
     accent: '#f1c40f',
+    image: '/covers/food-web-builder.svg',
   },
   {
     id: 'ecological-pyramid',
@@ -238,6 +254,7 @@ export const simulations: Simulation[] = [
     keywords: ['pyramid', '10% rule', 'energy', 'trophic levels'],
     color: '#145a32',
     accent: '#e67e22',
+    image: '/covers/ecological-pyramid.svg',
   },
   {
     id: 'predator-prey',
@@ -254,6 +271,7 @@ export const simulations: Simulation[] = [
     keywords: ['predator', 'prey', 'population', 'mutualism', 'competition'],
     color: '#0e6655',
     accent: '#e74c3c',
+    image: '/covers/predator-prey.svg',
   },
   {
     id: 'global-warming',
@@ -270,6 +288,7 @@ export const simulations: Simulation[] = [
     keywords: ['climate', 'greenhouse', 'CO2', 'global warming'],
     color: '#1a5276',
     accent: '#e74c3c',
+    image: '/covers/global-warming.svg',
   },
 
   // Grade 8 — Ch 2 Nervous system
@@ -288,6 +307,7 @@ export const simulations: Simulation[] = [
     keywords: ['reflex', 'neuron', 'spinal cord', 'nervous system'],
     color: '#6c3483',
     accent: '#f5b041',
+    image: '/covers/reflex-arc.svg',
   },
   {
     id: 'neuron-signal',
@@ -303,6 +323,7 @@ export const simulations: Simulation[] = [
     keywords: ['neuron', 'axon', 'myelin', 'impulse'],
     color: '#5b2c6f',
     accent: '#5dade2',
+    image: '/covers/neuron-signal.svg',
   },
   {
     id: 'brain-mapping',
@@ -318,6 +339,7 @@ export const simulations: Simulation[] = [
     keywords: ['brain', 'lobes', 'cerebellum', 'mapping'],
     color: '#4a235a',
     accent: '#85c1e9',
+    image: '/covers/brain-mapping.svg',
   },
 
   // Grade 8 — Ch 3 Heredity
@@ -335,6 +357,7 @@ export const simulations: Simulation[] = [
     keywords: ['mitosis', 'meiosis', 'chromosomes', 'cell division'],
     color: '#922b21',
     accent: '#5dade2',
+    image: '/covers/mitosis-meiosis.svg',
   },
   {
     id: 'dna-chromosome-gene',
@@ -350,6 +373,7 @@ export const simulations: Simulation[] = [
     keywords: ['DNA', 'gene', 'chromosome', 'nucleus'],
     color: '#7b241c',
     accent: '#58d68d',
+    image: '/covers/dna-chromosome-gene.svg',
   },
   {
     id: 'punnett-square',
@@ -365,6 +389,7 @@ export const simulations: Simulation[] = [
     keywords: ['Punnett', 'heredity', 'alleles', 'dominant', 'recessive'],
     color: '#a04000',
     accent: '#f39c12',
+    image: '/covers/punnett-square.svg',
   },
 
   // Grade 8 — Ch 4 Biotechnology
@@ -382,6 +407,7 @@ export const simulations: Simulation[] = [
     keywords: ['plasmid', 'biotechnology', 'recombinant DNA', 'bacteria'],
     color: '#0e6655',
     accent: '#f4d03f',
+    image: '/covers/plasmid-insertion.svg',
   },
   {
     id: 'fermentation',
@@ -397,6 +423,7 @@ export const simulations: Simulation[] = [
     keywords: ['fermentation', 'yeast', 'CO2', 'biotech'],
     color: '#7e5109',
     accent: '#f1c40f',
+    image: '/covers/fermentation.svg',
   },
 
   // Grade 8 — Ch 9 Light: Reflection & Refraction
@@ -415,6 +442,7 @@ export const simulations: Simulation[] = [
     keywords: ['light', 'reflection', 'mirror', 'optics'],
     color: '#1a5276',
     accent: '#f4d03f',
+    image: '/covers/laws-of-reflection.svg',
   },
   {
     id: 'regular-vs-diffuse',
@@ -431,6 +459,7 @@ export const simulations: Simulation[] = [
     keywords: ['light', 'diffuse', 'regular', 'surface'],
     color: '#154360',
     accent: '#85c1e9',
+    image: '/covers/regular-vs-diffuse.svg',
   },
   {
     id: 'plane-mirror-periscope',
@@ -447,6 +476,7 @@ export const simulations: Simulation[] = [
     keywords: ['mirror', 'periscope', 'image', 'optics'],
     color: '#1b4f72',
     accent: '#48c9b0',
+    image: '/covers/plane-mirror-periscope.svg',
   },
   {
     id: 'refraction-media',
@@ -463,6 +493,7 @@ export const simulations: Simulation[] = [
     keywords: ['refraction', 'Snell', 'optics', 'glass', 'water'],
     color: '#0e6655',
     accent: '#5dade2',
+    image: '/covers/refraction-media.svg',
   },
   {
     id: 'rainbow-dispersion',
@@ -479,6 +510,7 @@ export const simulations: Simulation[] = [
     keywords: ['rainbow', 'dispersion', 'spectrum', 'optics'],
     color: '#6c3483',
     accent: '#f5b041',
+    image: '/covers/rainbow-dispersion.svg',
   },
   {
     id: 'curved-mirrors',
@@ -495,6 +527,7 @@ export const simulations: Simulation[] = [
     keywords: ['concave', 'convex', 'mirror', 'optics'],
     color: '#1a5276',
     accent: '#e74c3c',
+    image: '/covers/curved-mirrors.svg',
   },
 
   // Grade 8 — Ch 10 Electricity & Magnetism
@@ -513,6 +546,7 @@ export const simulations: Simulation[] = [
     keywords: ['electricity', 'Ohm', 'current', 'voltage'],
     color: '#922b21',
     accent: '#f4d03f',
+    image: '/covers/ohm-law-circuit.svg',
   },
   {
     id: 'series-parallel',
@@ -529,6 +563,7 @@ export const simulations: Simulation[] = [
     keywords: ['series', 'parallel', 'circuits', 'electricity'],
     color: '#7b241c',
     accent: '#f39c12',
+    image: '/covers/series-parallel.svg',
   },
   {
     id: 'short-circuit-fuse',
@@ -545,6 +580,7 @@ export const simulations: Simulation[] = [
     keywords: ['fuse', 'short circuit', 'safety', 'electricity'],
     color: '#641e16',
     accent: '#ec7063',
+    image: '/covers/short-circuit-fuse.svg',
   },
   {
     id: 'electric-motor',
@@ -561,6 +597,7 @@ export const simulations: Simulation[] = [
     keywords: ['motor', 'magnetism', 'electromagnetism'],
     color: '#1a5276',
     accent: '#e67e22',
+    image: '/covers/electric-motor.svg',
   },
   {
     id: 'speaker-mechanism',
@@ -577,6 +614,7 @@ export const simulations: Simulation[] = [
     keywords: ['speaker', 'sound', 'electromagnet'],
     color: '#4a235a',
     accent: '#5dade2',
+    image: '/covers/speaker-mechanism.svg',
   },
 
   // Grade 8 — Ch 11 Technology in Everyday Life
@@ -595,6 +633,7 @@ export const simulations: Simulation[] = [
     keywords: ['solar', 'reflection', 'energy', 'technology'],
     color: '#b9770e',
     accent: '#f9e79f',
+    image: '/covers/solar-cooker.svg',
   },
   {
     id: 'wind-turbine',
@@ -611,6 +650,7 @@ export const simulations: Simulation[] = [
     keywords: ['wind', 'turbine', 'energy', 'technology'],
     color: '#1e8449',
     accent: '#85c1e9',
+    image: '/covers/wind-turbine.svg',
   },
 
   // Grade 8 — Ch 12 Our Universe
@@ -629,6 +669,7 @@ export const simulations: Simulation[] = [
     keywords: ['star', 'nebula', 'supernova', 'universe'],
     color: '#1a252f',
     accent: '#f5b041',
+    image: '/covers/star-life-cycle.svg',
   },
   {
     id: 'galaxy-types',
@@ -644,6 +685,7 @@ export const simulations: Simulation[] = [
     keywords: ['galaxy', 'spiral', 'elliptical', 'universe'],
     color: '#0b5345',
     accent: '#a569bd',
+    image: '/covers/galaxy-types.svg',
   },
   {
     id: 'black-hole',
@@ -660,6 +702,7 @@ export const simulations: Simulation[] = [
     keywords: ['black hole', 'gravity', 'light', 'universe'],
     color: '#0d0d0d',
     accent: '#5dade2',
+    image: '/covers/black-hole.svg',
   },
   {
     id: 'solar-system-timeline',
@@ -676,6 +719,7 @@ export const simulations: Simulation[] = [
     keywords: ['solar system', 'timeline', 'space', 'exploration'],
     color: '#1a252f',
     accent: '#58d68d',
+    image: '/covers/solar-system-timeline.svg',
   },
 ]
 

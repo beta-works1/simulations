@@ -121,6 +121,9 @@ export function SimulationDetailPage() {
       </div>
 
       <div className="simulation-info">
+        <div className="simulation-info-cover">
+          <img src={sim.image} alt="" width={520} height={340} loading="lazy" />
+        </div>
         <h2>About this simulation</h2>
         <p>{sim.description}</p>
 
