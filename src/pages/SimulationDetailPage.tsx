@@ -74,6 +74,7 @@ export function SimulationDetailPage() {
           <Link to={gradePath} className="tag tag-grade">
             {gradeLabel(sim.grade)}
           </Link>
+          {sim.chapter ? <span className="tag">{sim.chapter}</span> : null}
         </div>
       </div>
 

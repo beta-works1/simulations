@@ -1,7 +1,8 @@
+import { Suspense, useEffect, useState } from 'react'
 import type { Simulation } from '../data/simulations'
 import { gradeLabel } from '../data/simulations'
+import { getLazySim, hasInteractiveSim } from '../sims/registry'
 import { ViewerSkeleton } from './Skeleton'
-import { useEffect, useState } from 'react'
 import './SimulationViewer.css'
 
 interface SimulationViewerProps {
@@ -9,14 +10,19 @@ interface SimulationViewerProps {
 }
 
 export function SimulationViewer({ sim }: SimulationViewerProps) {
+  const Interactive = hasInteractiveSim(sim.id) ? getLazySim(sim.id) : null
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
+    if (Interactive) {
+      setReady(true)
+      return
+    }
     setReady(false)
     let raf = 0
     const start = performance.now()
     const tick = (now: number) => {
-      if (now - start >= 450) {
+      if (now - start >= 350) {
         setReady(true)
         return
       }
@@ -24,10 +30,20 @@ export function SimulationViewer({ sim }: SimulationViewerProps) {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [sim.id])
+  }, [sim.id, Interactive])
 
   if (!ready) {
     return <ViewerSkeleton />
+  }
+
+  if (Interactive) {
+    return (
+      <div className="simulation-viewer-stage simulation-viewer-live">
+        <Suspense fallback={<ViewerSkeleton />}>
+          <Interactive />
+        </Suspense>
+      </div>
+    )
   }
 
   return (
