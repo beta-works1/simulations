@@ -126,11 +126,7 @@ export function Header({ onSearch }: HeaderProps) {
         All Sims
       </NavLink>
       {SUBJECT_ORDER.map((subject) => (
-        <NavLink
-          key={subject}
-          to={`/simulations?subject=${subject}`}
-          onClick={closeAll}
-        >
+        <NavLink key={subject} to={`/simulations/${subject}`} onClick={closeAll}>
           {SUBJECT_LABELS[subject]}
         </NavLink>
       ))}

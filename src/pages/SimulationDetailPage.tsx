@@ -6,6 +6,7 @@ import { ViewerSkeleton } from '../components/Skeleton'
 import {
   SUBJECT_ICONS,
   SUBJECT_LABELS,
+  getChapterById,
   getRelatedSimulations,
   getSimulationById,
 } from '../data/simulations'
@@ -19,6 +20,7 @@ export function SimulationDetailPage() {
   const { id } = useParams<{ id: string }>()
   const sim = id ? getSimulationById(id) : undefined
   const [fullscreen, setFullscreen] = useState(false)
+  const chapter = sim ? getChapterById(sim.chapterId) : undefined
 
   useEffect(() => {
     if (!fullscreen) return
@@ -53,14 +55,12 @@ export function SimulationDetailPage() {
   }
 
   const related = getRelatedSimulations(sim)
+  const subjectPath = `/simulations/${sim.subject}`
+  const chapterPath = `${subjectPath}?chapter=${sim.chapterId}`
 
   return (
     <div className="simulation-detail page-content">
-      <PageMeta
-        title={sim.title}
-        description={sim.description}
-        path={`/simulations/${sim.id}`}
-      />
+      <PageMeta title={sim.title} description={sim.description} path={`/play/${sim.id}`} />
 
       <div className="simulation-detail-header">
         <nav className="breadcrumb" aria-label="Breadcrumb">
@@ -68,21 +68,27 @@ export function SimulationDetailPage() {
           <span aria-hidden="true">/</span>
           <Link to="/simulations">Simulations</Link>
           <span aria-hidden="true">/</span>
-          <Link to={`/simulations?subject=${sim.subject}`}>
-            {SUBJECT_LABELS[sim.subject]}
-          </Link>
+          <Link to={subjectPath}>{SUBJECT_LABELS[sim.subject]}</Link>
+          {chapter && (
+            <>
+              <span aria-hidden="true">/</span>
+              <Link to={chapterPath}>{chapter.title}</Link>
+            </>
+          )}
           <span aria-hidden="true">/</span>
           <span aria-current="page">{sim.title}</span>
         </nav>
 
         <h1>{sim.title}</h1>
         <div className="detail-tags">
-          <Link
-            to={`/simulations?subject=${sim.subject}`}
-            className={`tag tag-subject tag-${sim.subject}`}
-          >
+          <Link to={subjectPath} className={`tag tag-subject tag-${sim.subject}`}>
             {SUBJECT_LABELS[sim.subject]}
           </Link>
+          {chapter && (
+            <Link to={chapterPath} className="tag tag-chapter">
+              {chapter.title}
+            </Link>
+          )}
         </div>
       </div>
 
@@ -106,11 +112,11 @@ export function SimulationDetailPage() {
         <button type="button" className="btn btn-primary" onClick={() => setFullscreen(true)}>
           Open fullscreen
         </button>
-        <Link to={`/simulations?subject=${sim.subject}`} className="btn btn-secondary">
-          More {SUBJECT_LABELS[sim.subject]}
+        <Link to={chapterPath} className="btn btn-secondary">
+          Back to chapter
         </Link>
-        <Link to="/simulations" className="btn btn-secondary">
-          All Simulations
+        <Link to={subjectPath} className="btn btn-secondary">
+          More {SUBJECT_LABELS[sim.subject]}
         </Link>
       </div>
 
@@ -128,7 +134,7 @@ export function SimulationDetailPage() {
 
       {related.length > 0 && (
         <section className="related-sims" aria-labelledby="related-heading">
-          <h2 id="related-heading">Related {SUBJECT_LABELS[sim.subject]} simulations</h2>
+          <h2 id="related-heading">Related simulations</h2>
           <SimulationGrid items={related} />
         </section>
       )}

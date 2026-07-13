@@ -24,7 +24,7 @@ const slides = [
     title: 'Browse by Subject',
     subtitle: 'Physics, Chemistry, Biology, Earth Science, and Math',
     cta: 'View Physics Sims',
-    href: '/simulations?subject=physics',
+    href: '/simulations/physics',
     gradient: 'linear-gradient(135deg, #1e8449 0%, #27ae60 50%, #2ecc71 100%)',
   },
 ]

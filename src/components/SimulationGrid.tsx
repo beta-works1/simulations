@@ -35,7 +35,7 @@ export function SimulationGrid({ items, title, showTags = true }: SimulationGrid
         {items.map((sim) => (
           <li key={sim.id} className="simulation-list-item">
             <Link
-              to={`/simulations/${sim.id}`}
+              to={`/play/${sim.id}`}
               className="simulation-link"
               aria-label={`${sim.title}, ${SUBJECT_LABELS[sim.subject]}`}
             >

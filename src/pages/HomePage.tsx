@@ -35,9 +35,8 @@ export function HomePage() {
           <div id="what-is-simlab">
             <h2>What is SimLab?</h2>
             <p>
-              SimLab creates free interactive science and math simulations for students. Follow the
-              same discovery workflow as PhET: pick a subject, browse simulations, open one, and
-              learn by experimenting.
+              Learn by discovery: choose a subject, open a chapter, then run a science experiment
+              simulation.
             </p>
           </div>
         </section>
@@ -52,7 +51,7 @@ export function HomePage() {
               const count = getSimulationsBySubject(subject).length
               return (
                 <li key={subject}>
-                  <Link to={`/simulations?subject=${subject}`} className="subject-card">
+                  <Link to={`/simulations/${subject}`} className="subject-card">
                     <span className="subject-card-icon" aria-hidden="true">
                       {SUBJECT_ICONS[subject]}
                     </span>

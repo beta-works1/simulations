@@ -34,7 +34,7 @@ export function Footer() {
                 <span className="footer-separator" aria-hidden="true">
                   |
                 </span>
-                <Link to={`/simulations?subject=${subject}`} className="inline-link">
+                <Link to={`/simulations/${subject}`} className="inline-link">
                   {SUBJECT_LABELS[subject]}
                 </Link>
               </span>

@@ -23,17 +23,16 @@ export function AboutPage() {
         <h2>How it works (PhET-style workflow)</h2>
         <ol className="workflow-steps">
           <li>
-            <strong>Start on Home</strong> — see featured sims and browse by subject.
+            <strong>Simulations</strong> — pick a subject (Physics, Chemistry, and more).
           </li>
           <li>
-            <strong>Open Simulations</strong> — search or filter by subject (Physics, Chemistry,
-            and more).
+            <strong>Chapter panel</strong> — choose a chapter inside that subject.
           </li>
           <li>
-            <strong>Open a simulation</strong> — read goals, then run the interactive experiment.
+            <strong>Open a simulation</strong> — run the science experiment and review learning goals.
           </li>
           <li>
-            <strong>Explore related sims</strong> — continue learning in the same subject.
+            <strong>Explore related sims</strong> — continue with more experiments in the same chapter.
           </li>
         </ol>
       </section>

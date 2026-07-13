@@ -149,6 +149,12 @@
   background: #7b241c;
 }
 
+.tag-chapter {
+  background: #eef1f6;
+  color: #1a1a1a;
+  border: 1px solid #c5cdd8;
+}
+
 @media (max-width: 374px) {
   .simulation-list-item {
     width: 140px;

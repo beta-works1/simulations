@@ -4,6 +4,7 @@ import { Header } from './components/Header'
 import { Footer } from './components/Footer'
 import { HomePage } from './pages/HomePage'
 import { SimulationsPage } from './pages/SimulationsPage'
+import { SubjectChaptersPage } from './pages/SubjectChaptersPage'
 import { AboutPage } from './pages/AboutPage'
 import './App.css'
 
@@ -29,9 +30,10 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/simulations" element={<SimulationsPage />} />
+          <Route path="/simulations/:subject" element={<SubjectChaptersPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route
-            path="/simulations/:id"
+            path="/play/:id"
             element={
               <Suspense
                 fallback={

@@ -5,10 +5,18 @@ export type Subject =
   | 'earth-and-space'
   | 'math-and-statistics'
 
+export interface Chapter {
+  id: string
+  subject: Subject
+  title: string
+  description: string
+}
+
 export interface Simulation {
   id: string
   title: string
   subject: Subject
+  chapterId: string
   description: string
   learningGoals: string[]
   keywords: string[]
@@ -40,11 +48,75 @@ export const SUBJECT_ORDER: Subject[] = [
   'math-and-statistics',
 ]
 
+export const chapters: Chapter[] = [
+  {
+    id: 'motion-and-forces',
+    subject: 'physics',
+    title: 'Motion & Forces',
+    description: 'Kinematics, projectiles, balance, and force concepts.',
+  },
+  {
+    id: 'electricity',
+    subject: 'physics',
+    title: 'Electricity',
+    description: 'Circuits, current, voltage, and resistance.',
+  },
+  {
+    id: 'atoms-and-periodic',
+    subject: 'chemistry',
+    title: 'Atoms & Periodic Table',
+    description: 'Atomic structure, ions, and the elements.',
+  },
+  {
+    id: 'acids-bases-molecules',
+    subject: 'chemistry',
+    title: 'Acids, Bases & Molecules',
+    description: 'pH scale and molecular geometry.',
+  },
+  {
+    id: 'evolution-ecology',
+    subject: 'biology',
+    title: 'Evolution & Ecology',
+    description: 'Natural selection and adaptation.',
+  },
+  {
+    id: 'genetics-cells',
+    subject: 'biology',
+    title: 'Genetics & Cells',
+    description: 'Gene expression and molecular biology basics.',
+  },
+  {
+    id: 'astronomy',
+    subject: 'earth-and-space',
+    title: 'Astronomy',
+    description: 'Gravity, orbits, and space systems.',
+  },
+  {
+    id: 'climate',
+    subject: 'earth-and-space',
+    title: 'Climate & Atmosphere',
+    description: 'Greenhouse effect and Earth systems.',
+  },
+  {
+    id: 'algebra-graphs',
+    subject: 'math-and-statistics',
+    title: 'Algebra & Graphs',
+    description: 'Linear equations, slope, and graphing.',
+  },
+  {
+    id: 'numbers-fractions',
+    subject: 'math-and-statistics',
+    title: 'Numbers & Fractions',
+    description: 'Equivalent fractions and number sense.',
+  },
+]
+
 export const simulations: Simulation[] = [
   {
     id: 'projectile-motion',
     title: 'Projectile Motion',
     subject: 'physics',
+    chapterId: 'motion-and-forces',
     description:
       'Blast a car out of a cannon and challenge yourself to hit a target. Explore how angle, speed, and gravity affect trajectories.',
     learningGoals: [
@@ -57,24 +129,10 @@ export const simulations: Simulation[] = [
     accent: '#f5a623',
   },
   {
-    id: 'circuit-construction',
-    title: 'Circuit Construction Kit',
-    subject: 'physics',
-    description:
-      'Build circuits with batteries, resistors, light bulbs, and switches. See current and voltage change in real time.',
-    learningGoals: [
-      'Construct series and parallel circuits',
-      'Explain how resistance affects current',
-      'Identify open and closed circuit paths',
-    ],
-    keywords: ['electricity', 'current', 'voltage', 'resistance', 'circuits'],
-    color: '#922b21',
-    accent: '#f1c40f',
-  },
-  {
     id: 'balancing-act',
     title: 'Balancing Act',
     subject: 'physics',
+    chapterId: 'motion-and-forces',
     description:
       'Play with objects on a teeter-totter to learn about balance, torque, and centre of mass.',
     learningGoals: [
@@ -87,24 +145,26 @@ export const simulations: Simulation[] = [
     accent: '#3498db',
   },
   {
-    id: 'ph-scale',
-    title: 'pH Scale',
-    subject: 'chemistry',
+    id: 'circuit-construction',
+    title: 'Circuit Construction Kit',
+    subject: 'physics',
+    chapterId: 'electricity',
     description:
-      'Test the pH of everyday liquids and explore acid–base chemistry on a logarithmic scale.',
+      'Build circuits with batteries, resistors, light bulbs, and switches. See current and voltage change in real time.',
     learningGoals: [
-      'Classify substances as acidic, basic, or neutral',
-      'Relate pH values to H⁺ concentration',
-      'Compare household chemicals by strength',
+      'Construct series and parallel circuits',
+      'Explain how resistance affects current',
+      'Identify open and closed circuit paths',
     ],
-    keywords: ['acids', 'bases', 'pH', 'solutions', 'indicators'],
-    color: '#6c3483',
-    accent: '#e67e22',
+    keywords: ['electricity', 'current', 'voltage', 'resistance', 'circuits'],
+    color: '#922b21',
+    accent: '#f1c40f',
   },
   {
     id: 'build-an-atom',
     title: 'Build an Atom',
     subject: 'chemistry',
+    chapterId: 'atoms-and-periodic',
     description:
       'Build atoms out of protons, neutrons, and electrons. Discover isotopes, ions, and the periodic table.',
     learningGoals: [
@@ -117,9 +177,26 @@ export const simulations: Simulation[] = [
     accent: '#e74c3c',
   },
   {
+    id: 'ph-scale',
+    title: 'pH Scale',
+    subject: 'chemistry',
+    chapterId: 'acids-bases-molecules',
+    description:
+      'Test the pH of everyday liquids and explore acid–base chemistry on a logarithmic scale.',
+    learningGoals: [
+      'Classify substances as acidic, basic, or neutral',
+      'Relate pH values to H⁺ concentration',
+      'Compare household chemicals by strength',
+    ],
+    keywords: ['acids', 'bases', 'pH', 'solutions', 'indicators'],
+    color: '#6c3483',
+    accent: '#e67e22',
+  },
+  {
     id: 'molecule-shapes',
     title: 'Molecule Shapes',
     subject: 'chemistry',
+    chapterId: 'acids-bases-molecules',
     description:
       'Explore molecule shapes by building molecules in 3D and relating electron domains to geometry.',
     learningGoals: [
@@ -135,6 +212,7 @@ export const simulations: Simulation[] = [
     id: 'natural-selection',
     title: 'Natural Selection',
     subject: 'biology',
+    chapterId: 'evolution-ecology',
     description:
       'Observe evolution in a population of rabbits with different traits under changing environments.',
     learningGoals: [
@@ -150,6 +228,7 @@ export const simulations: Simulation[] = [
     id: 'gene-expression',
     title: 'Gene Expression Essentials',
     subject: 'biology',
+    chapterId: 'genetics-cells',
     description:
       'Explore how genes are transcribed and translated, and how expression can be regulated in cells.',
     learningGoals: [
@@ -165,6 +244,7 @@ export const simulations: Simulation[] = [
     id: 'gravity-and-orbits',
     title: 'Gravity and Orbits',
     subject: 'earth-and-space',
+    chapterId: 'astronomy',
     description:
       'Move the sun, earth, moon, and space station to see how mass and distance affect gravity and orbits.',
     learningGoals: [
@@ -180,6 +260,7 @@ export const simulations: Simulation[] = [
     id: 'greenhouse-effect',
     title: 'The Greenhouse Effect',
     subject: 'earth-and-space',
+    chapterId: 'climate',
     description:
       'Learn how greenhouse gases interact with sunlight and infrared radiation to warm Earth’s atmosphere.',
     learningGoals: [
@@ -195,6 +276,7 @@ export const simulations: Simulation[] = [
     id: 'graphing-lines',
     title: 'Graphing Lines',
     subject: 'math-and-statistics',
+    chapterId: 'algebra-graphs',
     description:
       'Investigate the relationships between linear equations, slope, intercepts, and graphs.',
     learningGoals: [
@@ -210,6 +292,7 @@ export const simulations: Simulation[] = [
     id: 'fraction-matcher',
     title: 'Fraction Matcher',
     subject: 'math-and-statistics',
+    chapterId: 'numbers-fractions',
     description:
       'Match shapes and numbers to earn stars while building fluency with equivalent fractions.',
     learningGoals: [
@@ -223,20 +306,35 @@ export const simulations: Simulation[] = [
   },
 ]
 
+export function isSubject(value: string): value is Subject {
+  return SUBJECT_ORDER.includes(value as Subject)
+}
+
 export function getSimulationById(id: string): Simulation | undefined {
   return simulations.find((s) => s.id === id)
+}
+
+export function getChapterById(id: string): Chapter | undefined {
+  return chapters.find((c) => c.id === id)
+}
+
+export function getChaptersBySubject(subject: Subject): Chapter[] {
+  return chapters.filter((c) => c.subject === subject)
 }
 
 export function getSimulationsBySubject(subject: Subject): Simulation[] {
   return simulations.filter((s) => s.subject === subject)
 }
 
-export function getRelatedSimulations(sim: Simulation, limit = 4): Simulation[] {
-  return simulations
-    .filter((s) => s.id !== sim.id && s.subject === sim.subject)
-    .slice(0, limit)
+export function getSimulationsByChapter(chapterId: string): Simulation[] {
+  return simulations.filter((s) => s.chapterId === chapterId)
 }
 
-export function isSimulationId(id: string): boolean {
-  return simulations.some((s) => s.id === id)
+export function getRelatedSimulations(sim: Simulation, limit = 4): Simulation[] {
+  return simulations
+    .filter(
+      (s) =>
+        s.id !== sim.id && (s.chapterId === sim.chapterId || s.subject === sim.subject),
+    )
+    .slice(0, limit)
 }

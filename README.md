@@ -6,26 +6,12 @@ PhET-inspired multi-page site for browsing science experiment simulations.
 
 ## Pages (PhET-style workflow)
 
-1. **Home (`/`)** — hero carousel, Play with Sims, browse-by-subject cards, featured sims  
-2. **Simulations (`/simulations`)** — search + subject filters (Physics, Chemistry, Biology, Earth Science, Math)  
-3. **Simulation detail (`/simulations/:id`)** — viewer shell, learning goals, related sims  
-4. **About (`/about`)** — how the discovery workflow works  
-
-## Nav
-
-- **Simulations** dropdown → All Sims + each subject  
-- **About**  
-- Inline header search (never covers the logo)
-
-## Run
-
-```bash
-npm install
-npm run dev
-```
-
-Open http://localhost:5173
+1. **Home (`/`)** — hero, subject cards, featured sims  
+2. **Simulations hub (`/simulations`)** — pick a subject (Sims)  
+3. **Subject + chapters (`/simulations/:subject`)** — left chapter panel, sims for the selected chapter  
+4. **Play (`/play/:id`)** — simulation detail / experiment viewer  
+5. **About (`/about`)** — how the flow works  
 
 ## Add simulations later
 
-Edit `src/data/simulations.ts` and plug interactive embeds into `src/components/SimulationViewer.tsx`.
+Edit `src/data/simulations.ts` — add a `chapter` (if needed) and a `simulation` with `chapterId`, then embed the interactive content in `SimulationViewer`.
