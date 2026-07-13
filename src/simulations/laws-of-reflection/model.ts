@@ -1,3 +1,4 @@
+import { withShadow } from '../shared/canvasTheme'
 import {
   DEG2RAD,
   RAD2DEG,
@@ -8,6 +9,7 @@ import {
   clearCanvas,
   drawAngleArc,
   drawDashedLine,
+  drawGlow,
   drawLabel,
   drawRay,
   normalize,
@@ -60,7 +62,7 @@ export function drawLawsOfReflection(
   h: number,
   state: LawsOfReflectionState,
 ) {
-  clearCanvas(ctx, w, h)
+  clearCanvas(ctx, w, h, 'optics')
 
   const mirrorY = h * 0.72
   const mirrorX1 = w * 0.12
@@ -77,16 +79,27 @@ export function drawLawsOfReflection(
   const incidenceRad = Math.acos(Math.min(1, Math.abs(dot2(toHit, { x: 0, y: -1 }))))
   const reflectedDir = normalize({ x: Math.sin(incidenceRad), y: -Math.cos(incidenceRad) })
 
-  ctx.save()
-  ctx.strokeStyle = MIRROR_COLOR
-  ctx.lineWidth = 4
-  ctx.beginPath()
-  ctx.moveTo(mirrorX1, mirrorY)
-  ctx.lineTo(mirrorX2, mirrorY)
-  ctx.stroke()
-  ctx.fillStyle = 'rgba(148, 163, 184, 0.25)'
-  ctx.fillRect(mirrorX1, mirrorY, mirrorX2 - mirrorX1, h - mirrorY)
-  ctx.restore()
+  withShadow(
+    ctx,
+    () => {
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.28)'
+      ctx.fillRect(mirrorX1, mirrorY, mirrorX2 - mirrorX1, h - mirrorY)
+    },
+    { blur: 14, color: 'rgba(226, 232, 240, 0.4)', oy: 4 },
+  )
+  withShadow(
+    ctx,
+    () => {
+      ctx.strokeStyle = MIRROR_COLOR
+      ctx.lineWidth = 4
+      ctx.lineCap = 'round'
+      ctx.beginPath()
+      ctx.moveTo(mirrorX1, mirrorY)
+      ctx.lineTo(mirrorX2, mirrorY)
+      ctx.stroke()
+    },
+    { blur: 8, color: 'rgba(255, 255, 255, 0.45)', oy: 1 },
+  )
 
   const normalTop: Vec2 = { x: hit.x, y: hit.y - rayLen * 0.55 }
   drawDashedLine(ctx, hit, normalTop, RAY_WHITE)
@@ -115,6 +128,7 @@ export function drawLawsOfReflection(
     RAY_CYAN,
   )
 
+  drawGlow(ctx, source.x, source.y, 34, RAY_YELLOW, 0.55)
   ctx.save()
   ctx.fillStyle = RAY_YELLOW
   ctx.beginPath()

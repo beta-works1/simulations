@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { ControlHint, ControlSection, ControlStack } from '../../shared/Controls'
-import { fontPx } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, withShadow } from '../../shared/drawHelpers'
+import { drawGlow, SCENE } from '../../shared/canvasTheme'
 import { drawHint, drawHoverHalo, drawLabelPill } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
@@ -58,16 +59,17 @@ export function BrainMappingSim() {
       const fs = fontPx(13, w, h)
       const minDim = Math.min(w, h)
 
-      ctx.fillStyle = '#1b2a3a'
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'nervous')
 
-      ctx.beginPath()
-      ctx.ellipse(w * 0.5, h * 0.5, w * 0.34, h * 0.38, 0, 0, Math.PI * 2)
-      ctx.fillStyle = '#f3e6d4'
-      ctx.fill()
-      ctx.strokeStyle = '#c9b59a'
-      ctx.lineWidth = 3
-      ctx.stroke()
+      withShadow(ctx, () => {
+        ctx.beginPath()
+        ctx.ellipse(w * 0.5, h * 0.5, w * 0.34, h * 0.38, 0, 0, Math.PI * 2)
+        ctx.fillStyle = '#f3e6d4'
+        ctx.fill()
+        ctx.strokeStyle = '#c9b59a'
+        ctx.lineWidth = 3
+        ctx.stroke()
+      })
 
       layoutRef.current.regions = []
 
@@ -82,6 +84,7 @@ export function BrainMappingSim() {
         const glow = active ? 0.3 + 0.15 * Math.sin(pulse.current * 4) : 0
 
         drawHoverHalo(ctx, px, py, pr + 6, isHover && !active)
+        if (active) drawGlow(ctx, px, py, pr * 1.65, SCENE.nervous.glow, 0.42 + glow)
 
         ctx.beginPath()
         ctx.arc(px, py, pr * (active ? 1.08 : isHover ? 1.04 : 1), 0, Math.PI * 2)

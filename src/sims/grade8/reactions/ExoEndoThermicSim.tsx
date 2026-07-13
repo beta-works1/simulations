@@ -6,7 +6,8 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx, roundRect } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, roundRect, withShadow } from '../../shared/drawHelpers'
+import { drawGlow, SCENE } from '../../shared/canvasTheme'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
@@ -87,11 +88,7 @@ export function ExoEndoThermicSim() {
       const fs = fontPx(13, w, h)
       const isExo = currentMode === 'exothermic'
 
-      const bg = ctx.createLinearGradient(0, 0, 0, h)
-      bg.addColorStop(0, '#f7f9fb')
-      bg.addColorStop(1, '#e8eef4')
-      ctx.fillStyle = bg
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'lab')
 
       const btnW = 140
       const btnH = 30
@@ -126,22 +123,28 @@ export function ExoEndoThermicSim() {
       const bh = L.beaker.h
 
       drawHoverHalo(ctx, bx + bw / 2, by + bh / 2, Math.max(bw, bh) * 0.45, hover === 'beaker')
-
-      ctx.strokeStyle = '#5dade2'
-      ctx.lineWidth = 4
-      ctx.beginPath()
-      ctx.moveTo(bx + bw * 0.15, by)
-      ctx.lineTo(bx, by)
-      ctx.lineTo(bx, by + bh)
-      ctx.lineTo(bx + bw, by + bh)
-      ctx.lineTo(bx + bw, by)
-      ctx.lineTo(bx + bw * 0.85, by)
-      ctx.stroke()
+      if (isExo && running) {
+        drawGlow(ctx, bx + bw / 2, by + bh / 2, Math.max(bw, bh) * 0.55, SCENE.lab.hot, 0.35)
+      }
 
       const liquidLevel = 0.35 + ((s.temperature - 8) / 40) * 0.45
       const liquidY = by + bh * (1 - liquidLevel)
-      ctx.fillStyle = isExo ? 'rgba(231,76,60,0.55)' : 'rgba(52,152,219,0.55)'
-      ctx.fillRect(bx + 3, liquidY, bw - 6, by + bh - liquidY - 3)
+
+      withShadow(ctx, () => {
+        ctx.strokeStyle = '#5dade2'
+        ctx.lineWidth = 4
+        ctx.beginPath()
+        ctx.moveTo(bx + bw * 0.15, by)
+        ctx.lineTo(bx, by)
+        ctx.lineTo(bx, by + bh)
+        ctx.lineTo(bx + bw, by + bh)
+        ctx.lineTo(bx + bw, by)
+        ctx.lineTo(bx + bw * 0.85, by)
+        ctx.stroke()
+
+        ctx.fillStyle = isExo ? 'rgba(231,76,60,0.55)' : 'rgba(52,152,219,0.55)'
+        ctx.fillRect(bx + 3, liquidY, bw - 6, by + bh - liquidY - 3)
+      })
 
       drawLabelPill(ctx, 'Beaker', bx + bw / 2, by + bh + fs + 10, { fontSize: fs, bold: false })
 

@@ -7,7 +7,7 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx } from '../../shared/drawHelpers'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
@@ -225,11 +225,7 @@ export function BalanceEquationsSim() {
 
       layoutRef.current.coefHits = []
 
-      const bg = ctx.createLinearGradient(0, 0, 0, h)
-      bg.addColorStop(0, '#f7f9fb')
-      bg.addColorStop(1, '#e8eef4')
-      ctx.fillStyle = bg
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'lab')
 
       drawLabelPill(ctx, 'Balance the chemical equation', w / 2, 28, { fontSize: fs + 2 })
 

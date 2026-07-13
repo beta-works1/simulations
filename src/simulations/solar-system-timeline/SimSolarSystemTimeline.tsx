@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { drawGlow, drawStarfield, fillThemeBackground, SCENE } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
 import { useRefPaintLoop } from '../shared/useRefPaintLoop'
@@ -17,6 +18,7 @@ import {
 function drawFormationVignette(ctx: CanvasRenderingContext2D, w: number, h: number, t: number) {
   const cx = w * 0.5
   const cy = h * 0.45
+  drawGlow(ctx, cx, cy, 90, SCENE.space.hot, 0.3)
   const sunG = ctx.createRadialGradient(cx, cy, 0, cx, cy, 80)
   sunG.addColorStop(0, '#fff9c4')
   sunG.addColorStop(0.4, '#ff9800')
@@ -117,15 +119,7 @@ function drawModernVignette(ctx: CanvasRenderingContext2D, w: number, h: number,
   ctx.lineTo(cx + 50, cy + 30)
   ctx.stroke()
 
-  for (let i = 0; i < 50; i++) {
-    const x = ((i * 4321) % 1000) / 1000 * w
-    const y = ((i * 8765) % 1000) / 1000 * h * 0.7
-    ctx.fillStyle = `rgba(255,255,255,${0.15 + (i % 5) / 12})`
-    ctx.beginPath()
-    ctx.arc(x, y, 0.8, 0, Math.PI * 2)
-    ctx.fill()
-  }
-
+  drawGlow(ctx, cx + 60 + Math.sin(t) * 20, cy - 30, 12, SCENE.space.hot, 0.35)
   ctx.fillStyle = '#ffd54f'
   ctx.beginPath()
   ctx.arc(cx + 60 + Math.sin(t) * 20, cy - 30, 4, 0, Math.PI * 2)
@@ -139,26 +133,25 @@ function drawEraVignette(
   event: TimelineEvent,
   animT: number,
 ) {
-  ctx.fillStyle = '#030712'
-  ctx.fillRect(0, 0, w, h * 0.62)
+  const vignetteH = h * 0.62
 
   switch (event.era) {
     case 'formation':
-      drawFormationVignette(ctx, w, h * 0.62, animT)
+      drawFormationVignette(ctx, w, vignetteH, animT)
       break
     case 'planets':
-      drawPlanetsVignette(ctx, w, h * 0.62)
+      drawPlanetsVignette(ctx, w, vignetteH)
       break
     case 'exploration':
-      drawExplorationVignette(ctx, w, h * 0.62, animT)
+      drawExplorationVignette(ctx, w, vignetteH, animT)
       break
     case 'modern':
-      drawModernVignette(ctx, w, h * 0.62, animT)
+      drawModernVignette(ctx, w, vignetteH, animT)
       break
   }
 
   ctx.fillStyle = `${eraColor(event.era)}22`
-  ctx.fillRect(0, 0, w, h * 0.62)
+  ctx.fillRect(0, 0, w, vignetteH)
 }
 
 function drawTimeline(
@@ -169,6 +162,9 @@ function drawTimeline(
   animT: number,
 ) {
   const event = eventAtProgress(state.progress)
+
+  fillThemeBackground(ctx, w, h, 'space')
+  drawStarfield(ctx, w, h, 55, 80)
 
   drawEraVignette(ctx, w, h, event, animT)
 
@@ -258,6 +254,8 @@ export function SolarSystemTimelineSim() {
 
   return (
     <SimShell
+      title="Space Timeline"
+      subtitle="From the solar system's birth to modern space missions."
       canvasRef={canvasRef}
       sidebar={
         <>

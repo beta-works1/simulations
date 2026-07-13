@@ -37,6 +37,8 @@ export function RainbowDispersionSim() {
 
   return (
     <SimShell
+      title="Rainbow Formation"
+      subtitle="Dispersion of white light in a droplet"
       canvasRef={canvasRef}
       sidebar={
         <>

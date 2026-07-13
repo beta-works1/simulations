@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { drawGlow, drawStarfield, fillThemeBackground, SCENE } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
 import { useRefPaintLoop } from '../shared/useRefPaintLoop'
@@ -23,6 +24,7 @@ function drawSpiralGalaxy(
   ctx.translate(cx, cy)
   ctx.rotate(rot)
 
+  drawGlow(ctx, 0, 0, 28 * scale, SCENE.space.hot, 0.3)
   const core = ctx.createRadialGradient(0, 0, 0, 0, 0, 22 * scale)
   core.addColorStop(0, '#fff8e1')
   core.addColorStop(0.5, '#ffd54f')
@@ -116,17 +118,8 @@ function drawGalaxyTypes(
   h: number,
   state: GalaxyTypesState,
 ) {
-  ctx.fillStyle = '#020617'
-  ctx.fillRect(0, 0, w, h)
-
-  for (let i = 0; i < 100; i++) {
-    const x = ((i * 6151) % 1000) / 1000 * w
-    const y = ((i * 3571) % 1000) / 1000 * h
-    ctx.fillStyle = `rgba(255,255,255,${0.15 + (i % 7) / 20})`
-    ctx.beginPath()
-    ctx.arc(x, y, 0.5 + (i % 3) * 0.3, 0, Math.PI * 2)
-    ctx.fill()
-  }
+  fillThemeBackground(ctx, w, h, 'space')
+  drawStarfield(ctx, w, h, 77, 100)
 
   const compareAll = w > 520
   if (compareAll) {
@@ -198,6 +191,8 @@ export function GalaxyTypesSim() {
 
   return (
     <SimShell
+      title="Galaxy Types"
+      subtitle="Compare spiral, elliptical, and irregular galaxies."
       canvasRef={canvasRef}
       sidebar={
         <>

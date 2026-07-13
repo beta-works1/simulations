@@ -6,7 +6,7 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx } from '../../shared/drawHelpers'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 
@@ -41,8 +41,7 @@ export function PunnettSquareSim() {
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number) => {
       const fs = fontPx(14, w, h)
-      ctx.fillStyle = '#f7f9fb'
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'biology')
 
       const size = Math.min(w, h) * 0.62
       const x0 = (w - size) / 2

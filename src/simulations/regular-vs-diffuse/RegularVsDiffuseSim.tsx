@@ -60,6 +60,8 @@ export function RegularVsDiffuseSim() {
 
   return (
     <SimShell
+      title="Regular vs Diffuse Reflection"
+      subtitle="Smooth surfaces vs rough scatter"
       canvasRef={canvasRef}
       sidebar={sidebar}
       toolbar={

@@ -6,7 +6,8 @@ import {
   ControlSlider,
   ControlToggle,
 } from '../../shared/Controls'
-import { fontPx, roundRect } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, roundRect, withShadow } from '../../shared/drawHelpers'
+import { drawGlow, SCENE } from '../../shared/canvasTheme'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
@@ -121,11 +122,7 @@ export function MetalNonmetalSim() {
       const hover = hoverRef.current
       const fs = fontPx(13, w, h)
 
-      const bg = ctx.createLinearGradient(0, 0, 0, h)
-      bg.addColorStop(0, '#f7f9fb')
-      bg.addColorStop(1, '#e8eef4')
-      ctx.fillStyle = bg
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'chemistry')
 
       const barW = w * 0.38
       const barH = h * 0.22
@@ -142,9 +139,11 @@ export function MetalNonmetalSim() {
       drawLabelPill(ctx, 'Non-metal — insulates', rightX + barW / 2, barY - 14, { fontSize: fs })
 
       drawHoverHalo(ctx, leftX + barW / 2, barY + barH / 2, barW * 0.48, hover === 'metal')
-      roundRect(ctx, leftX, barY, barW, barH, 10)
-      ctx.fillStyle = mInfo.color
-      ctx.fill()
+      withShadow(ctx, () => {
+        roundRect(ctx, leftX, barY, barW, barH, 10)
+        ctx.fillStyle = mInfo.color
+        ctx.fill()
+      })
       ctx.strokeStyle = hover === 'metal' ? '#2980b9' : '#566573'
       ctx.lineWidth = hover === 'metal' ? 3 : 2
       ctx.stroke()
@@ -187,6 +186,7 @@ export function MetalNonmetalSim() {
           const phase = (t * 1.8 + i * 0.16) % 1
           const ex = leftX + phase * barW
           if (running) {
+            drawGlow(ctx, ex, wireY, 14, SCENE.chemistry.hot, 0.45)
             ctx.beginPath()
             ctx.arc(ex, wireY, 5, 0, Math.PI * 2)
             ctx.fillStyle = '#f1c40f'

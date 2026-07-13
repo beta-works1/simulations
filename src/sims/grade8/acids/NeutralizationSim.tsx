@@ -6,7 +6,7 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx, roundRect } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, roundRect, withShadow } from '../../shared/drawHelpers'
 import { drawHint, drawHoverHalo, drawValueChip } from '../../shared/labels'
 import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
@@ -82,26 +82,28 @@ function drawBeaker(
   fs: number,
 ) {
   const neck = width * 0.35
-  ctx.strokeStyle = '#5d6d7e'
-  ctx.lineWidth = 2.5
-  ctx.beginPath()
-  ctx.moveTo(cx - neck, top)
-  ctx.lineTo(cx - neck, top + (bottom - top) * 0.22)
-  ctx.lineTo(cx - width, bottom)
-  ctx.lineTo(cx + width, bottom)
-  ctx.lineTo(cx + neck, top + (bottom - top) * 0.22)
-  ctx.lineTo(cx + neck, top)
-  ctx.stroke()
+  withShadow(ctx, () => {
+    ctx.strokeStyle = '#5d6d7e'
+    ctx.lineWidth = 2.5
+    ctx.beginPath()
+    ctx.moveTo(cx - neck, top)
+    ctx.lineTo(cx - neck, top + (bottom - top) * 0.22)
+    ctx.lineTo(cx - width, bottom)
+    ctx.lineTo(cx + width, bottom)
+    ctx.lineTo(cx + neck, top + (bottom - top) * 0.22)
+    ctx.lineTo(cx + neck, top)
+    ctx.stroke()
 
-  const liquidTop = bottom - (bottom - top) * 0.15 - fillLevel * (bottom - top) * 0.55
-  ctx.fillStyle = fillColor
-  ctx.beginPath()
-  ctx.moveTo(cx - width + 4, bottom - 4)
-  ctx.lineTo(cx - width + 4, liquidTop)
-  ctx.lineTo(cx + width - 4, liquidTop)
-  ctx.lineTo(cx + width - 4, bottom - 4)
-  ctx.closePath()
-  ctx.fill()
+    const liquidTop = bottom - (bottom - top) * 0.15 - fillLevel * (bottom - top) * 0.55
+    ctx.fillStyle = fillColor
+    ctx.beginPath()
+    ctx.moveTo(cx - width + 4, bottom - 4)
+    ctx.lineTo(cx - width + 4, liquidTop)
+    ctx.lineTo(cx + width - 4, liquidTop)
+    ctx.lineTo(cx + width - 4, bottom - 4)
+    ctx.closePath()
+    ctx.fill()
+  })
 
   ctx.fillStyle = '#1a252f'
   ctx.font = `600 ${fs}px Roboto, sans-serif`
@@ -178,8 +180,7 @@ export function NeutralizationSim() {
       const fs = fontPx(12, w, h)
       const hover = hoverRef.current
 
-      ctx.fillStyle = '#f7f9fb'
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'chemistry')
 
       const top = h * 0.12
       const bottom = h * 0.52
@@ -200,29 +201,31 @@ export function NeutralizationSim() {
 
       const vesselX = w * 0.5
       const vw = Math.min(w * 0.22, 110)
-      ctx.strokeStyle = '#2c3e50'
-      ctx.lineWidth = 3
-      ctx.beginPath()
-      ctx.moveTo(vesselX - vw * 0.4, vesselTop)
-      ctx.lineTo(vesselX - vw, vesselBottom)
-      ctx.lineTo(vesselX + vw, vesselBottom)
-      ctx.lineTo(vesselX + vw * 0.4, vesselTop)
-      ctx.closePath()
-      ctx.stroke()
+      withShadow(ctx, () => {
+        ctx.strokeStyle = '#2c3e50'
+        ctx.lineWidth = 3
+        ctx.beginPath()
+        ctx.moveTo(vesselX - vw * 0.4, vesselTop)
+        ctx.lineTo(vesselX - vw, vesselBottom)
+        ctx.lineTo(vesselX + vw, vesselBottom)
+        ctx.lineTo(vesselX + vw * 0.4, vesselTop)
+        ctx.closePath()
+        ctx.stroke()
 
-      const mixLevel = st.pourProgress * 0.65 + (st.pourProgress > 0 ? 0.08 : 0)
-      const liquidTop =
-        vesselBottom - 8 - mixLevel * (vesselBottom - vesselTop - 16)
-      ctx.fillStyle = phToColor(st.ph)
-      ctx.globalAlpha = 0.85
-      ctx.beginPath()
-      ctx.moveTo(vesselX - vw + 6, vesselBottom - 6)
-      ctx.lineTo(vesselX - vw + 6, liquidTop)
-      ctx.lineTo(vesselX + vw - 6, liquidTop)
-      ctx.lineTo(vesselX + vw - 6, vesselBottom - 6)
-      ctx.closePath()
-      ctx.fill()
-      ctx.globalAlpha = 1
+        const mixLevel = st.pourProgress * 0.65 + (st.pourProgress > 0 ? 0.08 : 0)
+        const liquidTop =
+          vesselBottom - 8 - mixLevel * (vesselBottom - vesselTop - 16)
+        ctx.fillStyle = phToColor(st.ph)
+        ctx.globalAlpha = 0.85
+        ctx.beginPath()
+        ctx.moveTo(vesselX - vw + 6, vesselBottom - 6)
+        ctx.lineTo(vesselX - vw + 6, liquidTop)
+        ctx.lineTo(vesselX + vw - 6, liquidTop)
+        ctx.lineTo(vesselX + vw - 6, vesselBottom - 6)
+        ctx.closePath()
+        ctx.fill()
+        ctx.globalAlpha = 1
+      })
 
       if (running && st.pourProgress < 1) {
         const drip = (st.time * 3) % 1

@@ -95,6 +95,8 @@ export function LawsOfReflectionSim() {
 
   return (
     <SimShell
+      title="Laws of Reflection"
+      subtitle="Angle of incidence equals angle of reflection"
       canvasRef={canvasRef}
       sidebar={sidebar}
       toolbar={

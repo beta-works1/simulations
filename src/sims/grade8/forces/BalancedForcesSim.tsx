@@ -6,7 +6,8 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, withShadow } from '../../shared/drawHelpers'
+import { drawFaintGrid } from '../../shared/canvasTheme'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
@@ -157,8 +158,8 @@ export function BalancedForcesSim() {
       const fNet = R - L
       const hover = hoverRef.current
 
-      ctx.fillStyle = '#f7f9fb'
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'force')
+      drawFaintGrid(ctx, w, h)
 
       const floorY = h * 0.72
       ctx.strokeStyle = '#bdc3c7'
@@ -184,8 +185,10 @@ export function BalancedForcesSim() {
       const cy = floorY - 36
       const box = Math.min(w, h) * (0.07 + m * 0.004)
       drawHoverHalo(ctx, cx, cy, box * 0.85, hover === 'mass')
-      ctx.fillStyle = '#5dade2'
-      ctx.fillRect(cx - box / 2, cy - box / 2, box, box)
+      withShadow(ctx, () => {
+        ctx.fillStyle = '#5dade2'
+        ctx.fillRect(cx - box / 2, cy - box / 2, box, box)
+      })
       ctx.strokeStyle = hover === 'mass' ? '#2980b9' : '#2c3e50'
       ctx.lineWidth = hover === 'mass' ? 3 : 2
       ctx.strokeRect(cx - box / 2, cy - box / 2, box, box)

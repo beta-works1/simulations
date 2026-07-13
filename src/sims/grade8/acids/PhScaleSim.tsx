@@ -7,7 +7,8 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx, roundRect } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, roundRect, withShadow } from '../../shared/drawHelpers'
+import { drawGlow, SCENE } from '../../shared/canvasTheme'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
@@ -163,8 +164,7 @@ export function PhScaleSim() {
       const fs = fontPx(13, w, h)
       const hover = hoverRef.current
 
-      ctx.fillStyle = '#f7f9fb'
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'chemistry')
 
       const vertical = h > w * 0.85
       const pad = Math.min(w, h) * 0.08
@@ -177,9 +177,11 @@ export function PhScaleSim() {
         ? ctx.createLinearGradient(sx, sy + stripH, sx, sy)
         : ctx.createLinearGradient(sx, sy, sx + stripW, sy)
       for (let i = 0; i <= 14; i++) grad.addColorStop(i / 14, phToColor(i))
-      ctx.fillStyle = grad
-      roundRect(ctx, sx, sy, stripW, stripH, 10)
-      ctx.fill()
+      withShadow(ctx, () => {
+        ctx.fillStyle = grad
+        roundRect(ctx, sx, sy, stripW, stripH, 10)
+        ctx.fill()
+      })
       ctx.strokeStyle = hover === 'scale' || hover === 'marker' ? '#2980b9' : '#2c3e50'
       ctx.lineWidth = hover ? 3 : 2
       roundRect(ctx, sx, sy, stripW, stripH, 10)
@@ -213,6 +215,9 @@ export function PhScaleSim() {
       const mx = vertical ? sx + stripW / 2 : sx + markerT * stripW
       const my = vertical ? sy + stripH - markerT * stripH : sy + stripH / 2
       drawHoverHalo(ctx, mx, my, 22, hover === 'marker' || hover === 'scale')
+      if (hover === 'marker' || hover === 'scale') {
+        drawGlow(ctx, mx, my, 28, SCENE.chemistry.hot, 0.35)
+      }
       ctx.save()
       ctx.strokeStyle = '#1a252f'
       ctx.fillStyle = '#fff'

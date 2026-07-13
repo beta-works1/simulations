@@ -6,7 +6,7 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, withShadow } from '../../shared/drawHelpers'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 
@@ -60,36 +60,37 @@ export function FermentationSim() {
       const s = stateRef.current
       const fs = fontPx(12, w, h)
 
-      ctx.fillStyle = '#2c1a12'
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'biotech')
 
       const fx = w * 0.34
       const top = h * 0.14
       const bottom = h * 0.86
       const neckW = Math.min(40, w * 0.05)
       const bodyW = Math.min(120, w * 0.18)
-
-      ctx.strokeStyle = '#d5dbdb'
-      ctx.lineWidth = 3
-      ctx.beginPath()
-      ctx.moveTo(fx - neckW, top)
-      ctx.lineTo(fx - neckW, h * 0.34)
-      ctx.lineTo(fx - bodyW, bottom)
-      ctx.lineTo(fx + bodyW, bottom)
-      ctx.lineTo(fx + neckW, h * 0.34)
-      ctx.lineTo(fx + neckW, top)
-      ctx.stroke()
-
       const fillH = (bottom - h * 0.4) * (0.35 + s.sugar / 200)
       const level = bottom - fillH
-      ctx.fillStyle = `rgba(241, 196, 15, ${0.35 + s.sugar / 280})`
-      ctx.beginPath()
-      ctx.moveTo(fx - bodyW + 8, bottom - 2)
-      ctx.lineTo(fx + bodyW - 8, bottom - 2)
-      ctx.lineTo(fx + neckW - 4, level)
-      ctx.lineTo(fx - neckW + 4, level)
-      ctx.closePath()
-      ctx.fill()
+
+      withShadow(ctx, () => {
+        ctx.strokeStyle = '#d5dbdb'
+        ctx.lineWidth = 3
+        ctx.beginPath()
+        ctx.moveTo(fx - neckW, top)
+        ctx.lineTo(fx - neckW, h * 0.34)
+        ctx.lineTo(fx - bodyW, bottom)
+        ctx.lineTo(fx + bodyW, bottom)
+        ctx.lineTo(fx + neckW, h * 0.34)
+        ctx.lineTo(fx + neckW, top)
+        ctx.stroke()
+
+        ctx.fillStyle = `rgba(241, 196, 15, ${0.35 + s.sugar / 280})`
+        ctx.beginPath()
+        ctx.moveTo(fx - bodyW + 8, bottom - 2)
+        ctx.lineTo(fx + bodyW - 8, bottom - 2)
+        ctx.lineTo(fx + neckW - 4, level)
+        ctx.lineTo(fx - neckW + 4, level)
+        ctx.closePath()
+        ctx.fill()
+      })
 
       for (let i = 0; i < Math.round(s.yeast / 3); i++) {
         ctx.fillStyle = '#ad1457'

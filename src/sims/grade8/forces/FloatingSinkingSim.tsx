@@ -6,7 +6,8 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, withShadow } from '../../shared/drawHelpers'
+import { drawFaintGrid } from '../../shared/canvasTheme'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
@@ -138,12 +139,8 @@ export function FloatingSinkingSim() {
       const v = floatVerdict(od, fd)
       const hover = hoverRef.current
 
-      const bg = ctx.createLinearGradient(0, 0, 0, h)
-      bg.addColorStop(0, '#e8f4fc')
-      bg.addColorStop(0.35, '#d4ebf7')
-      bg.addColorStop(1, '#a9cce3')
-      ctx.fillStyle = bg
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'force')
+      drawFaintGrid(ctx, w, h)
 
       const tankL = w * 0.22
       const tankR = w * 0.78
@@ -163,10 +160,12 @@ export function FloatingSinkingSim() {
       const ox = (tankL + tankR) / 2
       const oy = tankT + s.y * (tankB - tankT)
       drawHoverHalo(ctx, ox, oy, size + 8, hover === 'object')
-      ctx.fillStyle = od < fd ? '#f5b041' : od > fd ? '#7f8c8d' : '#abebc6'
-      ctx.beginPath()
-      ctx.arc(ox, oy, size, 0, Math.PI * 2)
-      ctx.fill()
+      withShadow(ctx, () => {
+        ctx.fillStyle = od < fd ? '#f5b041' : od > fd ? '#7f8c8d' : '#abebc6'
+        ctx.beginPath()
+        ctx.arc(ox, oy, size, 0, Math.PI * 2)
+        ctx.fill()
+      })
       ctx.strokeStyle = hover === 'object' ? '#2980b9' : '#2c3e50'
       ctx.lineWidth = hover === 'object' ? 3 : 2
       ctx.stroke()

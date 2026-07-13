@@ -6,7 +6,8 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx, roundRect } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, roundRect, withShadow } from '../../shared/drawHelpers'
+import { drawFaintGrid } from '../../shared/canvasTheme'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
@@ -116,8 +117,8 @@ export function HydraulicLiftSim() {
       const canLift = outF2 >= LOAD_WEIGHT
       const hover = hoverRef.current
 
-      ctx.fillStyle = '#f7f9fb'
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'force')
+      drawFaintGrid(ctx, w, h)
 
       const baseY = h * 0.78
       const smallX = w * 0.22
@@ -142,9 +143,11 @@ export function HydraulicLiftSim() {
 
       const pistonSmallY = baseY - 28 - F1 * 0.08 - (running ? Math.sin(st.time * 3) * 4 : 0)
       drawHoverHalo(ctx, smallX, pistonSmallY - 20, smallR, hover === 'f1')
-      ctx.fillStyle = '#7f8c8d'
-      roundRect(ctx, smallX - smallR * 0.55, pistonSmallY - 40, smallR * 1.1, 40, 4)
-      ctx.fill()
+      withShadow(ctx, () => {
+        ctx.fillStyle = '#7f8c8d'
+        roundRect(ctx, smallX - smallR * 0.55, pistonSmallY - 40, smallR * 1.1, 40, 4)
+        ctx.fill()
+      })
       ctx.strokeStyle = hover === 'f1' ? '#27ae60' : 'transparent'
       ctx.lineWidth = 3
       roundRect(ctx, smallX - smallR * 0.55, pistonSmallY - 40, smallR * 1.1, 40, 4)
@@ -152,13 +155,14 @@ export function HydraulicLiftSim() {
 
       const liftOffset = st.liftHeight * 55
       const pistonLargeY = baseY - 36 - liftOffset
-      ctx.fillStyle = '#7f8c8d'
-      roundRect(ctx, largeX - largeR * 0.55, pistonLargeY - 36, largeR * 1.1, 36, 4)
-      ctx.fill()
-
-      ctx.fillStyle = '#e67e22'
-      roundRect(ctx, largeX - largeR * 0.7, pistonLargeY - 70, largeR * 1.4, 28, 4)
-      ctx.fill()
+      withShadow(ctx, () => {
+        ctx.fillStyle = '#7f8c8d'
+        roundRect(ctx, largeX - largeR * 0.55, pistonLargeY - 36, largeR * 1.1, 36, 4)
+        ctx.fill()
+        ctx.fillStyle = '#e67e22'
+        roundRect(ctx, largeX - largeR * 0.7, pistonLargeY - 70, largeR * 1.4, 28, 4)
+        ctx.fill()
+      })
       drawLabelPill(ctx, `Load ${LOAD_WEIGHT} N`, largeX, pistonLargeY - 84, { fontSize: fs })
 
       drawValueChip(ctx, 'F₁', `${F1.toFixed(0)} N`, smallX, h * 0.12, { fontSize: fs, accent: true })

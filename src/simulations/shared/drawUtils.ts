@@ -1,10 +1,18 @@
-export const RAY_CYAN = '#38bdf8'
-export const RAY_YELLOW = '#fbbf24'
+import {
+  SCENE,
+  STROKE,
+  drawGlow,
+  fillThemeBackground,
+  type SceneTheme,
+} from './canvasTheme'
+
+export const RAY_CYAN = SCENE.optics.accent
+export const RAY_YELLOW = SCENE.optics.hot
 export const RAY_WHITE = '#f8fafc'
-export const LABEL_COLOR = '#e2e8f0'
+export const LABEL_COLOR = '#f1f5f9'
 export const MUTED = '#94a3b8'
-export const MIRROR_COLOR = '#cbd5e1'
-export const OBJECT_COLOR = '#f472b6'
+export const MIRROR_COLOR = '#e2e8f0'
+export const OBJECT_COLOR = '#fb7185'
 
 export const DEG2RAD = Math.PI / 180
 export const RAD2DEG = 180 / Math.PI
@@ -37,14 +45,24 @@ export function drawRay(
   dir: Vec2,
   length: number,
   color: string,
-  width = 2.5,
+  width: number = STROKE.ray,
 ) {
   const d = normalize(dir)
   const to = add(from, scale(d, length))
   ctx.save()
-  ctx.strokeStyle = color
-  ctx.lineWidth = width
   ctx.lineCap = 'round'
+  ctx.strokeStyle = color
+  ctx.globalAlpha = 0.28
+  ctx.lineWidth = width + 6
+  ctx.shadowBlur = 14
+  ctx.shadowColor = color
+  ctx.beginPath()
+  ctx.moveTo(from.x, from.y)
+  ctx.lineTo(to.x, to.y)
+  ctx.stroke()
+  ctx.globalAlpha = 1
+  ctx.lineWidth = width
+  ctx.shadowBlur = 0
   ctx.beginPath()
   ctx.moveTo(from.x, from.y)
   ctx.lineTo(to.x, to.y)
@@ -54,12 +72,7 @@ export function drawRay(
   return to
 }
 
-function drawArrowhead(
-  ctx: CanvasRenderingContext2D,
-  from: Vec2,
-  to: Vec2,
-  color: string,
-) {
+function drawArrowhead(ctx: CanvasRenderingContext2D, from: Vec2, to: Vec2, color: string) {
   const angle = Math.atan2(to.y - from.y, to.x - from.x)
   const head = 10
   ctx.fillStyle = color
@@ -80,8 +93,9 @@ export function drawDashedLine(
 ) {
   ctx.save()
   ctx.strokeStyle = color
-  ctx.lineWidth = 1.5
+  ctx.lineWidth = STROKE.guide
   ctx.setLineDash(dash)
+  ctx.lineCap = 'round'
   ctx.beginPath()
   ctx.moveTo(a.x, a.y)
   ctx.lineTo(b.x, b.y)
@@ -96,10 +110,12 @@ export function drawLabel(
   align: CanvasTextAlign = 'center',
 ) {
   ctx.save()
-  ctx.font = '600 13px Roboto, system-ui, sans-serif'
-  ctx.fillStyle = LABEL_COLOR
+  ctx.font = '600 13px Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif'
   ctx.textAlign = align
   ctx.textBaseline = 'middle'
+  ctx.shadowColor = 'rgba(0,0,0,0.65)'
+  ctx.shadowBlur = 4
+  ctx.fillStyle = LABEL_COLOR
   ctx.fillText(text, pos.x, pos.y)
   ctx.restore()
 }
@@ -111,11 +127,12 @@ export function drawAngleArc(
   toAngle: number,
   radius: number,
   label: string,
-  color = RAY_YELLOW,
+  color: string = RAY_YELLOW,
 ) {
   ctx.save()
   ctx.strokeStyle = color
-  ctx.lineWidth = 1.5
+  ctx.lineWidth = STROKE.guide
+  ctx.lineCap = 'round'
   ctx.beginPath()
   ctx.arc(center.x, center.y, radius, fromAngle, toAngle)
   ctx.stroke()
@@ -128,11 +145,13 @@ export function drawAngleArc(
   ctx.restore()
 }
 
-export function clearCanvas(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  ctx.save()
-  ctx.fillStyle = '#111827'
-  ctx.fillRect(0, 0, w, h)
-  ctx.restore()
+export function clearCanvas(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  theme: SceneTheme = 'optics',
+) {
+  fillThemeBackground(ctx, w, h, theme)
 }
 
 export function canvasPoint(
@@ -143,3 +162,6 @@ export function canvasPoint(
   const rect = canvas.getBoundingClientRect()
   return { x: clientX - rect.left, y: clientY - rect.top }
 }
+
+export { drawGlow, SCENE, STROKE }
+export type { SceneTheme }

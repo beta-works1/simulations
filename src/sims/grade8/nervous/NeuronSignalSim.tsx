@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { ControlHint, ControlSection, ControlToggle } from '../../shared/Controls'
-import { drawBadge, fontPx } from '../../shared/drawHelpers'
+import { clearThemedScene, drawBadge, fontPx } from '../../shared/drawHelpers'
+import { drawGlow, SCENE } from '../../shared/canvasTheme'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 
@@ -22,11 +23,7 @@ export function NeuronSignalSim() {
       const t = stateRef.current.t % 1
       const fs = fontPx(13, w, h)
 
-      const bg = ctx.createLinearGradient(0, 0, 0, h)
-      bg.addColorStop(0, '#0f2740')
-      bg.addColorStop(1, '#1b3a55')
-      ctx.fillStyle = bg
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'nervous')
 
       const y = h * 0.5
       const x0 = w * 0.1
@@ -77,14 +74,11 @@ export function NeuronSignalSim() {
       ctx.fill()
 
       const x = x0 + 26 + t * (x1 - x0 - 62)
-      ctx.save()
-      ctx.shadowColor = '#f4d03f'
-      ctx.shadowBlur = 16
+      drawGlow(ctx, x, y, 24, SCENE.nervous.hot, 0.5)
       ctx.beginPath()
       ctx.arc(x, y, 10, 0, Math.PI * 2)
       ctx.fillStyle = '#f4d03f'
       ctx.fill()
-      ctx.restore()
 
       drawBadge(ctx, myelin ? 'Myelinated — fast' : 'Unmyelinated — slower', 12, 20, {
         font: `${fs}px Roboto, sans-serif`,

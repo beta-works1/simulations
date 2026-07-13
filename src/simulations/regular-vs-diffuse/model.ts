@@ -1,8 +1,10 @@
+import { withShadow } from '../shared/canvasTheme'
 import {
   RAY_CYAN,
   RAY_YELLOW,
   MIRROR_COLOR,
   clearCanvas,
+  drawGlow,
   drawLabel,
   drawRay,
   normalize,
@@ -37,7 +39,7 @@ export function drawRegularVsDiffuse(
   h: number,
   state: RegularVsDiffuseState,
 ) {
-  clearCanvas(ctx, w, h)
+  clearCanvas(ctx, w, h, 'optics')
 
   const surfaceY = h * 0.68
   const surfaceX1 = w * 0.1
@@ -47,30 +49,54 @@ export function drawRegularVsDiffuse(
 
   const isSmooth = state.surface === 'regular'
 
-  ctx.save()
   if (isSmooth) {
-    ctx.strokeStyle = MIRROR_COLOR
-    ctx.lineWidth = 3
-    ctx.beginPath()
-    ctx.moveTo(surfaceX1, surfaceY)
-    ctx.lineTo(surfaceX2, surfaceY)
-    ctx.stroke()
-    ctx.fillStyle = 'rgba(148, 163, 184, 0.2)'
-    ctx.fillRect(surfaceX1, surfaceY, surfaceX2 - surfaceX1, h - surfaceY)
+    withShadow(
+      ctx,
+      () => {
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.25)'
+        ctx.fillRect(surfaceX1, surfaceY, surfaceX2 - surfaceX1, h - surfaceY)
+      },
+      { blur: 12, color: 'rgba(226, 232, 240, 0.38)', oy: 4 },
+    )
+    withShadow(
+      ctx,
+      () => {
+        ctx.strokeStyle = MIRROR_COLOR
+        ctx.lineWidth = 3
+        ctx.lineCap = 'round'
+        ctx.beginPath()
+        ctx.moveTo(surfaceX1, surfaceY)
+        ctx.lineTo(surfaceX2, surfaceY)
+        ctx.stroke()
+      },
+      { blur: 8, color: 'rgba(255, 255, 255, 0.4)', oy: 1 },
+    )
   } else {
-    ctx.strokeStyle = '#64748b'
-    ctx.lineWidth = 2
-    ctx.beginPath()
-    for (let x = surfaceX1; x <= surfaceX2; x += 6) {
-      const bump = Math.sin(x * 0.08) * 4 + Math.sin(x * 0.23) * 2
-      if (x === surfaceX1) ctx.moveTo(x, surfaceY + bump)
-      else ctx.lineTo(x, surfaceY + bump)
-    }
-    ctx.stroke()
-    ctx.fillStyle = 'rgba(71, 85, 105, 0.35)'
-    ctx.fillRect(surfaceX1, surfaceY, surfaceX2 - surfaceX1, h - surfaceY)
+    withShadow(
+      ctx,
+      () => {
+        ctx.fillStyle = 'rgba(71, 85, 105, 0.38)'
+        ctx.fillRect(surfaceX1, surfaceY, surfaceX2 - surfaceX1, h - surfaceY)
+      },
+      { blur: 10, color: 'rgba(100, 116, 139, 0.35)', oy: 3 },
+    )
+    withShadow(
+      ctx,
+      () => {
+        ctx.strokeStyle = '#94a3b8'
+        ctx.lineWidth = 2
+        ctx.lineCap = 'round'
+        ctx.beginPath()
+        for (let x = surfaceX1; x <= surfaceX2; x += 6) {
+          const bump = Math.sin(x * 0.08) * 4 + Math.sin(x * 0.23) * 2
+          if (x === surfaceX1) ctx.moveTo(x, surfaceY + bump)
+          else ctx.lineTo(x, surfaceY + bump)
+        }
+        ctx.stroke()
+      },
+      { blur: 4, color: 'rgba(148, 163, 184, 0.3)', oy: 1 },
+    )
   }
-  ctx.restore()
 
   for (let i = 0; i < state.rayCount; i++) {
     const hitX = surfaceX1 + spacing * (i + 1)
@@ -78,6 +104,7 @@ export function drawRegularVsDiffuse(
     const incidentFrom: Vec2 = { x: hitX, y: surfaceY - rayLen }
     const incidentDir = normalize({ x: 0, y: 1 })
 
+    drawGlow(ctx, incidentFrom.x, incidentFrom.y, 14, RAY_YELLOW, 0.35)
     drawRay(ctx, incidentFrom, incidentDir, rayLen, RAY_YELLOW, 2)
 
     const scatter = seededScatter(i, state.surface)

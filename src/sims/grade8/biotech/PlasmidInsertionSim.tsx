@@ -5,7 +5,8 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, withShadow } from '../../shared/drawHelpers'
+import { drawGlow, SCENE } from '../../shared/canvasTheme'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 
@@ -42,18 +43,19 @@ export function PlasmidInsertionSim() {
       const f = stateRef.current.t / 1.65
       const fs = fontPx(13, w, h)
 
-      ctx.fillStyle = '#102a20'
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'biotech')
 
       const cx = w * 0.34
       const cy = h * 0.5
       const ringR = Math.min(w, h) * 0.14
 
-      ctx.strokeStyle = '#58d68d'
-      ctx.lineWidth = 6
-      ctx.beginPath()
-      ctx.arc(cx, cy, ringR, 0, Math.PI * 2)
-      ctx.stroke()
+      withShadow(ctx, () => {
+        ctx.strokeStyle = '#58d68d'
+        ctx.lineWidth = 6
+        ctx.beginPath()
+        ctx.arc(cx, cy, ringR, 0, Math.PI * 2)
+        ctx.stroke()
+      })
 
       const gap = stage === 0 ? f * 0.4 : stage > 0 ? 0.4 : 0
       if (gap > 0) {
@@ -66,6 +68,7 @@ export function PlasmidInsertionSim() {
 
       const geneX = stage < 1 ? w * 0.74 : cx + ringR * Math.cos(-0.2)
       const geneY = stage < 1 ? h * 0.28 : cy
+      drawGlow(ctx, geneX, geneY, 52, SCENE.biotech.hot, 0.38)
       ctx.fillStyle = '#f4d03f'
       ctx.fillRect(geneX - 42, geneY - 9, 84, 18)
       ctx.fillStyle = '#1a252f'

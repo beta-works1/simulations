@@ -1,3 +1,4 @@
+import { withShadow } from '../shared/canvasTheme'
 import {
   DEG2RAD,
   RAY_CYAN,
@@ -8,6 +9,7 @@ import {
   MUTED,
   clearCanvas,
   drawDashedLine,
+  drawGlow,
   drawLabel,
   drawRay,
   normalize,
@@ -69,12 +71,27 @@ function drawMirrorSegment(
   ctx.translate((a.x + b.x) / 2, (a.y + b.y) / 2)
   ctx.rotate(angleDeg * DEG2RAD)
   const len = Math.hypot(b.x - a.x, b.y - a.y)
-  ctx.strokeStyle = MIRROR_COLOR
-  ctx.lineWidth = 4
-  ctx.beginPath()
-  ctx.moveTo(-len / 2, 0)
-  ctx.lineTo(len / 2, 0)
-  ctx.stroke()
+  withShadow(
+    ctx,
+    () => {
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.3)'
+      ctx.fillRect(-len / 2, -7, len, 14)
+    },
+    { blur: 12, color: 'rgba(226, 232, 240, 0.42)', oy: 3 },
+  )
+  withShadow(
+    ctx,
+    () => {
+      ctx.strokeStyle = MIRROR_COLOR
+      ctx.lineWidth = 4
+      ctx.lineCap = 'round'
+      ctx.beginPath()
+      ctx.moveTo(-len / 2, 0)
+      ctx.lineTo(len / 2, 0)
+      ctx.stroke()
+    },
+    { blur: 8, color: 'rgba(255, 255, 255, 0.45)', oy: 1 },
+  )
   ctx.restore()
 }
 
@@ -172,12 +189,14 @@ function drawPeriscopeScene(
   drawRay(ctx, bottomMirror, normalize({ x: eye.x - bottomMirror.x, y: eye.y - bottomMirror.y }),
     Math.hypot(eye.x - bottomMirror.x, eye.y - bottomMirror.y), RAY_CYAN)
 
+  drawGlow(ctx, target.x, target.y, 28, OBJECT_COLOR, 0.45)
   ctx.save()
   ctx.fillStyle = OBJECT_COLOR
   ctx.beginPath()
   ctx.arc(target.x, target.y, 8, 0, Math.PI * 2)
   ctx.fill()
   drawLabel(ctx, 'Object', { x: target.x, y: target.y - 18 })
+  drawGlow(ctx, eye.x, eye.y, 24, RAY_CYAN, 0.45)
   ctx.fillStyle = RAY_CYAN
   ctx.beginPath()
   ctx.arc(eye.x, eye.y, 7, 0, Math.PI * 2)
@@ -192,7 +211,7 @@ export function drawPlaneMirrorPeriscope(
   h: number,
   state: PlaneMirrorState,
 ) {
-  clearCanvas(ctx, w, h)
+  clearCanvas(ctx, w, h, 'optics')
   if (state.mode === 'plane') {
     drawPlaneMirrorScene(ctx, w, h, state)
     drawLabel(ctx, 'Plane mirror — virtual image forms behind the mirror', { x: w * 0.5, y: 24 }, 'center')

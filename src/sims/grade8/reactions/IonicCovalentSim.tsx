@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { ControlHint, ControlSection, ControlSelect } from '../../shared/Controls'
-import { fontPx } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, withShadow } from '../../shared/drawHelpers'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
@@ -36,10 +36,12 @@ function drawAtom(
   hover: boolean,
 ) {
   drawHoverHalo(ctx, x, y, r + 6, hover)
-  ctx.beginPath()
-  ctx.arc(x, y, r, 0, Math.PI * 2)
-  ctx.fillStyle = color
-  ctx.fill()
+  withShadow(ctx, () => {
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, Math.PI * 2)
+    ctx.fillStyle = color
+    ctx.fill()
+  })
   ctx.strokeStyle = hover ? '#2980b9' : '#1a252f'
   ctx.lineWidth = hover ? 3 : 2
   ctx.stroke()
@@ -117,11 +119,7 @@ export function IonicCovalentSim() {
       const hover = hoverRef.current
       const fs = fontPx(13, w, h)
 
-      const bg = ctx.createLinearGradient(0, 0, 0, h)
-      bg.addColorStop(0, '#f7f9fb')
-      bg.addColorStop(1, '#e8eef4')
-      ctx.fillStyle = bg
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'chemistry')
 
       layoutRef.current.buttons = []
       const btnY = h - 52

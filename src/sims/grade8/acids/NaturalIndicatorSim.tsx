@@ -6,7 +6,7 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx, roundRect } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, roundRect, withShadow } from '../../shared/drawHelpers'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 
@@ -72,40 +72,40 @@ export function NaturalIndicatorSim() {
       const fs = fontPx(13, w, h)
       const ph = st.mixedPh
 
-      ctx.fillStyle = '#f7f9fb'
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'chemistry')
 
       const bx = w * 0.5
       const top = h * 0.18
       const bottom = h * 0.72
       const bw = Math.min(w * 0.18, 100)
-
-      ctx.strokeStyle = '#5d6d7e'
-      ctx.lineWidth = 2.5
-      ctx.beginPath()
-      ctx.moveTo(bx - bw * 0.35, top)
-      ctx.lineTo(bx - bw * 0.35, top + (bottom - top) * 0.15)
-      ctx.lineTo(bx - bw, bottom)
-      ctx.lineTo(bx + bw, bottom)
-      ctx.lineTo(bx + bw * 0.35, top + (bottom - top) * 0.15)
-      ctx.lineTo(bx + bw * 0.35, top)
-      ctx.stroke()
-
       const juiceColor = indicatorColor(indicator, 7)
       const liquidColor = indicatorColor(indicator, ph)
       const level = 0.25 + st.dripProgress * 0.45
       const liquidTop = bottom - 10 - level * (bottom - top - 30)
 
-      ctx.fillStyle = liquidColor
-      ctx.globalAlpha = 0.9
-      ctx.beginPath()
-      ctx.moveTo(bx - bw + 8, bottom - 8)
-      ctx.lineTo(bx - bw + 8, liquidTop)
-      ctx.lineTo(bx + bw - 8, liquidTop)
-      ctx.lineTo(bx + bw - 8, bottom - 8)
-      ctx.closePath()
-      ctx.fill()
-      ctx.globalAlpha = 1
+      withShadow(ctx, () => {
+        ctx.strokeStyle = '#5d6d7e'
+        ctx.lineWidth = 2.5
+        ctx.beginPath()
+        ctx.moveTo(bx - bw * 0.35, top)
+        ctx.lineTo(bx - bw * 0.35, top + (bottom - top) * 0.15)
+        ctx.lineTo(bx - bw, bottom)
+        ctx.lineTo(bx + bw, bottom)
+        ctx.lineTo(bx + bw * 0.35, top + (bottom - top) * 0.15)
+        ctx.lineTo(bx + bw * 0.35, top)
+        ctx.stroke()
+
+        ctx.fillStyle = liquidColor
+        ctx.globalAlpha = 0.9
+        ctx.beginPath()
+        ctx.moveTo(bx - bw + 8, bottom - 8)
+        ctx.lineTo(bx - bw + 8, liquidTop)
+        ctx.lineTo(bx + bw - 8, liquidTop)
+        ctx.lineTo(bx + bw - 8, bottom - 8)
+        ctx.closePath()
+        ctx.fill()
+        ctx.globalAlpha = 1
+      })
 
       if (running && st.dripProgress < 1) {
         const dropY = top - 20 + ((st.time * 2.5) % 1) * (liquidTop - top + 30)

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { drawGlow, fillThemeBackground, SCENE, strokeWithGlow, withShadow } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useAnimationLoop } from '../shared/useAnimationLoop'
 import { useCanvasSize } from '../shared/useCanvasSize'
@@ -42,8 +43,7 @@ export function SpeakerMechanismSim() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    ctx.fillStyle = '#111827'
-    ctx.fillRect(0, 0, w, h)
+    fillThemeBackground(ctx, w, h, 'electric')
 
     const cx = w * 0.38
     const cy = h * 0.52
@@ -72,30 +72,46 @@ export function SpeakerMechanismSim() {
 
     // Electromagnet coil behind diaphragm
     const coilX = cx - housingR * 0.15
-    ctx.strokeStyle = state.current > 0 ? '#fbbf24' : '#64748b'
-    ctx.lineWidth = 2.5
-    for (let i = 0; i < 5; i++) {
-      ctx.beginPath()
-      ctx.ellipse(coilX, cy + offset * 0.5, 10, 18 + i * 3, 0, 0, Math.PI * 2)
-      ctx.stroke()
+    const coilActive = state.current > 0
+    if (coilActive) {
+      drawGlow(ctx, coilX, cy + offset * 0.5, 36, SCENE.electric.accent, 0.22)
     }
+    withShadow(ctx, () => {
+      const coilColor = coilActive ? SCENE.electric.accent : '#64748b'
+      ctx.strokeStyle = coilColor
+      ctx.lineWidth = coilActive ? 2.75 : 2.5
+      for (let i = 0; i < 5; i++) {
+        ctx.beginPath()
+        ctx.ellipse(coilX, cy + offset * 0.5, 10, 18 + i * 3, 0, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+    }, { blur: 10, oy: 3 })
 
     // Permanent magnet core
-    ctx.fillStyle = '#dc2626'
-    ctx.fillRect(coilX - 8, cy - 22 + offset * 0.3, 16, 18)
-    ctx.fillStyle = '#1e40af'
-    ctx.fillRect(coilX - 8, cy + 4 + offset * 0.3, 16, 18)
+    withShadow(ctx, () => {
+      ctx.fillStyle = '#dc2626'
+      ctx.fillRect(coilX - 8, cy - 22 + offset * 0.3, 16, 18)
+      ctx.fillStyle = '#1e40af'
+      ctx.fillRect(coilX - 8, cy + 4 + offset * 0.3, 16, 18)
+    }, { blur: 12, oy: 4 })
 
     // Sound waves (concentric arcs to the right)
     const waveOriginX = cx + housingR * 0.75
     for (const wave of wavesRef.current) {
       const age = time - wave.birth
       const alpha = Math.max(0, 1 - age / 2.5) * state.current * 0.6
-      ctx.strokeStyle = `rgba(56, 189, 248, ${alpha})`
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.arc(waveOriginX, cy, wave.radius, -Math.PI / 3, Math.PI / 3)
-      ctx.stroke()
+      if (alpha > 0.02) {
+        strokeWithGlow(
+          ctx,
+          () => {
+            ctx.beginPath()
+            ctx.arc(waveOriginX, cy, wave.radius, -Math.PI / 3, Math.PI / 3)
+          },
+          `rgba(56, 189, 248, ${alpha})`,
+          2,
+          `rgba(56, 189, 248, ${alpha * 0.4})`,
+        )
+      }
     }
 
     // AC waveform indicator
@@ -103,16 +119,21 @@ export function SpeakerMechanismSim() {
       const graphY = h - 50
       const graphW = w - 40
       const graphX = 20
-      ctx.strokeStyle = '#38bdf8'
-      ctx.lineWidth = 1.5
-      ctx.beginPath()
-      for (let x = 0; x <= graphW; x++) {
-        const t = time + x / graphW * 0.5
-        const y = graphY + Math.sin(2 * Math.PI * state.frequency * t) * 12 * state.current
-        if (x === 0) ctx.moveTo(graphX + x, y)
-        else ctx.lineTo(graphX + x, y)
-      }
-      ctx.stroke()
+      strokeWithGlow(
+        ctx,
+        () => {
+          ctx.beginPath()
+          for (let x = 0; x <= graphW; x++) {
+            const t = time + x / graphW * 0.5
+            const y = graphY + Math.sin(2 * Math.PI * state.frequency * t) * 12 * state.current
+            if (x === 0) ctx.moveTo(graphX + x, y)
+            else ctx.lineTo(graphX + x, y)
+          }
+        },
+        SCENE.electric.accent,
+        1.5,
+        SCENE.electric.glow,
+      )
       ctx.fillStyle = '#64748b'
       ctx.font = '10px Roboto, sans-serif'
       ctx.textAlign = 'left'
@@ -146,6 +167,8 @@ export function SpeakerMechanismSim() {
 
   return (
     <SimShell
+      title="Speaker Mechanism"
+      subtitle="Alternating current vibrates the diaphragm and sends out sound waves."
       canvasRef={canvasRef}
       sidebar={
         <>

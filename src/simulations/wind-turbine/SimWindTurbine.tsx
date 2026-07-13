@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { drawGlow, withShadow } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
 import { useRefPaintLoop } from '../shared/useRefPaintLoop'
@@ -14,6 +15,28 @@ import {
   type WindTurbineState,
 } from './model'
 
+function drawWarmSkyVignette(ctx: CanvasRenderingContext2D, w: number, h: number, skyRatio: number) {
+  const sky = ctx.createLinearGradient(0, 0, 0, h * skyRatio)
+  sky.addColorStop(0, '#0c4a6e')
+  sky.addColorStop(0.5, '#7dd3fc')
+  sky.addColorStop(1, '#fde68a')
+  ctx.fillStyle = sky
+  ctx.fillRect(0, 0, w, h * skyRatio)
+
+  const vg = ctx.createRadialGradient(
+    w * 0.5,
+    h * 0.3,
+    Math.min(w, h) * 0.1,
+    w * 0.5,
+    h * 0.5,
+    Math.max(w, h) * 0.75,
+  )
+  vg.addColorStop(0, 'rgba(255,255,255,0.05)')
+  vg.addColorStop(1, 'rgba(0,0,0,0.14)')
+  ctx.fillStyle = vg
+  ctx.fillRect(0, 0, w, h)
+}
+
 function drawWindTurbine(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -21,18 +44,14 @@ function drawWindTurbine(
   state: WindTurbineState,
 ) {
   ctx.clearRect(0, 0, w, h)
-
-  const sky = ctx.createLinearGradient(0, 0, 0, h * 0.65)
-  sky.addColorStop(0, '#0c4a6e')
-  sky.addColorStop(1, '#7dd3fc')
-  ctx.fillStyle = sky
-  ctx.fillRect(0, 0, w, h * 0.65)
+  drawWarmSkyVignette(ctx, w, h, 0.65)
 
   ctx.fillStyle = '#4ade80'
   ctx.fillRect(0, h * 0.65, w, h * 0.35)
 
   const rpm = bladeRpm(state.windSpeed)
   const wind = state.windSpeed
+  const hubActive = rpm > 0.5
 
   ctx.strokeStyle = 'rgba(255,255,255,0.35)'
   ctx.lineWidth = 2
@@ -48,31 +67,39 @@ function drawWindTurbine(
   const towerBase = h * 0.65
   const hubY = h * 0.28
 
-  ctx.fillStyle = '#64748b'
-  ctx.beginPath()
-  ctx.moveTo(towerX - 14, towerBase)
-  ctx.lineTo(towerX + 14, towerBase)
-  ctx.lineTo(towerX + 6, hubY + 20)
-  ctx.lineTo(towerX - 6, hubY + 20)
-  ctx.closePath()
-  ctx.fill()
+  withShadow(ctx, () => {
+    ctx.fillStyle = '#64748b'
+    ctx.beginPath()
+    ctx.moveTo(towerX - 14, towerBase)
+    ctx.lineTo(towerX + 14, towerBase)
+    ctx.lineTo(towerX + 6, hubY + 20)
+    ctx.lineTo(towerX - 6, hubY + 20)
+    ctx.closePath()
+    ctx.fill()
+  }, { blur: 14, oy: 5 })
 
   ctx.save()
   ctx.translate(towerX, hubY)
   ctx.rotate((state.bladeAngle * Math.PI) / 180)
 
-  ctx.fillStyle = '#e2e8f0'
-  for (let b = 0; b < 3; b++) {
-    ctx.save()
-    ctx.rotate((b * Math.PI * 2) / 3)
-    ctx.beginPath()
-    ctx.moveTo(0, 0)
-    ctx.quadraticCurveTo(18, -55, 8, -110)
-    ctx.quadraticCurveTo(0, -115, -8, -110)
-    ctx.quadraticCurveTo(-18, -55, 0, 0)
-    ctx.fill()
-    ctx.restore()
+  if (hubActive) {
+    drawGlow(ctx, 0, 0, 42 + Math.min(rpm, 30) * 0.8, '#7dd3fc', 0.18 + Math.min(rpm, 30) * 0.01)
   }
+
+  withShadow(ctx, () => {
+    ctx.fillStyle = '#e2e8f0'
+    for (let b = 0; b < 3; b++) {
+      ctx.save()
+      ctx.rotate((b * Math.PI * 2) / 3)
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.quadraticCurveTo(18, -55, 8, -110)
+      ctx.quadraticCurveTo(0, -115, -8, -110)
+      ctx.quadraticCurveTo(-18, -55, 0, 0)
+      ctx.fill()
+      ctx.restore()
+    }
+  }, { blur: 10, oy: 3 })
 
   ctx.fillStyle = '#334155'
   ctx.beginPath()
@@ -152,6 +179,8 @@ export function WindTurbineSim() {
 
   return (
     <SimShell
+      title="Wind Turbine"
+      subtitle="Wind spins blades and converts energy to electrical power."
       canvasRef={canvasRef}
       sidebar={
         <>

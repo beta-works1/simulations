@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { drawGlow, fillThemeBackground, SCENE, strokeWithGlow } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useAnimationLoop } from '../shared/useAnimationLoop'
 import { useCanvasSize } from '../shared/useCanvasSize'
@@ -16,15 +17,30 @@ import {
   type ShortCircuitState,
 } from './model'
 
-function drawWire(ctx: CanvasRenderingContext2D, points: Point[], color = '#64748b', width = 3) {
-  ctx.strokeStyle = color
-  ctx.lineWidth = width
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
+function wirePath(ctx: CanvasRenderingContext2D, points: Point[]) {
   ctx.beginPath()
   ctx.moveTo(points[0].x, points[0].y)
   for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y)
-  ctx.stroke()
+}
+
+function drawWire(
+  ctx: CanvasRenderingContext2D,
+  points: Point[],
+  color = '#64748b',
+  width = 3,
+  energized = false,
+  glowColor?: string,
+) {
+  if (energized) {
+    strokeWithGlow(ctx, () => wirePath(ctx, points), color, width, glowColor ?? SCENE.electric.glow)
+  } else {
+    ctx.strokeStyle = color
+    ctx.lineWidth = width
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    wirePath(ctx, points)
+    ctx.stroke()
+  }
 }
 
 function drawBattery(ctx: CanvasRenderingContext2D, x: number, y: number, voltage: number) {
@@ -130,16 +146,16 @@ export function ShortCircuitFuseSim() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    ctx.fillStyle = '#111827'
-    ctx.fillRect(0, 0, w, h)
+    fillThemeBackground(ctx, w, h, 'electric')
 
     const loop = mainLoop(w, h)
     const bypass = shortBypass(w, h)
     const [tl, tr, br, bl] = loop
+    const energized = !state.fuseBlown && readout.current > 0
 
-    drawWire(ctx, loop)
+    drawWire(ctx, loop, '#64748b', 3, energized)
     if (state.shorted) {
-      drawWire(ctx, bypass, '#ef4444', 4)
+      drawWire(ctx, bypass, '#ef4444', 4, energized, 'rgba(239, 68, 68, 0.45)')
       ctx.fillStyle = '#fca5a5'
       ctx.font = '10px Roboto, sans-serif'
       ctx.textAlign = 'center'
@@ -150,13 +166,20 @@ export function ShortCircuitFuseSim() {
     drawFuse(ctx, (tl.x + tr.x) / 2, tl.y, state.fuseRating, state.fuseBlown)
     drawLoad(ctx, tr.x, (tr.y + br.y) / 2, readout.loadPowered, state.shorted)
 
-    if (!state.fuseBlown && readout.current > 0) {
+    if (energized) {
       for (const p of particlesRef.current) {
         const pt = pointOnPath(loop, p.t, true)
-        ctx.fillStyle = state.shorted ? '#f87171' : '#38bdf8'
+        const particleColor = state.shorted ? '#f87171' : SCENE.electric.hot
+        const glow = state.shorted ? 'rgba(248, 113, 113, 0.5)' : SCENE.electric.glow
+        drawGlow(ctx, pt.x, pt.y, state.shorted ? 14 : 10, particleColor, 0.45)
+        ctx.save()
+        ctx.shadowBlur = state.shorted ? 12 : 8
+        ctx.shadowColor = glow
+        ctx.fillStyle = particleColor
         ctx.beginPath()
         ctx.arc(pt.x, pt.y, state.shorted ? 4 : 3, 0, Math.PI * 2)
         ctx.fill()
+        ctx.restore()
       }
     }
 
@@ -195,6 +218,8 @@ export function ShortCircuitFuseSim() {
 
   return (
     <SimShell
+      title="Short Circuit & Fuse"
+      subtitle="Watch current spike on a short and see how a fuse protects the circuit."
       canvasRef={canvasRef}
       sidebar={
         <>

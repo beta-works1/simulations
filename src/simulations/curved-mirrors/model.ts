@@ -1,3 +1,4 @@
+import { withShadow } from '../shared/canvasTheme'
 import {
   RAY_CYAN,
   RAY_YELLOW,
@@ -6,6 +7,7 @@ import {
   MUTED,
   clearCanvas,
   drawDashedLine,
+  drawGlow,
   drawLabel,
   drawRay,
   normalize,
@@ -75,17 +77,37 @@ function drawMirrorArc(
   r: number,
   type: MirrorType,
 ) {
-  ctx.save()
-  ctx.strokeStyle = '#cbd5e1'
-  ctx.lineWidth = 4
-  ctx.beginPath()
-  if (type === 'concave') {
-    ctx.arc(pole.x + r, pole.y, r, Math.PI * 0.65, Math.PI * 1.35)
-  } else {
-    ctx.arc(pole.x - r, pole.y, r, -Math.PI * 0.35, Math.PI * 0.35)
+  const drawArc = () => {
+    ctx.beginPath()
+    if (type === 'concave') {
+      ctx.arc(pole.x + r, pole.y, r, Math.PI * 0.65, Math.PI * 1.35)
+    } else {
+      ctx.arc(pole.x - r, pole.y, r, -Math.PI * 0.35, Math.PI * 0.35)
+    }
   }
-  ctx.stroke()
-  ctx.restore()
+
+  withShadow(
+    ctx,
+    () => {
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)'
+      ctx.lineWidth = 10
+      ctx.lineCap = 'round'
+      drawArc()
+      ctx.stroke()
+    },
+    { blur: 14, color: 'rgba(226, 232, 240, 0.38)', oy: 4 },
+  )
+  withShadow(
+    ctx,
+    () => {
+      ctx.strokeStyle = '#e2e8f0'
+      ctx.lineWidth = 4
+      ctx.lineCap = 'round'
+      drawArc()
+      ctx.stroke()
+    },
+    { blur: 8, color: 'rgba(255, 255, 255, 0.45)', oy: 1 },
+  )
 }
 
 function drawArrowObject(
@@ -124,7 +146,7 @@ export function drawCurvedMirrors(
   h: number,
   state: CurvedMirrorsState,
 ) {
-  clearCanvas(ctx, w, h)
+  clearCanvas(ctx, w, h, 'optics')
   const layout = computeCurvedLayout(w, h, state)
   const { pole, axisY, f, r, objectX, imageX, objectH, imageH, imageVirtual } = layout
 
@@ -163,6 +185,7 @@ export function drawCurvedMirrors(
 
   const objBase = { x: objectX, y: axisY }
   const objTip = { x: objectX, y: axisY - objectH }
+  drawGlow(ctx, objTip.x, objTip.y, 22, RAY_YELLOW, 0.35)
   drawArrowObject(ctx, objBase, objectH, OBJECT_COLOR, 'Object')
 
   const imgBase = { x: imageX, y: axisY }

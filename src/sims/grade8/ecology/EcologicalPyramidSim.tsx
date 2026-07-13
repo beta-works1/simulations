@@ -174,6 +174,19 @@ export function EcologicalPyramidSim() {
       if (hintShown.current) {
         drawHint(ctx, 'click tiers · drag handle for base energy', w / 2, h - 42, w, h, { muted: true })
       }
+
+      const vg = ctx.createRadialGradient(
+        w * 0.5,
+        h * 0.4,
+        Math.min(w, h) * 0.15,
+        w * 0.5,
+        h * 0.5,
+        Math.max(w, h) * 0.75,
+      )
+      vg.addColorStop(0, 'rgba(255,255,255,0.04)')
+      vg.addColorStop(1, 'rgba(0,0,0,0.18)')
+      ctx.fillStyle = vg
+      ctx.fillRect(0, 0, w, h)
     },
     [base, running, selectedTier],
   )

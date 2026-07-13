@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { drawGlow, fillThemeBackground, SCENE, strokeWithGlow } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useAnimationLoop } from '../shared/useAnimationLoop'
 import { useCanvasSize } from '../shared/useCanvasSize'
@@ -16,16 +17,26 @@ import {
   type SeriesParallelState,
 } from './model'
 
-function drawWire(ctx: CanvasRenderingContext2D, points: Point[], closed = true) {
-  ctx.strokeStyle = '#64748b'
-  ctx.lineWidth = 3
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
+function wirePath(ctx: CanvasRenderingContext2D, points: Point[], closed = true) {
   ctx.beginPath()
   ctx.moveTo(points[0].x, points[0].y)
   for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y)
   if (closed) ctx.closePath()
-  ctx.stroke()
+}
+
+function drawWire(ctx: CanvasRenderingContext2D, points: Point[], energized = false, closed = true) {
+  const color = energized ? SCENE.electric.accent : '#64748b'
+  const width = 3
+  if (energized) {
+    strokeWithGlow(ctx, () => wirePath(ctx, points, closed), color, width, SCENE.electric.glow)
+  } else {
+    ctx.strokeStyle = color
+    ctx.lineWidth = width
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    wirePath(ctx, points, closed)
+    ctx.stroke()
+  }
 }
 
 function drawBattery(ctx: CanvasRenderingContext2D, x: number, y: number, voltage: number) {
@@ -52,12 +63,13 @@ function drawBulb(
 ) {
   const glow = brightness
   if (glow > 0.05) {
-    const grd = ctx.createRadialGradient(x, y, 4, x, y, 24 + glow * 18)
-    grd.addColorStop(0, `rgba(253, 224, 71, ${0.3 + glow * 0.55})`)
+    drawGlow(ctx, x, y, 24 + glow * 20, SCENE.electric.hot, 0.28 + glow * 0.35)
+    const grd = ctx.createRadialGradient(x, y, 2, x, y, 12 + glow * 6)
+    grd.addColorStop(0, `rgba(253, 224, 71, ${0.5 + glow * 0.45})`)
     grd.addColorStop(1, 'rgba(253, 224, 71, 0)')
     ctx.fillStyle = grd
     ctx.beginPath()
-    ctx.arc(x, y, 24 + glow * 18, 0, Math.PI * 2)
+    ctx.arc(x, y, 12 + glow * 6, 0, Math.PI * 2)
     ctx.fill()
   }
   ctx.strokeStyle = '#cbd5e1'
@@ -87,10 +99,15 @@ function drawJunction(ctx: CanvasRenderingContext2D, x: number, y: number) {
 function drawParticles(ctx: CanvasRenderingContext2D, loop: Point[], particles: Particle[]) {
   for (const p of particles) {
     const pt = pointOnLoop(loop, p.t)
-    ctx.fillStyle = '#38bdf8'
+    drawGlow(ctx, pt.x, pt.y, 10, SCENE.electric.accent, 0.4)
+    ctx.save()
+    ctx.shadowBlur = 8
+    ctx.shadowColor = SCENE.electric.glow
+    ctx.fillStyle = SCENE.electric.hot
     ctx.beginPath()
     ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2)
     ctx.fill()
+    ctx.restore()
   }
 }
 
@@ -120,22 +137,23 @@ export function SeriesParallelSim() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    ctx.fillStyle = '#111827'
-    ctx.fillRect(0, 0, w, h)
+    fillThemeBackground(ctx, w, h, 'electric')
+
+    const energized = readout.totalCurrent > 0
 
     if (state.mode === 'series') {
       const loop = seriesLoop(w, h)
       const [tl, tr, br, bl] = loop
-      drawWire(ctx, loop)
+      drawWire(ctx, loop, energized)
       drawBattery(ctx, tl.x, (tl.y + bl.y) / 2, state.voltage)
       drawBulb(ctx, (tl.x + tr.x) / 2, tl.y, readout.bulbBrightness, 'Bulb 1')
       drawBulb(ctx, (bl.x + br.x) / 2, br.y, readout.bulbBrightness, 'Bulb 2')
       drawParticles(ctx, loop, particlesRef.current)
     } else {
       const { top, bottom, shared } = parallelLoops(w, h)
-      drawWire(ctx, shared)
-      drawWire(ctx, top)
-      drawWire(ctx, bottom)
+      drawWire(ctx, shared, energized, false)
+      drawWire(ctx, top, energized)
+      drawWire(ctx, bottom, energized)
       const leftX = shared[0].x
       const rightX = shared[2].x
       const topY = (top[0].y + top[2].y) / 2
@@ -151,10 +169,15 @@ export function SeriesParallelSim() {
       for (const p of particlesRef.current) {
         const loop = p.branch === 0 ? top : bottom
         const pt = pointOnLoop(loop, p.t)
-        ctx.fillStyle = '#38bdf8'
+        drawGlow(ctx, pt.x, pt.y, 10, SCENE.electric.accent, 0.4)
+        ctx.save()
+        ctx.shadowBlur = 8
+        ctx.shadowColor = SCENE.electric.glow
+        ctx.fillStyle = SCENE.electric.hot
         ctx.beginPath()
         ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2)
         ctx.fill()
+        ctx.restore()
       }
     }
 
@@ -184,6 +207,8 @@ export function SeriesParallelSim() {
 
   return (
     <SimShell
+      title="Series vs Parallel Circuits"
+      subtitle="Compare brightness and current in two-bulb series and parallel layouts."
       canvasRef={canvasRef}
       sidebar={
         <>

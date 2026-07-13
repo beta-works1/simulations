@@ -72,6 +72,8 @@ export function RefractionMediaSim() {
 
   return (
     <SimShell
+      title="Refraction Through Media"
+      subtitle="Light bending with Snell’s law"
       canvasRef={canvasRef}
       sidebar={sidebar}
       toolbar={

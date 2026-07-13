@@ -2,6 +2,8 @@ import type { ReactNode, RefObject } from 'react'
 import './SimShell.css'
 
 interface SimShellProps {
+  title?: string
+  subtitle?: string
   canvasRef: RefObject<HTMLCanvasElement | null>
   sidebar: ReactNode
   toolbar?: ReactNode
@@ -12,6 +14,8 @@ interface SimShellProps {
 }
 
 export function SimShell({
+  title,
+  subtitle,
   canvasRef,
   sidebar,
   toolbar,
@@ -21,11 +25,20 @@ export function SimShell({
   onPointerLeave,
 }: SimShellProps) {
   return (
-    <div className="sim-shell">
+    <div className="sim-shell" role="region" aria-label={title ? `${title} simulation` : 'Simulation'}>
+      {title ? (
+        <header className="sim-shell-header">
+          <div>
+            <h2 className="sim-shell-header-title">{title}</h2>
+            {subtitle ? <p className="sim-shell-header-sub">{subtitle}</p> : null}
+          </div>
+        </header>
+      ) : null}
       <div className="sim-shell-main">
         <div className="sim-shell-canvas-wrap">
           <canvas
             ref={canvasRef}
+            aria-label={title ? `${title} canvas` : 'Simulation canvas'}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}

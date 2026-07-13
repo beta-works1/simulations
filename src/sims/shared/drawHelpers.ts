@@ -1,5 +1,11 @@
 /** Shared Canvas drawing helpers for responsive PhET-like visuals. */
 
+import {
+  fillThemeBackground,
+  type SceneTheme,
+  withShadow,
+} from './canvasTheme'
+
 export function clearScene(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -12,7 +18,31 @@ export function clearScene(
   g.addColorStop(1, bottom)
   ctx.fillStyle = g
   ctx.fillRect(0, 0, w, h)
+
+  const vg = ctx.createRadialGradient(
+    w * 0.5,
+    h * 0.35,
+    Math.min(w, h) * 0.12,
+    w * 0.5,
+    h * 0.55,
+    Math.max(w, h) * 0.7,
+  )
+  vg.addColorStop(0, 'rgba(255,255,255,0.045)')
+  vg.addColorStop(1, 'rgba(0,0,0,0.16)')
+  ctx.fillStyle = vg
+  ctx.fillRect(0, 0, w, h)
 }
+
+export function clearThemedScene(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  theme: SceneTheme,
+) {
+  fillThemeBackground(ctx, w, h, theme)
+}
+
+export { withShadow }
 
 export function fontPx(base: number, w: number, h: number, min = 10, max = 22) {
   const scale = Math.min(w, h) / 480

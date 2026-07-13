@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { drawGlow, withShadow } from '../shared/canvasTheme'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../sims/shared/labels'
 import { clamp } from '../../sims/shared/math'
 import { useCanvasPointer } from '../../sims/shared/useCanvasPointer'
@@ -16,6 +17,28 @@ import {
   type SolarCookerState,
 } from './model'
 
+function drawWarmSkyVignette(ctx: CanvasRenderingContext2D, w: number, h: number, skyRatio: number) {
+  const sky = ctx.createLinearGradient(0, 0, 0, h * skyRatio)
+  sky.addColorStop(0, '#1a5fbf')
+  sky.addColorStop(0.45, '#5ba3e8')
+  sky.addColorStop(1, '#ffd89b')
+  ctx.fillStyle = sky
+  ctx.fillRect(0, 0, w, h * skyRatio)
+
+  const vg = ctx.createRadialGradient(
+    w * 0.5,
+    h * 0.35,
+    Math.min(w, h) * 0.1,
+    w * 0.5,
+    h * 0.5,
+    Math.max(w, h) * 0.75,
+  )
+  vg.addColorStop(0, 'rgba(255,255,255,0.06)')
+  vg.addColorStop(1, 'rgba(0,0,0,0.16)')
+  ctx.fillStyle = vg
+  ctx.fillRect(0, 0, w, h)
+}
+
 function drawSolarCooker(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -24,18 +47,17 @@ function drawSolarCooker(
   hover: boolean,
 ) {
   ctx.clearRect(0, 0, w, h)
-
-  const sky = ctx.createLinearGradient(0, 0, 0, h * 0.72)
-  sky.addColorStop(0, '#1e6fd9')
-  sky.addColorStop(1, '#87ceeb')
-  ctx.fillStyle = sky
-  ctx.fillRect(0, 0, w, h * 0.72)
+  drawWarmSkyVignette(ctx, w, h, 0.72)
 
   ctx.fillStyle = '#c4a574'
   ctx.fillRect(0, h * 0.72, w, h * 0.28)
 
   const sunX = w * 0.78
   const sunY = h * 0.16
+  const alignment = alignmentFactor(state.reflectorAngle, state.sunElevation)
+  const intensity = focusIntensity(alignment)
+
+  drawGlow(ctx, sunX, sunY, 56, '#ffeb3b', 0.25 + intensity * 0.35)
   const sunGrad = ctx.createRadialGradient(sunX, sunY, 4, sunX, sunY, 48)
   sunGrad.addColorStop(0, '#fff9c4')
   sunGrad.addColorStop(0.4, '#ffeb3b')
@@ -75,9 +97,6 @@ function drawSolarCooker(
   ctx.fillStyle = '#455a64'
   ctx.fillRect(reflectorPivotX - 8, reflectorPivotY, 16, 36)
 
-  const alignment = alignmentFactor(state.reflectorAngle, state.sunElevation)
-  const intensity = focusIntensity(alignment)
-
   if (intensity > 0.05) {
     ctx.strokeStyle = `rgba(255,220,80,${0.25 + intensity * 0.55})`
     ctx.lineWidth = 1.5 + intensity * 2
@@ -89,21 +108,29 @@ function drawSolarCooker(
     }
   }
 
-  ctx.fillStyle = '#37474f'
-  ctx.beginPath()
-  ctx.ellipse(potX, potY + 8, 38, 10, 0, 0, Math.PI * 2)
-  ctx.fill()
+  withShadow(ctx, () => {
+    ctx.fillStyle = '#37474f'
+    ctx.beginPath()
+    ctx.ellipse(potX, potY + 8, 38, 10, 0, 0, Math.PI * 2)
+    ctx.fill()
+  }, { blur: 12, oy: 4 })
   drawLabelPill(ctx, 'pot', potX, potY + 28, { fontSize: 11 })
 
   const potHeat = Math.min(1, (state.temperature - 20) / 80)
-  ctx.fillStyle = `rgb(${120 + potHeat * 135}, ${60 + potHeat * 40}, ${50})`
-  ctx.beginPath()
-  ctx.moveTo(potX - 34, potY)
-  ctx.lineTo(potX - 28, potY - 32)
-  ctx.lineTo(potX + 28, potY - 32)
-  ctx.lineTo(potX + 34, potY)
-  ctx.closePath()
-  ctx.fill()
+  withShadow(ctx, () => {
+    ctx.fillStyle = `rgb(${120 + potHeat * 135}, ${60 + potHeat * 40}, ${50})`
+    ctx.beginPath()
+    ctx.moveTo(potX - 34, potY)
+    ctx.lineTo(potX - 28, potY - 32)
+    ctx.lineTo(potX + 28, potY - 32)
+    ctx.lineTo(potX + 34, potY)
+    ctx.closePath()
+    ctx.fill()
+  }, { blur: 10, oy: 3 })
+
+  if (potHeat > 0.25) {
+    drawGlow(ctx, potX, potY - 16, 28 + potHeat * 18, '#ff7043', 0.15 + potHeat * 0.25)
+  }
 
   if (potHeat > 0.4) {
     ctx.strokeStyle = `rgba(255,255,255,${(potHeat - 0.4) * 0.8})`
@@ -187,6 +214,8 @@ export function SolarCookerSim() {
 
   return (
     <SimShell
+      title="Solar Cooker"
+      subtitle="Focus sunlight onto the pot with a parabolic reflector."
       canvasRef={canvasRef}
       sidebar={
         <>

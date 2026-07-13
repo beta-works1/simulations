@@ -6,7 +6,8 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx, roundRect } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, roundRect, withShadow } from '../../shared/drawHelpers'
+import { drawFaintGrid } from '../../shared/canvasTheme'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
@@ -103,8 +104,8 @@ export function PressureForceAreaSim() {
       const depth = st.pressDepth
       const hover = hoverRef.current
 
-      ctx.fillStyle = '#f7f9fb'
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'force')
+      drawFaintGrid(ctx, w, h)
 
       const surfaceY = h * 0.62
       const blockW = Math.min(w * 0.35, 200)
@@ -113,9 +114,11 @@ export function PressureForceAreaSim() {
       const blockY = h * 0.22 - depth * 28
 
       drawHoverHalo(ctx, blockX + blockW / 2, blockY + blockH / 2, 40, hover === 'force')
-      ctx.fillStyle = '#85929e'
-      roundRect(ctx, blockX, blockY, blockW, blockH, 6)
-      ctx.fill()
+      withShadow(ctx, () => {
+        ctx.fillStyle = '#85929e'
+        roundRect(ctx, blockX, blockY, blockW, blockH, 6)
+        ctx.fill()
+      })
       ctx.strokeStyle = hover === 'force' ? '#2980b9' : '#2c3e50'
       ctx.lineWidth = hover === 'force' ? 3 : 2
       roundRect(ctx, blockX, blockY, blockW, blockH, 6)

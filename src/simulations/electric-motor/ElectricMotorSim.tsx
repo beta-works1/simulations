@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { drawGlow, fillThemeBackground, SCENE, strokeWithGlow, withShadow } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useAnimationLoop } from '../shared/useAnimationLoop'
 import { useCanvasSize } from '../shared/useCanvasSize'
@@ -20,8 +21,7 @@ export function ElectricMotorSim() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    ctx.fillStyle = '#111827'
-    ctx.fillRect(0, 0, w, h)
+    fillThemeBackground(ctx, w, h, 'electric')
 
     const cx = w * 0.5
     const cy = h * 0.52
@@ -33,10 +33,13 @@ export function ElectricMotorSim() {
     const gap = Math.min(w * 0.18, 110)
 
     // Left magnet (N)
-    ctx.fillStyle = '#dc2626'
-    ctx.fillRect(cx - gap - magnetW, cy - magnetH / 2, magnetW, magnetH / 2)
-    ctx.fillStyle = '#1e40af'
-    ctx.fillRect(cx - gap - magnetW, cy, magnetW, magnetH / 2)
+    withShadow(ctx, () => {
+      ctx.fillStyle = '#dc2626'
+      ctx.fillRect(cx - gap - magnetW, cy - magnetH / 2, magnetW, magnetH / 2)
+      ctx.fillStyle = '#1e40af'
+      ctx.fillRect(cx - gap - magnetW, cy, magnetW, magnetH / 2)
+    }, { blur: 14, oy: 4 })
+
     ctx.fillStyle = '#f8fafc'
     ctx.font = 'bold 13px Roboto, sans-serif'
     ctx.textAlign = 'center'
@@ -44,10 +47,12 @@ export function ElectricMotorSim() {
     ctx.fillText('S', cx - gap - magnetW / 2, cy + magnetH / 4 + 5)
 
     // Right magnet (S/N flipped)
-    ctx.fillStyle = '#1e40af'
-    ctx.fillRect(cx + gap, cy - magnetH / 2, magnetW, magnetH / 2)
-    ctx.fillStyle = '#dc2626'
-    ctx.fillRect(cx + gap, cy, magnetW, magnetH / 2)
+    withShadow(ctx, () => {
+      ctx.fillStyle = '#1e40af'
+      ctx.fillRect(cx + gap, cy - magnetH / 2, magnetW, magnetH / 2)
+      ctx.fillStyle = '#dc2626'
+      ctx.fillRect(cx + gap, cy, magnetW, magnetH / 2)
+    }, { blur: 14, oy: 4 })
     ctx.fillText('S', cx + gap + magnetW / 2, cy - magnetH / 4 + 5)
     ctx.fillText('N', cx + gap + magnetW / 2, cy + magnetH / 4 + 5)
 
@@ -64,24 +69,47 @@ export function ElectricMotorSim() {
 
     // Rotating coil
     const coilR = Math.min(gap * 0.55, 48)
+    const coilActive = state.current > 0
     ctx.save()
     ctx.translate(cx, cy)
     ctx.rotate(angle)
 
-    ctx.strokeStyle = state.current > 0 ? '#fbbf24' : '#64748b'
-    ctx.lineWidth = 3
-    ctx.beginPath()
-    ctx.ellipse(0, 0, coilR, coilR * 0.55, 0, 0, Math.PI * 2)
-    ctx.stroke()
-
-    // Coil windings
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2
-      ctx.beginPath()
-      ctx.moveTo(Math.cos(a) * coilR * 0.7, Math.sin(a) * coilR * 0.4)
-      ctx.lineTo(Math.cos(a + 0.3) * coilR * 0.85, Math.sin(a + 0.3) * coilR * 0.48)
-      ctx.stroke()
+    if (coilActive) {
+      drawGlow(ctx, 0, 0, coilR * 1.4, SCENE.electric.accent, 0.25)
     }
+
+    withShadow(ctx, () => {
+      const coilColor = coilActive ? SCENE.electric.accent : '#64748b'
+      if (coilActive) {
+        strokeWithGlow(
+          ctx,
+          () => {
+            ctx.beginPath()
+            ctx.ellipse(0, 0, coilR, coilR * 0.55, 0, 0, Math.PI * 2)
+          },
+          coilColor,
+          3,
+          SCENE.electric.glow,
+        )
+      } else {
+        ctx.strokeStyle = coilColor
+        ctx.lineWidth = 3
+        ctx.beginPath()
+        ctx.ellipse(0, 0, coilR, coilR * 0.55, 0, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+
+      // Coil windings
+      ctx.strokeStyle = coilActive ? SCENE.electric.hot : '#64748b'
+      ctx.lineWidth = coilActive ? 2.5 : 2
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2
+        ctx.beginPath()
+        ctx.moveTo(Math.cos(a) * coilR * 0.7, Math.sin(a) * coilR * 0.4)
+        ctx.lineTo(Math.cos(a + 0.3) * coilR * 0.85, Math.sin(a + 0.3) * coilR * 0.48)
+        ctx.stroke()
+      }
+    }, { blur: 10, oy: 2 })
 
     // Commutator
     ctx.fillStyle = '#94a3b8'
@@ -96,13 +124,18 @@ export function ElectricMotorSim() {
 
     // Current arrows when powered
     if (state.current > 0 && state.running) {
-      ctx.strokeStyle = '#38bdf8'
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.moveTo(cx - gap + 20, cy + magnetH / 2 + 30)
-      ctx.lineTo(cx + gap - 20, cy + magnetH / 2 + 30)
-      ctx.stroke()
-      ctx.fillStyle = '#38bdf8'
+      strokeWithGlow(
+        ctx,
+        () => {
+          ctx.beginPath()
+          ctx.moveTo(cx - gap + 20, cy + magnetH / 2 + 30)
+          ctx.lineTo(cx + gap - 20, cy + magnetH / 2 + 30)
+        },
+        SCENE.electric.accent,
+        2,
+        SCENE.electric.glow,
+      )
+      ctx.fillStyle = SCENE.electric.accent
       ctx.beginPath()
       ctx.moveTo(cx + gap - 20, cy + magnetH / 2 + 30)
       ctx.lineTo(cx + gap - 32, cy + magnetH / 2 + 24)
@@ -143,6 +176,8 @@ export function ElectricMotorSim() {
 
   return (
     <SimShell
+      title="Electric Motor"
+      subtitle="See how current in a magnetic field produces continuous rotation."
       canvasRef={canvasRef}
       sidebar={
         <>

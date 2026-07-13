@@ -6,7 +6,7 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx } from '../../shared/drawHelpers'
+import { clearScene, fontPx } from '../../shared/drawHelpers'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
@@ -85,8 +85,7 @@ export function DnaZoomSim() {
       const cx = w / 2
       const cy = h / 2
 
-      ctx.fillStyle = '#0d2137'
-      ctx.fillRect(0, 0, w, h)
+      clearScene(ctx, w, h)
 
       if (z <= 1) {
         ctx.beginPath()

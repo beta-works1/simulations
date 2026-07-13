@@ -7,7 +7,8 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx, roundRect } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, roundRect, withShadow } from '../../shared/drawHelpers'
+import { drawFaintGrid } from '../../shared/canvasTheme'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
@@ -171,11 +172,8 @@ export function WaterPressureSim() {
       const fs = fontPx(12, w, h)
       const hover = hoverRef.current
 
-      const bg = ctx.createLinearGradient(0, 0, 0, h)
-      bg.addColorStop(0, '#e8f4fc')
-      bg.addColorStop(1, '#d6eaf8')
-      ctx.fillStyle = bg
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'force')
+      drawFaintGrid(ctx, w, h)
 
       const tankL = w * 0.28
       const tankR = w * 0.72
@@ -185,7 +183,9 @@ export function WaterPressureSim() {
 
       ctx.strokeStyle = '#5d6d7e'
       ctx.lineWidth = 3
-      ctx.strokeRect(tankL, tankT, tankR - tankL, tankB - tankT)
+      withShadow(ctx, () => {
+        ctx.strokeRect(tankL, tankT, tankR - tankL, tankB - tankT)
+      })
 
       ctx.fillStyle = rho > 5 ? 'rgba(149,165,166,0.7)' : 'rgba(52,152,219,0.5)'
       ctx.fillRect(tankL + 3, waterTop, tankR - tankL - 6, tankB - waterTop - 3)

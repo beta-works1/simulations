@@ -78,6 +78,8 @@ export function CurvedMirrorsSim() {
 
   return (
     <SimShell
+      title="Concave & Convex Mirrors"
+      subtitle="Image type changes with object distance"
       canvasRef={canvasRef}
       sidebar={sidebar}
       toolbar={

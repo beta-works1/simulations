@@ -98,6 +98,19 @@ export function GlobalWarmingSim() {
       ctx.font = `${Math.max(10, fs - 1)}px Roboto, sans-serif`
       ctx.fillStyle = 'rgba(255,255,255,0.85)'
       ctx.fillText('Yellow rays = sunlight · Red = trapped IR · Band = greenhouse gases', 14, h - 10)
+
+      const vg = ctx.createRadialGradient(
+        w * 0.5,
+        h * 0.4,
+        Math.min(w, h) * 0.15,
+        w * 0.5,
+        h * 0.5,
+        Math.max(w, h) * 0.75,
+      )
+      vg.addColorStop(0, 'rgba(255,255,255,0.04)')
+      vg.addColorStop(1, 'rgba(0,0,0,0.18)')
+      ctx.fillStyle = vg
+      ctx.fillRect(0, 0, w, h)
     },
     [co2, running],
   )

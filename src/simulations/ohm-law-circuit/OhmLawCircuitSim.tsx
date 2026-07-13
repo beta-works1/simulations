@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { drawGlow, fillThemeBackground, SCENE, strokeWithGlow } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useAnimationLoop } from '../shared/useAnimationLoop'
 import { useCanvasSize } from '../shared/useCanvasSize'
@@ -15,16 +16,26 @@ import {
   type Point,
 } from './model'
 
-function drawWire(ctx: CanvasRenderingContext2D, points: Point[]) {
-  ctx.strokeStyle = '#64748b'
-  ctx.lineWidth = 3
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
+function wirePath(ctx: CanvasRenderingContext2D, points: Point[], closed = true) {
   ctx.beginPath()
   ctx.moveTo(points[0].x, points[0].y)
   for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y)
-  ctx.closePath()
-  ctx.stroke()
+  if (closed) ctx.closePath()
+}
+
+function drawWire(ctx: CanvasRenderingContext2D, points: Point[], energized = false) {
+  const color = energized ? SCENE.electric.accent : '#64748b'
+  const width = 3
+  if (energized) {
+    strokeWithGlow(ctx, () => wirePath(ctx, points), color, width, SCENE.electric.glow)
+  } else {
+    ctx.strokeStyle = color
+    ctx.lineWidth = width
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    wirePath(ctx, points)
+    ctx.stroke()
+  }
 }
 
 function drawBattery(ctx: CanvasRenderingContext2D, x: number, y: number, voltage: number) {
@@ -73,12 +84,13 @@ function drawBulb(
 ) {
   const glow = powered ? brightness : 0
   if (glow > 0.05) {
-    const grd = ctx.createRadialGradient(x, y, 4, x, y, 28 + glow * 20)
-    grd.addColorStop(0, `rgba(253, 224, 71, ${0.35 + glow * 0.5})`)
+    drawGlow(ctx, x, y, 28 + glow * 22, SCENE.electric.hot, 0.3 + glow * 0.35)
+    const grd = ctx.createRadialGradient(x, y, 2, x, y, 14 + glow * 8)
+    grd.addColorStop(0, `rgba(253, 224, 71, ${0.55 + glow * 0.4})`)
     grd.addColorStop(1, 'rgba(253, 224, 71, 0)')
     ctx.fillStyle = grd
     ctx.beginPath()
-    ctx.arc(x, y, 28 + glow * 20, 0, Math.PI * 2)
+    ctx.arc(x, y, 14 + glow * 8, 0, Math.PI * 2)
     ctx.fill()
   }
   ctx.strokeStyle = '#cbd5e1'
@@ -119,10 +131,15 @@ function drawSwitch(ctx: CanvasRenderingContext2D, x: number, y: number, closed:
 function drawParticles(ctx: CanvasRenderingContext2D, loop: Point[], particles: Particle[]) {
   for (const p of particles) {
     const pt = pointOnLoop(loop, p.t)
-    ctx.fillStyle = '#38bdf8'
+    drawGlow(ctx, pt.x, pt.y, 12, SCENE.electric.accent, 0.45)
+    ctx.save()
+    ctx.shadowBlur = 10
+    ctx.shadowColor = SCENE.electric.glow
+    ctx.fillStyle = SCENE.electric.hot
     ctx.beginPath()
     ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2)
     ctx.fill()
+    ctx.restore()
   }
 }
 
@@ -152,17 +169,17 @@ export function OhmLawCircuitSim() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    ctx.fillStyle = '#111827'
-    ctx.fillRect(0, 0, w, h)
+    fillThemeBackground(ctx, w, h, 'electric')
 
     const loop = circuitLoop(w, h)
+    const energized = state.switchClosed && current > 0
     const [tl, tr, br, bl] = loop
     const topMid = { x: (tl.x + tr.x) / 2, y: tl.y }
     const rightMid = { x: tr.x, y: (tr.y + br.y) / 2 }
     const bottomMid = { x: (bl.x + br.x) / 2, y: br.y }
     const leftMid = { x: tl.x, y: (tl.y + bl.y) / 2 }
 
-    drawWire(ctx, loop)
+    drawWire(ctx, loop, energized)
     drawBattery(ctx, leftMid.x, leftMid.y, state.voltage)
     drawResistor(ctx, topMid.x, topMid.y, state.resistance)
     drawBulb(ctx, rightMid.x, rightMid.y, brightness, state.switchClosed)
@@ -198,6 +215,8 @@ export function OhmLawCircuitSim() {
 
   return (
     <SimShell
+      title="Ohm's Law Circuit"
+      subtitle="Relate voltage, current, and resistance with a glowing bulb."
       canvasRef={canvasRef}
       sidebar={
         <>

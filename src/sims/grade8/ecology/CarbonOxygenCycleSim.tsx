@@ -57,6 +57,19 @@ export function CarbonOxygenCycleSim() {
       drawFlow(ctx, w * 0.7, h * 0.55, w * 0.55, h * 0.32, '#c0392b', t + 1.1, 'Respiration', fs)
       drawFlow(ctx, w * 0.35, h * 0.72, w * 0.65, h * 0.72, '#d68910', t + 0.5, 'Food', fs)
 
+      const vg = ctx.createRadialGradient(
+        w * 0.5,
+        h * 0.4,
+        Math.min(w, h) * 0.15,
+        w * 0.5,
+        h * 0.5,
+        Math.max(w, h) * 0.75,
+      )
+      vg.addColorStop(0, 'rgba(255,255,255,0.04)')
+      vg.addColorStop(1, 'rgba(0,0,0,0.18)')
+      ctx.fillStyle = vg
+      ctx.fillRect(0, 0, w, h)
+
       drawBadge(ctx, running ? 'Running' : 'Paused', 12, 18, {
         font: `${fontPx(12, w, h)}px Roboto, sans-serif`,
         bg: running ? 'rgba(39,174,96,0.85)' : 'rgba(0,0,0,0.45)',

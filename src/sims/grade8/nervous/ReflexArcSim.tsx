@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { ControlHint, ControlSection, ControlStack, ControlToggle } from '../../shared/Controls'
-import { drawBadge, fontPx } from '../../shared/drawHelpers'
+import { clearThemedScene, drawBadge, fontPx, withShadow } from '../../shared/drawHelpers'
+import { drawGlow, SCENE } from '../../shared/canvasTheme'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 
@@ -34,8 +35,7 @@ export function ReflexArcSim() {
       const s = stateRef.current
       const fs = fontPx(12, w, h)
 
-      ctx.fillStyle = '#f4f1ec'
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'nervous')
 
       const receptor = { x: w * 0.12, y: h * 0.72 }
       const spine = { x: w * 0.42, y: h * 0.42 }
@@ -55,10 +55,12 @@ export function ReflexArcSim() {
       ctx.stroke()
 
       path.forEach((p, i) => {
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, Math.max(14, fs), 0, Math.PI * 2)
-        ctx.fillStyle = i === 0 ? '#e67e22' : i === path.length - 1 ? '#27ae60' : '#2f6fed'
-        ctx.fill()
+        withShadow(ctx, () => {
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, Math.max(14, fs), 0, Math.PI * 2)
+          ctx.fillStyle = i === 0 ? '#e67e22' : i === path.length - 1 ? '#27ae60' : '#2f6fed'
+          ctx.fill()
+        })
         ctx.fillStyle = '#1a252f'
         ctx.font = `600 ${Math.max(10, fs - 1)}px Roboto, sans-serif`
         ctx.textAlign = 'center'
@@ -74,14 +76,11 @@ export function ReflexArcSim() {
         const b = path[i + 1]
         const x = a.x + (b.x - a.x) * f
         const y = a.y + (b.y - a.y) * f
-        ctx.save()
-        ctx.shadowColor = '#f1c40f'
-        ctx.shadowBlur = 14
+        drawGlow(ctx, x, y, 20, SCENE.nervous.hot, 0.5)
         ctx.beginPath()
         ctx.arc(x, y, 9, 0, Math.PI * 2)
         ctx.fillStyle = '#f4d03f'
         ctx.fill()
-        ctx.restore()
         if (s.progress >= 1) {
           drawBadge(
             ctx,

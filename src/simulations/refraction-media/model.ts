@@ -8,6 +8,7 @@ import {
   clearCanvas,
   drawAngleArc,
   drawDashedLine,
+  drawGlow,
   drawLabel,
   drawRay,
   normalize,
@@ -54,7 +55,7 @@ export function drawRefractionMedia(
   h: number,
   state: RefractionState,
 ) {
-  clearCanvas(ctx, w, h)
+  clearCanvas(ctx, w, h, 'optics')
 
   const medium = MEDIA.find((m) => m.id === state.mediumId) ?? MEDIA[0]
   const boundaryY = h * 0.55
@@ -82,6 +83,18 @@ export function drawRefractionMedia(
     x: hit.x - incidentDir.x * rayLen,
     y: hit.y - incidentDir.y * rayLen,
   }
+
+  drawGlow(ctx, incidentStart.x, incidentStart.y, 32, RAY_YELLOW, 0.5)
+  ctx.save()
+  ctx.fillStyle = RAY_YELLOW
+  ctx.beginPath()
+  ctx.arc(incidentStart.x, incidentStart.y, 7, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = '#0f172a'
+  ctx.beginPath()
+  ctx.arc(incidentStart.x, incidentStart.y, 3, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
 
   drawRay(ctx, incidentStart, incidentDir, rayLen, RAY_YELLOW)
 

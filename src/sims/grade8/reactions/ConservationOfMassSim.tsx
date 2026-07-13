@@ -6,7 +6,7 @@ import {
   ControlStats,
   ControlToggle,
 } from '../../shared/Controls'
-import { fontPx, roundRect } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, roundRect, withShadow } from '../../shared/drawHelpers'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
@@ -43,7 +43,9 @@ function drawBalancePan(
   ctx.stroke()
 
   ctx.fillStyle = '#bdc3c7'
-  ctx.fillRect(cx - panW / 2, cy, panW, panH)
+  withShadow(ctx, () => {
+    ctx.fillRect(cx - panW / 2, cy, panW, panH)
+  })
   ctx.strokeRect(cx - panW / 2, cy, panW, panH)
 
   if (side === 'left') {
@@ -118,11 +120,7 @@ export function ConservationOfMassSim() {
       const hover = hoverRef.current
       const fs = fontPx(13, w, h)
 
-      const bg = ctx.createLinearGradient(0, 0, 0, h)
-      bg.addColorStop(0, '#f7f9fb')
-      bg.addColorStop(1, '#e8eef4')
-      ctx.fillStyle = bg
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'lab')
 
       drawLabelPill(ctx, 'Conservation of Mass', w / 2, 28, { fontSize: fs + 2 })
       drawValueChip(
@@ -150,16 +148,22 @@ export function ConservationOfMassSim() {
 
       drawHoverHalo(ctx, flaskX, flaskY + flaskH / 2, flaskW * 0.45, hover === 'flask')
 
-      ctx.strokeStyle = hover === 'flask' ? '#2980b9' : '#5dade2'
-      ctx.lineWidth = hover === 'flask' ? 5 : 4
-      ctx.beginPath()
-      ctx.moveTo(flaskX - flaskW * 0.2, flaskY)
-      ctx.lineTo(flaskX - flaskW * 0.35, flaskY + flaskH * 0.15)
-      ctx.lineTo(flaskX - flaskW * 0.35, flaskY + flaskH)
-      ctx.lineTo(flaskX + flaskW * 0.35, flaskY + flaskH)
-      ctx.lineTo(flaskX + flaskW * 0.35, flaskY + flaskH * 0.15)
-      ctx.lineTo(flaskX + flaskW * 0.2, flaskY)
-      ctx.stroke()
+      withShadow(ctx, () => {
+        ctx.strokeStyle = hover === 'flask' ? '#2980b9' : '#5dade2'
+        ctx.lineWidth = hover === 'flask' ? 5 : 4
+        ctx.beginPath()
+        ctx.moveTo(flaskX - flaskW * 0.2, flaskY)
+        ctx.lineTo(flaskX - flaskW * 0.35, flaskY + flaskH * 0.15)
+        ctx.lineTo(flaskX - flaskW * 0.35, flaskY + flaskH)
+        ctx.lineTo(flaskX + flaskW * 0.35, flaskY + flaskH)
+        ctx.lineTo(flaskX + flaskW * 0.35, flaskY + flaskH * 0.15)
+        ctx.lineTo(flaskX + flaskW * 0.2, flaskY)
+        ctx.stroke()
+
+        const mix = s.progress
+        ctx.fillStyle = `rgba(${Math.round(52 + mix * 40)}, ${Math.round(152 - mix * 80)}, ${Math.round(219 - mix * 100)}, 0.65)`
+        ctx.fillRect(flaskX - flaskW * 0.32, flaskY + flaskH * (1 - 0.55 - mix * 0.1), flaskW * 0.64, flaskH * 0.55)
+      })
 
       if (isSealed) {
         ctx.beginPath()
@@ -184,10 +188,6 @@ export function ConservationOfMassSim() {
           }
         }
       }
-
-      const mix = s.progress
-      ctx.fillStyle = `rgba(${Math.round(52 + mix * 40)}, ${Math.round(152 - mix * 80)}, ${Math.round(219 - mix * 100)}, 0.65)`
-      ctx.fillRect(flaskX - flaskW * 0.32, flaskY + flaskH * (1 - 0.55 - mix * 0.1), flaskW * 0.64, flaskH * 0.55)
 
       drawValueChip(ctx, 'Reaction', `${Math.round(s.progress * 100)}%`, flaskX, flaskY + flaskH + fs + 12, {
         fontSize: fs,

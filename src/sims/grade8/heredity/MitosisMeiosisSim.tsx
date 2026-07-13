@@ -6,7 +6,7 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, withShadow } from '../../shared/drawHelpers'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 
@@ -44,17 +44,18 @@ export function MitosisMeiosisSim() {
       const stage = stageRef.current
       const fs = fontPx(14, w, h)
 
-      ctx.fillStyle = '#eef6fb'
-      ctx.fillRect(0, 0, w, h)
+      clearThemedScene(ctx, w, h, 'biology')
 
       const cx = w / 2
       const cy = h * 0.52
       const cellR = Math.min(w, h) * 0.3
 
-      ctx.beginPath()
-      ctx.arc(cx, cy, cellR, 0, Math.PI * 2)
-      ctx.fillStyle = '#d6eaf8'
-      ctx.fill()
+      withShadow(ctx, () => {
+        ctx.beginPath()
+        ctx.arc(cx, cy, cellR, 0, Math.PI * 2)
+        ctx.fillStyle = '#d6eaf8'
+        ctx.fill()
+      })
       ctx.strokeStyle = '#5dade2'
       ctx.lineWidth = 4
       ctx.stroke()

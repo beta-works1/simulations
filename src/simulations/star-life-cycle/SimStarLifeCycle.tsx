@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { drawGlow, drawStarfield, fillThemeBackground, SCENE, strokeWithGlow } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
 import { useRefPaintLoop } from '../shared/useRefPaintLoop'
@@ -12,18 +13,6 @@ import {
   type StarLifeCycleState,
   type StarStageId,
 } from './model'
-
-function drawStars(ctx: CanvasRenderingContext2D, w: number, h: number, count: number) {
-  for (let i = 0; i < count; i++) {
-    const x = ((i * 7919) % 1000) / 1000 * w
-    const y = ((i * 6271) % 1000) / 1000 * h
-    const r = ((i * 3571) % 100) / 100 * 1.2 + 0.3
-    ctx.fillStyle = `rgba(255,255,255,${0.2 + ((i * 13) % 80) / 100})`
-    ctx.beginPath()
-    ctx.arc(x, y, r, 0, Math.PI * 2)
-    ctx.fill()
-  }
-}
 
 function drawStageVisual(
   ctx: CanvasRenderingContext2D,
@@ -54,6 +43,7 @@ function drawStageVisual(
     }
     case 'protostar': {
       const r = 18 + t * 22
+      drawGlow(ctx, cx, cy, r + 35, '#ffb347', 0.3 + t * 0.2)
       const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r + 30)
       g.addColorStop(0, '#fff5e1')
       g.addColorStop(0.3, '#ffb347')
@@ -67,6 +57,7 @@ function drawStageVisual(
     }
     case 'main-sequence': {
       const r = mass === 'low' ? 28 : 42
+      drawGlow(ctx, cx, cy, r + 28, SCENE.space.hot, 0.35)
       const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r + 20)
       g.addColorStop(0, '#fffef0')
       g.addColorStop(0.25, '#ffeb3b')
@@ -109,6 +100,7 @@ function drawStageVisual(
     }
     case 'supernova': {
       const r = 20 + t * 120
+      drawGlow(ctx, cx, cy, r * 0.85, '#fff176', 0.4 - t * 0.15)
       const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
       g.addColorStop(0, '#ffffff')
       g.addColorStop(0.15, '#fff176')
@@ -121,12 +113,17 @@ function drawStageVisual(
       ctx.fill()
       for (let i = 0; i < 12; i++) {
         const a = (i / 12) * Math.PI * 2 + t * 2
-        ctx.strokeStyle = `rgba(255,220,100,${0.6 - t * 0.4})`
-        ctx.lineWidth = 2
-        ctx.beginPath()
-        ctx.moveTo(cx, cy)
-        ctx.lineTo(cx + Math.cos(a) * r * 0.9, cy + Math.sin(a) * r * 0.9)
-        ctx.stroke()
+        strokeWithGlow(
+          ctx,
+          () => {
+            ctx.beginPath()
+            ctx.moveTo(cx, cy)
+            ctx.lineTo(cx + Math.cos(a) * r * 0.9, cy + Math.sin(a) * r * 0.9)
+          },
+          `rgba(255,220,100,${0.6 - t * 0.4})`,
+          2,
+          SCENE.space.hot,
+        )
       }
       break
     }
@@ -136,18 +133,24 @@ function drawStageVisual(
       ctx.beginPath()
       ctx.arc(cx, cy, r, 0, Math.PI * 2)
       ctx.fill()
-      ctx.strokeStyle = 'rgba(100,220,255,0.5)'
-      ctx.lineWidth = 1.5
       for (let i = 0; i < 4; i++) {
-        ctx.beginPath()
-        ctx.ellipse(cx, cy, r + 20 + i * 8, 4, (i * Math.PI) / 4 + t * 4, 0, Math.PI * 2)
-        ctx.stroke()
+        strokeWithGlow(
+          ctx,
+          () => {
+            ctx.beginPath()
+            ctx.ellipse(cx, cy, r + 20 + i * 8, 4, (i * Math.PI) / 4 + t * 4, 0, Math.PI * 2)
+          },
+          'rgba(100,220,255,0.5)',
+          1.5,
+          SCENE.space.glow,
+        )
       }
       break
     }
     case 'black-hole': {
       const r = 22
       const diskR = 70 + Math.sin(t * 3) * 4
+      drawGlow(ctx, cx, cy, diskR * 0.85, SCENE.space.hot, 0.22)
       const disk = ctx.createRadialGradient(cx, cy, r, cx, cy, diskR)
       disk.addColorStop(0, 'rgba(255,180,80,0)')
       disk.addColorStop(0.35, 'rgba(255,140,60,0.55)')
@@ -161,11 +164,16 @@ function drawStageVisual(
       ctx.beginPath()
       ctx.arc(cx, cy, r, 0, Math.PI * 2)
       ctx.fill()
-      ctx.strokeStyle = 'rgba(255,200,120,0.6)'
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.arc(cx, cy, r + 2, 0, Math.PI * 2)
-      ctx.stroke()
+      strokeWithGlow(
+        ctx,
+        () => {
+          ctx.beginPath()
+          ctx.arc(cx, cy, r + 2, 0, Math.PI * 2)
+        },
+        'rgba(255,200,120,0.6)',
+        2,
+        SCENE.space.hot,
+      )
       break
     }
   }
@@ -177,9 +185,8 @@ function drawStarLifeCycle(
   h: number,
   state: StarLifeCycleState,
 ) {
-  ctx.fillStyle = '#030712'
-  ctx.fillRect(0, 0, w, h)
-  drawStars(ctx, w, h, 80)
+  fillThemeBackground(ctx, w, h, 'space')
+  drawStarfield(ctx, w, h, 91, 80)
 
   const stage = currentStage(state)
   drawStageVisual(ctx, w * 0.5, h * 0.48, stage.id, state.stageProgress, state.mass)
@@ -228,6 +235,8 @@ export function StarLifeCycleSim() {
 
   return (
     <SimShell
+      title="Star Life Cycle"
+      subtitle="A star's fate depends on its mass."
       canvasRef={canvasRef}
       sidebar={
         <>

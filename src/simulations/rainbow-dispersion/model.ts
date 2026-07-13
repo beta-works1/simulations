@@ -1,6 +1,8 @@
+import { withShadow } from '../shared/canvasTheme'
 import {
   RAY_WHITE,
   clearCanvas,
+  drawGlow,
   drawLabel,
   drawRay,
   normalize,
@@ -41,17 +43,25 @@ function dropletCenter(w: number, h: number): Vec2 {
 }
 
 function drawDroplet(ctx: CanvasRenderingContext2D, c: Vec2, r: number) {
+  withShadow(
+    ctx,
+    () => {
+      const grad = ctx.createRadialGradient(c.x - r * 0.3, c.y - r * 0.3, r * 0.1, c.x, c.y, r)
+      grad.addColorStop(0, 'rgba(186, 230, 253, 0.9)')
+      grad.addColorStop(0.5, 'rgba(56, 189, 248, 0.45)')
+      grad.addColorStop(1, 'rgba(14, 116, 144, 0.25)')
+      ctx.fillStyle = grad
+      ctx.beginPath()
+      ctx.arc(c.x, c.y, r, 0, Math.PI * 2)
+      ctx.fill()
+    },
+    { blur: 16, color: 'rgba(125, 211, 252, 0.35)', oy: 4 },
+  )
   ctx.save()
-  const grad = ctx.createRadialGradient(c.x - r * 0.3, c.y - r * 0.3, r * 0.1, c.x, c.y, r)
-  grad.addColorStop(0, 'rgba(186, 230, 253, 0.9)')
-  grad.addColorStop(0.5, 'rgba(56, 189, 248, 0.45)')
-  grad.addColorStop(1, 'rgba(14, 116, 144, 0.25)')
-  ctx.fillStyle = grad
   ctx.strokeStyle = 'rgba(125, 211, 252, 0.8)'
   ctx.lineWidth = 2
   ctx.beginPath()
   ctx.arc(c.x, c.y, r, 0, Math.PI * 2)
-  ctx.fill()
   ctx.stroke()
   ctx.restore()
 }
@@ -62,21 +72,30 @@ export function drawRainbowDispersion(
   h: number,
   state: RainbowState,
 ) {
-  clearCanvas(ctx, w, h)
+  clearCanvas(ctx, w, h, 'optics')
 
   const drop = dropletCenter(w, h)
   const dropR = Math.min(w, h) * 0.14
   const entry: Vec2 = { x: drop.x - dropR * 0.85, y: drop.y - dropR * 0.2 }
   const exitBase: Vec2 = { x: drop.x + dropR * 0.75, y: drop.y + dropR * 0.35 }
+  const lightSrc: Vec2 = { x: w * 0.08, y: h * 0.38 }
 
   drawDroplet(ctx, drop, dropR)
   drawLabel(ctx, 'Water droplet', { x: drop.x, y: drop.y + dropR + 22 }, 'center')
 
   const phase = state.phase
 
+  drawGlow(ctx, lightSrc.x, lightSrc.y, 38, RAY_WHITE, 0.4)
+  ctx.save()
+  ctx.fillStyle = RAY_WHITE
+  ctx.beginPath()
+  ctx.arc(lightSrc.x, lightSrc.y, 6, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+
   if (phase < 0.35) {
     const t = phase / 0.35
-    const from: Vec2 = { x: w * 0.08, y: h * 0.38 }
+    const from = lightSrc
     const to = {
       x: from.x + (entry.x - from.x) * t,
       y: from.y + (entry.y - from.y) * t,
@@ -85,8 +104,8 @@ export function drawRainbowDispersion(
       Math.hypot(to.x - from.x, to.y - from.y), RAY_WHITE, 3)
     drawLabel(ctx, 'White light', { x: from.x + 40, y: from.y - 14 })
   } else if (phase < 0.55) {
-    drawRay(ctx, { x: w * 0.08, y: h * 0.38 }, normalize({ x: entry.x - w * 0.08, y: entry.y - h * 0.38 }),
-      Math.hypot(entry.x - w * 0.08, entry.y - h * 0.38), RAY_WHITE, 3)
+    drawRay(ctx, lightSrc, normalize({ x: entry.x - lightSrc.x, y: entry.y - lightSrc.y }),
+      Math.hypot(entry.x - lightSrc.x, entry.y - lightSrc.y), RAY_WHITE, 3)
     const t = (phase - 0.35) / 0.2
     SPECTRUM.forEach((band, i) => {
       const spread = (i - 3) * 0.04
@@ -104,8 +123,8 @@ export function drawRainbowDispersion(
     })
     drawLabel(ctx, 'Dispersion inside droplet', { x: w * 0.5, y: h * 0.12 }, 'center')
   } else {
-    drawRay(ctx, { x: w * 0.08, y: h * 0.38 }, normalize({ x: entry.x - w * 0.08, y: entry.y - h * 0.38 }),
-      Math.hypot(entry.x - w * 0.08, entry.y - h * 0.38), RAY_WHITE, 2)
+    drawRay(ctx, lightSrc, normalize({ x: entry.x - lightSrc.x, y: entry.y - lightSrc.y }),
+      Math.hypot(entry.x - lightSrc.x, entry.y - lightSrc.y), RAY_WHITE, 2)
     const t = Math.min(1, (phase - 0.55) / 0.45)
     SPECTRUM.forEach((band, i) => {
       const spread = (i - 3) * 0.12

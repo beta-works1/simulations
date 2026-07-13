@@ -74,6 +74,8 @@ export function PlaneMirrorPeriscopeSim() {
 
   return (
     <SimShell
+      title="Plane Mirror & Periscope"
+      subtitle="Virtual images and two-mirror sight lines"
       canvasRef={canvasRef}
       sidebar={sidebar}
       toolbar={

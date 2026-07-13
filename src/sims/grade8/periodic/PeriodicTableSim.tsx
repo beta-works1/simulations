@@ -6,7 +6,7 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx, roundRect } from '../../shared/drawHelpers'
+import { clearThemedScene, fontPx, roundRect } from '../../shared/drawHelpers'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
@@ -39,11 +39,7 @@ type Layout = {
 }
 
 function drawLightBg(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  const g = ctx.createLinearGradient(0, 0, 0, h)
-  g.addColorStop(0, '#f7f9fb')
-  g.addColorStop(1, '#e8eef4')
-  ctx.fillStyle = g
-  ctx.fillRect(0, 0, w, h)
+  clearThemedScene(ctx, w, h, 'chemistry')
 }
 
 function drawPeriodicTable(

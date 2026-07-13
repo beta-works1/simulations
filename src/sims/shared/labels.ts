@@ -2,17 +2,17 @@ import { fontPx, roundRect } from './drawHelpers'
 
 /** Cohesive on-canvas label styling across grade-8 (and reusable) sims. */
 export const LABEL = {
-  fontFamily: 'Roboto, sans-serif',
-  fg: '#1a252f',
-  fgMuted: '#5d6d7e',
+  fontFamily: 'Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif',
+  fg: '#152033',
+  fgMuted: '#5a6b7f',
   fgInverse: '#ffffff',
-  bg: 'rgba(255,255,255,0.92)',
-  bgDark: 'rgba(26,37,47,0.82)',
-  accent: '#2980b9',
-  hover: 'rgba(52,152,219,0.35)',
-  padX: 8,
+  bg: 'rgba(255,255,255,0.94)',
+  bgDark: 'rgba(21,32,51,0.88)',
+  accent: '#0e7490',
+  hover: 'rgba(14,116,144,0.28)',
+  padX: 9,
   padY: 5,
-  radius: 6,
+  radius: 8,
 } as const
 
 export type LabelAlign = 'left' | 'center' | 'right'
