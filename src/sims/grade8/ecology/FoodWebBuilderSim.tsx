@@ -1,29 +1,69 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { ControlHint, ControlSection, ControlStack } from '../../shared/Controls'
-import { drawBadge, fontPx } from '../../shared/drawHelpers'
+import { fontPx } from '../../shared/drawHelpers'
+import { drawHint, drawHoverHalo } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
+import { useCanvasPointer } from '../../shared/useCanvasPointer'
 import {
   addSpecies,
   createFoodWebState,
   levelColor,
-  moveNode,
   stepFoodWeb,
   type FoodWebState,
   type TrophicLevel,
 } from './foodWebModel'
 
+function clamp01(n: number) {
+  return Math.max(0.08, Math.min(0.92, n))
+}
+
 export function FoodWebBuilderSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef<FoodWebState>(createFoodWebState())
-  const dragId = useRef<string | null>(null)
+  const layoutRef = useRef<{ id: string; x: number; y: number; r: number }[]>([])
+  const hoverRef = useRef<string | null>(null)
+  const hintShown = useRef(true)
   const [running, setRunning] = useState(true)
   const [version, setVersion] = useState(0)
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt) => {
+      for (let i = layoutRef.current.length - 1; i >= 0; i--) {
+        const n = layoutRef.current[i]
+        if (Math.hypot(pt.x - n.x, pt.y - n.y) < n.r + 6) return n.id
+      }
+      return null
+    },
+    onHoverChange: (id) => {
+      hoverRef.current = id
+    },
+    onDragStart: (id) => {
+      hintShown.current = false
+      stateRef.current.selectedId = id
+    },
+    onDrag: (id, pt, size) => {
+      const node = stateRef.current.nodes.find((n) => n.id === id)
+      if (node) {
+        node.x = clamp01(pt.x / size.w)
+        node.y = clamp01(pt.y / size.h)
+      }
+    },
+    onDragEnd: () => {
+      /* paint loop reads stateRef — no setVersion */
+    },
+    onTap: (id) => {
+      if (!id) return
+      hintShown.current = false
+      stateRef.current.selectedId = id
+    },
+  })
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
       if (dt > 0 && running) stateRef.current = stepFoodWeb(stateRef.current, dt)
       const s = stateRef.current
+      const hover = hoverRef.current
       const fs = fontPx(13, w, h)
 
       const bg = ctx.createLinearGradient(0, 0, 0, h)
@@ -56,9 +96,17 @@ export function FoodWebBuilderSim() {
       }
 
       const nodeR = Math.max(22, Math.min(34, Math.min(w, h) * 0.055))
+      layoutRef.current = []
+
       for (const n of s.nodes) {
         const x = n.x * w
         const y = n.y * h
+        layoutRef.current.push({ id: n.id, x, y, r: nodeR })
+
+        const isHover = hover === n.id
+        const isSel = s.selectedId === n.id
+        drawHoverHalo(ctx, x, y, nodeR + 8, isHover || isSel)
+
         ctx.save()
         ctx.shadowColor = 'rgba(0,0,0,0.35)'
         ctx.shadowBlur = 10
@@ -67,9 +115,13 @@ export function FoodWebBuilderSim() {
         ctx.fillStyle = levelColor(n.level)
         ctx.fill()
         ctx.restore()
-        if (s.selectedId === n.id) {
+        if (isSel) {
           ctx.strokeStyle = '#fff'
           ctx.lineWidth = 3
+          ctx.stroke()
+        } else if (isHover) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.7)'
+          ctx.lineWidth = 2
           ctx.stroke()
         }
         ctx.fillStyle = '#fff'
@@ -79,65 +131,14 @@ export function FoodWebBuilderSim() {
         ctx.fillText(n.name, x, y)
       }
 
-      drawBadge(ctx, 'Drag nodes · yellow = energy', 12, h - 18, {
-        font: `${fontPx(11, w, h, 10, 13)}px Roboto, sans-serif`,
-      })
+      if (hintShown.current) {
+        drawHint(ctx, 'drag nodes · yellow = energy flow', w / 2, h - 18, w, h, { muted: true })
+      }
     },
     [running],
   )
 
-  useCanvasLoop(canvasRef, draw, true, version)
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const pos = (e: PointerEvent) => {
-      const r = canvas.getBoundingClientRect()
-      return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }
-    }
-
-    const hit = (x: number, y: number) => {
-      const s = stateRef.current
-      const nodeR = 34
-      for (let i = s.nodes.length - 1; i >= 0; i--) {
-        const n = s.nodes[i]
-        const dx = (n.x - x) * canvas.clientWidth
-        const dy = (n.y - y) * canvas.clientHeight
-        if (dx * dx + dy * dy < nodeR * nodeR) return n.id
-      }
-      return null
-    }
-
-    const down = (e: PointerEvent) => {
-      const p = pos(e)
-      const id = hit(p.x, p.y)
-      dragId.current = id
-      stateRef.current = { ...stateRef.current, selectedId: id }
-      setVersion((v) => v + 1)
-      canvas.setPointerCapture(e.pointerId)
-    }
-    const move = (e: PointerEvent) => {
-      if (!dragId.current) return
-      const p = pos(e)
-      stateRef.current = moveNode(stateRef.current, dragId.current, p.x, p.y)
-      setVersion((v) => v + 1)
-    }
-    const up = () => {
-      dragId.current = null
-    }
-
-    canvas.addEventListener('pointerdown', down)
-    canvas.addEventListener('pointermove', move)
-    canvas.addEventListener('pointerup', up)
-    canvas.addEventListener('pointercancel', up)
-    return () => {
-      canvas.removeEventListener('pointerdown', down)
-      canvas.removeEventListener('pointermove', move)
-      canvas.removeEventListener('pointerup', up)
-      canvas.removeEventListener('pointercancel', up)
-    }
-  }, [])
+  useCanvasLoop(canvasRef, draw, true, version, true)
 
   const add = (level: TrophicLevel, name: string) => {
     stateRef.current = addSpecies(stateRef.current, level, name)
@@ -153,6 +154,7 @@ export function FoodWebBuilderSim() {
       onTogglePlay={() => setRunning((r) => !r)}
       onReset={() => {
         stateRef.current = createFoodWebState()
+        hintShown.current = true
         setVersion((v) => v + 1)
       }}
       controls={

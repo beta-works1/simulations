@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { SimShell, SimTransport } from '../shared/SimShell'
-import { useAnimationLoop } from '../shared/useAnimationLoop'
 import { useCanvasSize } from '../shared/useCanvasSize'
+import { useRefPaintLoop } from '../shared/useRefPaintLoop'
 import {
   bladeRpm,
   createInitialState,
@@ -124,23 +124,31 @@ function drawWindTurbine(
 export function WindTurbineSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { w, h } = useCanvasSize(canvasRef)
-  const [state, setState] = useState<WindTurbineState>(createInitialState)
+  const stateRef = useRef<WindTurbineState>(createInitialState())
+  const [running, setRunning] = useState(true)
+  const [windSpeed, setWindSpeed] = useState(createInitialState().windSpeed)
+  const [rpm, setRpm] = useState(0)
+  const [powerLabel, setPowerLabel] = useState('0 kW')
 
-  useAnimationLoop(state.running, (dt) => {
-    setState((s) => stepWindTurbine(s, dt))
+  useRefPaintLoop({
+    canvasRef,
+    width: w,
+    height: h,
+    stateRef,
+    running,
+    step: (s, dt) => stepWindTurbine({ ...s, running: true, windSpeed }, dt),
+    draw: drawWindTurbine,
+    onSync: (s) => {
+      setRpm(bladeRpm(s.windSpeed))
+      setPowerLabel(formatPower(powerOutputKw(s.windSpeed)))
+    },
   })
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    drawWindTurbine(ctx, w, h, state)
-  }, [w, h, state])
-
-  const reset = useCallback(() => setState(createInitialState()), [])
-  const rpm = bladeRpm(state.windSpeed)
-  const power = powerOutputKw(state.windSpeed)
+  const reset = useCallback(() => {
+    stateRef.current = createInitialState()
+    setWindSpeed(createInitialState().windSpeed)
+    setRunning(true)
+  }, [])
 
   return (
     <SimShell
@@ -155,28 +163,32 @@ export function WindTurbineSim() {
           <div className="sim-slider-row">
             <label>
               <span>Wind speed</span>
-              <span>{state.windSpeed.toFixed(1)} m/s</span>
+              <span>{windSpeed.toFixed(1)} m/s</span>
             </label>
             <input
               type="range"
               min={MIN_WIND}
               max={MAX_WIND}
               step={0.5}
-              value={state.windSpeed}
-              onChange={(e) => setState((s) => ({ ...s, windSpeed: Number(e.target.value) }))}
+              value={windSpeed}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                setWindSpeed(v)
+                stateRef.current = { ...stateRef.current, windSpeed: v }
+              }}
             />
           </div>
           <p className="sim-readout">
             RPM: {rpm.toFixed(1)}
             <br />
-            Power: {formatPower(power)}
+            Power: {powerLabel}
           </p>
         </>
       }
       toolbar={
         <SimTransport
-          running={state.running}
-          onToggle={() => setState((s) => ({ ...s, running: !s.running }))}
+          running={running}
+          onToggle={() => setRunning((r) => !r)}
           onReset={reset}
         />
       }

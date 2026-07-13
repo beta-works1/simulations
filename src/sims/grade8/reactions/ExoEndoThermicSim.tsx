@@ -7,8 +7,10 @@ import {
   ControlStats,
 } from '../../shared/Controls'
 import { fontPx, roundRect } from '../../shared/drawHelpers'
+import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
+import { useCanvasPointer } from '../../shared/useCanvasPointer'
 import {
   createThermicState,
   resetThermicState,
@@ -16,25 +18,74 @@ import {
   type ThermicMode,
 } from './exoEndoModel'
 
+type BtnLayout = { id: ThermicMode; x: number; y: number; w: number; h: number }
+
+type Layout = {
+  exoBtn: BtnLayout
+  endoBtn: BtnLayout
+  beaker: { x: number; y: number; w: number; h: number }
+}
+
 export function ExoEndoThermicSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef(createThermicState())
+  const paramsRef = useRef({ mode: 'exothermic' as ThermicMode })
+  const layoutRef = useRef<Layout | null>(null)
+  const hoverRef = useRef<string | null>(null)
+  const hintShown = useRef(true)
   const [running, setRunning] = useState(true)
   const [mode, setMode] = useState<ThermicMode>('exothermic')
   const [version, setVersion] = useState(0)
   const [tempReadout, setTempReadout] = useState(22)
+
+  paramsRef.current.mode = mode
 
   useEffect(() => {
     const id = window.setInterval(() => setTempReadout(stateRef.current.temperature), 150)
     return () => clearInterval(id)
   }, [])
 
+  const switchMode = (next: ThermicMode) => {
+    hintShown.current = false
+    paramsRef.current.mode = next
+    setMode(next)
+    stateRef.current = resetThermicState()
+  }
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt) => {
+      const L = layoutRef.current
+      if (!L) return null
+      const e = L.exoBtn
+      if (pt.x >= e.x && pt.x <= e.x + e.w && pt.y >= e.y && pt.y <= e.y + e.h) return 'exo'
+      const n = L.endoBtn
+      if (pt.x >= n.x && pt.x <= n.x + n.w && pt.y >= n.y && pt.y <= n.y + n.h) return 'endo'
+      const b = L.beaker
+      if (pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h) return 'beaker'
+      return null
+    },
+    onHoverChange: (id) => {
+      hoverRef.current = id
+    },
+    onTap: (id) => {
+      if (!id) return
+      hintShown.current = false
+      if (id === 'exo') switchMode('exothermic')
+      else if (id === 'endo') switchMode('endothermic')
+      else if (id === 'beaker') {
+        switchMode(paramsRef.current.mode === 'exothermic' ? 'endothermic' : 'exothermic')
+      }
+    },
+  })
+
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
-      if (dt > 0) stateRef.current = stepThermic(stateRef.current, dt, mode, running)
+      const currentMode = paramsRef.current.mode
+      if (dt > 0) stateRef.current = stepThermic(stateRef.current, dt, currentMode, running)
       const s = stateRef.current
+      const hover = hoverRef.current
       const fs = fontPx(13, w, h)
-      const isExo = mode === 'exothermic'
+      const isExo = currentMode === 'exothermic'
 
       const bg = ctx.createLinearGradient(0, 0, 0, h)
       bg.addColorStop(0, '#f7f9fb')
@@ -42,15 +93,39 @@ export function ExoEndoThermicSim() {
       ctx.fillStyle = bg
       ctx.fillRect(0, 0, w, h)
 
-      ctx.fillStyle = '#1a252f'
-      ctx.font = `600 ${fs + 2}px Roboto, sans-serif`
-      ctx.textAlign = 'center'
-      ctx.fillText(isExo ? 'Exothermic — releases heat' : 'Endothermic — absorbs heat', w / 2, 28)
+      const btnW = 140
+      const btnH = 30
+      const btnY = 48
+      layoutRef.current = {
+        exoBtn: { id: 'exothermic', x: w / 2 - btnW - 8, y: btnY, w: btnW, h: btnH },
+        endoBtn: { id: 'endothermic', x: w / 2 + 8, y: btnY, w: btnW, h: btnH },
+        beaker: { x: w * 0.38, y: h * 0.38, w: w * 0.24, h: h * 0.38 },
+      }
 
-      const bx = w * 0.38
-      const by = h * 0.38
-      const bw = w * 0.24
-      const bh = h * 0.38
+      drawLabelPill(ctx, isExo ? 'Exothermic — releases heat' : 'Endothermic — absorbs heat', w / 2, 28, {
+        fontSize: fs + 2,
+      })
+
+      const L = layoutRef.current
+      drawHoverHalo(ctx, L.exoBtn.x + btnW / 2, btnY + btnH / 2, btnW * 0.5, hover === 'exo')
+      drawLabelPill(ctx, 'Exothermic', L.exoBtn.x + btnW / 2, btnY + btnH / 2, {
+        fontSize: fs,
+        bg: isExo ? 'rgba(231,76,60,0.2)' : 'rgba(255,255,255,0.9)',
+        bold: isExo,
+      })
+      drawHoverHalo(ctx, L.endoBtn.x + btnW / 2, btnY + btnH / 2, btnW * 0.5, hover === 'endo')
+      drawLabelPill(ctx, 'Endothermic', L.endoBtn.x + btnW / 2, btnY + btnH / 2, {
+        fontSize: fs,
+        bg: !isExo ? 'rgba(52,152,219,0.2)' : 'rgba(255,255,255,0.9)',
+        bold: !isExo,
+      })
+
+      const bx = L.beaker.x
+      const by = L.beaker.y
+      const bw = L.beaker.w
+      const bh = L.beaker.h
+
+      drawHoverHalo(ctx, bx + bw / 2, by + bh / 2, Math.max(bw, bh) * 0.45, hover === 'beaker')
 
       ctx.strokeStyle = '#5dade2'
       ctx.lineWidth = 4
@@ -68,9 +143,7 @@ export function ExoEndoThermicSim() {
       ctx.fillStyle = isExo ? 'rgba(231,76,60,0.55)' : 'rgba(52,152,219,0.55)'
       ctx.fillRect(bx + 3, liquidY, bw - 6, by + bh - liquidY - 3)
 
-      ctx.fillStyle = '#5d6d7e'
-      ctx.font = `${fs}px Roboto, sans-serif`
-      ctx.fillText('Beaker', bx + bw / 2, by + bh + fs + 10)
+      drawLabelPill(ctx, 'Beaker', bx + bw / 2, by + bh + fs + 10, { fontSize: fs, bold: false })
 
       const tx = bx + bw + w * 0.08
       const ty = by + bh * 0.15
@@ -90,10 +163,10 @@ export function ExoEndoThermicSim() {
       ctx.arc(tx + 7, ty + th + 12, 14, 0, Math.PI * 2)
       ctx.fill()
 
-      ctx.fillStyle = '#1a252f'
-      ctx.font = `600 ${fs}px Roboto, sans-serif`
-      ctx.textAlign = 'left'
-      ctx.fillText(`${s.temperature.toFixed(1)} °C`, tx + 28, ty + th * 0.5)
+      drawValueChip(ctx, 'T', `${s.temperature.toFixed(1)} °C`, tx + 50, ty + th * 0.5, {
+        fontSize: fs,
+        accent: true,
+      })
 
       const arrowX = w * 0.12
       const arrowY = h * 0.55
@@ -117,9 +190,11 @@ export function ExoEndoThermicSim() {
       ctx.stroke()
       ctx.fill()
 
-      ctx.font = `${fs}px Roboto, sans-serif`
-      ctx.textAlign = 'center'
-      ctx.fillText(isExo ? 'Energy OUT' : 'Energy IN', arrowX, arrowY + 58)
+      drawLabelPill(ctx, isExo ? 'Energy OUT' : 'Energy IN', arrowX, arrowY + 58, {
+        fontSize: fs,
+        bg: isExo ? 'rgba(231,76,60,0.18)' : 'rgba(52,152,219,0.18)',
+        fg: isExo ? '#c0392b' : '#2471a3',
+      })
 
       if (running) {
         const bubbles = isExo ? 8 : 4
@@ -140,15 +215,20 @@ export function ExoEndoThermicSim() {
       ctx.strokeStyle = '#bdc3c7'
       ctx.lineWidth = 2
       ctx.stroke()
-      ctx.fillStyle = '#5d6d7e'
-      ctx.font = `${Math.max(10, fs - 1)}px Roboto, sans-serif`
-      ctx.textAlign = 'left'
       const note = isExo
         ? 'Bonds form → energy released\nSurroundings get warmer'
         : 'Bonds break → energy absorbed\nSurroundings get cooler'
       note.split('\n').forEach((line, i) => {
-        ctx.fillText(line, w * 0.55 + 12, h * 0.68 + fs + 8 + i * (fs + 4))
+        drawLabelPill(ctx, line, w * 0.55 + 12 + 100, h * 0.68 + fs + 8 + i * (fs + 8), {
+          align: 'left',
+          fontSize: Math.max(10, fs - 1),
+          bold: false,
+        })
       })
+
+      if (hintShown.current) {
+        drawHint(ctx, 'click beaker or mode buttons to switch', w / 2, h - 18, w, h)
+      }
     },
     [mode, running],
   )
@@ -164,8 +244,10 @@ export function ExoEndoThermicSim() {
       onTogglePlay={() => setRunning((r) => !r)}
       onReset={() => {
         stateRef.current = resetThermicState()
+        paramsRef.current.mode = 'exothermic'
         setMode('exothermic')
         setRunning(true)
+        hintShown.current = true
         setVersion((v) => v + 1)
       }}
       controls={
@@ -180,8 +262,7 @@ export function ExoEndoThermicSim() {
                 { value: 'endothermic', label: 'Endothermic (heat in)' },
               ]}
               onChange={(v) => {
-                setMode(v as ThermicMode)
-                stateRef.current = resetThermicState()
+                switchMode(v as ThermicMode)
                 setVersion((n) => n + 1)
               }}
             />

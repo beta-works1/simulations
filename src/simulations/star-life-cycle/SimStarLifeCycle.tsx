@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { SimShell, SimTransport } from '../shared/SimShell'
-import { useAnimationLoop } from '../shared/useAnimationLoop'
 import { useCanvasSize } from '../shared/useCanvasSize'
+import { useRefPaintLoop } from '../shared/useRefPaintLoop'
 import {
   createInitialState,
   currentStage,
@@ -198,23 +198,33 @@ function drawStarLifeCycle(
 export function StarLifeCycleSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { w, h } = useCanvasSize(canvasRef)
-  const [state, setState] = useState<StarLifeCycleState>(createInitialState)
-  const stages = stagesForMass(state.mass)
-  const stage = currentStage(state)
+  const stateRef = useRef<StarLifeCycleState>(createInitialState())
+  const [running, setRunning] = useState(true)
+  const [mass, setMassUi] = useState(createInitialState().mass)
+  const [stageIndex, setStageIndex] = useState(0)
+  const stages = stagesForMass(mass)
+  const stage = stages[Math.min(stageIndex, stages.length - 1)] ?? stages[0]
 
-  useAnimationLoop(state.running, (dt) => {
-    setState((s) => stepStarLifeCycle(s, dt))
+  useRefPaintLoop({
+    canvasRef,
+    width: w,
+    height: h,
+    stateRef,
+    running,
+    step: (s, dt) => stepStarLifeCycle({ ...s, running: true }, dt),
+    draw: drawStarLifeCycle,
+    onSync: (s) => {
+      setMassUi(s.mass)
+      setStageIndex(s.stageIndex)
+    },
   })
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    drawStarLifeCycle(ctx, w, h, state)
-  }, [w, h, state])
-
-  const reset = useCallback(() => setState(createInitialState()), [])
+  const reset = useCallback(() => {
+    stateRef.current = createInitialState()
+    setMassUi(createInitialState().mass)
+    setStageIndex(0)
+    setRunning(true)
+  }, [])
 
   return (
     <SimShell
@@ -232,10 +242,13 @@ export function StarLifeCycleSim() {
             </label>
             <select
               className="sim-select"
-              value={state.mass}
-              onChange={(e) =>
-                setState((s) => setMass(s, e.target.value as 'low' | 'high'))
-              }
+              value={mass}
+              onChange={(e) => {
+                const next = setMass(stateRef.current, e.target.value as 'low' | 'high')
+                stateRef.current = next
+                setMassUi(next.mass)
+                setStageIndex(next.stageIndex)
+              }}
             >
               <option value="low">Low mass (like the Sun)</option>
               <option value="high">High mass (supernova path)</option>
@@ -251,21 +264,23 @@ export function StarLifeCycleSim() {
               min={0}
               max={stages.length - 1}
               step={1}
-              value={state.stageIndex}
-              onChange={(e) =>
-                setState((s) => scrubToStage(s, Number(e.target.value)))
-              }
+              value={stageIndex}
+              onChange={(e) => {
+                const next = scrubToStage(stateRef.current, Number(e.target.value))
+                stateRef.current = next
+                setStageIndex(next.stageIndex)
+              }}
             />
           </div>
           <p className="sim-readout">
-            {state.stageIndex + 1} / {stages.length}: {stage.description}
+            {stageIndex + 1} / {stages.length}: {stage.description}
           </p>
         </>
       }
       toolbar={
         <SimTransport
-          running={state.running}
-          onToggle={() => setState((s) => ({ ...s, running: !s.running }))}
+          running={running}
+          onToggle={() => setRunning((r) => !r)}
           onReset={reset}
         />
       }

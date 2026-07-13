@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { SimShell, SimTransport } from '../shared/SimShell'
-import { useAnimationLoop } from '../shared/useAnimationLoop'
 import { useCanvasSize } from '../shared/useCanvasSize'
+import { useRefPaintLoop } from '../shared/useRefPaintLoop'
 import {
   createInitialState,
   eraColor,
@@ -223,29 +223,37 @@ function drawTimeline(
   ctx.fillText(desc.length > 85 ? `${desc.slice(0, 82)}…` : desc, 24, h * 0.62 + 56)
 }
 
+type TimelinePaint = { sim: SolarSystemTimelineState; animT: number }
+
 export function SolarSystemTimelineSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { w, h } = useCanvasSize(canvasRef)
-  const [state, setState] = useState<SolarSystemTimelineState>(createInitialState)
-  const [animT, setAnimT] = useState(0)
-  const event = eventAtProgress(state.progress)
+  const stateRef = useRef<TimelinePaint>({ sim: createInitialState(), animT: 0 })
+  const [running, setRunning] = useState(true)
+  const [progress, setProgress] = useState(0)
+  const event = eventAtProgress(progress)
 
-  useAnimationLoop(true, (dt) => {
-    setAnimT((t) => t + dt)
-    setState((s) => (s.running ? stepTimeline(s, dt) : s))
+  useRefPaintLoop({
+    canvasRef,
+    width: w,
+    height: h,
+    stateRef,
+    running: true, // always paint; sim.running controls timeline advance
+    step: (s, dt) => ({
+      animT: s.animT + dt,
+      sim: s.sim.running ? stepTimeline(s.sim, dt) : s.sim,
+    }),
+    draw: (ctx, ww, hh, s) => drawTimeline(ctx, ww, hh, s.sim, s.animT),
+    onSync: (s) => {
+      setProgress(s.sim.progress)
+      setRunning(s.sim.running)
+    },
   })
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    drawTimeline(ctx, w, h, state, animT)
-  }, [w, h, state, animT])
-
   const reset = useCallback(() => {
-    setAnimT(0)
-    setState(createInitialState())
+    stateRef.current = { sim: createInitialState(), animT: 0 }
+    setProgress(0)
+    setRunning(true)
   }, [])
 
   return (
@@ -268,10 +276,15 @@ export function SolarSystemTimelineSim() {
               min={MIN_PROGRESS}
               max={MAX_PROGRESS}
               step={0.01}
-              value={state.progress}
-              onChange={(e) =>
-                setState((s) => ({ ...s, progress: Number(e.target.value), running: false }))
-              }
+              value={progress}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                setProgress(v)
+                stateRef.current = {
+                  ...stateRef.current,
+                  sim: { ...stateRef.current.sim, progress: v, running: false },
+                }
+              }}
             />
           </div>
           <p className="sim-readout">
@@ -283,8 +296,15 @@ export function SolarSystemTimelineSim() {
       }
       toolbar={
         <SimTransport
-          running={state.running}
-          onToggle={() => setState((s) => ({ ...s, running: !s.running }))}
+          running={running}
+          onToggle={() => {
+            const next = !stateRef.current.sim.running
+            stateRef.current = {
+              ...stateRef.current,
+              sim: { ...stateRef.current.sim, running: next },
+            }
+            setRunning(next)
+          }}
           onReset={reset}
         />
       }

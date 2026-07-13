@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
+import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../sims/shared/labels'
+import { clamp } from '../../sims/shared/math'
+import { useCanvasPointer } from '../../sims/shared/useCanvasPointer'
 import { SimShell, SimTransport } from '../shared/SimShell'
-import { useAnimationLoop } from '../shared/useAnimationLoop'
 import { useCanvasSize } from '../shared/useCanvasSize'
+import { useRefPaintLoop } from '../shared/useRefPaintLoop'
 import {
   alignmentFactor,
   createInitialState,
@@ -18,6 +21,7 @@ function drawSolarCooker(
   w: number,
   h: number,
   state: SolarCookerState,
+  hover: boolean,
 ) {
   ctx.clearRect(0, 0, w, h)
 
@@ -40,6 +44,7 @@ function drawSolarCooker(
   ctx.beginPath()
   ctx.arc(sunX, sunY, 48, 0, Math.PI * 2)
   ctx.fill()
+  drawLabelPill(ctx, 'Sun', sunX, sunY + 40, { fontSize: 11 })
 
   const potX = w * 0.42
   const potY = h * 0.62
@@ -50,8 +55,8 @@ function drawSolarCooker(
   ctx.save()
   ctx.translate(reflectorPivotX, reflectorPivotY)
   ctx.rotate(rad)
-
-  ctx.fillStyle = '#78909c'
+  drawHoverHalo(ctx, 0, -40, 50, hover)
+  ctx.fillStyle = hover ? '#90a4ae' : '#78909c'
   ctx.beginPath()
   ctx.moveTo(-110, 0)
   ctx.quadraticCurveTo(0, -95, 110, 0)
@@ -59,7 +64,6 @@ function drawSolarCooker(
   ctx.quadraticCurveTo(0, -83, -110, 12)
   ctx.closePath()
   ctx.fill()
-
   ctx.strokeStyle = 'rgba(255,220,100,0.35)'
   ctx.lineWidth = 2
   ctx.beginPath()
@@ -80,9 +84,7 @@ function drawSolarCooker(
     for (let i = -2; i <= 2; i++) {
       ctx.beginPath()
       ctx.moveTo(sunX - i * 6, sunY + 20)
-      const hitX = potX + i * 4
-      const hitY = potY - 18
-      ctx.quadraticCurveTo(w * 0.6 + i * 8, h * 0.35, hitX, hitY)
+      ctx.quadraticCurveTo(w * 0.6 + i * 8, h * 0.35, potX + i * 4, potY - 18)
       ctx.stroke()
     }
   }
@@ -91,6 +93,7 @@ function drawSolarCooker(
   ctx.beginPath()
   ctx.ellipse(potX, potY + 8, 38, 10, 0, 0, Math.PI * 2)
   ctx.fill()
+  drawLabelPill(ctx, 'pot', potX, potY + 28, { fontSize: 11 })
 
   const potHeat = Math.min(1, (state.temperature - 20) / 80)
   ctx.fillStyle = `rgb(${120 + potHeat * 135}, ${60 + potHeat * 40}, ${50})`
@@ -113,36 +116,74 @@ function drawSolarCooker(
     }
   }
 
-  ctx.fillStyle = 'rgba(15,23,42,0.75)'
-  ctx.fillRect(12, 12, 168, 52)
-  ctx.fillStyle = '#e2e8f0'
-  ctx.font = '600 13px Roboto, sans-serif'
-  ctx.fillText(`${state.temperature.toFixed(0)}°C — ${tempLabel(state.temperature)}`, 22, 34)
-  ctx.font = '12px Roboto, sans-serif'
-  ctx.fillStyle = '#94a3b8'
-  ctx.fillText(`Focus: ${(intensity * 100).toFixed(0)}%`, 22, 52)
+  drawValueChip(ctx, '', `${state.temperature.toFixed(0)}°C · ${tempLabel(state.temperature)}`, 22, 28, {
+    align: 'left',
+    accent: true,
+    fontSize: 12,
+  })
+  drawValueChip(ctx, 'Focus', `${(intensity * 100).toFixed(0)}%`, 22, 52, {
+    align: 'left',
+    fontSize: 11,
+  })
+  drawValueChip(ctx, '∠', `${state.reflectorAngle.toFixed(0)}°`, reflectorPivotX, reflectorPivotY - 70, {
+    fontSize: 12,
+  })
+  drawHint(ctx, 'drag reflector to aim', w / 2, h - 16, w, h)
 }
 
 export function SolarCookerSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { w, h } = useCanvasSize(canvasRef)
-  const [state, setState] = useState<SolarCookerState>(createInitialState)
+  const stateRef = useRef<SolarCookerState>(createInitialState())
+  const hoverRef = useRef(false)
+  const [running, setRunning] = useState(true)
+  const [angle, setAngle] = useState(createInitialState().reflectorAngle)
+  const [temp, setTemp] = useState(20)
+  const [alignPct, setAlignPct] = useState(0)
 
-  useAnimationLoop(state.running, (dt) => {
-    setState((s) => stepSolarCooker(s, dt))
+  useRefPaintLoop({
+    canvasRef,
+    width: w,
+    height: h,
+    stateRef,
+    running,
+    step: (s, dt) => stepSolarCooker({ ...s, running: true }, dt),
+    draw: (ctx, ww, hh, s) => drawSolarCooker(ctx, ww, hh, s, hoverRef.current),
+    onSync: (s) => {
+      setAngle(s.reflectorAngle)
+      setTemp(s.temperature)
+      setAlignPct(alignmentFactor(s.reflectorAngle, s.sunElevation) * 100)
+    },
   })
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    drawSolarCooker(ctx, w, h, state)
-  }, [w, h, state])
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt, size) => {
+      const potX = size.w * 0.42
+      const potY = size.h * 0.62
+      const px = potX - 20
+      const py = potY + 28
+      return Math.hypot(pt.x - px, pt.y - (py - 40)) < 70 ? 'reflector' : null
+    },
+    onHoverChange: (id) => {
+      hoverRef.current = id === 'reflector'
+    },
+    onDrag: (_id, pt, size) => {
+      const potX = size.w * 0.42
+      const potY = size.h * 0.62
+      const px = potX - 20
+      const py = potY + 28
+      const ang = (Math.atan2(pt.y - py, pt.x - px) * 180) / Math.PI
+      stateRef.current = {
+        ...stateRef.current,
+        reflectorAngle: clamp(ang, MIN_ANGLE, MAX_ANGLE),
+      }
+    },
+  })
 
-  const reset = useCallback(() => setState(createInitialState()), [])
-
-  const alignment = alignmentFactor(state.reflectorAngle, state.sunElevation)
+  const reset = useCallback(() => {
+    stateRef.current = createInitialState()
+    setRunning(true)
+  }, [])
 
   return (
     <SimShell
@@ -151,36 +192,37 @@ export function SolarCookerSim() {
         <>
           <h3>Solar Cooker</h3>
           <p className="sim-hint">
-            Adjust the parabolic reflector to focus sunlight onto the pot. Best alignment heats the
-            pot fastest.
+            Drag the reflector on the canvas (or use the slider) to focus sunlight onto the pot.
           </p>
           <div className="sim-slider-row">
             <label>
               <span>Reflector angle</span>
-              <span>{state.reflectorAngle.toFixed(0)}°</span>
+              <span>{angle.toFixed(0)}°</span>
             </label>
             <input
               type="range"
               min={MIN_ANGLE}
               max={MAX_ANGLE}
               step={1}
-              value={state.reflectorAngle}
-              onChange={(e) =>
-                setState((s) => ({ ...s, reflectorAngle: Number(e.target.value) }))
-              }
+              value={angle}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                setAngle(v)
+                stateRef.current = { ...stateRef.current, reflectorAngle: v }
+              }}
             />
           </div>
           <p className="sim-readout">
-            Alignment: {(alignment * 100).toFixed(0)}%
+            Alignment: {alignPct.toFixed(0)}%
             <br />
-            Temperature: {state.temperature.toFixed(1)}°C
+            Temperature: {temp.toFixed(1)}°C
           </p>
         </>
       }
       toolbar={
         <SimTransport
-          running={state.running}
-          onToggle={() => setState((s) => ({ ...s, running: !s.running }))}
+          running={running}
+          onToggle={() => setRunning((r) => !r)}
           onReset={reset}
         />
       }

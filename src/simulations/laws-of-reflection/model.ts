@@ -129,6 +129,7 @@ export function drawLawsOfReflection(
 
   drawLabel(ctx, 'Mirror', { x: (mirrorX1 + mirrorX2) / 2, y: mirrorY + 22 }, 'center')
   drawLabel(ctx, 'Laws of Reflection: ∠i = ∠r', { x: w * 0.5, y: 24 }, 'center')
+  drawLabel(ctx, 'drag source', { x: source.x, y: source.y + 28 }, 'center')
 }
 
 export function hitTestSource(

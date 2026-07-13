@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { SimShell, SimTransport } from '../shared/SimShell'
-import { useAnimationLoop } from '../shared/useAnimationLoop'
 import { useCanvasSize } from '../shared/useCanvasSize'
+import { useRefPaintLoop } from '../shared/useRefPaintLoop'
 import {
   createInitialState,
   galaxyById,
@@ -174,22 +174,27 @@ function drawGalaxyTypes(
 export function GalaxyTypesSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { w, h } = useCanvasSize(canvasRef)
-  const [state, setState] = useState<GalaxyTypesState>(createInitialState)
-  const info = galaxyById(state.selected)
+  const stateRef = useRef<GalaxyTypesState>(createInitialState())
+  const [running, setRunning] = useState(true)
+  const [selected, setSelected] = useState<GalaxyType>(createInitialState().selected)
+  const info = galaxyById(selected)
 
-  useAnimationLoop(state.running, (dt) => {
-    setState((s) => stepGalaxyTypes(s, dt))
+  useRefPaintLoop({
+    canvasRef,
+    width: w,
+    height: h,
+    stateRef,
+    running,
+    step: (s, dt) => stepGalaxyTypes({ ...s, running: true }, dt),
+    draw: drawGalaxyTypes,
+    onSync: (s) => setSelected(s.selected),
   })
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    drawGalaxyTypes(ctx, w, h, state)
-  }, [w, h, state])
-
-  const reset = useCallback(() => setState(createInitialState()), [])
+  const reset = useCallback(() => {
+    stateRef.current = createInitialState()
+    setSelected(createInitialState().selected)
+    setRunning(true)
+  }, [])
 
   return (
     <SimShell
@@ -207,10 +212,12 @@ export function GalaxyTypesSim() {
             </label>
             <select
               className="sim-select"
-              value={state.selected}
-              onChange={(e) =>
-                setState((s) => ({ ...s, selected: e.target.value as GalaxyType }))
-              }
+              value={selected}
+              onChange={(e) => {
+                const v = e.target.value as GalaxyType
+                setSelected(v)
+                stateRef.current = { ...stateRef.current, selected: v }
+              }}
             >
               {GALAXIES.map((g) => (
                 <option key={g.id} value={g.id}>
@@ -224,8 +231,8 @@ export function GalaxyTypesSim() {
       }
       toolbar={
         <SimTransport
-          running={state.running}
-          onToggle={() => setState((s) => ({ ...s, running: !s.running }))}
+          running={running}
+          onToggle={() => setRunning((r) => !r)}
           onReset={reset}
         />
       }

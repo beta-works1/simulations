@@ -7,9 +7,12 @@ import {
   ControlStats,
 } from '../../shared/Controls'
 import { fontPx, roundRect } from '../../shared/drawHelpers'
-import { phToColor } from './PhScaleSim'
+import { drawHint, drawHoverHalo, drawValueChip } from '../../shared/labels'
+import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
+import { useCanvasPointer } from '../../shared/useCanvasPointer'
+import { phToColor } from './PhScaleSim'
 
 export interface NeutralizationState {
   acidVol: number
@@ -109,11 +112,20 @@ function drawBeaker(
 export function NeutralizationSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef(createNeutralizationState())
+  const paramsRef = useRef({ acidVol: 50, baseVol: 50 })
+  const layoutRef = useRef<{ acid: { x: number; y: number; r: number }; base: { x: number; y: number; r: number } } | null>(
+    null,
+  )
+  const hoverRef = useRef<string | null>(null)
+  const hintShown = useRef(true)
   const [running, setRunning] = useState(false)
   const [acidVol, setAcidVol] = useState(50)
   const [baseVol, setBaseVol] = useState(50)
   const [version, setVersion] = useState(0)
   const [readout, setReadout] = useState({ ph: 2, excess: '—' })
+
+  paramsRef.current.acidVol = acidVol
+  paramsRef.current.baseVol = baseVol
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -126,21 +138,45 @@ export function NeutralizationSim() {
       else if (excessAcid > 0.5) excess = `Excess acid (${excessAcid.toFixed(0)} mL)`
       else if (excessBase > 0.5) excess = `Excess base (${excessBase.toFixed(0)} mL)`
       setReadout({ ph: s.ph, excess })
+      setAcidVol(Math.round(paramsRef.current.acidVol))
+      setBaseVol(Math.round(paramsRef.current.baseVol))
     }, 150)
     return () => clearInterval(id)
   }, [])
 
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt) => {
+      const L = layoutRef.current
+      if (!L) return null
+      if (Math.hypot(pt.x - L.acid.x, pt.y - L.acid.y) < L.acid.r) return 'acid'
+      if (Math.hypot(pt.x - L.base.x, pt.y - L.base.y) < L.base.r) return 'base'
+      return null
+    },
+    onHoverChange: (id) => {
+      hoverRef.current = id
+    },
+    onDrag: (id, pt, size) => {
+      hintShown.current = false
+      const t = clamp(1 - (pt.y - size.h * 0.12) / (size.h * 0.4), 0, 1)
+      const vol = 10 + t * 90
+      if (id === 'acid') paramsRef.current.acidVol = vol
+      if (id === 'base') paramsRef.current.baseVol = vol
+    },
+  })
+
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
+      const { acidVol: aV, baseVol: bV } = paramsRef.current
       const s = stateRef.current
       if (dt > 0 && running) {
-        stateRef.current = stepNeutralization(s, dt, acidVol, baseVol)
+        stateRef.current = stepNeutralization(s, dt, aV, bV)
       } else {
-        s.acidVol = acidVol
-        s.baseVol = baseVol
+        s.acidVol = aV
+        s.baseVol = bV
       }
       const st = stateRef.current
       const fs = fontPx(12, w, h)
+      const hover = hoverRef.current
 
       ctx.fillStyle = '#f7f9fb'
       ctx.fillRect(0, 0, w, h)
@@ -151,8 +187,16 @@ export function NeutralizationSim() {
       const vesselBottom = h * 0.78
       const bw = Math.min(w * 0.1, 52)
 
-      drawBeaker(ctx, w * 0.22, top, bottom, bw, 1, '#fdebd0', 'Acid (H⁺)', fs)
-      drawBeaker(ctx, w * 0.78, top, bottom, bw, 1, '#d6eaf8', 'Base (OH⁻)', fs)
+      drawHoverHalo(ctx, w * 0.22, (top + bottom) / 2, 40, hover === 'acid')
+      drawHoverHalo(ctx, w * 0.78, (top + bottom) / 2, 40, hover === 'base')
+      drawBeaker(ctx, w * 0.22, top, bottom, bw, aV / 100, '#fdebd0', 'Acid (H⁺)', fs)
+      drawBeaker(ctx, w * 0.78, top, bottom, bw, bV / 100, '#d6eaf8', 'Base (OH⁻)', fs)
+      drawValueChip(ctx, '', `${aV.toFixed(0)} mL`, w * 0.22, top - 8, { fontSize: fs })
+      drawValueChip(ctx, '', `${bV.toFixed(0)} mL`, w * 0.78, top - 8, { fontSize: fs })
+      layoutRef.current = {
+        acid: { x: w * 0.22, y: (top + bottom) / 2, r: 42 },
+        base: { x: w * 0.78, y: (top + bottom) / 2, r: 42 },
+      }
 
       const vesselX = w * 0.5
       const vw = Math.min(w * 0.22, 110)
@@ -224,14 +268,13 @@ export function NeutralizationSim() {
       ctx.lineTo(meterX + meterW + 12, needleY)
       ctx.stroke()
 
-      ctx.fillStyle = '#1a252f'
-      ctx.font = `${fs}px Roboto, sans-serif`
-      ctx.textAlign = 'left'
-      ctx.fillText('pH meter', meterX - 4, meterTop - 8)
-      ctx.font = `600 ${fs + 1}px Roboto, sans-serif`
-      ctx.fillText(st.ph.toFixed(1), meterX + meterW + 16, needleY + 4)
+      drawValueChip(ctx, 'pH', st.ph.toFixed(1), meterX + meterW + 36, needleY, {
+        fontSize: fs,
+        accent: true,
+      })
+      if (hintShown.current) drawHint(ctx, 'drag beakers to set volumes', w / 2, h - 12, w, h)
     },
-    [acidVol, baseVol, running],
+    [running],
   )
 
   useCanvasLoop(canvasRef, draw, running, version, true)
@@ -245,15 +288,17 @@ export function NeutralizationSim() {
       onTogglePlay={() => setRunning((r) => !r)}
       onReset={() => {
         stateRef.current = createNeutralizationState()
+        paramsRef.current = { acidVol: 50, baseVol: 50 }
         setAcidVol(50)
         setBaseVol(50)
         setRunning(false)
+        hintShown.current = true
         setVersion((v) => v + 1)
       }}
       controls={
         <>
           <ControlSection title="Volumes">
-            <ControlHint>Equal volumes neutralize to pH ≈ 7. Unequal volumes leave excess acid or base.</ControlHint>
+            <ControlHint>Drag acid/base beakers on the canvas, or use sliders.</ControlHint>
             <ControlSlider
               label="Acid volume"
               value={acidVol}
@@ -261,7 +306,10 @@ export function NeutralizationSim() {
               max={100}
               step={5}
               display={`${acidVol} mL`}
-              onChange={setAcidVol}
+              onChange={(v) => {
+                setAcidVol(v)
+                paramsRef.current.acidVol = v
+              }}
             />
             <ControlSlider
               label="Base volume"
@@ -270,7 +318,10 @@ export function NeutralizationSim() {
               max={100}
               step={5}
               display={`${baseVol} mL`}
-              onChange={setBaseVol}
+              onChange={(v) => {
+                setBaseVol(v)
+                paramsRef.current.baseVol = v
+              }}
             />
           </ControlSection>
           <ControlSection title="Result">

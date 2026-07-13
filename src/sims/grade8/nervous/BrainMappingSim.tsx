@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { ControlHint, ControlSection, ControlStack } from '../../shared/Controls'
 import { fontPx } from '../../shared/drawHelpers'
+import { drawHint, drawHoverHalo, drawLabelPill } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
+import { useCanvasPointer } from '../../shared/useCanvasPointer'
 
 const REGIONS = [
   { id: 'frontal', name: 'Frontal lobe', action: 'Planning, decisions, voluntary movement', x: 0.32, y: 0.42, r: 0.12 },
@@ -13,16 +15,49 @@ const REGIONS = [
   { id: 'brainstem', name: 'Brain stem', action: 'Breathing and heart rate', x: 0.58, y: 0.78, r: 0.06 },
 ] as const
 
+type RegionLayout = { id: string; x: number; y: number; r: number }
+
+type Layout = { regions: RegionLayout[] }
+
 export function BrainMappingSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const paramsRef = useRef({ selected: 'frontal' })
+  const layoutRef = useRef<Layout>({ regions: [] })
+  const hoverRef = useRef<string | null>(null)
+  const hintShown = useRef(true)
+  const pulse = useRef(0)
   const [selected, setSelected] = useState<string>('frontal')
   const [version, setVersion] = useState(0)
-  const pulse = useRef(0)
+
+  paramsRef.current.selected = selected
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt) => {
+      for (let i = layoutRef.current.regions.length - 1; i >= 0; i--) {
+        const r = layoutRef.current.regions[i]
+        if (Math.hypot(pt.x - r.x, pt.y - r.y) <= r.r) return r.id
+      }
+      return null
+    },
+    onHoverChange: (id) => {
+      hoverRef.current = id
+    },
+    onTap: (id) => {
+      if (!id) return
+      hintShown.current = false
+      paramsRef.current.selected = id
+      setSelected(id)
+    },
+  })
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
       pulse.current += dt
+      const sel = paramsRef.current.selected
+      const hover = hoverRef.current
       const fs = fontPx(13, w, h)
+      const minDim = Math.min(w, h)
+
       ctx.fillStyle = '#1b2a3a'
       ctx.fillRect(0, 0, w, h)
 
@@ -34,64 +69,60 @@ export function BrainMappingSim() {
       ctx.lineWidth = 3
       ctx.stroke()
 
+      layoutRef.current.regions = []
+
       for (const r of REGIONS) {
-        const active = selected === r.id
+        const px = r.x * w
+        const py = r.y * h
+        const pr = r.r * minDim
+        layoutRef.current.regions.push({ id: r.id, x: px, y: py, r: pr })
+
+        const active = sel === r.id
+        const isHover = hover === r.id
         const glow = active ? 0.3 + 0.15 * Math.sin(pulse.current * 4) : 0
+
+        drawHoverHalo(ctx, px, py, pr + 6, isHover && !active)
+
         ctx.beginPath()
-        ctx.arc(r.x * w, r.y * h, r.r * Math.min(w, h) * (active ? 1.08 : 1), 0, Math.PI * 2)
-        ctx.fillStyle = active ? `rgba(47, 111, 237, ${0.78 + glow})` : 'rgba(133, 193, 233, 0.55)'
+        ctx.arc(px, py, pr * (active ? 1.08 : isHover ? 1.04 : 1), 0, Math.PI * 2)
+        ctx.fillStyle = active
+          ? `rgba(47, 111, 237, ${0.78 + glow})`
+          : isHover
+            ? 'rgba(133, 193, 233, 0.75)'
+            : 'rgba(133, 193, 233, 0.55)'
         ctx.fill()
-        if (active) {
+        if (active || isHover) {
           ctx.strokeStyle = '#fff'
-          ctx.lineWidth = 2.5
+          ctx.lineWidth = active ? 2.5 : 2
           ctx.stroke()
         }
         ctx.fillStyle = '#1a252f'
         ctx.font = `600 ${Math.max(10, fs - 2)}px Roboto, sans-serif`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
-        ctx.fillText(r.name.split(' ')[0], r.x * w, r.y * h)
+        ctx.fillText(r.name.split(' ')[0], px, py)
       }
 
-      const region = REGIONS.find((r) => r.id === selected)
+      const region = REGIONS.find((r) => r.id === sel)
       if (region) {
-        ctx.fillStyle = 'rgba(0,0,0,0.5)'
-        const boxW = Math.min(w - 24, 360)
-        ctx.fillRect(12, 12, boxW, 52)
-        ctx.fillStyle = '#fff'
-        ctx.font = `600 ${fs + 1}px Roboto, sans-serif`
-        ctx.textAlign = 'left'
-        ctx.fillText(region.name, 24, 32)
-        ctx.font = `${Math.max(11, fs - 1)}px Roboto, sans-serif`
-        ctx.fillStyle = 'rgba(255,255,255,0.9)'
-        ctx.fillText(region.action, 24, 52)
+        drawLabelPill(ctx, region.name, 24 + 80, 32, { align: 'left', fontSize: fs + 1 })
+        drawLabelPill(ctx, region.action, 24 + 120, 56, {
+          align: 'left',
+          fontSize: Math.max(11, fs - 1),
+          bold: false,
+          bg: 'rgba(0,0,0,0.45)',
+          fg: 'rgba(255,255,255,0.95)',
+        })
+      }
+
+      if (hintShown.current) {
+        drawHint(ctx, 'hover regions · click to select', w / 2, h - 18, w, h, { muted: true })
       }
     },
     [selected],
   )
 
-  useCanvasLoop(canvasRef, draw, true, version)
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const onDown = (e: PointerEvent) => {
-      const rect = canvas.getBoundingClientRect()
-      const x = (e.clientX - rect.left) / rect.width
-      const y = (e.clientY - rect.top) / rect.height
-      for (const r of [...REGIONS].reverse()) {
-        const dx = x - r.x
-        const dy = y - r.y
-        if (dx * dx + dy * dy <= r.r * r.r) {
-          setSelected(r.id)
-          setVersion((v) => v + 1)
-          return
-        }
-      }
-    }
-    canvas.addEventListener('pointerdown', onDown)
-    return () => canvas.removeEventListener('pointerdown', onDown)
-  }, [])
+  useCanvasLoop(canvasRef, draw, true, version, true)
 
   return (
     <SimShell
@@ -102,7 +133,9 @@ export function BrainMappingSim() {
       hidePlay
       onTogglePlay={() => undefined}
       onReset={() => {
+        paramsRef.current.selected = 'frontal'
         setSelected('frontal')
+        hintShown.current = true
         setVersion((v) => v + 1)
       }}
       controls={
@@ -116,6 +149,7 @@ export function BrainMappingSim() {
                   type="button"
                   className={`sim-shell-btn ${selected === r.id ? 'is-active' : ''}`}
                   onClick={() => {
+                    paramsRef.current.selected = r.id
                     setSelected(r.id)
                     setVersion((v) => v + 1)
                   }}

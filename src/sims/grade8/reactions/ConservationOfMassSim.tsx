@@ -7,8 +7,10 @@ import {
   ControlToggle,
 } from '../../shared/Controls'
 import { fontPx, roundRect } from '../../shared/drawHelpers'
+import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
+import { useCanvasPointer } from '../../shared/useCanvasPointer'
 import {
   createMassConservationState,
   displayedMass,
@@ -16,6 +18,10 @@ import {
   stepMassConservation,
   TOTAL_MASS,
 } from './conservationOfMassModel'
+
+type Layout = {
+  flask: { x: number; y: number; w: number; h: number }
+}
 
 function drawBalancePan(
   ctx: CanvasRenderingContext2D,
@@ -47,10 +53,10 @@ function drawBalancePan(
     ctx.strokeStyle = '#2980b9'
     ctx.lineWidth = 2
     ctx.stroke()
-    ctx.fillStyle = '#1a252f'
-    ctx.font = `${Math.max(10, fs - 2)}px Roboto, sans-serif`
-    ctx.textAlign = 'center'
-    ctx.fillText('Reactants', cx, cy - 48 - progress * 10)
+    drawLabelPill(ctx, 'Reactants', cx, cy - 48 - progress * 10, {
+      fontSize: Math.max(10, fs - 2),
+      bold: false,
+    })
   } else {
     roundRect(ctx, cx - 28, cy - 36, 56, 32, 6)
     ctx.fillStyle = `rgba(39,174,96,${0.35 + progress * 0.55})`
@@ -58,38 +64,58 @@ function drawBalancePan(
     ctx.strokeStyle = '#27ae60'
     ctx.lineWidth = 2
     ctx.stroke()
-    ctx.fillStyle = '#1a252f'
-    ctx.font = `${Math.max(10, fs - 2)}px Roboto, sans-serif`
-    ctx.textAlign = 'center'
-    ctx.fillText('Products', cx, cy - 48)
+    drawLabelPill(ctx, 'Products', cx, cy - 48, { fontSize: Math.max(10, fs - 2), bold: false })
   }
 
-  ctx.fillStyle = '#1a252f'
-  ctx.font = `600 ${fs}px Roboto, sans-serif`
-  ctx.fillText(`${mass.toFixed(1)} g`, cx, cy + 28)
-  ctx.font = `${Math.max(10, fs - 2)}px Roboto, sans-serif`
-  ctx.fillStyle = '#5d6d7e'
-  ctx.fillText(label, cx, cy + 44)
+  drawValueChip(ctx, 'mass', `${mass.toFixed(1)} g`, cx, cy + 28, { fontSize: fs })
+  drawValueChip(ctx, '', label, cx, cy + 48, { fontSize: Math.max(10, fs - 2) })
 }
 
 export function ConservationOfMassSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef(createMassConservationState())
+  const paramsRef = useRef({ sealed: true })
+  const layoutRef = useRef<Layout | null>(null)
+  const hoverRef = useRef<string | null>(null)
+  const hintShown = useRef(true)
   const [running, setRunning] = useState(true)
   const [sealed, setSealed] = useState(true)
   const [version, setVersion] = useState(0)
   const [progress, setProgress] = useState(0)
+
+  paramsRef.current.sealed = sealed
 
   useEffect(() => {
     const id = window.setInterval(() => setProgress(stateRef.current.progress), 120)
     return () => clearInterval(id)
   }, [])
 
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt) => {
+      const L = layoutRef.current
+      if (!L) return null
+      const f = L.flask
+      if (pt.x >= f.x && pt.x <= f.x + f.w && pt.y >= f.y && pt.y <= f.y + f.h) return 'flask'
+      return null
+    },
+    onHoverChange: (id) => {
+      hoverRef.current = id
+    },
+    onTap: (id) => {
+      if (id !== 'flask') return
+      hintShown.current = false
+      paramsRef.current.sealed = !paramsRef.current.sealed
+      setSealed(paramsRef.current.sealed)
+    },
+  })
+
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
       if (dt > 0) stateRef.current = stepMassConservation(stateRef.current, dt, running)
       const s = stateRef.current
-      const mass = displayedMass(s.progress, sealed)
+      const isSealed = paramsRef.current.sealed
+      const mass = displayedMass(s.progress, isSealed)
+      const hover = hoverRef.current
       const fs = fontPx(13, w, h)
 
       const bg = ctx.createLinearGradient(0, 0, 0, h)
@@ -98,16 +124,14 @@ export function ConservationOfMassSim() {
       ctx.fillStyle = bg
       ctx.fillRect(0, 0, w, h)
 
-      ctx.fillStyle = '#1a252f'
-      ctx.font = `600 ${fs + 2}px Roboto, sans-serif`
-      ctx.textAlign = 'center'
-      ctx.fillText('Conservation of Mass', w / 2, 28)
-      ctx.font = `${fs}px Roboto, sans-serif`
-      ctx.fillStyle = '#5d6d7e'
-      ctx.fillText(
-        sealed ? 'Sealed system — total mass stays constant' : 'Open system — gas escapes, mass appears to drop',
+      drawLabelPill(ctx, 'Conservation of Mass', w / 2, 28, { fontSize: fs + 2 })
+      drawValueChip(
+        ctx,
+        '',
+        isSealed ? 'Sealed system — total mass stays constant' : 'Open system — gas escapes',
         w / 2,
-        28 + fs + 8,
+        28 + fs + 12,
+        { fontSize: fs },
       )
 
       const flaskX = w * 0.5
@@ -115,8 +139,19 @@ export function ConservationOfMassSim() {
       const flaskW = w * 0.22
       const flaskH = h * 0.28
 
-      ctx.strokeStyle = '#5dade2'
-      ctx.lineWidth = 4
+      layoutRef.current = {
+        flask: {
+          x: flaskX - flaskW * 0.4,
+          y: flaskY - 10,
+          w: flaskW * 0.8,
+          h: flaskH + 20,
+        },
+      }
+
+      drawHoverHalo(ctx, flaskX, flaskY + flaskH / 2, flaskW * 0.45, hover === 'flask')
+
+      ctx.strokeStyle = hover === 'flask' ? '#2980b9' : '#5dade2'
+      ctx.lineWidth = hover === 'flask' ? 5 : 4
       ctx.beginPath()
       ctx.moveTo(flaskX - flaskW * 0.2, flaskY)
       ctx.lineTo(flaskX - flaskW * 0.35, flaskY + flaskH * 0.15)
@@ -126,20 +161,19 @@ export function ConservationOfMassSim() {
       ctx.lineTo(flaskX + flaskW * 0.2, flaskY)
       ctx.stroke()
 
-      if (sealed) {
+      if (isSealed) {
         ctx.beginPath()
         ctx.moveTo(flaskX - flaskW * 0.2, flaskY)
         ctx.lineTo(flaskX + flaskW * 0.2, flaskY)
         ctx.strokeStyle = '#e67e22'
         ctx.lineWidth = 5
         ctx.stroke()
-        ctx.fillStyle = '#e67e22'
-        ctx.font = `${Math.max(10, fs - 2)}px Roboto, sans-serif`
-        ctx.fillText('STOPPER', flaskX, flaskY - 10)
+        drawValueChip(ctx, '', 'STOPPER — click to open', flaskX, flaskY - 14, {
+          fontSize: Math.max(10, fs - 2),
+          accent: true,
+        })
       } else {
-        ctx.fillStyle = '#5d6d7e'
-        ctx.font = `${Math.max(10, fs - 2)}px Roboto, sans-serif`
-        ctx.fillText('OPEN', flaskX, flaskY - 10)
+        drawValueChip(ctx, '', 'OPEN — click to seal', flaskX, flaskY - 14, { fontSize: Math.max(10, fs - 2) })
         if (running && s.progress > 0.2) {
           for (let i = 0; i < 5; i++) {
             const t = (s.time * 0.8 + i * 0.3) % 1
@@ -155,9 +189,9 @@ export function ConservationOfMassSim() {
       ctx.fillStyle = `rgba(${Math.round(52 + mix * 40)}, ${Math.round(152 - mix * 80)}, ${Math.round(219 - mix * 100)}, 0.65)`
       ctx.fillRect(flaskX - flaskW * 0.32, flaskY + flaskH * (1 - 0.55 - mix * 0.1), flaskW * 0.64, flaskH * 0.55)
 
-      ctx.fillStyle = '#1a252f'
-      ctx.font = `${fs}px Roboto, sans-serif`
-      ctx.fillText(`Reaction: ${Math.round(s.progress * 100)}%`, flaskX, flaskY + flaskH + fs + 12)
+      drawValueChip(ctx, 'Reaction', `${Math.round(s.progress * 100)}%`, flaskX, flaskY + flaskH + fs + 12, {
+        fontSize: fs,
+      })
 
       const beamY = h * 0.72
       ctx.strokeStyle = '#566573'
@@ -171,19 +205,19 @@ export function ConservationOfMassSim() {
       ctx.lineTo(w * 0.5, beamY)
       ctx.stroke()
 
-      const tilt = sealed ? 0 : Math.min(0.08, s.progress * 0.08)
+      const tilt = isSealed ? 0 : Math.min(0.08, s.progress * 0.08)
       drawBalancePan(ctx, w * 0.32, beamY + 8 + tilt * 40, mass, 'Before / during', 1 - s.progress, 'left', fs)
       drawBalancePan(ctx, w * 0.68, beamY + 8 - tilt * 40, mass, 'After', s.progress, 'right', fs)
 
-      roundRect(ctx, w * 0.34, h * 0.86, w * 0.32, 36, 8)
-      ctx.fillStyle = sealed ? 'rgba(39,174,96,0.2)' : 'rgba(231,76,60,0.15)'
-      ctx.fill()
-      ctx.strokeStyle = sealed ? '#27ae60' : '#e74c3c'
-      ctx.lineWidth = 2
-      ctx.stroke()
-      ctx.fillStyle = '#1a252f'
-      ctx.font = `600 ${fs}px Roboto, sans-serif`
-      ctx.fillText(`Total mass: ${mass.toFixed(1)} g`, w / 2, h * 0.86 + 22)
+      drawLabelPill(ctx, `Total mass: ${mass.toFixed(1)} g`, w / 2, h * 0.86 + 18, {
+        fontSize: fs,
+        bg: isSealed ? 'rgba(39,174,96,0.2)' : 'rgba(231,76,60,0.15)',
+        fg: isSealed ? '#1e8449' : '#922b21',
+      })
+
+      if (hintShown.current) {
+        drawHint(ctx, 'click flask to open / seal', w / 2, h - 18, w, h)
+      }
     },
     [running, sealed],
   )
@@ -201,8 +235,10 @@ export function ConservationOfMassSim() {
       onTogglePlay={() => setRunning((r) => !r)}
       onReset={() => {
         stateRef.current = resetMassConservation()
+        paramsRef.current.sealed = true
         setSealed(true)
         setRunning(true)
+        hintShown.current = true
         setVersion((v) => v + 1)
       }}
       controls={
@@ -215,8 +251,8 @@ export function ConservationOfMassSim() {
               label="Sealed container"
               checked={sealed}
               onChange={(v) => {
+                paramsRef.current.sealed = v
                 setSealed(v)
-                setVersion((n) => n + 1)
               }}
             />
           </ControlSection>

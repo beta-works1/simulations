@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ControlHint,
   ControlSection,
@@ -7,8 +7,11 @@ import {
   ControlToggle,
 } from '../../shared/Controls'
 import { fontPx, roundRect } from '../../shared/drawHelpers'
+import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
+import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
+import { useCanvasPointer } from '../../shared/useCanvasPointer'
 
 const METALS = [
   { value: 'Na', label: 'Sodium (Na)', color: '#bdc3c7' },
@@ -36,15 +39,74 @@ export function stepMetalNonmetal(s: MetalNonmetalState, dt: number): MetalNonme
   return { time: s.time + dt }
 }
 
+type PanelLayout = { id: string; x: number; y: number; w: number; h: number }
+
+type Layout = {
+  metalPanel: PanelLayout
+  nonmetalPanel: PanelLayout
+}
+
+function cycleValue<T extends { value: string }>(list: readonly T[], current: string): string {
+  const idx = list.findIndex((m) => m.value === current)
+  return list[(idx + 1) % list.length].value
+}
+
 export function MetalNonmetalSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef(createMetalNonmetalState())
+  const paramsRef = useRef({ metal: 'Fe', nonmetal: 'O', reactivity: 0.5, showConductivity: true })
+  const layoutRef = useRef<Layout | null>(null)
+  const hoverRef = useRef<string | null>(null)
+  const hintShown = useRef(true)
   const [running, setRunning] = useState(true)
   const [metal, setMetal] = useState('Fe')
   const [nonmetal, setNonmetal] = useState('O')
   const [showConductivity, setShowConductivity] = useState(true)
   const [reactivity, setReactivity] = useState(0.5)
   const [version, setVersion] = useState(0)
+
+  paramsRef.current = { metal, nonmetal, reactivity, showConductivity }
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const p = paramsRef.current
+      setMetal(p.metal)
+      setNonmetal(p.nonmetal)
+      setReactivity(p.reactivity)
+    }, 120)
+    return () => clearInterval(id)
+  }, [])
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt) => {
+      const L = layoutRef.current
+      if (!L) return null
+      const m = L.metalPanel
+      if (pt.x >= m.x && pt.x <= m.x + m.w && pt.y >= m.y && pt.y <= m.y + m.h) return 'metal'
+      const n = L.nonmetalPanel
+      if (pt.x >= n.x && pt.x <= n.x + n.w && pt.y >= n.y && pt.y <= n.y + n.h) return 'nonmetal'
+      return null
+    },
+    onHoverChange: (id) => {
+      hoverRef.current = id
+    },
+    onTap: (id) => {
+      if (!id) return
+      hintShown.current = false
+      const p = paramsRef.current
+      if (id === 'metal') p.metal = cycleValue(METALS, p.metal)
+      else if (id === 'nonmetal') p.nonmetal = cycleValue(NONMETALS, p.nonmetal)
+    },
+    onDrag: (id, pt, _s, _start) => {
+      if (id !== 'metal' && id !== 'nonmetal') return
+      hintShown.current = false
+      const L = layoutRef.current
+      if (!L) return
+      const demoY = L.metalPanel.y + L.metalPanel.h + 200
+      const t = clamp((pt.y - demoY) / 120, 0, 1)
+      paramsRef.current.reactivity = clamp(t, 0, 1)
+    },
+  })
 
   const metalInfo = METALS.find((m) => m.value === metal) ?? METALS[3]
   const nonmetalInfo = NONMETALS.find((n) => n.value === nonmetal) ?? NONMETALS[2]
@@ -53,6 +115,10 @@ export function MetalNonmetalSim() {
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
       if (dt > 0 && running) stateRef.current = stepMetalNonmetal(stateRef.current, dt)
       const t = stateRef.current.time
+      const p = paramsRef.current
+      const mInfo = METALS.find((m) => m.value === p.metal) ?? METALS[3]
+      const nInfo = NONMETALS.find((n) => n.value === p.nonmetal) ?? NONMETALS[2]
+      const hover = hoverRef.current
       const fs = fontPx(13, w, h)
 
       const bg = ctx.createLinearGradient(0, 0, 0, h)
@@ -67,33 +133,39 @@ export function MetalNonmetalSim() {
       const rightX = w * 0.54
       const barY = h * 0.14
 
-      ctx.fillStyle = '#1a252f'
-      ctx.font = `600 ${fs}px Roboto, sans-serif`
-      ctx.textAlign = 'center'
-      ctx.fillText('Metal — conducts', leftX + barW / 2, barY - 14)
-      ctx.fillText('Non-metal — insulates', rightX + barW / 2, barY - 14)
+      layoutRef.current = {
+        metalPanel: { id: 'metal', x: leftX, y: barY, w: barW, h: barH },
+        nonmetalPanel: { id: 'nonmetal', x: rightX, y: barY, w: barW, h: barH },
+      }
 
+      drawLabelPill(ctx, 'Metal — conducts', leftX + barW / 2, barY - 14, { fontSize: fs })
+      drawLabelPill(ctx, 'Non-metal — insulates', rightX + barW / 2, barY - 14, { fontSize: fs })
+
+      drawHoverHalo(ctx, leftX + barW / 2, barY + barH / 2, barW * 0.48, hover === 'metal')
       roundRect(ctx, leftX, barY, barW, barH, 10)
-      ctx.fillStyle = metalInfo.color
+      ctx.fillStyle = mInfo.color
       ctx.fill()
-      ctx.strokeStyle = '#566573'
-      ctx.lineWidth = 2
+      ctx.strokeStyle = hover === 'metal' ? '#2980b9' : '#566573'
+      ctx.lineWidth = hover === 'metal' ? 3 : 2
       ctx.stroke()
 
+      drawHoverHalo(ctx, rightX + barW / 2, barY + barH / 2, barW * 0.48, hover === 'nonmetal')
       roundRect(ctx, rightX, barY, barW, barH, 10)
-      ctx.fillStyle = nonmetalInfo.color
+      ctx.fillStyle = nInfo.color
       ctx.globalAlpha = 0.85
       ctx.fill()
       ctx.globalAlpha = 1
-      ctx.strokeStyle = '#566573'
+      ctx.strokeStyle = hover === 'nonmetal' ? '#2980b9' : '#566573'
+      ctx.lineWidth = hover === 'nonmetal' ? 3 : 2
       ctx.stroke()
 
       ctx.font = `700 ${fs + 4}px Roboto, sans-serif`
       ctx.fillStyle = '#fff'
-      ctx.fillText(metalInfo.value, leftX + barW / 2, barY + barH / 2 + 6)
-      ctx.fillText(nonmetalInfo.value, rightX + barW / 2, barY + barH / 2 + 6)
+      ctx.textAlign = 'center'
+      ctx.fillText(mInfo.value, leftX + barW / 2, barY + barH / 2 + 6)
+      ctx.fillText(nInfo.value, rightX + barW / 2, barY + barH / 2 + 6)
 
-      if (showConductivity) {
+      if (p.showConductivity) {
         const wireY = barY + barH + h * 0.06
         ctx.strokeStyle = '#f39c12'
         ctx.lineWidth = 4
@@ -106,9 +178,10 @@ export function MetalNonmetalSim() {
         ctx.lineTo(rightX + barW, wireY)
         ctx.stroke()
 
-        ctx.fillStyle = '#1a252f'
-        ctx.font = `${fs}px Roboto, sans-serif`
-        ctx.fillText('Circuit wire', leftX + barW / 2, wireY + fs + 8)
+        drawLabelPill(ctx, 'Circuit wire', leftX + barW / 2, wireY + fs + 8, {
+          fontSize: fs,
+          bold: false,
+        })
 
         for (let i = 0; i < 6; i++) {
           const phase = (t * 1.8 + i * 0.16) % 1
@@ -140,11 +213,13 @@ export function MetalNonmetalSim() {
           }
         }
 
-        ctx.font = `${Math.max(10, fs - 1)}px Roboto, sans-serif`
-        ctx.fillStyle = '#27ae60'
-        ctx.fillText('Electrons flow ✓', leftX + barW / 2, wireY + fs + 24)
-        ctx.fillStyle = '#c0392b'
-        ctx.fillText('Electrons blocked ✗', rightX + barW / 2, wireY + fs + 24)
+        drawValueChip(ctx, 'Conductivity', 'high ✓', leftX + barW / 2, wireY + fs + 28, {
+          fontSize: Math.max(10, fs - 1),
+          accent: true,
+        })
+        drawValueChip(ctx, 'Conductivity', 'low ✗', rightX + barW / 2, wireY + fs + 28, {
+          fontSize: Math.max(10, fs - 1),
+        })
       }
 
       const demoY = h * 0.62
@@ -156,51 +231,57 @@ export function MetalNonmetalSim() {
       ctx.lineWidth = 2
       ctx.stroke()
 
-      ctx.fillStyle = '#1a252f'
-      ctx.font = `600 ${fs}px Roboto, sans-serif`
-      ctx.textAlign = 'left'
-      ctx.fillText('Reactivity demo (oxidation / rust)', w * 0.08 + 14, demoY + fs + 8)
+      drawLabelPill(ctx, 'Reactivity demo (oxidation / rust)', w * 0.08 + 14 + 120, demoY + fs + 8, {
+        align: 'left',
+        fontSize: fs,
+      })
 
       const sampleX = w * 0.22
       const sampleY = demoY + demoH * 0.55
       const sampleR = Math.min(w, h) * 0.07
       ctx.beginPath()
       ctx.arc(sampleX, sampleY, sampleR, 0, Math.PI * 2)
-      const rust = reactivity
+      const rust = p.reactivity
       ctx.fillStyle = `rgb(${Math.round(127 + rust * 80)}, ${Math.round(140 - rust * 60)}, ${Math.round(141 - rust * 90)})`
       ctx.fill()
       ctx.strokeStyle = '#566573'
       ctx.lineWidth = 2
       ctx.stroke()
 
-      if (running && reactivity > 0.1) {
-        const n = Math.floor(4 + reactivity * 12)
+      if (running && rust > 0.1) {
+        const n = Math.floor(4 + rust * 12)
         for (let i = 0; i < n; i++) {
           const ang = (i / n) * Math.PI * 2 + t * 2
-          const dist = sampleR + 8 + (Math.sin(t * 3 + i) * 0.5 + 0.5) * reactivity * 28
+          const dist = sampleR + 8 + (Math.sin(t * 3 + i) * 0.5 + 0.5) * rust * 28
           const px = sampleX + Math.cos(ang) * dist
-          const py = sampleY + Math.sin(ang) * dist - t * 20 * reactivity
+          const py = sampleY + Math.sin(ang) * dist - t * 20 * rust
           ctx.beginPath()
-          ctx.arc(px, py, 3 + reactivity * 2, 0, Math.PI * 2)
-          ctx.fillStyle = nonmetalInfo.color
+          ctx.arc(px, py, 3 + rust * 2, 0, Math.PI * 2)
+          ctx.fillStyle = nInfo.color
           ctx.globalAlpha = 0.7
           ctx.fill()
           ctx.globalAlpha = 1
         }
       }
 
-      ctx.fillStyle = '#5d6d7e'
-      ctx.font = `${fs}px Roboto, sans-serif`
-      ctx.textAlign = 'left'
-      ctx.fillText(
-        `${metalInfo.value} + ${nonmetalInfo.value} → oxide layer (${Math.round(reactivity * 100)}% intensity)`,
+      drawValueChip(
+        ctx,
+        'Reactivity',
+        `${Math.round(rust * 100)}%`,
         w * 0.38,
         sampleY - 8,
+        { fontSize: fs, align: 'left' },
       )
-      ctx.fillText('Metals tend to lose electrons and react.', w * 0.38, sampleY + fs + 4)
-      ctx.fillText('Non-metals hold electrons tightly.', w * 0.38, sampleY + (fs + 4) * 2)
+      drawValueChip(ctx, '', `${mInfo.value} + ${nInfo.value} → oxide`, w * 0.38, sampleY + fs + 4, {
+        fontSize: Math.max(10, fs - 1),
+        align: 'left',
+      })
+
+      if (hintShown.current) {
+        drawHint(ctx, 'click panels to switch · drag reactivity zone', w / 2, h - 18, w, h)
+      }
     },
-    [metalInfo, nonmetalInfo, reactivity, running, showConductivity],
+    [running, showConductivity, metalInfo, nonmetalInfo, reactivity],
   )
 
   useCanvasLoop(canvasRef, draw, running, version, true)
@@ -214,11 +295,13 @@ export function MetalNonmetalSim() {
       onTogglePlay={() => setRunning((r) => !r)}
       onReset={() => {
         stateRef.current = createMetalNonmetalState()
+        paramsRef.current = { metal: 'Fe', nonmetal: 'O', reactivity: 0.5, showConductivity: true }
         setMetal('Fe')
         setNonmetal('O')
         setShowConductivity(true)
         setReactivity(0.5)
         setRunning(true)
+        hintShown.current = true
         setVersion((v) => v + 1)
       }}
       controls={
@@ -228,13 +311,19 @@ export function MetalNonmetalSim() {
               label="Metal"
               value={metal}
               options={METALS.map((m) => ({ value: m.value, label: m.label }))}
-              onChange={setMetal}
+              onChange={(v) => {
+                setMetal(v)
+                paramsRef.current.metal = v
+              }}
             />
             <ControlSelect
               label="Non-metal"
               value={nonmetal}
               options={NONMETALS.map((n) => ({ value: n.value, label: n.label }))}
-              onChange={setNonmetal}
+              onChange={(v) => {
+                setNonmetal(v)
+                paramsRef.current.nonmetal = v
+              }}
             />
           </ControlSection>
           <ControlSection title="Visualization">
@@ -242,7 +331,10 @@ export function MetalNonmetalSim() {
             <ControlToggle
               label="Show conductivity demo"
               checked={showConductivity}
-              onChange={setShowConductivity}
+              onChange={(v) => {
+                setShowConductivity(v)
+                paramsRef.current.showConductivity = v
+              }}
             />
             <ControlSlider
               label="Reactivity intensity"
@@ -251,7 +343,10 @@ export function MetalNonmetalSim() {
               max={1}
               step={0.05}
               display={`${Math.round(reactivity * 100)}%`}
-              onChange={setReactivity}
+              onChange={(v) => {
+                setReactivity(v)
+                paramsRef.current.reactivity = v
+              }}
             />
           </ControlSection>
         </>

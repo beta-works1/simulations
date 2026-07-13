@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { SimShell, SimTransport } from '../shared/SimShell'
-import { useAnimationLoop } from '../shared/useAnimationLoop'
 import { useCanvasSize } from '../shared/useCanvasSize'
+import { useRefPaintLoop } from '../shared/useRefPaintLoop'
 import {
   collapseRadius,
   createInitialState,
@@ -95,21 +95,33 @@ function drawBlackHole(ctx: CanvasRenderingContext2D, w: number, h: number, stat
 export function BlackHoleSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { w, h } = useCanvasSize(canvasRef)
-  const [state, setState] = useState<BlackHoleState>(createInitialState)
+  const stateRef = useRef<BlackHoleState>(createInitialState())
+  const [running, setRunning] = useState(true)
+  const [phase, setPhase] = useState(phaseLabel(createInitialState().phase))
+  const [detail, setDetail] = useState('Collapse: 0%')
 
-  useAnimationLoop(state.running, (dt) => {
-    setState((s) => stepBlackHole(s, dt))
+  useRefPaintLoop({
+    canvasRef,
+    width: w,
+    height: h,
+    stateRef,
+    running,
+    step: (s, dt) => stepBlackHole({ ...s, running: true }, dt),
+    draw: drawBlackHole,
+    onSync: (s) => {
+      setPhase(phaseLabel(s.phase))
+      setDetail(
+        s.phase === 'collapse'
+          ? `Collapse: ${(s.collapseProgress * 100).toFixed(0)}%`
+          : 'Gravitational lensing active',
+      )
+    },
   })
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    drawBlackHole(ctx, w, h, state)
-  }, [w, h, state])
-
-  const reset = useCallback(() => setState(createInitialState()), [])
+  const reset = useCallback(() => {
+    stateRef.current = createInitialState()
+    setRunning(true)
+  }, [])
 
   return (
     <SimShell
@@ -122,18 +134,16 @@ export function BlackHoleSim() {
             some photons fall in past the event horizon.
           </p>
           <p className="sim-readout">
-            Phase: {phaseLabel(state.phase)}
+            Phase: {phase}
             <br />
-            {state.phase === 'collapse'
-              ? `Collapse: ${(state.collapseProgress * 100).toFixed(0)}%`
-              : 'Gravitational lensing active'}
+            {detail}
           </p>
         </>
       }
       toolbar={
         <SimTransport
-          running={state.running}
-          onToggle={() => setState((s) => ({ ...s, running: !s.running }))}
+          running={running}
+          onToggle={() => setRunning((r) => !r)}
           onReset={reset}
         />
       }
