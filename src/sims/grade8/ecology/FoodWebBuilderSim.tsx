@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { ControlHint, ControlSection, ControlStack } from '../../shared/Controls'
+import { drawBadge, fontPx } from '../../shared/drawHelpers'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import {
@@ -18,59 +20,71 @@ export function FoodWebBuilderSim() {
   const [running, setRunning] = useState(true)
   const [version, setVersion] = useState(0)
 
-  const draw = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
-    if (dt > 0 && running) stateRef.current = stepFoodWeb(stateRef.current, dt)
-    const s = stateRef.current
-    ctx.clearRect(0, 0, w, h)
-    ctx.fillStyle = '#102a3c'
-    ctx.fillRect(0, 0, w, h)
+  const draw = useCallback(
+    (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
+      if (dt > 0 && running) stateRef.current = stepFoodWeb(stateRef.current, dt)
+      const s = stateRef.current
+      const fs = fontPx(13, w, h)
 
-    for (const link of s.links) {
-      const a = s.nodes.find((n) => n.id === link.from)
-      const b = s.nodes.find((n) => n.id === link.to)
-      if (!a || !b) continue
-      const x1 = a.x * w
-      const y1 = a.y * h
-      const x2 = b.x * w
-      const y2 = b.y * h
-      ctx.strokeStyle = '#7f8c8d'
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.moveTo(x1, y1)
-      ctx.lineTo(x2, y2)
-      ctx.stroke()
-      const p = (s.energyPulse % 1.5) / 1.5
-      const px = x1 + (x2 - x1) * p
-      const py = y1 + (y2 - y1) * p
-      ctx.beginPath()
-      ctx.arc(px, py, 5, 0, Math.PI * 2)
-      ctx.fillStyle = '#f1c40f'
-      ctx.fill()
-    }
+      const bg = ctx.createLinearGradient(0, 0, 0, h)
+      bg.addColorStop(0, '#102a3c')
+      bg.addColorStop(1, '#1a3d2f')
+      ctx.fillStyle = bg
+      ctx.fillRect(0, 0, w, h)
 
-    for (const n of s.nodes) {
-      const x = n.x * w
-      const y = n.y * h
-      ctx.beginPath()
-      ctx.arc(x, y, 28, 0, Math.PI * 2)
-      ctx.fillStyle = levelColor(n.level)
-      ctx.fill()
-      if (s.selectedId === n.id) {
-        ctx.strokeStyle = '#fff'
-        ctx.lineWidth = 3
+      for (const link of s.links) {
+        const a = s.nodes.find((n) => n.id === link.from)
+        const b = s.nodes.find((n) => n.id === link.to)
+        if (!a || !b) continue
+        const x1 = a.x * w
+        const y1 = a.y * h
+        const x2 = b.x * w
+        const y2 = b.y * h
+        ctx.strokeStyle = 'rgba(236,240,241,0.35)'
+        ctx.lineWidth = 2.5
+        ctx.beginPath()
+        ctx.moveTo(x1, y1)
+        ctx.lineTo(x2, y2)
         ctx.stroke()
+        const p = (s.energyPulse % 1.6) / 1.6
+        const px = x1 + (x2 - x1) * p
+        const py = y1 + (y2 - y1) * p
+        ctx.beginPath()
+        ctx.arc(px, py, 5.5, 0, Math.PI * 2)
+        ctx.fillStyle = '#f4d03f'
+        ctx.fill()
       }
-      ctx.fillStyle = '#fff'
-      ctx.font = '600 12px Roboto, sans-serif'
-      ctx.textAlign = 'center'
-      ctx.fillText(n.name, x, y + 4)
-    }
 
-    ctx.fillStyle = '#aeb6bf'
-    ctx.font = '12px Roboto, sans-serif'
-    ctx.textAlign = 'left'
-    ctx.fillText('Drag species · yellow dots = energy flow', 12, h - 12)
-  }, [running])
+      const nodeR = Math.max(22, Math.min(34, Math.min(w, h) * 0.055))
+      for (const n of s.nodes) {
+        const x = n.x * w
+        const y = n.y * h
+        ctx.save()
+        ctx.shadowColor = 'rgba(0,0,0,0.35)'
+        ctx.shadowBlur = 10
+        ctx.beginPath()
+        ctx.arc(x, y, nodeR, 0, Math.PI * 2)
+        ctx.fillStyle = levelColor(n.level)
+        ctx.fill()
+        ctx.restore()
+        if (s.selectedId === n.id) {
+          ctx.strokeStyle = '#fff'
+          ctx.lineWidth = 3
+          ctx.stroke()
+        }
+        ctx.fillStyle = '#fff'
+        ctx.font = `600 ${fs}px Roboto, sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(n.name, x, y)
+      }
+
+      drawBadge(ctx, 'Drag nodes · yellow = energy', 12, h - 18, {
+        font: `${fontPx(11, w, h, 10, 13)}px Roboto, sans-serif`,
+      })
+    },
+    [running],
+  )
 
   useCanvasLoop(canvasRef, draw, true, version)
 
@@ -85,11 +99,12 @@ export function FoodWebBuilderSim() {
 
     const hit = (x: number, y: number) => {
       const s = stateRef.current
+      const nodeR = 34
       for (let i = s.nodes.length - 1; i >= 0; i--) {
         const n = s.nodes[i]
         const dx = (n.x - x) * canvas.clientWidth
         const dy = (n.y - y) * canvas.clientHeight
-        if (dx * dx + dy * dy < 32 * 32) return n.id
+        if (dx * dx + dy * dy < nodeR * nodeR) return n.id
       }
       return null
     }
@@ -115,10 +130,12 @@ export function FoodWebBuilderSim() {
     canvas.addEventListener('pointerdown', down)
     canvas.addEventListener('pointermove', move)
     canvas.addEventListener('pointerup', up)
+    canvas.addEventListener('pointercancel', up)
     return () => {
       canvas.removeEventListener('pointerdown', down)
       canvas.removeEventListener('pointermove', move)
       canvas.removeEventListener('pointerup', up)
+      canvas.removeEventListener('pointercancel', up)
     }
   }, [])
 
@@ -130,6 +147,7 @@ export function FoodWebBuilderSim() {
   return (
     <SimShell
       title="Food Chain / Food Web"
+      subtitle="Build links and watch energy move between species"
       canvasRef={canvasRef}
       running={running}
       onTogglePlay={() => setRunning((r) => !r)}
@@ -139,19 +157,27 @@ export function FoodWebBuilderSim() {
       }}
       controls={
         <>
-          <p className="hint">Build a web by adding species. Energy flows from prey → predator.</p>
-          <button type="button" className="sim-shell-btn" onClick={() => add('producer', 'Algae')}>
-            + Producer
-          </button>
-          <button type="button" className="sim-shell-btn" onClick={() => add('herbivore', 'Deer')}>
-            + Herbivore
-          </button>
-          <button type="button" className="sim-shell-btn" onClick={() => add('carnivore', 'Hawk')}>
-            + Carnivore
-          </button>
-          <button type="button" className="sim-shell-btn" onClick={() => add('decomposer', 'Bacteria')}>
-            + Decomposer
-          </button>
+          <ControlSection title="Add species">
+            <ControlHint>Producers make energy; consumers eat; decomposers recycle.</ControlHint>
+            <ControlStack>
+              <button type="button" className="sim-shell-btn" onClick={() => add('producer', 'Algae')}>
+                + Producer
+              </button>
+              <button type="button" className="sim-shell-btn" onClick={() => add('herbivore', 'Deer')}>
+                + Herbivore
+              </button>
+              <button type="button" className="sim-shell-btn" onClick={() => add('carnivore', 'Hawk')}>
+                + Carnivore
+              </button>
+              <button
+                type="button"
+                className="sim-shell-btn"
+                onClick={() => add('decomposer', 'Bacteria')}
+              >
+                + Decomposer
+              </button>
+            </ControlStack>
+          </ControlSection>
         </>
       }
     />

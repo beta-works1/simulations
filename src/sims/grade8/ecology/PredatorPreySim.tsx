@@ -1,4 +1,13 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  ControlHint,
+  ControlSection,
+  ControlSelect,
+  ControlSlider,
+  ControlStat,
+  ControlStats,
+} from '../../shared/Controls'
+import { drawLegend, fontPx } from '../../shared/drawHelpers'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import {
@@ -14,79 +23,93 @@ export function PredatorPreySim() {
   const [mode, setMode] = useState<PredatorPreyState['mode']>('predation')
   const [growth, setGrowth] = useState(1.1)
   const [version, setVersion] = useState(0)
+  const [readout, setReadout] = useState({ prey: 40, predators: 12 })
 
-  const draw = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
-    const s = stateRef.current
-    s.mode = mode
-    s.growth = growth
-    if (dt > 0 && running) stateRef.current = stepPredatorPrey(s, dt)
-    const st = stateRef.current
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const s = stateRef.current
+      setReadout({ prey: s.prey, predators: s.predators })
+    }, 180)
+    return () => clearInterval(id)
+  }, [])
 
-    ctx.clearRect(0, 0, w, h)
-    ctx.fillStyle = '#10283a'
-    ctx.fillRect(0, 0, w, h)
+  const draw = useCallback(
+    (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
+      const s = stateRef.current
+      s.mode = mode
+      s.growth = growth
+      if (dt > 0 && running) stateRef.current = stepPredatorPrey(s, dt)
+      const st = stateRef.current
+      const fs = fontPx(12, w, h)
 
-    // population dots
-    const fieldH = h * 0.55
-    ctx.fillStyle = '#1e8449'
-    ctx.globalAlpha = 0.25
-    ctx.fillRect(0, 0, w, fieldH)
-    ctx.globalAlpha = 1
+      ctx.fillStyle = '#10283a'
+      ctx.fillRect(0, 0, w, h)
 
-    const preyN = Math.min(80, Math.round(st.prey))
-    const predN = Math.min(40, Math.round(st.predators))
-    for (let i = 0; i < preyN; i++) {
-      const x = ((i * 47 + st.time * 20) % (w - 20)) + 10
-      const y = ((i * 31) % (fieldH - 30)) + 15
-      ctx.beginPath()
-      ctx.arc(x, y, 4, 0, Math.PI * 2)
-      ctx.fillStyle = '#2ecc71'
-      ctx.fill()
-    }
-    for (let i = 0; i < predN; i++) {
-      const x = ((i * 53 + st.time * 12) % (w - 20)) + 10
-      const y = ((i * 41 + 20) % (fieldH - 30)) + 15
-      ctx.beginPath()
-      ctx.arc(x, y, 6, 0, Math.PI * 2)
-      ctx.fillStyle = '#e74c3c'
-      ctx.fill()
-    }
+      const fieldH = h * 0.58
+      ctx.fillStyle = 'rgba(30,132,73,0.28)'
+      ctx.fillRect(0, 0, w, fieldH)
 
-    // chart
-    const chartY = fieldH + 10
-    const chartH = h - chartY - 16
-    ctx.fillStyle = '#0b1c2c'
-    ctx.fillRect(10, chartY, w - 20, chartH)
-    const hist = st.history
-    if (hist.length > 1) {
-      const plot = (key: 'prey' | 'predators', color: string) => {
+      const preyN = Math.min(90, Math.round(st.prey))
+      const predN = Math.min(45, Math.round(st.predators))
+      for (let i = 0; i < preyN; i++) {
+        const x = ((i * 47 + st.time * 22) % Math.max(20, w - 20)) + 10
+        const y = ((i * 31) % Math.max(20, fieldH - 28)) + 14
         ctx.beginPath()
-        ctx.strokeStyle = color
-        ctx.lineWidth = 2
-        hist.forEach((p, i) => {
-          const x = 10 + (i / Math.max(1, hist.length - 1)) * (w - 20)
-          const y = chartY + chartH - (p[key] / 120) * (chartH - 8)
-          if (i === 0) ctx.moveTo(x, y)
-          else ctx.lineTo(x, y)
-        })
-        ctx.stroke()
+        ctx.arc(x, y, Math.max(3, fs / 4), 0, Math.PI * 2)
+        ctx.fillStyle = '#2ecc71'
+        ctx.fill()
       }
-      plot('prey', '#2ecc71')
-      plot('predators', '#e74c3c')
-    }
+      for (let i = 0; i < predN; i++) {
+        const x = ((i * 53 + st.time * 14) % Math.max(20, w - 20)) + 10
+        const y = ((i * 41 + 20) % Math.max(20, fieldH - 28)) + 14
+        ctx.beginPath()
+        ctx.arc(x, y, Math.max(4.5, fs / 3), 0, Math.PI * 2)
+        ctx.fillStyle = '#e74c3c'
+        ctx.fill()
+      }
 
-    ctx.fillStyle = '#ecf0f1'
-    ctx.font = '12px Roboto, sans-serif'
-    ctx.textAlign = 'left'
-    ctx.fillText(`Prey ${st.prey.toFixed(1)}`, 16, 18)
-    ctx.fillText(`Predators ${st.predators.toFixed(1)}`, 110, 18)
-  }, [growth, mode, running])
+      const chartY = fieldH + 8
+      const chartH = h - chartY - 28
+      ctx.fillStyle = 'rgba(11,28,44,0.92)'
+      roundRectFill(ctx, 10, chartY, w - 20, chartH, 8)
+      const hist = st.history
+      if (hist.length > 1) {
+        const plot = (key: 'prey' | 'predators', color: string) => {
+          ctx.beginPath()
+          ctx.strokeStyle = color
+          ctx.lineWidth = 2.2
+          hist.forEach((p, i) => {
+            const x = 10 + (i / Math.max(1, hist.length - 1)) * (w - 20)
+            const y = chartY + chartH - (p[key] / 120) * (chartH - 10)
+            if (i === 0) ctx.moveTo(x, y)
+            else ctx.lineTo(x, y)
+          })
+          ctx.stroke()
+        }
+        plot('prey', '#2ecc71')
+        plot('predators', '#e74c3c')
+      }
 
-  useCanvasLoop(canvasRef, draw, running, version)
+      drawLegend(
+        ctx,
+        [
+          { color: '#2ecc71', label: `Prey ${st.prey.toFixed(0)}` },
+          { color: '#e74c3c', label: `Predators ${st.predators.toFixed(0)}` },
+        ],
+        14,
+        18,
+        fs,
+      )
+    },
+    [growth, mode, running],
+  )
+
+  useCanvasLoop(canvasRef, draw, running, version, true)
 
   return (
     <SimShell
       title="Predator–Prey Dynamics"
+      subtitle="Compare predation, competition, and mutualism"
       canvasRef={canvasRef}
       running={running}
       onTogglePlay={() => setRunning((r) => !r)}
@@ -98,31 +121,54 @@ export function PredatorPreySim() {
       }}
       controls={
         <>
-          <p className="hint">Compare predation, competition, and mutualism population curves.</p>
-          <label>
-            Interaction
-            <select
+          <ControlSection title="Interaction">
+            <ControlHint>Watch populations rise and fall as the interaction type changes.</ControlHint>
+            <ControlSelect
+              label="Mode"
               value={mode}
-              onChange={(e) => setMode(e.target.value as PredatorPreyState['mode'])}
-            >
-              <option value="predation">Predation</option>
-              <option value="competition">Competition</option>
-              <option value="mutualism">Mutualism</option>
-            </select>
-          </label>
-          <label>
-            Prey growth
-            <input
-              type="range"
+              options={[
+                { value: 'predation', label: 'Predation' },
+                { value: 'competition', label: 'Competition' },
+                { value: 'mutualism', label: 'Mutualism' },
+              ]}
+              onChange={(v) => setMode(v as PredatorPreyState['mode'])}
+            />
+            <ControlSlider
+              label="Prey growth"
+              value={growth}
               min={0.4}
               max={1.8}
               step={0.05}
-              value={growth}
-              onChange={(e) => setGrowth(Number(e.target.value))}
+              display={growth.toFixed(2)}
+              onChange={setGrowth}
             />
-          </label>
+          </ControlSection>
+          <ControlSection title="Population">
+            <ControlStats>
+              <ControlStat label="Prey" value={readout.prey.toFixed(1)} />
+              <ControlStat label="Predators" value={readout.predators.toFixed(1)} />
+            </ControlStats>
+          </ControlSection>
         </>
       }
     />
   )
+}
+
+function roundRectFill(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
+  ctx.fill()
 }

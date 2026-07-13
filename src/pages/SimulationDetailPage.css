@@ -1,5 +1,5 @@
 .simulation-detail {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: var(--space-xl) var(--space-md);
 }
@@ -72,34 +72,39 @@
   inset: 0;
   z-index: 300;
   margin: 0;
-  background: #111;
+  background: #0b1220;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-lg);
+  align-items: stretch;
+  justify-content: stretch;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
 }
 
 .simulation-viewer.is-fullscreen .simulation-viewer-stage,
 .simulation-viewer.is-fullscreen .viewer-skeleton {
-  max-width: 1200px;
+  max-width: none;
   width: 100%;
-  height: auto;
-  max-height: calc(100vh - 80px);
+  height: 100%;
+  max-height: none;
+  min-height: 0;
+  aspect-ratio: auto;
+  border-radius: 12px;
 }
 
 .fullscreen-close {
   position: absolute;
-  top: var(--space-md);
-  right: var(--space-md);
-  z-index: 1;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 2;
   padding: 10px 16px;
-  border: 1px solid #fff;
-  border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.72);
   color: #fff;
   font-family: inherit;
   font-size: var(--text-sm);
   cursor: pointer;
+  backdrop-filter: blur(6px);
 }
 
 .fullscreen-close:focus-visible {

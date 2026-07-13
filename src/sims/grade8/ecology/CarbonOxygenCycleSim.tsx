@@ -1,4 +1,12 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  ControlHint,
+  ControlSection,
+  ControlSlider,
+  ControlStat,
+  ControlStats,
+} from '../../shared/Controls'
+import { drawBadge, drawLegend, fontPx } from '../../shared/drawHelpers'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import {
@@ -14,39 +22,66 @@ export function CarbonOxygenCycleSim() {
   const [photo, setPhoto] = useState(0.55)
   const [resp, setResp] = useState(0.4)
   const [tick, setTick] = useState(0)
+  const [readout, setReadout] = useState({ co2: 55, o2: 70 })
 
-  const draw = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
-    const s = stateRef.current
-    s.photosynthesisRate = photo
-    s.respirationRate = resp
-    if (dt > 0 && running) {
-      stateRef.current = stepCarbonOxygen(s, dt)
-    }
-    const st = stateRef.current
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const s = stateRef.current
+      setReadout({ co2: s.co2, o2: s.o2 })
+    }, 200)
+    return () => clearInterval(id)
+  }, [])
 
-    ctx.clearRect(0, 0, w, h)
-    const g = ctx.createLinearGradient(0, 0, 0, h)
-    g.addColorStop(0, '#87ceeb')
-    g.addColorStop(0.55, '#b8e0a8')
-    g.addColorStop(1, '#6aa84f')
-    ctx.fillStyle = g
-    ctx.fillRect(0, 0, w, h)
+  const draw = useCallback(
+    (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
+      const s = stateRef.current
+      s.photosynthesisRate = photo
+      s.respirationRate = resp
+      if (dt > 0 && running) stateRef.current = stepCarbonOxygen(s, dt)
+      const st = stateRef.current
 
-    drawPool(ctx, w * 0.5, h * 0.18, 70, '#5dade2', 'Atmosphere', `CO₂ ${st.co2.toFixed(0)} · O₂ ${st.o2.toFixed(0)}`)
-    drawPool(ctx, w * 0.22, h * 0.62, 58, '#27ae60', 'Plants', `C ${st.plantCarbon.toFixed(0)}`)
-    drawPool(ctx, w * 0.78, h * 0.62, 58, '#e67e22', 'Animals', `C ${st.animalCarbon.toFixed(0)}`)
+      const sky = ctx.createLinearGradient(0, 0, 0, h)
+      sky.addColorStop(0, '#7ec8e3')
+      sky.addColorStop(0.45, '#c5e8b8')
+      sky.addColorStop(1, '#6aaa4f')
+      ctx.fillStyle = sky
+      ctx.fillRect(0, 0, w, h)
 
-    const t = st.time
-    drawFlow(ctx, w * 0.5, h * 0.28, w * 0.28, h * 0.5, '#2ecc71', t, 'Photosynthesis\nCO₂→O₂')
-    drawFlow(ctx, w * 0.72, h * 0.5, w * 0.55, h * 0.28, '#e74c3c', t + 1.2, 'Respiration\nO₂→CO₂')
-    drawFlow(ctx, w * 0.35, h * 0.68, w * 0.65, h * 0.68, '#f39c12', t + 0.6, 'Food')
-  }, [photo, resp, running])
+      const fs = fontPx(14, w, h)
+      drawPool(ctx, w * 0.5, h * 0.2, Math.min(w, h) * 0.12, '#3d8fd1', 'Atmosphere', `CO₂ ${st.co2.toFixed(0)}  ·  O₂ ${st.o2.toFixed(0)}`, fs)
+      drawPool(ctx, w * 0.22, h * 0.66, Math.min(w, h) * 0.1, '#2a9d5c', 'Plants', `Carbon ${st.plantCarbon.toFixed(0)}`, fs)
+      drawPool(ctx, w * 0.78, h * 0.66, Math.min(w, h) * 0.1, '#e67e22', 'Animals', `Carbon ${st.animalCarbon.toFixed(0)}`, fs)
 
-  useCanvasLoop(canvasRef, draw, running, tick)
+      const t = st.time
+      drawFlow(ctx, w * 0.5, h * 0.32, w * 0.3, h * 0.55, '#1e8449', t, 'Photosynthesis', fs)
+      drawFlow(ctx, w * 0.7, h * 0.55, w * 0.55, h * 0.32, '#c0392b', t + 1.1, 'Respiration', fs)
+      drawFlow(ctx, w * 0.35, h * 0.72, w * 0.65, h * 0.72, '#d68910', t + 0.5, 'Food', fs)
+
+      drawBadge(ctx, running ? 'Running' : 'Paused', 12, 18, {
+        font: `${fontPx(12, w, h)}px Roboto, sans-serif`,
+        bg: running ? 'rgba(39,174,96,0.85)' : 'rgba(0,0,0,0.45)',
+      })
+      drawLegend(
+        ctx,
+        [
+          { color: '#3d8fd1', label: 'Air' },
+          { color: '#2a9d5c', label: 'Plants' },
+          { color: '#e67e22', label: 'Animals' },
+        ],
+        12,
+        h - 16,
+        fontPx(11, w, h, 10, 14),
+      )
+    },
+    [photo, resp, running],
+  )
+
+  useCanvasLoop(canvasRef, draw, running, tick, true)
 
   return (
     <SimShell
       title="Carbon–Oxygen Cycle"
+      subtitle="Photosynthesis and respiration balance gases in ecosystems"
       canvasRef={canvasRef}
       running={running}
       onTogglePlay={() => setRunning((r) => !r)}
@@ -58,37 +93,33 @@ export function CarbonOxygenCycleSim() {
       }}
       controls={
         <>
-          <p className="hint">Watch CO₂ and O₂ trade places as plants and animals exchange gases.</p>
-          <label>
-            Photosynthesis rate
-            <input
-              type="range"
-              min={0.1}
-              max={1}
-              step={0.05}
+          <ControlSection title="Rates">
+            <ControlHint>Adjust how quickly plants and animals exchange gases.</ControlHint>
+            <ControlSlider
+              label="Photosynthesis"
               value={photo}
-              onChange={(e) => setPhoto(Number(e.target.value))}
-            />
-          </label>
-          <label>
-            Respiration rate
-            <input
-              type="range"
               min={0.1}
               max={1}
               step={0.05}
-              value={resp}
-              onChange={(e) => setResp(Number(e.target.value))}
+              display={photo.toFixed(2)}
+              onChange={setPhoto}
             />
-          </label>
-          <div className="stat">
-            <span>CO₂</span>
-            <strong>{stateRef.current.co2.toFixed(0)}</strong>
-          </div>
-          <div className="stat">
-            <span>O₂</span>
-            <strong>{stateRef.current.o2.toFixed(0)}</strong>
-          </div>
+            <ControlSlider
+              label="Respiration"
+              value={resp}
+              min={0.1}
+              max={1}
+              step={0.05}
+              display={resp.toFixed(2)}
+              onChange={setResp}
+            />
+          </ControlSection>
+          <ControlSection title="Atmosphere">
+            <ControlStats>
+              <ControlStat label="CO₂" value={readout.co2.toFixed(0)} />
+              <ControlStat label="O₂" value={readout.o2.toFixed(0)} />
+            </ControlStats>
+          </ControlSection>
         </>
       }
     />
@@ -103,19 +134,26 @@ function drawPool(
   color: string,
   title: string,
   sub: string,
+  fs: number,
 ) {
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.25)'
+  ctx.shadowBlur = 12
   ctx.beginPath()
   ctx.arc(x, y, r, 0, Math.PI * 2)
   ctx.fillStyle = color
-  ctx.globalAlpha = 0.9
   ctx.fill()
-  ctx.globalAlpha = 1
+  ctx.restore()
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)'
+  ctx.lineWidth = 2
+  ctx.stroke()
   ctx.fillStyle = '#fff'
   ctx.textAlign = 'center'
-  ctx.font = '600 14px Roboto, sans-serif'
-  ctx.fillText(title, x, y - 4)
-  ctx.font = '12px Roboto, sans-serif'
-  ctx.fillText(sub, x, y + 14)
+  ctx.textBaseline = 'middle'
+  ctx.font = `600 ${fs}px Roboto, sans-serif`
+  ctx.fillText(title, x, y - fs * 0.45)
+  ctx.font = `${Math.max(10, fs - 2)}px Roboto, sans-serif`
+  ctx.fillText(sub, x, y + fs * 0.7)
 }
 
 function drawFlow(
@@ -127,11 +165,12 @@ function drawFlow(
   color: string,
   t: number,
   label: string,
+  fs: number,
 ) {
   ctx.strokeStyle = color
-  ctx.lineWidth = 3
-  ctx.setLineDash([8, 6])
-  ctx.lineDashOffset = -t * 40
+  ctx.lineWidth = Math.max(2.5, fs / 5)
+  ctx.setLineDash([10, 8])
+  ctx.lineDashOffset = -t * 45
   ctx.beginPath()
   ctx.moveTo(x1, y1)
   ctx.lineTo(x2, y2)
@@ -139,8 +178,14 @@ function drawFlow(
   ctx.setLineDash([])
   const mx = (x1 + x2) / 2
   const my = (y1 + y2) / 2
-  ctx.fillStyle = '#1a252f'
-  ctx.font = '11px Roboto, sans-serif'
+  ctx.fillStyle = 'rgba(26,37,47,0.82)'
+  const tw = ctx.measureText(label).width
+  ctx.font = `600 ${Math.max(10, fs - 1)}px Roboto, sans-serif`
+  const pad = 6
+  const bw = tw + pad * 2
+  ctx.fillRect(mx - bw / 2, my - fs, bw, fs + 8)
+  ctx.fillStyle = '#fff'
   ctx.textAlign = 'center'
-  label.split('\n').forEach((line, i) => ctx.fillText(line, mx, my + i * 12 - 4))
+  ctx.textBaseline = 'middle'
+  ctx.fillText(label, mx, my - fs / 2 + 4)
 }

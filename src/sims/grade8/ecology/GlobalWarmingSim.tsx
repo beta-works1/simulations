@@ -1,4 +1,12 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  ControlHint,
+  ControlSection,
+  ControlSlider,
+  ControlStat,
+  ControlStats,
+} from '../../shared/Controls'
+import { fontPx } from '../../shared/drawHelpers'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 
@@ -24,70 +32,82 @@ export function GlobalWarmingSim() {
   const [running, setRunning] = useState(true)
   const [co2, setCo2] = useState(0.4)
   const [version, setVersion] = useState(0)
+  const [temp, setTemp] = useState(15)
 
-  const draw = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
-    stateRef.current.co2Level = co2
-    if (dt > 0 && running) stateRef.current = stepGreenhouse(stateRef.current, dt)
-    const s = stateRef.current
+  useEffect(() => {
+    const id = window.setInterval(() => setTemp(stateRef.current.temperature), 160)
+    return () => clearInterval(id)
+  }, [])
 
-    ctx.clearRect(0, 0, w, h)
-    const sky = ctx.createLinearGradient(0, 0, 0, h)
-    const heat = Math.min(1, (s.temperature - 10) / 30)
-    sky.addColorStop(0, `rgb(${40 + heat * 80}, ${80 - heat * 40}, ${140 - heat * 60})`)
-    sky.addColorStop(1, `rgb(${180 + heat * 60}, ${140 - heat * 40}, ${60})`)
-    ctx.fillStyle = sky
-    ctx.fillRect(0, 0, w, h)
+  const draw = useCallback(
+    (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
+      stateRef.current.co2Level = co2
+      if (dt > 0 && running) stateRef.current = stepGreenhouse(stateRef.current, dt)
+      const s = stateRef.current
+      const fs = fontPx(13, w, h)
+      const heat = Math.min(1, (s.temperature - 10) / 30)
 
-    // sun rays
-    const sunX = w * 0.18
-    const sunY = h * 0.22
-    ctx.fillStyle = '#f1c40f'
-    ctx.beginPath()
-    ctx.arc(sunX, sunY, 28, 0, Math.PI * 2)
-    ctx.fill()
+      const sky = ctx.createLinearGradient(0, 0, 0, h)
+      sky.addColorStop(0, `rgb(${40 + heat * 90}, ${90 - heat * 45}, ${150 - heat * 70})`)
+      sky.addColorStop(1, `rgb(${170 + heat * 70}, ${130 - heat * 35}, ${55})`)
+      ctx.fillStyle = sky
+      ctx.fillRect(0, 0, w, h)
 
-    for (let i = 0; i < 7; i++) {
-      const y = 40 + i * ((h - 80) / 7)
-      ctx.strokeStyle = 'rgba(241,196,15,0.55)'
-      ctx.lineWidth = 3
+      const sunX = w * 0.16
+      const sunY = h * 0.2
+      ctx.save()
+      ctx.shadowColor = '#f1c40f'
+      ctx.shadowBlur = 24
+      ctx.fillStyle = '#f4d03f'
       ctx.beginPath()
-      ctx.moveTo(sunX + 30, sunY)
-      ctx.lineTo(w * 0.55, y)
-      ctx.stroke()
-    }
+      ctx.arc(sunX, sunY, Math.min(w, h) * 0.055, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
 
-    // atmosphere blanket thickness from CO2
-    const thick = 18 + co2 * 50
-    ctx.fillStyle = `rgba(149, 165, 166, ${0.25 + co2 * 0.4})`
-    ctx.fillRect(w * 0.48, 20, thick, h - 40)
+      for (let i = 0; i < 7; i++) {
+        const y = h * 0.12 + i * ((h * 0.7) / 7)
+        ctx.strokeStyle = 'rgba(241,196,15,0.5)'
+        ctx.lineWidth = 2.5
+        ctx.beginPath()
+        ctx.moveTo(sunX + 28, sunY)
+        ctx.lineTo(w * 0.52, y)
+        ctx.stroke()
+      }
 
-    // trapped IR bouncing
-    const bounce = Math.floor(2 + co2 * 6)
-    for (let i = 0; i < bounce; i++) {
-      const t = (s.time * 0.4 + i * 0.3) % 1
-      const x = w * 0.55 + Math.sin(t * Math.PI) * (thick + 20)
-      const y = 50 + ((i * 37 + s.time * 40) % (h - 100))
-      ctx.strokeStyle = `rgba(231, 76, 60, ${0.5 + 0.4 * Math.sin(s.time + i)})`
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.moveTo(w * 0.75, y)
-      ctx.lineTo(x, y - 10)
-      ctx.stroke()
-    }
+      const thick = 16 + co2 * Math.min(w * 0.12, 70)
+      ctx.fillStyle = `rgba(176, 190, 197, ${0.22 + co2 * 0.45})`
+      ctx.fillRect(w * 0.5, h * 0.08, thick, h * 0.78)
 
-    ctx.fillStyle = '#fff'
-    ctx.font = '600 16px Roboto, sans-serif'
-    ctx.textAlign = 'left'
-    ctx.fillText(`Surface temp: ${s.temperature.toFixed(1)} °C`, 16, h - 24)
-    ctx.font = '12px Roboto, sans-serif'
-    ctx.fillText('Yellow = sunlight · Red = trapped infrared · Gray band = greenhouse gases', 16, h - 8)
-  }, [co2, running])
+      const bounce = Math.floor(2 + co2 * 7)
+      for (let i = 0; i < bounce; i++) {
+        const t = (s.time * 0.45 + i * 0.28) % 1
+        const x = w * 0.52 + Math.sin(t * Math.PI) * (thick + 18)
+        const y = h * 0.15 + ((i * 41 + s.time * 50) % (h * 0.65))
+        ctx.strokeStyle = `rgba(231, 76, 60, ${0.45 + 0.4 * Math.sin(s.time + i)})`
+        ctx.lineWidth = 2.2
+        ctx.beginPath()
+        ctx.moveTo(w * 0.78, y)
+        ctx.lineTo(x, y - 8)
+        ctx.stroke()
+      }
 
-  useCanvasLoop(canvasRef, draw, running, version)
+      ctx.fillStyle = '#fff'
+      ctx.font = `600 ${fs + 2}px Roboto, sans-serif`
+      ctx.textAlign = 'left'
+      ctx.fillText(`Surface: ${s.temperature.toFixed(1)} °C`, 14, h - 28)
+      ctx.font = `${Math.max(10, fs - 1)}px Roboto, sans-serif`
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'
+      ctx.fillText('Yellow rays = sunlight · Red = trapped IR · Band = greenhouse gases', 14, h - 10)
+    },
+    [co2, running],
+  )
+
+  useCanvasLoop(canvasRef, draw, running, version, true)
 
   return (
     <SimShell
       title="Global Warming Mechanism"
+      subtitle="Greenhouse gases trap infrared heat near Earth"
       canvasRef={canvasRef}
       running={running}
       onTogglePlay={() => setRunning((r) => !r)}
@@ -98,22 +118,23 @@ export function GlobalWarmingSim() {
       }}
       controls={
         <>
-          <p className="hint">Raise greenhouse gases and watch more heat get trapped near Earth.</p>
-          <label>
-            Greenhouse gas level
-            <input
-              type="range"
+          <ControlSection title="Atmosphere">
+            <ControlHint>Increase gases and watch more heat bounce back to the surface.</ControlHint>
+            <ControlSlider
+              label="Greenhouse gases"
+              value={co2}
               min={0.05}
               max={1}
               step={0.05}
-              value={co2}
-              onChange={(e) => setCo2(Number(e.target.value))}
+              display={`${Math.round(co2 * 100)}%`}
+              onChange={setCo2}
             />
-          </label>
-          <div className="stat">
-            <span>Temperature</span>
-            <strong>{stateRef.current.temperature.toFixed(1)} °C</strong>
-          </div>
+          </ControlSection>
+          <ControlSection title="Result">
+            <ControlStats>
+              <ControlStat label="Temperature" value={`${temp.toFixed(1)} °C`} />
+            </ControlStats>
+          </ControlSection>
         </>
       }
     />
