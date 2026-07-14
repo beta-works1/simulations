@@ -37,10 +37,14 @@ export function stepHydraulic(
   loadWeight: number,
   running: boolean,
 ): HydraulicState {
+  // Pascal relation unchanged; only the visual lift eases toward up/down.
   const f2 = calcF2(f1, a1, a2)
   let { liftHeight } = s
-  if (running && f2 >= loadWeight) liftHeight = Math.min(1, liftHeight + dt * 0.25)
-  else if (running && f2 < loadWeight) liftHeight = Math.max(0, liftHeight - dt * 0.15)
+  const target = running && f2 >= loadWeight ? 1 : running && f2 < loadWeight ? 0 : liftHeight
+  const rate = f2 >= loadWeight ? 2.2 : 1.6
+  const t = 1 - Math.exp(-rate * dt)
+  liftHeight = liftHeight + (target - liftHeight) * t
+  if (Math.abs(target - liftHeight) < 0.002) liftHeight = target
   return { ...s, liftHeight, time: s.time + dt }
 }
 

@@ -186,6 +186,7 @@ export function BalanceEquationsSim() {
   }
 
   useCanvasPointer(canvasRef, {
+    cursorForHit: () => 'pointer',
     hitTest: (pt) => {
       for (const h of layoutRef.current.coefHits) {
         if (Math.hypot(pt.x - h.minus.x, pt.y - h.minus.y) < h.minus.r + 6) return `${h.id}-minus`

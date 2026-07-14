@@ -54,6 +54,7 @@ export function ExoEndoThermicSim() {
   }
 
   useCanvasPointer(canvasRef, {
+    cursorForHit: () => 'pointer',
     hitTest: (pt) => {
       const L = layoutRef.current
       if (!L) return null

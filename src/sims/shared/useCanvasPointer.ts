@@ -8,6 +8,11 @@ export type CanvasCursor = 'default' | 'grab' | 'grabbing' | 'pointer'
 export type PointerHandlers = {
   /** Return hit id under point (CSS canvas coords). */
   hitTest: (pt: { x: number; y: number }, size: { w: number; h: number }) => HitId
+  /**
+   * Cursor for a hovered hit. Default: `grab` (draggable).
+   * Use `pointer` for tap-only buttons/tiles.
+   */
+  cursorForHit?: (id: string) => CanvasCursor
   /** Called continuously while dragging (prefer mutating refs + paint loop). */
   onDrag?: (
     id: string,
@@ -52,9 +57,13 @@ export function useCanvasPointer(
     }
 
     const syncCursor = () => {
-      if (dragRef.current) setCursor('grabbing')
-      else if (hoverRef.current) setCursor('grab')
-      else setCursor('default')
+      if (dragRef.current) {
+        const id = dragRef.current
+        const prefer = handlersRef.current.cursorForHit?.(id)
+        setCursor(prefer === 'pointer' ? 'pointer' : 'grabbing')
+      } else if (hoverRef.current) {
+        setCursor(handlersRef.current.cursorForHit?.(hoverRef.current) ?? 'grab')
+      } else setCursor('default')
     }
 
     const onDown = (e: PointerEvent) => {
@@ -67,7 +76,7 @@ export function useCanvasPointer(
       if (id) {
         canvas.setPointerCapture(e.pointerId)
         handlersRef.current.onDragStart?.(id, pt)
-        setCursor('grabbing')
+        syncCursor()
       }
     }
 

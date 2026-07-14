@@ -87,6 +87,7 @@ export function IonicCovalentSim() {
   }
 
   useCanvasPointer(canvasRef, {
+    cursorForHit: () => 'pointer',
     hitTest: (pt) => {
       for (const b of layoutRef.current.buttons) {
         if (pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h) return `mode:${b.id}`

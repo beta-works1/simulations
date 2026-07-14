@@ -183,6 +183,7 @@ export function PeriodicTableSim() {
   }, [])
 
   useCanvasPointer(canvasRef, {
+    cursorForHit: () => 'pointer',
     hitTest: (pt) => {
       for (const c of layoutRef.current.cells) {
         if (pt.x >= c.x && pt.x <= c.x + c.w && pt.y >= c.y && pt.y <= c.y + c.h) return c.symbol

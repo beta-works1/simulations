@@ -45,6 +45,8 @@ type PanelLayout = { id: string; x: number; y: number; w: number; h: number }
 type Layout = {
   metalPanel: PanelLayout
   nonmetalPanel: PanelLayout
+  reactTrack: { x: number; y: number; w: number; h: number }
+  reactKnob: { x: number; y: number }
 }
 
 function cycleValue<T extends { value: string }>(list: readonly T[], current: string): string {
@@ -79,6 +81,7 @@ export function MetalNonmetalSim() {
   }, [])
 
   useCanvasPointer(canvasRef, {
+    cursorForHit: (id) => (id === 'reactivity' ? 'grab' : 'pointer'),
     hitTest: (pt) => {
       const L = layoutRef.current
       if (!L) return null
@@ -86,26 +89,27 @@ export function MetalNonmetalSim() {
       if (pt.x >= m.x && pt.x <= m.x + m.w && pt.y >= m.y && pt.y <= m.y + m.h) return 'metal'
       const n = L.nonmetalPanel
       if (pt.x >= n.x && pt.x <= n.x + n.w && pt.y >= n.y && pt.y <= n.y + n.h) return 'nonmetal'
+      if (L.reactKnob && Math.hypot(pt.x - L.reactKnob.x, pt.y - L.reactKnob.y) < 18)
+        return 'reactivity'
       return null
     },
     onHoverChange: (id) => {
       hoverRef.current = id
     },
     onTap: (id) => {
-      if (!id) return
+      if (!id || id === 'reactivity') return
       hintShown.current = false
       const p = paramsRef.current
       if (id === 'metal') p.metal = cycleValue(METALS, p.metal)
       else if (id === 'nonmetal') p.nonmetal = cycleValue(NONMETALS, p.nonmetal)
     },
-    onDrag: (id, pt, _s, _start) => {
-      if (id !== 'metal' && id !== 'nonmetal') return
+    onDrag: (id, pt) => {
+      if (id !== 'reactivity') return
       hintShown.current = false
       const L = layoutRef.current
-      if (!L) return
-      const demoY = L.metalPanel.y + L.metalPanel.h + 200
-      const t = clamp((pt.y - demoY) / 120, 0, 1)
-      paramsRef.current.reactivity = clamp(t, 0, 1)
+      if (!L?.reactTrack) return
+      const t = clamp((pt.x - L.reactTrack.x) / L.reactTrack.w, 0, 1)
+      paramsRef.current.reactivity = t
     },
   })
 
@@ -133,6 +137,8 @@ export function MetalNonmetalSim() {
       layoutRef.current = {
         metalPanel: { id: 'metal', x: leftX, y: barY, w: barW, h: barH },
         nonmetalPanel: { id: 'nonmetal', x: rightX, y: barY, w: barW, h: barH },
+        reactTrack: { x: 0, y: 0, w: 1, h: 1 },
+        reactKnob: { x: 0, y: 0 },
       }
 
       drawLabelPill(ctx, 'Metal — conducts', leftX + barW / 2, barY - 14, { fontSize: fs })
@@ -277,8 +283,35 @@ export function MetalNonmetalSim() {
         align: 'left',
       })
 
+      // Drag track for reactivity (direct manipulation)
+      const trackX = w * 0.38
+      const trackY = sampleY + fs + 28
+      const trackW = w * 0.42
+      const trackH = 10
+      ctx.fillStyle = 'rgba(0,0,0,0.08)'
+      roundRect(ctx, trackX, trackY, trackW, trackH, 5)
+      ctx.fill()
+      const knobX = trackX + rust * trackW
+      drawHoverHalo(ctx, knobX, trackY + trackH / 2, 16, hover === 'reactivity')
+      ctx.fillStyle = '#e67e22'
+      ctx.beginPath()
+      ctx.arc(knobX, trackY + trackH / 2, hover === 'reactivity' ? 9 : 7, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.strokeStyle = '#fff'
+      ctx.lineWidth = 2
+      ctx.stroke()
+      drawLabelPill(ctx, 'drag', knobX, trackY - 12, {
+        fontSize: Math.max(9, fs - 3),
+        bold: false,
+      })
+
+      if (layoutRef.current) {
+        layoutRef.current.reactTrack = { x: trackX, y: trackY - 8, w: trackW, h: trackH + 16 }
+        layoutRef.current.reactKnob = { x: knobX, y: trackY + trackH / 2 }
+      }
+
       if (hintShown.current) {
-        drawHint(ctx, 'click panels to switch · drag reactivity zone', w / 2, h - 18, w, h)
+        drawHint(ctx, 'tap metal/non-metal · drag reactivity knob', w / 2, h - 18, w, h)
       }
     },
     [running, showConductivity, metalInfo, nonmetalInfo, reactivity],
