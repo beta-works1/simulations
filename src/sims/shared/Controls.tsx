@@ -1,4 +1,11 @@
-import type { ChangeEvent, ReactNode } from 'react'
+/**
+ * Shared PhET-style control library for SimLab.
+ * Prefer these in every sim sidebar instead of one-off <input> markup.
+ *
+ * Aliases (Slider, Checkbox, ControlPanel, …) match common PhET naming.
+ */
+import type { ChangeEvent, KeyboardEvent, ReactNode } from 'react'
+import { useId, useState } from 'react'
 
 export function ControlSection({ title, children }: { title?: string; children: ReactNode }) {
   return (
@@ -8,6 +15,9 @@ export function ControlSection({ title, children }: { title?: string; children: 
     </div>
   )
 }
+
+/** PhET-style panel container alias. */
+export const ControlPanel = ControlSection
 
 export function ControlHint({ children }: { children: ReactNode }) {
   return <p className="sim-ctl-hint">{children}</p>
@@ -20,6 +30,7 @@ export function ControlSlider({
   max,
   step = 1,
   display,
+  unit,
   onChange,
 }: {
   label: string
@@ -28,26 +39,63 @@ export function ControlSlider({
   max: number
   step?: number
   display?: string
+  /** Unit shown after the numeric readout (e.g. "°", "N"). */
+  unit?: string
   onChange: (value: number) => void
 }) {
+  const id = useId()
+  const shown = display ?? `${value}${unit ?? ''}`
+
+  const nudge = (dir: -1 | 1) => {
+    const next = Math.min(max, Math.max(min, value + dir * step))
+    if (next !== value) onChange(Number(next.toFixed(6)))
+  }
+
+  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      nudge(-1)
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      nudge(1)
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      onChange(min)
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      onChange(max)
+    }
+  }
+
   return (
-    <label className="sim-ctl">
+    <label className="sim-ctl" htmlFor={id}>
       <span className="sim-ctl-label-row">
         <span className="sim-ctl-label">{label}</span>
-        <span className="sim-ctl-value">{display ?? String(value)}</span>
+        <span className="sim-ctl-value" aria-live="polite">
+          {shown}
+        </span>
       </span>
       <input
+        id={id}
         type="range"
         min={min}
         max={max}
         step={step}
         value={value}
-        aria-valuetext={display ?? String(value)}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
+        aria-valuetext={shown}
+        aria-label={label}
+        onKeyDown={onKeyDown}
         onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(Number(e.target.value))}
       />
     </label>
   )
 }
+
+/** PhET naming alias. */
+export const Slider = ControlSlider
 
 export function ControlSelect({
   label,
@@ -60,10 +108,16 @@ export function ControlSelect({
   options: { value: string; label: string }[]
   onChange: (value: string) => void
 }) {
+  const id = useId()
   return (
-    <label className="sim-ctl">
+    <label className="sim-ctl" htmlFor={id}>
       <span className="sim-ctl-label">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)}>
+      <select
+        id={id}
+        value={value}
+        aria-label={label}
+        onChange={(e) => onChange(e.target.value)}
+      >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
@@ -74,6 +128,50 @@ export function ControlSelect({
   )
 }
 
+export function ControlRadioGroup({
+  label,
+  name,
+  value,
+  options,
+  onChange,
+}: {
+  label: string
+  name: string
+  value: string
+  options: { value: string; label: string }[]
+  onChange: (value: string) => void
+}) {
+  const groupId = useId()
+  return (
+    <fieldset className="sim-ctl-fieldset" aria-labelledby={groupId}>
+      <legend id={groupId} className="sim-ctl-label">
+        {label}
+      </legend>
+      <div className="sim-ctl-radio-group" role="radiogroup" aria-label={label}>
+        {options.map((o) => {
+          const optId = `${name}-${o.value}`
+          return (
+            <label key={o.value} className="sim-ctl-radio" htmlFor={optId}>
+              <input
+                id={optId}
+                type="radio"
+                name={name}
+                value={o.value}
+                checked={value === o.value}
+                onChange={() => onChange(o.value)}
+              />
+              <span>{o.label}</span>
+            </label>
+          )
+        })}
+      </div>
+    </fieldset>
+  )
+}
+
+/** PhET naming alias. */
+export const RadioGroup = ControlRadioGroup
+
 export function ControlToggle({
   label,
   checked,
@@ -83,13 +181,24 @@ export function ControlToggle({
   checked: boolean
   onChange: (checked: boolean) => void
 }) {
+  const id = useId()
   return (
-    <label className="sim-ctl-toggle">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+    <label className="sim-ctl-toggle" htmlFor={id}>
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        aria-label={label}
+        onChange={(e) => onChange(e.target.checked)}
+      />
       <span>{label}</span>
     </label>
   )
 }
+
+/** PhET naming aliases. */
+export const Checkbox = ControlToggle
+export const ToggleSwitch = ControlToggle
 
 export function ControlStat({ label, value }: { label: string; value: string }) {
   return (
@@ -106,4 +215,88 @@ export function ControlStats({ children }: { children: ReactNode }) {
 
 export function ControlStack({ children }: { children: ReactNode }) {
   return <div className="sim-ctl-stack">{children}</div>
+}
+
+/** Small “i” legend / instructions popover (PhET-style). */
+export function InfoTooltip({
+  title = 'About this simulation',
+  children,
+}: {
+  title?: string
+  children: ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  const tipId = useId()
+  return (
+    <div className="sim-info-tooltip">
+      <button
+        type="button"
+        className="sim-info-tooltip-btn"
+        aria-expanded={open}
+        aria-controls={tipId}
+        aria-label={title}
+        onClick={() => setOpen((o) => !o)}
+      >
+        i
+      </button>
+      {open ? (
+        <div id={tipId} className="sim-info-tooltip-panel" role="note">
+          <p className="sim-info-tooltip-title">{title}</p>
+          <div className="sim-info-tooltip-body">{children}</div>
+          <button type="button" className="sim-shell-btn" onClick={() => setOpen(false)}>
+            Close
+          </button>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+export function PlayPauseButton({
+  running,
+  onToggle,
+}: {
+  running: boolean
+  onToggle: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className={`sim-shell-btn${running ? ' is-active' : ''}`}
+      onClick={onToggle}
+      aria-label={running ? 'Pause' : 'Play'}
+    >
+      {running ? 'Pause' : 'Play'}
+    </button>
+  )
+}
+
+export function ResetButton({ onReset }: { onReset: () => void }) {
+  return (
+    <button type="button" className="sim-shell-btn" onClick={onReset} aria-label="Reset simulation">
+      Reset
+    </button>
+  )
+}
+
+/** Combined play/pause + optional step (framework transport). */
+export function PlayPauseStepButton({
+  running,
+  onToggle,
+  onStep,
+}: {
+  running: boolean
+  onToggle: () => void
+  onStep?: () => void
+}) {
+  return (
+    <ControlStack>
+      <PlayPauseButton running={running} onToggle={onToggle} />
+      {onStep ? (
+        <button type="button" className="sim-shell-btn" onClick={onStep} aria-label="Step once">
+          Step
+        </button>
+      ) : null}
+    </ControlStack>
+  )
 }

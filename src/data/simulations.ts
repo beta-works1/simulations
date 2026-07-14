@@ -1,9 +1,21 @@
-export type Grade = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
+export type Grade = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
+
+export type SimSubject =
+  | 'physics'
+  | 'chemistry'
+  | 'biology'
+  | 'math'
+  | 'earth-science'
+  | 'general'
 
 export interface Simulation {
   id: string
   title: string
+  /** Primary grade (chapter browse / featured). Prefer `grades` for multi-grade sims. */
   grade: Grade
+  /** All grades this sim applies to. Defaults to `[grade]` when omitted. */
+  grades?: Grade[]
+  subject?: SimSubject
   chapter?: string
   description: string
   learningGoals: string[]
@@ -14,10 +26,15 @@ export interface Simulation {
   image: string
 }
 
-export const GRADES: Grade[] = [1, 2, 3, 4, 5, 6, 7, 8]
+export const GRADES: Grade[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 export function gradeLabel(grade: Grade): string {
   return `Grade ${grade}`
+}
+
+/** Resolved grade list for catalog filtering. */
+export function simGrades(sim: Simulation): Grade[] {
+  return sim.grades?.length ? sim.grades : [sim.grade]
 }
 
 export const simulations: Simulation[] = [
@@ -125,6 +142,24 @@ export const simulations: Simulation[] = [
     color: '#922b21',
     accent: '#f1c40f',
     image: '/covers/circuit-construction.svg',
+  },
+  {
+    id: 'intro-balance-scale',
+    title: 'Balance Scale (Intro)',
+    grade: 6,
+    grades: [6],
+    subject: 'physics',
+    chapter: 'Intro – Forces',
+    description:
+      'Framework stub for Grade 6 — compare masses on a simple balance (replace with full sim later).',
+    learningGoals: [
+      'Compare two masses qualitatively',
+      'Recognize when a balance is level',
+    ],
+    keywords: ['balance', 'mass', 'forces', 'stub'],
+    color: '#1a5276',
+    accent: '#85c1e9',
+    image: '/covers/intro-balance-scale.svg',
   },
   {
     id: 'projectile-motion',
@@ -729,6 +764,8 @@ export const simulations: Simulation[] = [
     id: 'refraction-media',
     title: 'Refraction Through Media',
     grade: 8,
+    grades: [8, 9],
+    subject: 'physics',
     chapter: 'Ch 9 – Light: Reflection & Refraction',
     description:
       'Bend a light ray as it travels from air into water or glass and apply Snell’s law live.',
@@ -975,7 +1012,7 @@ export function getSimulationById(id: string): Simulation | undefined {
 }
 
 export function getSimulationsByGrade(grade: Grade): Simulation[] {
-  return simulations.filter((s) => s.grade === grade)
+  return simulations.filter((s) => simGrades(s).includes(grade))
 }
 
 /** Ordered Grade 8 chapter labels for browse UI. */
@@ -1110,7 +1147,7 @@ export function getRelatedSimulations(sim: Simulation, limit = 4): Simulation[] 
   const sameGrade = simulations.filter(
     (s) =>
       s.id !== sim.id &&
-      s.grade === sim.grade &&
+      simGrades(s).some((g) => simGrades(sim).includes(g)) &&
       (!sim.chapter || s.chapter !== sim.chapter),
   )
   return [...sameChapter, ...sameGrade].slice(0, limit)

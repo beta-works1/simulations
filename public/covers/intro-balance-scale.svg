@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="340" viewBox="0 0 520 340">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a5276"/>
+      <stop offset="100%" stop-color="#85c1e9"/>
+    </linearGradient>
+  </defs>
+  <rect width="520" height="340" rx="16" fill="url(#bg)"/>
+  <line x1="260" y1="120" x2="260" y2="240" stroke="#fff" stroke-width="6"/>
+  <line x1="140" y1="140" x2="380" y2="140" stroke="#f4d03f" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="170" cy="190" r="28" fill="#e74c3c"/>
+  <circle cx="350" cy="190" r="28" fill="#3498db"/>
+  <text x="260" y="300" text-anchor="middle" fill="#fff" font-family="Arial" font-size="22" font-weight="700">Balance Scale (Intro)</text>
+</svg>

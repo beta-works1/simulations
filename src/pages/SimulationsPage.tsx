@@ -54,7 +54,7 @@ export function SimulationsPage() {
     <div className="simulations-page page-content">
       <PageMeta
         title="Simulations by Grade"
-        description="Browse science experiment simulations for Grade 1 through Grade 8."
+        description="Browse science experiment simulations for Grade 1 through Grade 10."
         path="/simulations"
       />
 
@@ -70,9 +70,9 @@ export function SimulationsPage() {
         <aside className="grade-panel" aria-label="Grades">
           <div className="grade-panel-head">
             <h2 className="grade-panel-title">Grade panel</h2>
-            <p className="grade-panel-hint">Grades 1 to 8</p>
+            <p className="grade-panel-hint">Grades 1 to 10</p>
           </div>
-          <ul className="grade-list" role="listbox" aria-label="Grades 1 to 8">
+          <ul className="grade-list" role="listbox" aria-label="Grades 1 to 10">
             {GRADES.map((grade) => {
               const count = getSimulationsByGrade(grade).length
               const selected = grade === activeGrade
