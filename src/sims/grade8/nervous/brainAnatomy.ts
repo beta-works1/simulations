@@ -381,7 +381,6 @@ export function drawAnatomicalBrain(
     ctx.textBaseline = 'middle'
     const tw = ctx.measureText(selected.name).width
     const padX = 10
-    const padY = 6
     roundRect(ctx, c.x - tw / 2 - padX, c.y - 11, tw + padX * 2, 22, 8)
     ctx.fillStyle = 'rgba(255,255,255,0.96)'
     ctx.fill()
