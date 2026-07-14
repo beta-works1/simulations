@@ -7,9 +7,7 @@ import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import { useCanvasPointer } from '../../shared/useCanvasPointer'
 import {
   BRAIN_REGIONS,
-  brainLabelAnchor,
-  drawBrainBase,
-  drawBrainRegion,
+  drawAnatomicalBrain,
   hitTestBrainRegion,
   type BrainBox,
   type BrainRegionId,
@@ -21,7 +19,6 @@ export function BrainMappingSim() {
   const boxRef = useRef<BrainBox>({ x: 0, y: 0, w: 1, h: 1 })
   const hoverRef = useRef<BrainRegionId | null>(null)
   const hintShown = useRef(true)
-  const pulse = useRef(0)
   const [selected, setSelected] = useState<BrainRegionId>('frontal')
   const [version, setVersion] = useState(0)
 
@@ -41,78 +38,72 @@ export function BrainMappingSim() {
     },
   })
 
-  const draw = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
-    pulse.current += dt
+  const draw = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
     const sel = paramsRef.current.selected
     const hover = hoverRef.current
     const fs = fontPx(13, w, h)
 
-    const bg = ctx.createLinearGradient(0, 0, 0, h)
-    bg.addColorStop(0, '#1a2744')
-    bg.addColorStop(1, '#0d1528')
-    ctx.fillStyle = bg
+    ctx.fillStyle = '#f4f6f8'
     ctx.fillRect(0, 0, w, h)
 
-    // soft vignette dots
-    for (let i = 0; i < 40; i++) {
-      ctx.fillStyle = `rgba(255,255,255,${0.03 + (i % 5) * 0.01})`
-      ctx.beginPath()
-      ctx.arc(((i * 97) % w), ((i * 53) % h), 1.2, 0, Math.PI * 2)
-      ctx.fill()
-    }
-
-    const side = Math.min(w * 0.72, h * 0.72)
+    // Leave margin for exterior leader labels so they don't clip
+    const side = Math.min(w * 0.62, h * 0.7)
     const box: BrainBox = {
-      x: (w - side) / 2 - w * 0.04,
-      y: (h - side) / 2 + h * 0.02,
-      w: side * 1.15,
+      x: (w - side * 1.05) / 2,
+      y: (h - side) / 2 + 8,
+      w: side * 1.05,
       h: side,
     }
     boxRef.current = box
 
-    drawBrainBase(ctx, box)
+    drawAnatomicalBrain(ctx, box, {
+      selected: sel,
+      hover,
+      fontSize: fs,
+      showLeaders: true,
+    })
 
-    for (const r of BRAIN_REGIONS) {
-      const active = sel === r.id
-      const isHover = hover === r.id
-      drawBrainRegion(ctx, box, r, { active, hover: isHover })
-      if (active) {
-        const glow = 0.35 + 0.2 * Math.sin(pulse.current * 3.5)
-        pathGlow(ctx, box, r.poly, `rgba(255,255,255,${glow * 0.35})`)
-      }
-      const anchor = brainLabelAnchor(box, r)
-      if (active || isHover) {
-        drawLabelPill(ctx, r.name.split(' ')[0], anchor.x, anchor.y, {
-          fontSize: Math.max(10, fs - 2),
-          bg: 'rgba(15,23,42,0.75)',
-          fg: '#fff',
-        })
-      }
-    }
-
-    // Profile cue
-    drawLabelPill(ctx, 'Left side view', box.x + 8, box.y - 10, {
+    drawLabelPill(ctx, 'Left side view', box.x, box.y - 14, {
       align: 'left',
       fontSize: Math.max(10, fs - 2),
       bold: false,
-      bg: 'rgba(255,255,255,0.12)',
-      fg: 'rgba(255,255,255,0.85)',
+      bg: 'rgba(255,255,255,0.9)',
     })
 
     const region = BRAIN_REGIONS.find((r) => r.id === sel)
     if (region) {
-      drawValueChip(ctx, '', region.name, 20, 28, { align: 'left', accent: true, fontSize: fs + 1 })
-      drawLabelPill(ctx, region.action, 20, 56, {
+      const stripY = h - 44
+      const stripH = 32
+      const stripX = 16
+      const stripW = w - 32
+      ctx.fillStyle = 'rgba(255,255,255,0.96)'
+      ctx.beginPath()
+      ctx.moveTo(stripX + 8, stripY)
+      ctx.arcTo(stripX + stripW, stripY, stripX + stripW, stripY + stripH, 8)
+      ctx.arcTo(stripX + stripW, stripY + stripH, stripX, stripY + stripH, 8)
+      ctx.arcTo(stripX, stripY + stripH, stripX, stripY, 8)
+      ctx.arcTo(stripX, stripY, stripX + stripW, stripY, 8)
+      ctx.closePath()
+      ctx.fill()
+      ctx.strokeStyle = region.fillActive
+      ctx.lineWidth = 2
+      ctx.stroke()
+      drawValueChip(ctx, '', region.name, stripX + 12, stripY + stripH / 2, {
+        align: 'left',
+        accent: true,
+        fontSize: fs,
+      })
+      const actionX = stripX + Math.min(200, w * 0.32)
+      drawLabelPill(ctx, region.action, actionX, stripY + stripH / 2, {
         align: 'left',
         fontSize: Math.max(11, fs - 1),
         bold: false,
-        bg: 'rgba(0,0,0,0.45)',
-        fg: 'rgba(255,255,255,0.95)',
+        bg: 'transparent',
       })
     }
 
     if (hintShown.current) {
-      drawHint(ctx, 'click a colored lobe on the brain', w / 2, h - 18, w, h)
+      drawHint(ctx, 'hover a lobe · click to learn its job', w / 2, h - 72, w, h)
     }
   }, [])
 
@@ -121,7 +112,7 @@ export function BrainMappingSim() {
   return (
     <SimShell
       title="Brain Region Mapping"
-      subtitle="Click a lobe on the brain diagram to map structure → function"
+      subtitle="Click a lobe on the brain diagram — colors stay inside the outline"
       canvasRef={canvasRef}
       running
       hidePlay
@@ -135,7 +126,7 @@ export function BrainMappingSim() {
       controls={
         <>
           <ControlSection title="Regions">
-            <ControlHint>Use the anatomical brain on the canvas, or pick a region here.</ControlHint>
+            <ControlHint>Click lobes on the canvas, or use these buttons.</ControlHint>
             <ControlStack>
               {BRAIN_REGIONS.map((r) => (
                 <button
@@ -158,25 +149,4 @@ export function BrainMappingSim() {
       }
     />
   )
-}
-
-function pathGlow(
-  ctx: CanvasRenderingContext2D,
-  box: BrainBox,
-  poly: { x: number; y: number }[],
-  color: string,
-) {
-  ctx.save()
-  ctx.shadowColor = color
-  ctx.shadowBlur = 16
-  ctx.beginPath()
-  const first = { x: box.x + poly[0].x * box.w, y: box.y + poly[0].y * box.h }
-  ctx.moveTo(first.x, first.y)
-  for (let i = 1; i < poly.length; i++) {
-    ctx.lineTo(box.x + poly[i].x * box.w, box.y + poly[i].y * box.h)
-  }
-  ctx.closePath()
-  ctx.fillStyle = color
-  ctx.fill()
-  ctx.restore()
 }
