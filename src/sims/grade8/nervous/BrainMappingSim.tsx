@@ -47,12 +47,12 @@ export function BrainMappingSim() {
     ctx.fillStyle = '#f5f7fa'
     ctx.fillRect(0, 0, w, h)
 
-    // Center brain with ample margin for exterior labels
-    const bw = Math.min(w * 0.58, h * 0.58)
-    const bh = bw * 0.95
+    // Brain centered with room for one label + bottom info strip
+    const bw = Math.min(w * 0.62, (h - 56) * 0.72)
+    const bh = bw * 0.98
     const box: BrainBox = {
       x: (w - bw) / 2,
-      y: (h - bh) / 2 - 6,
+      y: (h - bh) / 2 - 8,
       w: bw,
       h: bh,
     }
