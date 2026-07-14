@@ -9,6 +9,7 @@ import {
   BRAIN_REGIONS,
   drawAnatomicalBrain,
   hitTestBrainRegion,
+  regionCentroid,
   type BrainBox,
   type BrainRegionId,
 } from './brainAnatomy'
@@ -43,28 +44,30 @@ export function BrainMappingSim() {
     const hover = hoverRef.current
     const fs = fontPx(13, w, h)
 
-    // Clean light PhET-like stage
     ctx.fillStyle = '#f5f7fa'
     ctx.fillRect(0, 0, w, h)
 
-    // Brain centered with room for one label + bottom info strip
-    const bw = Math.min(w * 0.62, (h - 56) * 0.72)
-    const bh = bw * 0.98
+    const bw = Math.min(w * 0.68, (h - 52) * 0.78)
+    const bh = bw * 0.96
     const box: BrainBox = {
       x: (w - bw) / 2,
-      y: (h - bh) / 2 - 8,
+      y: (h - bh) / 2 - 4,
       w: bw,
       h: bh,
     }
     boxRef.current = box
 
-    drawAnatomicalBrain(ctx, box, {
-      selected: sel,
-      hover,
-      fontSize: fs,
-      canvasW: w,
-      canvasH: h,
-    })
+    drawAnatomicalBrain(ctx, box, { selected: sel, hover })
+
+    // Small floating name tag on the active lobe only — no leader-line clutter
+    const activeRegion = BRAIN_REGIONS.find((r) => r.id === sel)
+    if (activeRegion) {
+      const c = regionCentroid(box, activeRegion)
+      drawValueChip(ctx, '', activeRegion.name, c.x, c.y, {
+        fontSize: Math.max(10, fs - 2),
+        accent: true,
+      })
+    }
 
     const region = BRAIN_REGIONS.find((r) => r.id === sel)
     if (region) {
@@ -81,7 +84,7 @@ export function BrainMappingSim() {
       ctx.arcTo(stripX, stripY, stripX + stripW, stripY, 8)
       ctx.closePath()
       ctx.fill()
-      ctx.strokeStyle = region.fillActive
+      ctx.strokeStyle = region.fillActive.replace(/[\d.]+\)$/, '1)')
       ctx.lineWidth = 2
       ctx.stroke()
 
@@ -94,9 +97,14 @@ export function BrainMappingSim() {
       ctx.font = `${Math.max(11, fs - 1)}px Roboto, sans-serif`
       ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
-      const actionX = stripX + Math.min(190, w * 0.3)
-      ctx.fillText(region.action, actionX, stripY + stripH / 2)
+      ctx.fillText(region.action, stripX + Math.min(190, w * 0.3), stripY + stripH / 2)
     }
+
+    ctx.font = `500 ${Math.max(10, fs - 2)}px Roboto, sans-serif`
+    ctx.fillStyle = 'rgba(44,62,80,0.4)'
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'alphabetic'
+    ctx.fillText('Left side view', box.x + 2, box.y + box.h + 16)
 
     if (hintShown.current) {
       drawHint(ctx, 'hover · click a lobe to explore', w / 2, 18, w, h)
