@@ -1,31 +1,69 @@
-import { useCallback, useRef, useState } from 'react'
-import { ControlHint, ControlSection, ControlStack } from '../../shared/Controls'
-import { fontPx } from '../../shared/drawHelpers'
-import { drawHint, drawLabelPill, drawValueChip } from '../../shared/labels'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  ControlHint,
+  ControlSection,
+  ControlSelect,
+  ControlStack,
+  ControlStat,
+  ControlStats,
+  ControlToggle,
+} from '../../shared/Controls'
+import { drawLegend, fontPx } from '../../shared/drawHelpers'
+import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
+import { fillThemeBackground } from '../../shared/canvasTheme'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import { useCanvasPointer } from '../../shared/useCanvasPointer'
 import {
+  BRAIN_PARTS,
   BRAIN_REGIONS,
-  brainLabelAnchor,
-  drawBrainBase,
-  drawBrainRegion,
+  drawAnatomicalBrain,
   hitTestBrainRegion,
+  regionCentroid,
   type BrainBox,
   type BrainRegionId,
 } from './brainAnatomy'
+import {
+  createBrainMappingState,
+  currentQuestion,
+  selectRegion,
+  tickFeedback,
+  type BrainMode,
+} from './brainMappingModel'
 
 export function BrainMappingSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const paramsRef = useRef<{ selected: BrainRegionId }>({ selected: 'frontal' })
+  const stateRef = useRef(createBrainMappingState())
   const boxRef = useRef<BrainBox>({ x: 0, y: 0, w: 1, h: 1 })
   const hoverRef = useRef<BrainRegionId | null>(null)
+  const pulseRef = useRef(0)
   const hintShown = useRef(true)
-  const pulse = useRef(0)
   const [selected, setSelected] = useState<BrainRegionId>('frontal')
+  const [mode, setMode] = useState<BrainMode>('study')
+  const [showLabels, setShowLabels] = useState(true)
+  const [showParts, setShowParts] = useState(true)
+  const [exploredCount, setExploredCount] = useState(1)
+  const [quizScore, setQuizScore] = useState(0)
+  const [quizAttempts, setQuizAttempts] = useState(0)
   const [version, setVersion] = useState(0)
 
-  paramsRef.current.selected = selected
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const s = stateRef.current
+      setExploredCount(s.explored.size)
+      setQuizScore(s.quizScore)
+      setQuizAttempts(s.quizAttempts)
+    }, 250)
+    return () => clearInterval(id)
+  }, [])
+
+  const pickRegion = (id: BrainRegionId) => {
+    hintShown.current = false
+    const now = performance.now() / 1000
+    stateRef.current = selectRegion(stateRef.current, id, now)
+    setSelected(id)
+    setVersion((v) => v + 1)
+  }
 
   useCanvasPointer(canvasRef, {
     hitTest: (pt) => hitTestBrainRegion(boxRef.current, pt.x, pt.y),
@@ -34,120 +72,230 @@ export function BrainMappingSim() {
     },
     onTap: (id) => {
       if (!id) return
-      hintShown.current = false
-      const rid = id as BrainRegionId
-      paramsRef.current.selected = rid
-      setSelected(rid)
+      pickRegion(id as BrainRegionId)
     },
   })
 
-  const draw = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
-    pulse.current += dt
-    const sel = paramsRef.current.selected
-    const hover = hoverRef.current
-    const fs = fontPx(13, w, h)
+  const draw = useCallback(
+    (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
+      pulseRef.current += dt
+      const now = performance.now() / 1000
+      stateRef.current = tickFeedback(stateRef.current, now)
+      const s = stateRef.current
+      const hover = hoverRef.current
+      const fs = fontPx(13, w, h)
 
-    const bg = ctx.createLinearGradient(0, 0, 0, h)
-    bg.addColorStop(0, '#1a2744')
-    bg.addColorStop(1, '#0d1528')
-    ctx.fillStyle = bg
-    ctx.fillRect(0, 0, w, h)
+      fillThemeBackground(ctx, w, h, 'biology')
 
-    // soft vignette dots
-    for (let i = 0; i < 40; i++) {
-      ctx.fillStyle = `rgba(255,255,255,${0.03 + (i % 5) * 0.01})`
-      ctx.beginPath()
-      ctx.arc(((i * 97) % w), ((i * 53) % h), 1.2, 0, Math.PI * 2)
-      ctx.fill()
-    }
-
-    const side = Math.min(w * 0.72, h * 0.72)
-    const box: BrainBox = {
-      x: (w - side) / 2 - w * 0.04,
-      y: (h - side) / 2 + h * 0.02,
-      w: side * 1.15,
-      h: side,
-    }
-    boxRef.current = box
-
-    drawBrainBase(ctx, box)
-
-    for (const r of BRAIN_REGIONS) {
-      const active = sel === r.id
-      const isHover = hover === r.id
-      drawBrainRegion(ctx, box, r, { active, hover: isHover })
-      if (active) {
-        const glow = 0.35 + 0.2 * Math.sin(pulse.current * 3.5)
-        pathGlow(ctx, box, r.poly, `rgba(255,255,255,${glow * 0.35})`)
+      const bw = Math.min(w * 0.66, (h - 88) * 0.78)
+      const bh = bw * 0.96
+      const box: BrainBox = {
+        x: (w - bw) / 2,
+        y: (h - bh) / 2 - 6,
+        w: bw,
+        h: bh,
       }
-      const anchor = brainLabelAnchor(box, r)
-      if (active || isHover) {
-        drawLabelPill(ctx, r.name.split(' ')[0], anchor.x, anchor.y, {
-          fontSize: Math.max(10, fs - 2),
-          bg: 'rgba(15,23,42,0.75)',
+      boxRef.current = box
+
+      if (hover) {
+        const region = BRAIN_REGIONS.find((r) => r.id === hover)
+        if (region) {
+          const c = regionCentroid(box, region)
+          drawHoverHalo(ctx, c.x, c.y, 36, true)
+        }
+      }
+
+      drawAnatomicalBrain(ctx, box, {
+        selected: s.selected,
+        hover,
+        showLabels: s.showLabels,
+        showParts: s.showParts,
+        pulse: pulseRef.current,
+        feedback: s.lastAnswer,
+      })
+
+      drawLabelPill(ctx, 'Left side view', box.x + 4, box.y + box.h + 14, {
+        align: 'left',
+        fontSize: Math.max(10, fs - 2),
+        bold: false,
+        bg: 'rgba(255,255,255,0.85)',
+      })
+
+      drawLegend(
+        ctx,
+        BRAIN_REGIONS.map((r) => ({ color: r.accent, label: r.name.split(' ')[0] })),
+        12,
+        h - 14,
+        Math.max(9, fs - 3),
+      )
+
+      const region = BRAIN_REGIONS.find((r) => r.id === s.selected)
+      if (region) {
+        const stripY = h - 52
+        const stripH = 34
+        const stripX = 14
+        const stripW = w - 28
+
+        ctx.fillStyle = '#ffffff'
+        ctx.beginPath()
+        ctx.moveTo(stripX + 8, stripY)
+        ctx.arcTo(stripX + stripW, stripY, stripX + stripW, stripY + stripH, 8)
+        ctx.arcTo(stripX + stripW, stripY + stripH, stripX, stripY + stripH, 8)
+        ctx.arcTo(stripX, stripY + stripH, stripX, stripY, 8)
+        ctx.arcTo(stripX, stripY, stripX + stripW, stripY, 8)
+        ctx.closePath()
+        ctx.fill()
+        ctx.strokeStyle = region.accent
+        ctx.lineWidth = 2
+        ctx.stroke()
+
+        drawValueChip(ctx, '', region.name, stripX + 10, stripY + stripH / 2, {
+          align: 'left',
+          accent: true,
+          fontSize: Math.max(11, fs - 1),
+        })
+
+        ctx.fillStyle = '#34495e'
+        ctx.font = `${Math.max(11, fs - 1)}px Roboto, sans-serif`
+        ctx.textAlign = 'left'
+        ctx.textBaseline = 'middle'
+        const text =
+          s.mode === 'study'
+            ? region.action
+            : s.lastAnswer === 'correct'
+              ? 'Correct!'
+              : s.lastAnswer === 'wrong'
+                ? `Not quite — answer: ${BRAIN_REGIONS.find((r) => r.id === currentQuestion(s).answerId)?.name ?? ''}`
+                : region.action
+        ctx.fillText(text, stripX + Math.min(175, w * 0.28), stripY + stripH / 2)
+      }
+
+      if (s.mode === 'quiz') {
+        const q = currentQuestion(s)
+        drawLabelPill(ctx, q.prompt, w / 2, 22, {
+          fontSize: Math.max(11, fs - 1),
+          bg: 'rgba(21,32,51,0.88)',
           fg: '#fff',
         })
+      } else if (hintShown.current) {
+        drawHint(ctx, 'click a lobe · try quiz mode in the panel', w / 2, 22, w, h)
       }
-    }
 
-    // Profile cue
-    drawLabelPill(ctx, 'Left side view', box.x + 8, box.y - 10, {
-      align: 'left',
-      fontSize: Math.max(10, fs - 2),
-      bold: false,
-      bg: 'rgba(255,255,255,0.12)',
-      fg: 'rgba(255,255,255,0.85)',
-    })
-
-    const region = BRAIN_REGIONS.find((r) => r.id === sel)
-    if (region) {
-      drawValueChip(ctx, '', region.name, 20, 28, { align: 'left', accent: true, fontSize: fs + 1 })
-      drawLabelPill(ctx, region.action, 20, 56, {
-        align: 'left',
-        fontSize: Math.max(11, fs - 1),
-        bold: false,
-        bg: 'rgba(0,0,0,0.45)',
-        fg: 'rgba(255,255,255,0.95)',
-      })
-    }
-
-    if (hintShown.current) {
-      drawHint(ctx, 'click a colored lobe on the brain', w / 2, h - 18, w, h)
-    }
-  }, [])
+      if (s.mode === 'study' && region) {
+        const exY = box.y - 8
+        drawLabelPill(ctx, `e.g. ${region.examples[0]}`, w / 2, exY, {
+          fontSize: Math.max(10, fs - 2),
+          bold: false,
+          bg: 'rgba(255,255,255,0.9)',
+        })
+      }
+    },
+    [],
+  )
 
   useCanvasLoop(canvasRef, draw, true, version, true)
+
+  const syncMode = (next: BrainMode) => {
+    stateRef.current = { ...stateRef.current, mode: next, lastAnswer: null, feedbackUntil: 0 }
+    setMode(next)
+    setVersion((v) => v + 1)
+  }
+
+  const syncToggle = (key: 'showLabels' | 'showParts', value: boolean) => {
+    stateRef.current = { ...stateRef.current, [key]: value }
+    if (key === 'showLabels') setShowLabels(value)
+    if (key === 'showParts') setShowParts(value)
+    setVersion((v) => v + 1)
+  }
+
+  const region = BRAIN_REGIONS.find((r) => r.id === selected)
+  const partInfo = region ? BRAIN_PARTS.find((p) => p.id === region.part) : null
 
   return (
     <SimShell
       title="Brain Region Mapping"
-      subtitle="Click a lobe on the brain diagram to map structure → function"
+      subtitle="PTB Ch 2 — map cerebrum lobes, cerebellum & brain stem to their functions"
       canvasRef={canvasRef}
       running
       hidePlay
       onTogglePlay={() => undefined}
       onReset={() => {
-        paramsRef.current.selected = 'frontal'
+        stateRef.current = createBrainMappingState()
         setSelected('frontal')
+        setMode('study')
+        setShowLabels(true)
+        setShowParts(true)
         hintShown.current = true
         setVersion((v) => v + 1)
       }}
       controls={
         <>
+          <ControlSection title="Mode">
+            <ControlHint>
+              Study: explore each region. Quiz: read the question, then click the correct lobe.
+            </ControlHint>
+            <ControlSelect
+              label="Activity"
+              value={mode}
+              options={[
+                { value: 'study', label: 'Study — explore regions' },
+                { value: 'quiz', label: 'Quiz — test yourself' },
+              ]}
+              onChange={(v) => syncMode(v as BrainMode)}
+            />
+          </ControlSection>
+
+          <ControlSection title="Progress">
+            <ControlStats>
+              <ControlStat label="Explored" value={`${exploredCount} / ${BRAIN_REGIONS.length}`} />
+              {mode === 'quiz' ? (
+                <ControlStat
+                  label="Score"
+                  value={
+                    quizAttempts > 0
+                      ? `${quizScore} / ${quizAttempts}`
+                      : '—'
+                  }
+                />
+              ) : null}
+            </ControlStats>
+          </ControlSection>
+
+          <ControlSection title="Display">
+            <ControlToggle
+              label="Show lobe labels on hover"
+              checked={showLabels}
+              onChange={(v) => syncToggle('showLabels', v)}
+            />
+            <ControlToggle
+              label="Show main parts (cerebrum, cerebellum, stem)"
+              checked={showParts}
+              onChange={(v) => syncToggle('showParts', v)}
+            />
+          </ControlSection>
+
+          {region && mode === 'study' ? (
+            <ControlSection title={region.name}>
+              <ControlHint>{partInfo?.label}: {partInfo?.note}</ControlHint>
+              <ControlHint>{region.detail}</ControlHint>
+              <ControlStack>
+                {region.examples.map((ex) => (
+                  <button key={ex} type="button" className="sim-shell-btn" disabled>
+                    {ex}
+                  </button>
+                ))}
+              </ControlStack>
+            </ControlSection>
+          ) : null}
+
           <ControlSection title="Regions">
-            <ControlHint>Use the anatomical brain on the canvas, or pick a region here.</ControlHint>
             <ControlStack>
               {BRAIN_REGIONS.map((r) => (
                 <button
                   key={r.id}
                   type="button"
-                  className={`sim-shell-btn ${selected === r.id ? 'is-active' : ''}`}
-                  onClick={() => {
-                    paramsRef.current.selected = r.id
-                    setSelected(r.id)
-                    hintShown.current = false
-                    setVersion((v) => v + 1)
-                  }}
+                  className={`sim-shell-btn${selected === r.id ? ' is-active' : ''}`}
+                  onClick={() => pickRegion(r.id)}
                 >
                   {r.name}
                 </button>
@@ -158,25 +306,4 @@ export function BrainMappingSim() {
       }
     />
   )
-}
-
-function pathGlow(
-  ctx: CanvasRenderingContext2D,
-  box: BrainBox,
-  poly: { x: number; y: number }[],
-  color: string,
-) {
-  ctx.save()
-  ctx.shadowColor = color
-  ctx.shadowBlur = 16
-  ctx.beginPath()
-  const first = { x: box.x + poly[0].x * box.w, y: box.y + poly[0].y * box.h }
-  ctx.moveTo(first.x, first.y)
-  for (let i = 1; i < poly.length; i++) {
-    ctx.lineTo(box.x + poly[i].x * box.w, box.y + poly[i].y * box.h)
-  }
-  ctx.closePath()
-  ctx.fillStyle = color
-  ctx.fill()
-  ctx.restore()
 }

@@ -330,11 +330,12 @@ export const simulations: Simulation[] = [
     title: 'Brain Region Mapping',
     grade: 8,
     chapter: 'Ch 2 – Human Nervous System',
-    description: 'Click brain regions to map lobes and structures to actions like vision, balance, and planning.',
+    description:
+      'Explore the cerebrum lobes, cerebellum, and brain stem — then quiz yourself on PTB Ch 2 functions.',
     learningGoals: [
-      'Locate major brain regions',
-      'Connect regions to functions',
-      'Distinguish cerebrum, cerebellum, brain stem',
+      'Name the three main parts of the brain (cerebrum, cerebellum, brain stem)',
+      'Map frontal, parietal, temporal, and occipital lobes to their functions',
+      'Relate cerebellum to balance and brain stem to involuntary actions',
     ],
     keywords: ['brain', 'lobes', 'cerebellum', 'mapping'],
     color: '#4a235a',
