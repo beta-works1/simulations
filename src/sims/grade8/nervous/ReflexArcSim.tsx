@@ -26,6 +26,17 @@ type Pt = { x: number; y: number }
 
 type HitId = 'stimulate' | 'brain-toggle' | null
 
+/** Sample a cubic Bézier for signal animation. */
+function cubic(p0: Pt, p1: Pt, p2: Pt, p3: Pt, t: number): Pt {
+  const u = 1 - t
+  return {
+    x: u * u * u * p0.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * p3.x,
+    y: u * u * u * p0.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * p3.y,
+  }
+}
+
+type Curve = { a: Pt; c1: Pt; c2: Pt; b: Pt }
+
 export function ReflexArcSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef(createReflexState(false))
@@ -81,69 +92,107 @@ export function ReflexArcSim() {
       const fs = fontPx(12, w, h)
       const hover = hoverRef.current
 
-      ctx.fillStyle = '#f7f4ef'
+      ctx.fillStyle = '#f5f7fa'
       ctx.fillRect(0, 0, w, h)
 
-      // Figure: head + torso + arm (clipped silhouettes, soft fills that stay in shape)
-      const torsoX = w * 0.48
-      const torsoY = h * 0.52
-      drawPerson(ctx, torsoX, torsoY, w, h)
-
-      const receptor = { x: w * 0.16, y: h * 0.7 }
-      const spine = { x: torsoX, y: h * 0.48 }
-      const brain = { x: torsoX + w * 0.02, y: h * 0.18 }
+      const receptor = { x: w * 0.14, y: h * 0.68 }
+      const spine = { x: w * 0.48, y: h * 0.5 }
+      const brain = { x: w * 0.52, y: h * 0.2 }
       const effector = { x: w * 0.86, y: h * 0.68 }
+      const nodeR = Math.max(15, fs + 1)
 
-      // Wire path only — thin stroked line, no fat glow bleed
-      const path: Pt[] = viaBrain
-        ? [receptor, spine, brain, { x: spine.x, y: spine.y + 8 }, effector]
-        : [receptor, spine, effector]
-
-      ctx.save()
-      ctx.lineJoin = 'round'
-      ctx.lineCap = 'round'
-      ctx.strokeStyle = viaBrain ? '#2980b9' : '#1e8449'
-      ctx.lineWidth = 3
+      // Soft body silhouette (smooth ellipses only — no thick jagged arms)
+      ctx.fillStyle = 'rgba(210, 185, 160, 0.28)'
       ctx.beginPath()
-      ctx.moveTo(path[0].x, path[0].y)
-      for (const p of path.slice(1)) ctx.lineTo(p.x, p.y)
-      ctx.stroke()
+      ctx.ellipse(spine.x, h * 0.52, w * 0.08, h * 0.26, 0, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.beginPath()
+      ctx.arc(brain.x - 4, brain.y + 8, Math.min(w, h) * 0.05, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Smooth nerve curves (PhET-style)
+      const afferent: Curve = {
+        a: receptor,
+        c1: { x: w * 0.28, y: h * 0.72 },
+        c2: { x: w * 0.38, y: h * 0.62 },
+        b: spine,
+      }
+      const toBrain: Curve = {
+        a: spine,
+        c1: { x: spine.x - 10, y: h * 0.36 },
+        c2: { x: brain.x - 20, y: h * 0.28 },
+        b: brain,
+      }
+      const fromBrain: Curve = {
+        a: brain,
+        c1: { x: brain.x + 10, y: h * 0.3 },
+        c2: { x: spine.x + 16, y: h * 0.38 },
+        b: spine,
+      }
+      const efferent: Curve = {
+        a: spine,
+        c1: { x: w * 0.6, y: h * 0.58 },
+        c2: { x: w * 0.72, y: h * 0.7 },
+        b: effector,
+      }
+
+      const curves: Curve[] = viaBrain
+        ? [afferent, toBrain, fromBrain, efferent]
+        : [afferent, efferent]
+
+      const pathColor = viaBrain ? '#2980b9' : '#1e8449'
+      ctx.save()
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
+      ctx.strokeStyle = pathColor
+      ctx.lineWidth = 3
+      for (const c of curves) {
+        ctx.beginPath()
+        ctx.moveTo(c.a.x, c.a.y)
+        ctx.bezierCurveTo(c.c1.x, c.c1.y, c.c2.x, c.c2.y, c.b.x, c.b.y)
+        ctx.stroke()
+      }
       ctx.restore()
 
-      // Spinal column (single label above)
-      ctx.fillStyle = '#95a5a6'
-      const colW = 14
-      const colTop = h * 0.28
-      const colH = h * 0.4
-      roundRectFill(ctx, spine.x - colW / 2, colTop, colW, colH, 4)
-      drawLabelPill(ctx, 'Spinal cord', spine.x, colTop - 14, { fontSize: Math.max(10, fs - 1) })
-
-      // Brain picture (always visible; bright when route uses it)
-      drawMiniBrain(ctx, brain.x, brain.y, Math.min(w, h) * 0.07, viaBrain || hover === 'brain-toggle')
-      drawLabelPill(ctx, viaBrain ? 'Brain (on pathway)' : 'Brain (bypassed)', brain.x, brain.y - 36, {
+      // Spinal column (smooth rounded capsule)
+      const colW = 16
+      const colTop = h * 0.3
+      const colH = h * 0.38
+      ctx.fillStyle = '#aeb6bf'
+      capsule(ctx, spine.x - colW / 2, colTop, colW, colH, 8)
+      ctx.fill()
+      // Single label — to the right, not overlapping the node
+      drawLabelPill(ctx, 'Spinal cord', spine.x + 48, colTop + 18, {
+        align: 'left',
         fontSize: Math.max(10, fs - 1),
-        bg: viaBrain ? 'rgba(41,128,185,0.15)' : 'rgba(255,255,255,0.9)',
       })
 
-      // Receptor node
-      const nodeR = Math.max(16, fs + 2)
+      // Brain glyph (smooth)
+      drawSmoothBrain(ctx, brain.x, brain.y, Math.min(w, h) * 0.075, viaBrain || hover === 'brain-toggle')
+      // Label above brain, offset so it doesn't cover the graphic
+      drawLabelPill(ctx, viaBrain ? 'Brain (on path)' : 'Brain (tap to include)', brain.x, brain.y - 42, {
+        fontSize: Math.max(10, fs - 1),
+        bg: viaBrain ? 'rgba(41,128,185,0.12)' : '#fff',
+      })
+
+      // Receptor
       drawHoverHalo(ctx, receptor.x, receptor.y, nodeR + 8, hover === 'stimulate')
       ctx.beginPath()
       ctx.arc(receptor.x, receptor.y, nodeR, 0, Math.PI * 2)
       ctx.fillStyle = '#e67e22'
       ctx.fill()
-      ctx.strokeStyle = hover === 'stimulate' ? '#1a252f' : '#fff'
+      ctx.strokeStyle = '#fff'
       ctx.lineWidth = 2.5
       ctx.stroke()
-      drawLabelPill(ctx, 'Receptor', receptor.x, receptor.y - nodeR - 16, {
+      drawLabelPill(ctx, 'Receptor', receptor.x, receptor.y - nodeR - 18, {
         fontSize: Math.max(10, fs - 1),
       })
-      drawLabelPill(ctx, 'tap to stimulate', receptor.x, receptor.y + nodeR + 16, {
+      drawLabelPill(ctx, 'tap to fire', receptor.x, receptor.y + nodeR + 18, {
         fontSize: Math.max(9, fs - 2),
         bold: false,
       })
 
-      // Effector (muscle / hand)
+      // Effector
       ctx.beginPath()
       ctx.arc(effector.x, effector.y, nodeR, 0, Math.PI * 2)
       ctx.fillStyle = '#27ae60'
@@ -151,13 +200,13 @@ export function ReflexArcSim() {
       ctx.strokeStyle = '#fff'
       ctx.lineWidth = 2.5
       ctx.stroke()
-      drawLabelPill(ctx, 'Effector (muscle)', effector.x, effector.y - nodeR - 16, {
+      drawLabelPill(ctx, 'Effector', effector.x, effector.y - nodeR - 18, {
         fontSize: Math.max(10, fs - 1),
       })
 
-      // Mid junction (relay) — no second "spinal cord" text on the node
+      // Relay node on cord (no second spinal label)
       ctx.beginPath()
-      ctx.arc(spine.x, spine.y, nodeR * 0.85, 0, Math.PI * 2)
+      ctx.arc(spine.x, spine.y, nodeR * 0.8, 0, Math.PI * 2)
       ctx.fillStyle = '#2f6fed'
       ctx.fill()
       ctx.strokeStyle = '#fff'
@@ -166,38 +215,49 @@ export function ReflexArcSim() {
 
       layoutRef.current = {
         stimulate: { ...receptor, r: nodeR },
-        brainToggle: { ...brain, r: Math.min(w, h) * 0.08 },
+        brainToggle: { ...brain, r: Math.min(w, h) * 0.085 },
       }
 
       if (s.fired) {
-        const segs = path.length - 1
-        const t = s.progress * segs
-        const i = Math.min(segs - 1, Math.floor(t))
-        const f = t - i
-        const a = path[i]
-        const b = path[i + 1]
-        const x = a.x + (b.x - a.x) * f
-        const y = a.y + (b.y - a.y) * f
+        const n = curves.length
+        const tAll = s.progress * n
+        const i = Math.min(n - 1, Math.floor(tAll))
+        const f = tAll - i
+        const c = curves[i]
+        const pos = cubic(c.a, c.c1, c.c2, c.b, f)
 
-        // Completed segments — thin gold trail only
+        // Completed curves in gold
+        ctx.save()
+        ctx.lineCap = 'round'
         ctx.strokeStyle = '#f1c40f'
         ctx.lineWidth = 3
-        ctx.lineCap = 'round'
+        for (let k = 0; k < i; k++) {
+          const ck = curves[k]
+          ctx.beginPath()
+          ctx.moveTo(ck.a.x, ck.a.y)
+          ctx.bezierCurveTo(ck.c1.x, ck.c1.y, ck.c2.x, ck.c2.y, ck.b.x, ck.b.y)
+          ctx.stroke()
+        }
+        // Partial current curve
         ctx.beginPath()
-        ctx.moveTo(path[0].x, path[0].y)
-        for (let k = 1; k <= i; k++) ctx.lineTo(path[k].x, path[k].y)
-        ctx.lineTo(x, y)
+        ctx.moveTo(c.a.x, c.a.y)
+        const steps = Math.max(2, Math.floor(f * 24))
+        for (let s = 1; s <= steps; s++) {
+          const p = cubic(c.a, c.c1, c.c2, c.b, (s / steps) * f)
+          ctx.lineTo(p.x, p.y)
+        }
         ctx.stroke()
+        ctx.restore()
 
         ctx.beginPath()
-        ctx.arc(x, y, 8, 0, Math.PI * 2)
+        ctx.arc(pos.x, pos.y, 7, 0, Math.PI * 2)
         ctx.fillStyle = '#f4d03f'
         ctx.fill()
         ctx.strokeStyle = '#b7950b'
         ctx.lineWidth = 1.5
         ctx.stroke()
 
-        drawValueChip(ctx, 'signal', `${Math.round(s.progress * 100)}%`, x, y - 22, {
+        drawValueChip(ctx, '', `${Math.round(s.progress * 100)}%`, pos.x, pos.y - 20, {
           fontSize: Math.max(10, fs - 1),
           accent: true,
         })
@@ -205,9 +265,9 @@ export function ReflexArcSim() {
         if (s.progress >= 1) {
           drawLabelPill(
             ctx,
-            viaBrain ? 'Slower — signal went via the brain' : 'Fast spinal reflex — brain skipped',
+            viaBrain ? 'Slower — path went through the brain' : 'Fast reflex — brain skipped',
             w / 2,
-            h - 28,
+            h - 22,
             {
               fontSize: fs,
               bg: viaBrain ? 'rgba(41,128,185,0.92)' : 'rgba(39,174,96,0.92)',
@@ -244,7 +304,7 @@ export function ReflexArcSim() {
         <>
           <ControlSection title="Pathway">
             <ControlHint>
-              Tap the orange receptor on the canvas. Tap the brain to include or skip it.
+              Tap the orange receptor to fire. Tap the brain to include or skip it.
             </ControlHint>
             <ControlToggle
               label="Route via brain"
@@ -268,7 +328,7 @@ export function ReflexArcSim() {
   )
 }
 
-function roundRectFill(
+function capsule(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -284,68 +344,32 @@ function roundRectFill(
   ctx.arcTo(x, y + h, x, y, rr)
   ctx.arcTo(x, y, x + w, y, rr)
   ctx.closePath()
-  ctx.fill()
 }
 
-function drawPerson(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number) {
-  ctx.save()
-  // Torso
-  ctx.fillStyle = 'rgba(214, 188, 160, 0.55)'
-  ctx.beginPath()
-  ctx.ellipse(cx, cy + h * 0.02, w * 0.07, h * 0.22, 0, 0, Math.PI * 2)
-  ctx.fill()
-  // Head
-  ctx.beginPath()
-  ctx.arc(cx, cy - h * 0.28, Math.min(w, h) * 0.055, 0, Math.PI * 2)
-  ctx.fill()
-  // Left arm toward receptor
-  ctx.strokeStyle = 'rgba(214, 188, 160, 0.9)'
-  ctx.lineWidth = Math.max(8, Math.min(w, h) * 0.018)
-  ctx.lineCap = 'round'
-  ctx.beginPath()
-  ctx.moveTo(cx - w * 0.04, cy - h * 0.05)
-  ctx.quadraticCurveTo(cx - w * 0.18, cy + h * 0.05, w * 0.18, h * 0.68)
-  ctx.stroke()
-  // Right arm toward effector
-  ctx.beginPath()
-  ctx.moveTo(cx + w * 0.04, cy - h * 0.02)
-  ctx.quadraticCurveTo(cx + w * 0.22, cy + h * 0.08, w * 0.84, h * 0.66)
-  ctx.stroke()
-  ctx.restore()
-}
-
-/** Small anatomical brain glyph (clipped fill). */
-function drawMiniBrain(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  r: number,
-  active: boolean,
-) {
+function drawSmoothBrain(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, active: boolean) {
   ctx.save()
   ctx.translate(cx, cy)
-  ctx.scale(r / 40, r / 40)
+  ctx.scale(r / 36, r / 36)
   ctx.beginPath()
-  // silhouette
-  ctx.moveTo(-28, 0)
-  ctx.bezierCurveTo(-28, -28, -8, -36, 8, -32)
-  ctx.bezierCurveTo(28, -28, 36, -8, 32, 8)
-  ctx.bezierCurveTo(30, 18, 18, 22, 10, 18)
-  ctx.bezierCurveTo(18, 28, 14, 38, 2, 36)
-  ctx.bezierCurveTo(-6, 40, -10, 28, -8, 20)
-  ctx.bezierCurveTo(-16, 24, -28, 16, -28, 0)
+  ctx.moveTo(-26, 4)
+  ctx.bezierCurveTo(-28, -22, -6, -34, 10, -30)
+  ctx.bezierCurveTo(28, -26, 34, -6, 30, 10)
+  ctx.bezierCurveTo(28, 20, 16, 22, 8, 16)
+  ctx.bezierCurveTo(14, 28, 10, 36, 0, 34)
+  ctx.bezierCurveTo(-8, 36, -10, 26, -8, 18)
+  ctx.bezierCurveTo(-18, 22, -28, 14, -26, 4)
   ctx.closePath()
-  ctx.fillStyle = active ? '#f5cba7' : '#e8d5c0'
+  ctx.fillStyle = active ? '#f2d0b0' : '#e5d0b8'
   ctx.fill()
-  ctx.strokeStyle = active ? '#2980b9' : '#a67c52'
-  ctx.lineWidth = active ? 2.5 : 1.8
+  ctx.strokeStyle = active ? '#2980b9' : '#8d6e4c'
+  ctx.lineWidth = active ? 2.4 : 1.8
+  ctx.lineJoin = 'round'
   ctx.stroke()
-  // simple lobe divide
-  ctx.strokeStyle = 'rgba(0,0,0,0.2)'
-  ctx.lineWidth = 1.2
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)'
+  ctx.lineWidth = 1.1
   ctx.beginPath()
-  ctx.moveTo(-4, -24)
-  ctx.quadraticCurveTo(0, -4, -6, 12)
+  ctx.moveTo(-2, -22)
+  ctx.quadraticCurveTo(2, -2, -4, 12)
   ctx.stroke()
   ctx.restore()
 }
