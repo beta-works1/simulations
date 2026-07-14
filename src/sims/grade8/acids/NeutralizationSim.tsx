@@ -6,8 +6,16 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { clearThemedScene, fontPx, roundRect, withShadow } from '../../shared/drawHelpers'
-import { drawHint, drawHoverHalo, drawValueChip } from '../../shared/labels'
+import {
+  clearThemedScene,
+  drawErlenmeyerFlask,
+  fillClippedLiquid,
+  fontPx,
+  roundRect,
+  taperedVesselPath,
+  withShadow,
+} from '../../shared/drawHelpers'
+import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
@@ -80,35 +88,22 @@ function drawBeaker(
   fillColor: string,
   label: string,
   fs: number,
+  highlighted = false,
 ) {
-  const neck = width * 0.35
   withShadow(ctx, () => {
-    ctx.strokeStyle = '#5d6d7e'
-    ctx.lineWidth = 2.5
-    ctx.beginPath()
-    ctx.moveTo(cx - neck, top)
-    ctx.lineTo(cx - neck, top + (bottom - top) * 0.22)
-    ctx.lineTo(cx - width, bottom)
-    ctx.lineTo(cx + width, bottom)
-    ctx.lineTo(cx + neck, top + (bottom - top) * 0.22)
-    ctx.lineTo(cx + neck, top)
-    ctx.stroke()
-
-    const liquidTop = bottom - (bottom - top) * 0.15 - fillLevel * (bottom - top) * 0.55
-    ctx.fillStyle = fillColor
-    ctx.beginPath()
-    ctx.moveTo(cx - width + 4, bottom - 4)
-    ctx.lineTo(cx - width + 4, liquidTop)
-    ctx.lineTo(cx + width - 4, liquidTop)
-    ctx.lineTo(cx + width - 4, bottom - 4)
-    ctx.closePath()
-    ctx.fill()
+    drawErlenmeyerFlask(ctx, cx, top, bottom, width, fillLevel * 0.75 + 0.08, fillColor, {
+      stroke: highlighted ? '#2980b9' : '#5d6d7e',
+      lineWidth: highlighted ? 3 : 2.5,
+      neckRatio: 0.35,
+      shoulderT: 0.2,
+      alpha: 0.9,
+    })
   })
 
-  ctx.fillStyle = '#1a252f'
-  ctx.font = `600 ${fs}px Roboto, sans-serif`
-  ctx.textAlign = 'center'
-  ctx.fillText(label, cx, bottom + fs + 6)
+  drawLabelPill(ctx, label, cx, bottom + fs + 8, {
+    fontSize: Math.max(10, fs - 1),
+    bold: false,
+  })
 }
 
 export function NeutralizationSim() {
@@ -182,77 +177,71 @@ export function NeutralizationSim() {
 
       clearThemedScene(ctx, w, h, 'chemistry')
 
-      const top = h * 0.12
-      const bottom = h * 0.52
-      const vesselTop = h * 0.38
-      const vesselBottom = h * 0.78
-      const bw = Math.min(w * 0.1, 52)
+      // Keep acid / vessel / base / pH strip from overlapping
+      const top = h * 0.14
+      const bottom = h * 0.48
+      const vesselTop = h * 0.42
+      const vesselBottom = h * 0.76
+      const bw = Math.min(w * 0.09, 48)
+      const acidX = w * 0.2
+      const baseX = w * 0.68
 
-      drawHoverHalo(ctx, w * 0.22, (top + bottom) / 2, 40, hover === 'acid')
-      drawHoverHalo(ctx, w * 0.78, (top + bottom) / 2, 40, hover === 'base')
-      drawBeaker(ctx, w * 0.22, top, bottom, bw, aV / 100, '#fdebd0', 'Acid (H⁺)', fs)
-      drawBeaker(ctx, w * 0.78, top, bottom, bw, bV / 100, '#d6eaf8', 'Base (OH⁻)', fs)
-      drawValueChip(ctx, '', `${aV.toFixed(0)} mL`, w * 0.22, top - 8, { fontSize: fs })
-      drawValueChip(ctx, '', `${bV.toFixed(0)} mL`, w * 0.78, top - 8, { fontSize: fs })
+      drawHoverHalo(ctx, acidX, (top + bottom) / 2, bw * 0.9, hover === 'acid')
+      drawHoverHalo(ctx, baseX, (top + bottom) / 2, bw * 0.9, hover === 'base')
+      drawBeaker(ctx, acidX, top, bottom, bw, aV / 100, '#f5b041', 'Acid (H⁺)', fs, hover === 'acid')
+      drawBeaker(ctx, baseX, top, bottom, bw, bV / 100, '#5dade2', 'Base (OH⁻)', fs, hover === 'base')
+      drawValueChip(ctx, '', `${aV.toFixed(0)} mL`, acidX, top - 12, { fontSize: fs })
+      drawValueChip(ctx, '', `${bV.toFixed(0)} mL`, baseX, top - 12, { fontSize: fs })
       layoutRef.current = {
-        acid: { x: w * 0.22, y: (top + bottom) / 2, r: 42 },
-        base: { x: w * 0.78, y: (top + bottom) / 2, r: 42 },
+        acid: { x: acidX, y: (top + bottom) / 2, r: bw + 10 },
+        base: { x: baseX, y: (top + bottom) / 2, r: bw + 10 },
       }
 
-      const vesselX = w * 0.5
-      const vw = Math.min(w * 0.22, 110)
+      const vesselX = w * 0.44
+      const vw = Math.min(w * 0.16, 90)
+      const halfTop = vw * 0.42
+      const mixLevel = st.pourProgress * 0.65 + (st.pourProgress > 0 ? 0.08 : 0)
       withShadow(ctx, () => {
+        const path = (c: CanvasRenderingContext2D) =>
+          taperedVesselPath(c, vesselX, vesselTop, vesselBottom, halfTop, vw)
+        fillClippedLiquid(ctx, path, vesselTop, vesselBottom, mixLevel, phToColor(st.ph), {
+          inset: 3,
+          alpha: 0.88,
+        })
+        path(ctx)
         ctx.strokeStyle = '#2c3e50'
         ctx.lineWidth = 3
-        ctx.beginPath()
-        ctx.moveTo(vesselX - vw * 0.4, vesselTop)
-        ctx.lineTo(vesselX - vw, vesselBottom)
-        ctx.lineTo(vesselX + vw, vesselBottom)
-        ctx.lineTo(vesselX + vw * 0.4, vesselTop)
-        ctx.closePath()
         ctx.stroke()
-
-        const mixLevel = st.pourProgress * 0.65 + (st.pourProgress > 0 ? 0.08 : 0)
-        const liquidTop =
-          vesselBottom - 8 - mixLevel * (vesselBottom - vesselTop - 16)
-        ctx.fillStyle = phToColor(st.ph)
-        ctx.globalAlpha = 0.85
-        ctx.beginPath()
-        ctx.moveTo(vesselX - vw + 6, vesselBottom - 6)
-        ctx.lineTo(vesselX - vw + 6, liquidTop)
-        ctx.lineTo(vesselX + vw - 6, liquidTop)
-        ctx.lineTo(vesselX + vw - 6, vesselBottom - 6)
-        ctx.closePath()
-        ctx.fill()
-        ctx.globalAlpha = 1
       })
 
       if (running && st.pourProgress < 1) {
         const drip = (st.time * 3) % 1
-        for (const sx of [w * 0.22, w * 0.78]) {
-          ctx.strokeStyle = sx < w * 0.5 ? '#e67e22' : '#3498db'
+        for (const sx of [acidX, baseX]) {
+          ctx.strokeStyle = sx < vesselX ? '#e67e22' : '#3498db'
           ctx.lineWidth = 3
           ctx.beginPath()
           ctx.moveTo(sx, bottom)
-          ctx.lineTo(vesselX + (sx < w * 0.5 ? -20 : 20), vesselTop + drip * 40)
+          ctx.lineTo(vesselX + (sx < vesselX ? -18 : 18), vesselTop + drip * 36)
           ctx.stroke()
         }
       }
 
-      ctx.fillStyle = '#1a252f'
-      ctx.font = `600 ${fs}px Roboto, sans-serif`
-      ctx.textAlign = 'center'
-      ctx.fillText('Reaction vessel', vesselX, vesselBottom + fs + 8)
+      drawLabelPill(ctx, 'Reaction vessel', vesselX, vesselBottom + 14, {
+        fontSize: Math.max(10, fs - 1),
+        bold: false,
+      })
       if (st.pourProgress > 0.95) {
-        ctx.font = `${Math.max(10, fs - 1)}px Roboto, sans-serif`
-        ctx.fillStyle = '#27ae60'
-        ctx.fillText('Salt + water formed', vesselX, vesselBottom + fs * 2 + 4)
+        drawLabelPill(ctx, 'Salt + water formed', vesselX, vesselBottom + 34, {
+          fontSize: Math.max(10, fs - 1),
+          bg: 'rgba(39,174,96,0.18)',
+        })
       }
 
-      const meterX = w * 0.86
-      const meterTop = h * 0.2
-      const meterH = h * 0.45
-      const meterW = 22
+      // pH strip on the far right, clear of base beaker
+      const meterX = w * 0.9
+      const meterTop = h * 0.18
+      const meterH = h * 0.5
+      const meterW = 18
       const grad = ctx.createLinearGradient(0, meterTop + meterH, 0, meterTop)
       for (let i = 0; i <= 14; i++) grad.addColorStop(i / 14, phToColor(i))
       roundRect(ctx, meterX, meterTop, meterW, meterH, 6)
@@ -267,12 +256,12 @@ export function NeutralizationSim() {
       ctx.strokeStyle = '#1a252f'
       ctx.lineWidth = 2
       ctx.beginPath()
-      ctx.moveTo(meterX - 12, needleY)
-      ctx.lineTo(meterX + meterW + 12, needleY)
+      ctx.moveTo(meterX - 10, needleY)
+      ctx.lineTo(meterX + meterW + 10, needleY)
       ctx.stroke()
 
-      drawValueChip(ctx, 'pH', st.ph.toFixed(1), meterX + meterW + 36, needleY, {
-        fontSize: fs,
+      drawValueChip(ctx, 'pH', st.ph.toFixed(1), meterX - 28, needleY, {
+        fontSize: Math.max(10, fs - 1),
         accent: true,
       })
       if (hintShown.current) drawHint(ctx, 'drag beakers to set volumes', w / 2, h - 12, w, h)

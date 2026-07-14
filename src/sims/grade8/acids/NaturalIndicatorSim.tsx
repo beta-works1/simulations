@@ -7,7 +7,14 @@ import {
   ControlStats,
   ControlStack,
 } from '../../shared/Controls'
-import { clearThemedScene, fontPx, roundRect, withShadow } from '../../shared/drawHelpers'
+import {
+  clearThemedScene,
+  drawErlenmeyerFlask,
+  fillClippedLiquid,
+  fontPx,
+  roundRect,
+  withShadow,
+} from '../../shared/drawHelpers'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
@@ -32,20 +39,19 @@ type Hit =
   | 'beaker'
   | null
 
+type Box = { x: number; y: number; w: number; h: number }
+
 type Layout = {
-  cabbage: { x: number; y: number; w: number; h: number }
-  turmeric: { x: number; y: number; w: number; h: number }
-  acid: { x: number; y: number; w: number; h: number }
-  neutral: { x: number; y: number; w: number; h: number }
-  base: { x: number; y: number; w: number; h: number }
-  drip: { x: number; y: number; w: number; h: number }
-  beaker: { x: number; y: number; w: number; h: number }
+  cabbage: Box
+  turmeric: Box
+  acid: Box
+  neutral: Box
+  base: Box
+  drip: Box
+  beaker: Box
 }
 
-function inBox(
-  pt: { x: number; y: number },
-  b: { x: number; y: number; w: number; h: number },
-) {
+function inBox(pt: { x: number; y: number }, b: Box) {
   return pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h
 }
 
@@ -157,31 +163,40 @@ export function NaturalIndicatorSim() {
       clearThemedScene(ctx, w, h, 'chemistry')
 
       const bx = w * 0.5
-      const top = h * 0.2
-      const bottom = h * 0.68
-      const bw = Math.min(w * 0.16, 90)
-      const level = 0.22 + st.dripProgress * 0.48
-      const liquidTop = bottom - 10 - level * (bottom - top - 30)
+      const top = h * 0.22
+      const bottom = h * 0.66
+      const bw = Math.min(w * 0.14, 78)
+      const fillLevel = 0.22 + st.dripProgress * 0.48
+      const liquidTop = bottom - 3 - fillLevel * (bottom - top - 6)
 
-      // Indicator bottles (left)
-      const bottleW = Math.min(64, w * 0.12)
-      const bottleH = Math.min(78, h * 0.16)
-      const cabbageBox = { x: w * 0.06, y: h * 0.42, w: bottleW, h: bottleH }
-      const turmericBox = { x: w * 0.06, y: h * 0.42 + bottleH + 14, w: bottleW, h: bottleH }
+      // Indicator bottles (left) — room for side labels
+      const bottleW = Math.min(52, w * 0.09)
+      const bottleH = Math.min(72, h * 0.15)
+      const indX = w * 0.1
+      const indGap = 28
+      const cabbageBox = { x: indX, y: h * 0.38, w: bottleW, h: bottleH }
+      const turmericBox = {
+        x: indX,
+        y: cabbageBox.y + bottleH + indGap,
+        w: bottleW,
+        h: bottleH,
+      }
 
-      // Substance droppers (right)
-      const dropW = Math.min(54, w * 0.1)
-      const dropH = 56
-      const dropY = h * 0.18
-      const acidBox = { x: w * 0.78, y: dropY, w: dropW, h: dropH }
-      const neutBox = { x: w * 0.78, y: dropY + dropH + 10, w: dropW, h: dropH }
-      const baseBox = { x: w * 0.78, y: dropY + 2 * (dropH + 10), w: dropW, h: dropH }
+      // Substance vials (right) — side labels, generous vertical gap
+      const dropW = Math.min(44, w * 0.08)
+      const dropH = 54
+      const subX = w * 0.82
+      const subGap = 26
+      const dropY = h * 0.2
+      const acidBox = { x: subX, y: dropY, w: dropW, h: dropH }
+      const neutBox = { x: subX, y: dropY + dropH + subGap, w: dropW, h: dropH }
+      const baseBox = { x: subX, y: dropY + 2 * (dropH + subGap), w: dropW, h: dropH }
 
       const dripBtn = {
-        x: bx - 54,
-        y: bottom + 18,
-        w: 108,
-        h: 28,
+        x: bx - 58,
+        y: bottom + 28,
+        w: 116,
+        h: 30,
       }
       const beakerHit = { x: bx - bw, y: top, w: bw * 2, h: bottom - top }
 
@@ -195,32 +210,16 @@ export function NaturalIndicatorSim() {
         beaker: beakerHit,
       }
 
-      // Beaker
-      drawHoverHalo(ctx, bx, (top + bottom) / 2, bw * 1.1, hover === 'beaker')
+      // Test flask — liquid clipped to glass
+      drawHoverHalo(ctx, bx, (top + bottom) / 2, bw * 0.85, hover === 'beaker')
       withShadow(ctx, () => {
-        ctx.strokeStyle = '#5d6d7e'
-        ctx.lineWidth = 2.5
-        ctx.beginPath()
-        ctx.moveTo(bx - bw * 0.35, top)
-        ctx.lineTo(bx - bw * 0.35, top + (bottom - top) * 0.15)
-        ctx.lineTo(bx - bw, bottom)
-        ctx.lineTo(bx + bw, bottom)
-        ctx.lineTo(bx + bw * 0.35, top + (bottom - top) * 0.15)
-        ctx.lineTo(bx + bw * 0.35, top)
-        ctx.stroke()
-
-        ctx.fillStyle = liquidColor
-        ctx.globalAlpha = 0.92
-        ctx.beginPath()
-        ctx.moveTo(bx - bw + 8, bottom - 8)
-        ctx.lineTo(bx - bw + 8, liquidTop)
-        ctx.lineTo(bx + bw - 8, liquidTop)
-        ctx.lineTo(bx + bw - 8, bottom - 8)
-        ctx.closePath()
-        ctx.fill()
-        ctx.globalAlpha = 1
+        drawErlenmeyerFlask(ctx, bx, top, bottom, bw, fillLevel, liquidColor, {
+          stroke: hover === 'beaker' ? '#2980b9' : '#5d6d7e',
+          lineWidth: hover === 'beaker' ? 3 : 2.5,
+          alpha: 0.92,
+        })
       })
-      drawLabelPill(ctx, 'Test beaker', bx, bottom + 8, {
+      drawLabelPill(ctx, 'Test beaker', bx, bottom + 14, {
         fontSize: Math.max(10, fs - 1),
         bold: false,
       })
@@ -241,7 +240,9 @@ export function NaturalIndicatorSim() {
         ctx.stroke()
       }
 
-      // Indicator bottles
+      drawLabelPill(ctx, 'Indicators', indX + bottleW / 2, cabbageBox.y - 18, {
+        fontSize: Math.max(10, fs - 1),
+      })
       drawBottle(
         ctx,
         cabbageBox,
@@ -250,6 +251,7 @@ export function NaturalIndicatorSim() {
         p.indicator === 'cabbage',
         hover === 'ind-cabbage',
         fs,
+        'right',
       )
       drawBottle(
         ctx,
@@ -259,13 +261,13 @@ export function NaturalIndicatorSim() {
         p.indicator === 'turmeric',
         hover === 'ind-turmeric',
         fs,
+        'right',
       )
-      drawLabelPill(ctx, 'Indicators', cabbageBox.x + cabbageBox.w / 2, cabbageBox.y - 14, {
+
+      drawLabelPill(ctx, 'Substance', subX + dropW / 2, acidBox.y - 18, {
         fontSize: Math.max(10, fs - 1),
       })
-
-      // Substance vials
-      drawVial(ctx, acidBox, '#c0392b', 'Acid', p.substance === 'acid', hover === 'sub-acid', fs)
+      drawVial(ctx, acidBox, '#c0392b', 'Acid', p.substance === 'acid', hover === 'sub-acid', fs, 'left')
       drawVial(
         ctx,
         neutBox,
@@ -274,14 +276,11 @@ export function NaturalIndicatorSim() {
         p.substance === 'neutral',
         hover === 'sub-neutral',
         fs,
+        'left',
       )
-      drawVial(ctx, baseBox, '#2980b9', 'Base', p.substance === 'base', hover === 'sub-base', fs)
-      drawLabelPill(ctx, 'Substance', acidBox.x + acidBox.w / 2, acidBox.y - 14, {
-        fontSize: Math.max(10, fs - 1),
-      })
+      drawVial(ctx, baseBox, '#2980b9', 'Base', p.substance === 'base', hover === 'sub-base', fs, 'left')
 
-      // Drip CTA
-      drawHoverHalo(ctx, dripBtn.x + dripBtn.w / 2, dripBtn.y + dripBtn.h / 2, 60, hover === 'drip')
+      drawHoverHalo(ctx, dripBtn.x + dripBtn.w / 2, dripBtn.y + dripBtn.h / 2, 52, hover === 'drip')
       drawLabelPill(
         ctx,
         p.dripping && st.dripProgress < 1 ? 'Dripping…' : 'Tap to drip',
@@ -293,14 +292,20 @@ export function NaturalIndicatorSim() {
         },
       )
 
-      drawValueChip(ctx, 'pH', ph.toFixed(1), w / 2, h * 0.1, {
+      drawValueChip(ctx, 'pH', ph.toFixed(1), w / 2, h * 0.09, {
         fontSize: fs + 1,
         accent: true,
       })
-      drawLabelPill(ctx, `${phCategory(ph)} · ${expectedColor(p.indicator, p.substance)} expected`, w / 2, h * 0.1 + 28, {
-        fontSize: Math.max(10, fs - 1),
-        bold: false,
-      })
+      drawLabelPill(
+        ctx,
+        `${phCategory(ph)} · ${expectedColor(p.indicator, p.substance)} expected`,
+        w / 2,
+        h * 0.09 + 28,
+        {
+          fontSize: Math.max(10, fs - 1),
+          bold: false,
+        },
+      )
 
       if (hintShown.current) {
         drawHint(ctx, 'tap indicator · substance · then drip into beaker', w / 2, h - 16, w, h)
@@ -390,47 +395,103 @@ export function NaturalIndicatorSim() {
 
 function drawBottle(
   ctx: CanvasRenderingContext2D,
-  box: { x: number; y: number; w: number; h: number },
+  box: Box,
   color: string,
   label: string,
   selected: boolean,
   hover: boolean,
   fs: number,
+  labelSide: 'left' | 'right',
 ) {
-  drawHoverHalo(ctx, box.x + box.w / 2, box.y + box.h / 2, box.w * 0.7, hover || selected)
-  roundRect(ctx, box.x, box.y, box.w, box.h, 8)
-  ctx.fillStyle = color
+  const cx = box.x + box.w / 2
+  const neckW = box.w * 0.32
+  const bodyTop = box.y + box.h * 0.22
+  drawHoverHalo(ctx, cx, box.y + box.h * 0.55, Math.min(box.w, box.h) * 0.55, hover || selected)
+
+  // glass outline path (rounded bottle)
+  const path = (c: CanvasRenderingContext2D) => {
+    c.beginPath()
+    c.moveTo(cx - neckW / 2, box.y + 4)
+    c.lineTo(cx - neckW / 2, bodyTop)
+    c.lineTo(box.x + 3, bodyTop + 8)
+    c.lineTo(box.x + 3, box.y + box.h - 6)
+    c.quadraticCurveTo(box.x + 3, box.y + box.h, cx, box.y + box.h)
+    c.quadraticCurveTo(box.x + box.w - 3, box.y + box.h, box.x + box.w - 3, box.y + box.h - 6)
+    c.lineTo(box.x + box.w - 3, bodyTop + 8)
+    c.lineTo(cx + neckW / 2, bodyTop)
+    c.lineTo(cx + neckW / 2, box.y + 4)
+    c.closePath()
+  }
+
+  path(ctx)
+  ctx.fillStyle = 'rgba(236,240,241,0.35)'
   ctx.fill()
+  fillClippedLiquid(ctx, path, bodyTop, box.y + box.h - 2, 0.72, color, { inset: 2, alpha: 0.95 })
+  path(ctx)
   ctx.strokeStyle = selected ? '#1a252f' : hover ? '#2980b9' : '#2c3e50'
-  ctx.lineWidth = selected || hover ? 2.5 : 1.5
+  ctx.lineWidth = selected || hover ? 2.5 : 1.6
   ctx.stroke()
-  ctx.fillStyle = '#1a252f'
-  ctx.font = `600 ${Math.max(9, fs - 2)}px Roboto, sans-serif`
-  ctx.textAlign = 'center'
-  ctx.fillText(label, box.x + box.w / 2, box.y + box.h + 12)
+
+  // cork
+  roundRect(ctx, cx - neckW / 2 - 1, box.y, neckW + 2, 8, 2)
+  ctx.fillStyle = '#8b5a2b'
+  ctx.fill()
+
+  drawSideLabel(ctx, label, cx, box.y + box.h / 2, box.w / 2 + 8, labelSide, fs, selected)
 }
 
 function drawVial(
   ctx: CanvasRenderingContext2D,
-  box: { x: number; y: number; w: number; h: number },
+  box: Box,
   color: string,
   label: string,
   selected: boolean,
   hover: boolean,
   fs: number,
+  labelSide: 'left' | 'right',
 ) {
-  drawHoverHalo(ctx, box.x + box.w / 2, box.y + box.h / 2, box.w * 0.7, hover || selected)
-  ctx.fillStyle = '#bdc3c7'
-  roundRect(ctx, box.x + box.w * 0.3, box.y, box.w * 0.4, box.h * 0.28, 3)
+  const cx = box.x + box.w / 2
+  const rimY = box.y + box.h * 0.18
+  drawHoverHalo(ctx, cx, box.y + box.h * 0.55, Math.min(box.w, box.h) * 0.52, hover || selected)
+
+  const path = (c: CanvasRenderingContext2D) => {
+    roundRect(c, box.x + 4, rimY, box.w - 8, box.h * 0.78, 5)
+  }
+
+  path(ctx)
+  ctx.fillStyle = 'rgba(236,240,241,0.35)'
   ctx.fill()
-  roundRect(ctx, box.x + 4, box.y + box.h * 0.22, box.w - 8, box.h * 0.7, 6)
-  ctx.fillStyle = color
-  ctx.fill()
+  fillClippedLiquid(ctx, path, rimY, box.y + box.h - 2, 0.7, color, { inset: 2, alpha: 0.95 })
+  path(ctx)
   ctx.strokeStyle = selected ? '#1a252f' : hover ? '#2980b9' : '#566573'
-  ctx.lineWidth = selected || hover ? 2.5 : 1.5
+  ctx.lineWidth = selected || hover ? 2.5 : 1.6
   ctx.stroke()
-  ctx.fillStyle = '#1a252f'
-  ctx.font = `600 ${Math.max(9, fs - 2)}px Roboto, sans-serif`
-  ctx.textAlign = 'center'
-  ctx.fillText(label, box.x + box.w / 2, box.y + box.h + 12)
+
+  // dropper bulb
+  roundRect(ctx, cx - box.w * 0.18, box.y, box.w * 0.36, box.h * 0.2, 4)
+  ctx.fillStyle = '#bdc3c7'
+  ctx.fill()
+  ctx.strokeStyle = '#7f8c8d'
+  ctx.lineWidth = 1
+  ctx.stroke()
+
+  drawSideLabel(ctx, label, cx, box.y + box.h / 2, box.w / 2 + 8, labelSide, fs, selected)
+}
+
+function drawSideLabel(
+  ctx: CanvasRenderingContext2D,
+  label: string,
+  cx: number,
+  cy: number,
+  offset: number,
+  side: 'left' | 'right',
+  fs: number,
+  selected: boolean,
+) {
+  const x = side === 'right' ? cx + offset : cx - offset
+  ctx.font = `600 ${Math.max(10, fs - 1)}px Roboto, sans-serif`
+  ctx.textAlign = side === 'right' ? 'left' : 'right'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = selected ? '#1a252f' : '#2c3e50'
+  ctx.fillText(label, x, cy)
 }

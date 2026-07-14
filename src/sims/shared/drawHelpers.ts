@@ -110,3 +110,117 @@ export function drawLegend(
     cx += 16 + ctx.measureText(item.label).width + 16
   }
 }
+
+/** Erlenmeyer / conical flask silhouette (center x, top → bottom, half-width at base). */
+export function erlenmeyerPath(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  top: number,
+  bottom: number,
+  halfW: number,
+  neckRatio = 0.35,
+  shoulderT = 0.16,
+) {
+  const neck = halfW * neckRatio
+  const shoulderY = top + (bottom - top) * shoulderT
+  ctx.beginPath()
+  ctx.moveTo(cx - neck, top)
+  ctx.lineTo(cx - neck, shoulderY)
+  ctx.lineTo(cx - halfW, bottom)
+  ctx.lineTo(cx + halfW, bottom)
+  ctx.lineTo(cx + neck, shoulderY)
+  ctx.lineTo(cx + neck, top)
+  ctx.closePath()
+}
+
+/** Open trapezoid mixing vessel (no vertical neck). */
+export function taperedVesselPath(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  top: number,
+  bottom: number,
+  halfTop: number,
+  halfBottom: number,
+) {
+  ctx.beginPath()
+  ctx.moveTo(cx - halfTop, top)
+  ctx.lineTo(cx - halfBottom, bottom)
+  ctx.lineTo(cx + halfBottom, bottom)
+  ctx.lineTo(cx + halfTop, top)
+  ctx.closePath()
+}
+
+/**
+ * Fill liquid clipped to a closed vessel path. `fillLevel` 0–1 from empty → full.
+ * Call after building the path with beginPath/closePath; does not stroke.
+ */
+export function fillClippedLiquid(
+  ctx: CanvasRenderingContext2D,
+  path: (c: CanvasRenderingContext2D) => void,
+  top: number,
+  bottom: number,
+  fillLevel: number,
+  color: string,
+  opts?: { inset?: number; alpha?: number },
+) {
+  const level = Math.max(0, Math.min(1, fillLevel))
+  if (level <= 0.001) return
+  const inset = opts?.inset ?? 2
+  const liquidTop = bottom - inset - level * (bottom - top - inset * 2)
+  ctx.save()
+  path(ctx)
+  ctx.clip()
+  ctx.globalAlpha = opts?.alpha ?? 0.9
+  ctx.fillStyle = color
+  ctx.fillRect(
+    -1e4,
+    liquidTop,
+    2e4,
+    Math.max(0, bottom - liquidTop + 1),
+  )
+  // meniscus highlight
+  ctx.globalAlpha = Math.min(0.35, (opts?.alpha ?? 0.9) * 0.4)
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(-1e4, liquidTop, 2e4, 3)
+  ctx.restore()
+}
+
+/** Draw stroked erlenmeyer with liquid that stays inside the glass. */
+export function drawErlenmeyerFlask(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  top: number,
+  bottom: number,
+  halfW: number,
+  fillLevel: number,
+  fillColor: string,
+  opts?: {
+    stroke?: string
+    lineWidth?: number
+    neckRatio?: number
+    shoulderT?: number
+    alpha?: number
+  },
+) {
+  const neckRatio = opts?.neckRatio ?? 0.35
+  const shoulderT = opts?.shoulderT ?? 0.16
+  const path = (c: CanvasRenderingContext2D) =>
+    erlenmeyerPath(c, cx, top, bottom, halfW, neckRatio, shoulderT)
+
+  fillClippedLiquid(ctx, path, top, bottom, fillLevel, fillColor, {
+    inset: 3,
+    alpha: opts?.alpha ?? 0.9,
+  })
+
+  path(ctx)
+  ctx.strokeStyle = opts?.stroke ?? '#5d6d7e'
+  ctx.lineWidth = opts?.lineWidth ?? 2.5
+  ctx.stroke()
+
+  // open rim
+  const neck = halfW * neckRatio
+  ctx.beginPath()
+  ctx.moveTo(cx - neck, top)
+  ctx.lineTo(cx + neck, top)
+  ctx.stroke()
+}

@@ -253,20 +253,27 @@ export function PhScaleSim() {
 
       layoutRef.current = { vertical, sx, sy, stripW, stripH, mx: vertical ? mx + stripW / 2 + 36 : mx, my: vertical ? my : sy + stripH + 38 }
 
-      const indW = vertical ? stripW * 0.55 : 140
-      const indH = vertical ? 120 : 28
-      const ix = vertical ? sx + stripW + 56 : w - pad - indW
-      const iy = vertical ? sy + stripH * 0.35 : sy + stripH + 78
+      // Indicator swatch — keep clear of marker chip and scale numbers
+      const indW = vertical ? Math.min(64, stripW * 1.1) : 140
+      const indH = vertical ? Math.min(100, stripH * 0.28) : 28
+      const ix = vertical ? Math.min(w - pad - indW, sx + stripW + 78) : w - pad - indW
+      const iy = vertical ? sy + stripH * 0.55 : sy + stripH + 86
       ctx.fillStyle = '#ecf0f1'
       roundRect(ctx, ix, iy, indW, indH, 6)
       ctx.fill()
+      ctx.strokeStyle = '#2c3e50'
+      ctx.lineWidth = 1.5
+      roundRect(ctx, ix, iy, indW, indH, 6)
+      ctx.stroke()
       ctx.fillStyle = phToColor(ph)
       roundRect(ctx, ix + 6, iy + 6, indW - 12, indH - 12, 4)
       ctx.fill()
-      drawLabelPill(ctx, 'Indicator', ix + indW / 2, iy + indH + 14, { fontSize: Math.max(10, fs - 1) })
+      drawLabelPill(ctx, 'Indicator', ix + indW / 2, iy + indH + 16, {
+        fontSize: Math.max(10, fs - 1),
+      })
 
-      drawLabelPill(ctx, `${phLabel(ph)}`, w / 2, h - 44, { fontSize: fs + 1 })
-      if (hintShown.current) drawHint(ctx, 'drag marker along the scale', w / 2, h - 16, w, h)
+      drawLabelPill(ctx, `${phLabel(ph)}`, w / 2, h - 48, { fontSize: fs + 1 })
+      if (hintShown.current) drawHint(ctx, 'drag marker along the scale', w / 2, h - 18, w, h)
     },
     [running],
   )
