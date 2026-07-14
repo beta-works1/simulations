@@ -41,7 +41,7 @@ export function createBrainMappingState(): BrainMappingState {
     lastAnswer: null,
     feedbackUntil: 0,
     showLabels: true,
-    showParts: true,
+    showParts: false,
   }
 }
 
