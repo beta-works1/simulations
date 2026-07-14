@@ -23,8 +23,8 @@ export function HomePage() {
   return (
     <div className="home-page">
       <PageMeta
-        title="SimLab: Science experiment simulations for Grades 1–10"
-        description="Free interactive science experiment simulations organized by grade level from Grade 1 to Grade 10."
+        title="SimLab: Science experiment simulations for Grades 1–8"
+        description="Free interactive science experiment simulations organized by grade level from Grade 1 to Grade 8."
         path="/"
       />
 
@@ -42,14 +42,14 @@ export function HomePage() {
             <h2>What is SimLab?</h2>
             <p>
               SimLab creates free interactive science experiment simulations for students in Grades
-              1–10. Pick a grade from the panel, then open an experiment and learn by discovery.
+              1–8. Pick a grade from the panel, then open an experiment and learn by discovery.
             </p>
           </div>
         </section>
 
         <section className="subjects-section" aria-labelledby="grades-heading">
           <h2 id="grades-heading">Browse by grade</h2>
-          <p className="subjects-intro">Jump into Grade 1 through Grade 10.</p>
+          <p className="subjects-intro">Jump into Grade 1 through Grade 8.</p>
           <ul className="subject-cards">
             {GRADES.map((grade) => {
               const count = getSimulationsByGrade(grade).length

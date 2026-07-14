@@ -1,1 +1,0 @@
-export { IntroBalanceScaleSim } from './IntroBalanceScaleSim'

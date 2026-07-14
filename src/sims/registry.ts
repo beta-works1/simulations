@@ -87,10 +87,6 @@ const loaders: Record<string, () => Promise<{ default: SimComponent }>> = {
     })),
   'refraction-media': () =>
     import('../simulations/refraction-media').then((m) => ({ default: m.RefractionMediaSim })),
-  'intro-balance-scale': () =>
-    import('../simulations/intro-balance-scale').then((m) => ({
-      default: m.IntroBalanceScaleSim,
-    })),
   'rainbow-dispersion': () =>
     import('../simulations/rainbow-dispersion').then((m) => ({ default: m.RainbowDispersionSim })),
   'curved-mirrors': () =>
