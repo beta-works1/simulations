@@ -7,6 +7,7 @@ import {
   ControlStats,
 } from '../../shared/Controls'
 import { fontPx } from '../../shared/drawHelpers'
+import { drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 
@@ -94,23 +95,22 @@ export function GlobalWarmingSim() {
       ctx.fillStyle = '#fff'
       ctx.font = `600 ${fs + 2}px Roboto, sans-serif`
       ctx.textAlign = 'left'
-      ctx.fillText(`Surface: ${s.temperature.toFixed(1)} °C`, 14, h - 28)
-      ctx.font = `${Math.max(10, fs - 1)}px Roboto, sans-serif`
-      ctx.fillStyle = 'rgba(255,255,255,0.85)'
-      ctx.fillText('Yellow rays = sunlight · Red = trapped IR · Band = greenhouse gases', 14, h - 10)
-
-      const vg = ctx.createRadialGradient(
-        w * 0.5,
-        h * 0.4,
-        Math.min(w, h) * 0.15,
-        w * 0.5,
-        h * 0.5,
-        Math.max(w, h) * 0.75,
-      )
-      vg.addColorStop(0, 'rgba(255,255,255,0.04)')
-      vg.addColorStop(1, 'rgba(0,0,0,0.18)')
-      ctx.fillStyle = vg
-      ctx.fillRect(0, 0, w, h)
+      drawValueChip(ctx, 'Surface', `${s.temperature.toFixed(1)} °C`, 20, h - 40, {
+        align: 'left',
+        accent: true,
+        fontSize: fs,
+      })
+      drawLabelPill(ctx, 'Sun', sunX, sunY + Math.min(w, h) * 0.08, { fontSize: Math.max(10, fs - 2) })
+      drawLabelPill(ctx, 'greenhouse gases', w * 0.5 + thick / 2 + 8, h * 0.2, {
+        align: 'left',
+        fontSize: Math.max(10, fs - 2),
+        bg: 'rgba(0,0,0,0.4)',
+        fg: '#fff',
+      })
+      drawLabelPill(ctx, 'Yellow = sunlight · Red = trapped IR', w / 2, h - 14, {
+        fontSize: Math.max(10, fs - 2),
+        bold: false,
+      })
     },
     [co2, running],
   )

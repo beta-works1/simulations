@@ -8,6 +8,7 @@ import {
   ControlStats,
 } from '../../shared/Controls'
 import { drawLegend, fontPx } from '../../shared/drawHelpers'
+import { drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import {
@@ -100,19 +101,20 @@ export function PredatorPreySim() {
         18,
         fs,
       )
-
-      const vg = ctx.createRadialGradient(
-        w * 0.5,
-        h * 0.4,
-        Math.min(w, h) * 0.15,
-        w * 0.5,
-        h * 0.5,
-        Math.max(w, h) * 0.75,
-      )
-      vg.addColorStop(0, 'rgba(255,255,255,0.04)')
-      vg.addColorStop(1, 'rgba(0,0,0,0.18)')
-      ctx.fillStyle = vg
-      ctx.fillRect(0, 0, w, h)
+      drawLabelPill(ctx, `Mode: ${mode}`, w - 16, 22, {
+        align: 'right',
+        fontSize: fs,
+        bg: 'rgba(0,0,0,0.45)',
+        fg: '#fff',
+      })
+      drawValueChip(ctx, 'field', 'live populations', 14, fieldH - 14, {
+        align: 'left',
+        fontSize: Math.max(10, fs - 2),
+      })
+      drawLabelPill(ctx, 'population over time', w / 2, chartY + 14, {
+        fontSize: Math.max(10, fs - 2),
+        bold: false,
+      })
     },
     [growth, mode, running],
   )

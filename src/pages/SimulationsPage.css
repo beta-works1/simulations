@@ -133,6 +133,8 @@
   position: sticky;
   top: 88px;
   box-shadow: 0 4px 14px rgba(42, 50, 106, 0.1);
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
 }
 
 .grade-panel-head {

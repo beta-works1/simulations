@@ -7,6 +7,7 @@ import {
   ControlStats,
 } from '../../shared/Controls'
 import { drawBadge, drawLegend, fontPx } from '../../shared/drawHelpers'
+import { drawHint, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import {
@@ -53,9 +54,22 @@ export function CarbonOxygenCycleSim() {
       drawPool(ctx, w * 0.78, h * 0.66, Math.min(w, h) * 0.1, '#e67e22', 'Animals', `Carbon ${st.animalCarbon.toFixed(0)}`, fs)
 
       const t = st.time
-      drawFlow(ctx, w * 0.5, h * 0.32, w * 0.3, h * 0.55, '#1e8449', t, 'Photosynthesis', fs)
-      drawFlow(ctx, w * 0.7, h * 0.55, w * 0.55, h * 0.32, '#c0392b', t + 1.1, 'Respiration', fs)
-      drawFlow(ctx, w * 0.35, h * 0.72, w * 0.65, h * 0.72, '#d68910', t + 0.5, 'Food', fs)
+      drawFlow(ctx, w * 0.5, h * 0.32, w * 0.3, h * 0.55, '#1e8449', t, 'Photosynthesis\nCO₂→O₂', fs)
+      drawFlow(ctx, w * 0.7, h * 0.55, w * 0.55, h * 0.32, '#c0392b', t + 1.1, 'Respiration\nO₂→CO₂', fs)
+      drawFlow(ctx, w * 0.35, h * 0.72, w * 0.65, h * 0.72, '#d68910', t + 0.5, 'Food chain', fs)
+
+      // Moving particles along flows for clarity
+      drawParticle(ctx, w * 0.5, h * 0.32, w * 0.3, h * 0.55, t * 0.35, '#58d68d')
+      drawParticle(ctx, w * 0.7, h * 0.55, w * 0.55, h * 0.32, t * 0.4 + 0.3, '#e74c3c')
+      drawParticle(ctx, w * 0.35, h * 0.72, w * 0.65, h * 0.72, t * 0.3 + 0.15, '#f39c12')
+
+      drawValueChip(ctx, 'CO₂', st.co2.toFixed(0), w * 0.5 - 50, h * 0.2 - Math.min(w, h) * 0.14, {
+        fontSize: Math.max(10, fs - 2),
+        accent: true,
+      })
+      drawValueChip(ctx, 'O₂', st.o2.toFixed(0), w * 0.5 + 50, h * 0.2 - Math.min(w, h) * 0.14, {
+        fontSize: Math.max(10, fs - 2),
+      })
 
       const vg = ctx.createRadialGradient(
         w * 0.5,
@@ -85,6 +99,7 @@ export function CarbonOxygenCycleSim() {
         h - 16,
         fontPx(11, w, h, 10, 14),
       )
+      drawHint(ctx, 'adjust photosynthesis vs respiration rates', w / 2, h - 36, w, h, { muted: true })
     },
     [photo, resp, running],
   )
@@ -191,14 +206,28 @@ function drawFlow(
   ctx.setLineDash([])
   const mx = (x1 + x2) / 2
   const my = (y1 + y2) / 2
-  ctx.fillStyle = 'rgba(26,37,47,0.82)'
-  const tw = ctx.measureText(label).width
-  ctx.font = `600 ${Math.max(10, fs - 1)}px Roboto, sans-serif`
-  const pad = 6
-  const bw = tw + pad * 2
-  ctx.fillRect(mx - bw / 2, my - fs, bw, fs + 8)
-  ctx.fillStyle = '#fff'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(label, mx, my - fs / 2 + 4)
+  const short = label.split('\n')[0]
+  drawLabelPill(ctx, short, mx, my, { fontSize: Math.max(10, fs - 1) })
+}
+
+function drawParticle(
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  phase: number,
+  color: string,
+) {
+  const u = ((phase % 1) + 1) % 1
+  const x = x1 + (x2 - x1) * u
+  const y = y1 + (y2 - y1) * u
+  ctx.save()
+  ctx.shadowColor = color
+  ctx.shadowBlur = 10
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.arc(x, y, 5, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
 }

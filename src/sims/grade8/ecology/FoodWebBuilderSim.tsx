@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { ControlHint, ControlSection, ControlStack } from '../../shared/Controls'
 import { fontPx } from '../../shared/drawHelpers'
-import { drawHint, drawHoverHalo } from '../../shared/labels'
+import { drawHint, drawHoverHalo, drawLabelPill } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import { useCanvasPointer } from '../../shared/useCanvasPointer'
@@ -129,7 +129,20 @@ export function FoodWebBuilderSim() {
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         ctx.fillText(n.name, x, y)
+        if (isSel || isHover) {
+          drawLabelPill(ctx, n.level, x, y + nodeR + 14, {
+            fontSize: Math.max(9, fs - 3),
+            bold: false,
+          })
+        }
       }
+
+      drawLabelPill(ctx, 'energy flows along links →', w / 2, 22, {
+        fontSize: Math.max(10, fs - 2),
+        bold: false,
+        bg: 'rgba(0,0,0,0.35)',
+        fg: '#f4d03f',
+      })
 
       if (hintShown.current) {
         drawHint(ctx, 'drag nodes · yellow = energy flow', w / 2, h - 18, w, h, { muted: true })

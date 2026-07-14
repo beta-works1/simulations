@@ -2,11 +2,23 @@ import { Link } from 'react-router-dom'
 import { HeroCarousel } from '../components/HeroCarousel'
 import { PageMeta } from '../components/PageMeta'
 import { SimulationGrid } from '../components/SimulationGrid'
-import { GRADES, gradeLabel, getSimulationsByGrade, simulations } from '../data/simulations'
+import { GRADES, gradeLabel, getSimulationsByGrade } from '../data/simulations'
 import './HomePage.css'
 
 export function HomePage() {
-  const featured = simulations.slice(0, 8)
+  // One featured sim per grade so Grade 8 always appears alongside 1–7.
+  // Prefer textbook chapter sims over "More Grade 8" fillers.
+  const featured = GRADES.map((grade) => {
+    const pool = getSimulationsByGrade(grade)
+    if (grade === 8) {
+      return (
+        pool.find((s) => s.chapter?.startsWith('Ch 1')) ??
+        pool.find((s) => s.chapter && !s.chapter.startsWith('More')) ??
+        pool[0]
+      )
+    }
+    return pool[0]
+  }).filter((s): s is NonNullable<typeof s> => Boolean(s))
 
   return (
     <div className="home-page">
