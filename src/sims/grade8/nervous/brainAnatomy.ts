@@ -1,6 +1,6 @@
 /**
- * Lateral brain — Gray's Anatomy–style reference art + hit regions.
- * Base illustration: /assets/brain-lateral.svg
+ * Lateral brain — SVG illustration + Path2D hit/highlight regions
+ * that follow the same anatomy (Gray’s / textbook lateral view).
  */
 
 export type BrainRegionId =
@@ -22,15 +22,20 @@ export type BrainRegion = {
   action: string
   detail: string
   examples: string[]
-  /** Hit polygon in normalized SVG viewBox space (0–1). */
-  poly: Pt[]
+  /** SVG path in viewBox units (640×480). */
+  pathD: string
   accent: string
   fill: string
   fillHover: string
   fillActive: string
+  /** Label anchor in viewBox px. */
+  label: Pt
 }
 
 export type BrainBox = { x: number; y: number; w: number; h: number }
+
+export const SVG_W = 640
+export const SVG_H = 480
 
 export const BRAIN_PARTS: { id: BrainPart; label: string; note: string }[] = [
   {
@@ -50,7 +55,13 @@ export const BRAIN_PARTS: { id: BrainPart; label: string; note: string }[] = [
   },
 ]
 
-/** SVG viewBox is 640×480 — regions match the drawing. */
+/**
+ * Region paths aligned to the SVG drawing:
+ * - frontal / parietal split by central sulcus (~x 330)
+ * - temporal below Sylvian fissure
+ * - occipital at the occipital pole
+ * - cerebellum & brainstem match SVG paths exactly
+ */
 export const BRAIN_REGIONS: BrainRegion[] = [
   {
     id: 'frontal',
@@ -61,20 +72,21 @@ export const BRAIN_REGIONS: BrainRegion[] = [
       'Part of the cerebrum. Controls reasoning, decision-making, and voluntary muscle movements.',
     examples: ['Planning homework', 'Speaking', 'Kicking a ball'],
     accent: '#e74c3c',
-    fill: 'rgba(231,76,60,0.28)',
-    fillHover: 'rgba(231,76,60,0.42)',
-    fillActive: 'rgba(231,76,60,0.55)',
-    poly: [
-      { x: 0.18, y: 0.42 },
-      { x: 0.2, y: 0.28 },
-      { x: 0.28, y: 0.18 },
-      { x: 0.4, y: 0.14 },
-      { x: 0.5, y: 0.2 },
-      { x: 0.48, y: 0.42 },
-      { x: 0.4, y: 0.52 },
-      { x: 0.3, y: 0.55 },
-      { x: 0.22, y: 0.5 },
-    ],
+    fill: 'rgba(231,76,60,0.32)',
+    fillHover: 'rgba(231,76,60,0.48)',
+    fillActive: 'rgba(231,76,60,0.58)',
+    label: { x: 230, y: 170 },
+    // Left of central sulcus, above Sylvian fissure — traces cerebrum outer edge
+    pathD: `
+      M118,210
+      C108,170 122,118 168,88
+      C220,52 280,44 330,48
+      L330,90
+      C335,130 332,180 318,235
+      C290,230 250,218 210,210
+      C175,245 145,260 130,230
+      C122,220 120,214 118,210
+      Z`,
   },
   {
     id: 'parietal',
@@ -85,19 +97,20 @@ export const BRAIN_REGIONS: BrainRegion[] = [
       'Part of the cerebrum. Receives and processes sensory information from the skin and body.',
     examples: ['Feeling heat from a cup', 'Touching a textured surface', 'Knowing where your hand is'],
     accent: '#3498db',
-    fill: 'rgba(52,152,219,0.28)',
-    fillHover: 'rgba(52,152,219,0.42)',
-    fillActive: 'rgba(52,152,219,0.55)',
-    poly: [
-      { x: 0.5, y: 0.14 },
-      { x: 0.58, y: 0.12 },
-      { x: 0.7, y: 0.18 },
-      { x: 0.76, y: 0.28 },
-      { x: 0.72, y: 0.42 },
-      { x: 0.6, y: 0.44 },
-      { x: 0.52, y: 0.36 },
-      { x: 0.5, y: 0.22 },
-    ],
+    fill: 'rgba(52,152,219,0.32)',
+    fillHover: 'rgba(52,152,219,0.48)',
+    fillActive: 'rgba(52,152,219,0.58)',
+    label: { x: 420, y: 130 },
+    // Between central sulcus and occipital, above Sylvian / lateral edge
+    pathD: `
+      M330,48
+      C380,50 450,62 500,95
+      C520,115 535,145 540,175
+      C520,185 480,195 445,210
+      C400,220 360,235 330,245
+      C335,190 338,140 330,90
+      L330,48
+      Z`,
   },
   {
     id: 'temporal',
@@ -108,19 +121,20 @@ export const BRAIN_REGIONS: BrainRegion[] = [
       'Part of the cerebrum. Interprets sounds and helps store and recall memories and language.',
     examples: ['Listening to music', 'Remembering a lesson', 'Understanding speech'],
     accent: '#e67e22',
-    fill: 'rgba(230,126,34,0.28)',
-    fillHover: 'rgba(230,126,34,0.42)',
-    fillActive: 'rgba(230,126,34,0.55)',
-    poly: [
-      { x: 0.3, y: 0.52 },
-      { x: 0.42, y: 0.48 },
-      { x: 0.55, y: 0.48 },
-      { x: 0.62, y: 0.55 },
-      { x: 0.58, y: 0.68 },
-      { x: 0.45, y: 0.72 },
-      { x: 0.32, y: 0.68 },
-      { x: 0.28, y: 0.58 },
-    ],
+    fill: 'rgba(230,126,34,0.32)',
+    fillHover: 'rgba(230,126,34,0.48)',
+    fillActive: 'rgba(230,126,34,0.58)',
+    label: { x: 300, y: 290 },
+    // Below Sylvian fissure along lower cerebrum edge
+    pathD: `
+      M210,210
+      C280,205 350,230 400,255
+      C390,285 370,320 345,345
+      C320,355 290,348 270,335
+      C230,340 180,330 150,305
+      C140,275 155,245 180,230
+      C190,220 200,214 210,210
+      Z`,
   },
   {
     id: 'occipital',
@@ -131,18 +145,20 @@ export const BRAIN_REGIONS: BrainRegion[] = [
       'Part of the cerebrum. Visual centre at the back of the brain; interprets images from the eyes.',
     examples: ['Reading words on a page', 'Recognising colours', 'Catching a moving ball'],
     accent: '#27ae60',
-    fill: 'rgba(39,174,96,0.28)',
-    fillHover: 'rgba(39,174,96,0.42)',
-    fillActive: 'rgba(39,174,96,0.55)',
-    poly: [
-      { x: 0.72, y: 0.24 },
-      { x: 0.82, y: 0.28 },
-      { x: 0.88, y: 0.4 },
-      { x: 0.86, y: 0.52 },
-      { x: 0.78, y: 0.56 },
-      { x: 0.7, y: 0.46 },
-      { x: 0.7, y: 0.32 },
-    ],
+    fill: 'rgba(39,174,96,0.32)',
+    fillHover: 'rgba(39,174,96,0.48)',
+    fillActive: 'rgba(39,174,96,0.58)',
+    label: { x: 530, y: 220 },
+    // Occipital pole (rear of cerebrum)
+    pathD: `
+      M500,95
+      C530,115 560,150 572,195
+      C578,225 568,265 540,290
+      C520,300 490,300 465,292
+      C455,260 450,230 445,210
+      C470,195 490,175 500,155
+      C505,140 505,120 500,95
+      Z`,
   },
   {
     id: 'cerebellum',
@@ -153,18 +169,19 @@ export const BRAIN_REGIONS: BrainRegion[] = [
       'Located behind and below the cerebrum. Coordinates muscle actions and keeps the body balanced.',
     examples: ['Riding a bicycle', 'Writing neatly', 'Standing on one foot'],
     accent: '#8e2d5a',
-    fill: 'rgba(142,45,90,0.32)',
-    fillHover: 'rgba(142,45,90,0.45)',
-    fillActive: 'rgba(142,45,90,0.6)',
-    poly: [
-      { x: 0.66, y: 0.64 },
-      { x: 0.74, y: 0.62 },
-      { x: 0.82, y: 0.68 },
-      { x: 0.84, y: 0.8 },
-      { x: 0.78, y: 0.88 },
-      { x: 0.68, y: 0.86 },
-      { x: 0.62, y: 0.76 },
-    ],
+    fill: 'rgba(142,45,90,0.4)',
+    fillHover: 'rgba(142,45,90,0.55)',
+    fillActive: 'rgba(142,45,90,0.65)',
+    label: { x: 465, y: 365 },
+    // Exact SVG cerebellum path
+    pathD: `
+      M430,300
+      C455,292 495,300 520,330
+      C538,352 540,385 520,408
+      C498,430 460,435 430,420
+      C405,408 390,380 392,350
+      C394,325 408,308 430,300
+      Z`,
   },
   {
     id: 'brainstem',
@@ -175,27 +192,39 @@ export const BRAIN_REGIONS: BrainRegion[] = [
       'Connects the brain to the spinal cord. Controls automatic body processes you do not think about.',
     examples: ['Breathing while asleep', 'Heartbeat', 'Digestion reflexes'],
     accent: '#c0392b',
-    fill: 'rgba(192,57,43,0.32)',
-    fillHover: 'rgba(192,57,43,0.45)',
-    fillActive: 'rgba(192,57,43,0.6)',
-    poly: [
-      { x: 0.55, y: 0.72 },
-      { x: 0.62, y: 0.72 },
-      { x: 0.64, y: 0.84 },
-      { x: 0.62, y: 0.94 },
-      { x: 0.56, y: 0.94 },
-      { x: 0.54, y: 0.82 },
-    ],
+    fill: 'rgba(192,57,43,0.4)',
+    fillHover: 'rgba(192,57,43,0.55)',
+    fillActive: 'rgba(192,57,43,0.65)',
+    label: { x: 378, y: 400 },
+    // Exact SVG brainstem path
+    pathD: `
+      M360,340
+      C385,335 405,350 410,380
+      C414,410 405,445 390,460
+      C370,472 350,460 345,430
+      C340,400 345,355 360,340
+      Z`,
   },
 ]
+
+const pathCache = new Map<string, Path2D>()
+
+function getPath(region: BrainRegion): Path2D {
+  let p = pathCache.get(region.id)
+  if (!p) {
+    p = new Path2D(region.pathD)
+    pathCache.set(region.id, p)
+  }
+  return p
+}
 
 let brainImage: HTMLImageElement | null = null
 let brainImageStatus: 'idle' | 'loading' | 'ready' | 'error' = 'idle'
 
 export function ensureBrainImage(): HTMLImageElement | null {
   if (typeof Image === 'undefined') return null
-  if (brainImageStatus === 'ready') return brainImage
-  if (brainImageStatus === 'loading' || brainImageStatus === 'error') return brainImage
+  if (brainImageStatus === 'ready' || brainImageStatus === 'loading' || brainImageStatus === 'error')
+    return brainImage
   brainImageStatus = 'loading'
   brainImage = new Image()
   brainImage.decoding = 'async'
@@ -205,36 +234,52 @@ export function ensureBrainImage(): HTMLImageElement | null {
   brainImage.onerror = () => {
     brainImageStatus = 'error'
   }
-  brainImage.src = '/assets/brain-lateral.svg'
+  // Bust cache after art updates
+  brainImage.src = `/assets/brain-lateral.svg?v=2`
   return brainImage
 }
 
-export function mapPt(box: BrainBox, p: Pt): Pt {
-  return { x: box.x + p.x * box.w, y: box.y + p.y * box.h }
+function withBrainSpace(
+  ctx: CanvasRenderingContext2D,
+  box: BrainBox,
+  fn: () => void,
+) {
+  ctx.save()
+  ctx.translate(box.x, box.y)
+  ctx.scale(box.w / SVG_W, box.h / SVG_H)
+  fn()
+  ctx.restore()
 }
 
-function pointInPoly(px: number, py: number, poly: Pt[]): boolean {
-  let inside = false
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const xi = poly[i].x
-    const yi = poly[i].y
-    const xj = poly[j].x
-    const yj = poly[j].y
-    const intersect = yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi + 1e-9) + xi
-    if (intersect) inside = !inside
-  }
-  return inside
-}
+function drawFallbackBrain(ctx: CanvasRenderingContext2D, box: BrainBox) {
+  withBrainSpace(ctx, box, () => {
+    ctx.shadowColor = 'rgba(0,0,0,0.16)'
+    ctx.shadowBlur = 10
+    ctx.shadowOffsetY = 3
+    const cere = new Path2D(`M118,210
+      C108,170 122,118 168,88 C220,52 290,42 360,48
+      C430,54 500,78 540,120 C568,150 580,190 572,230
+      C566,260 548,285 520,298 C500,308 478,308 458,300
+      C448,320 420,345 380,355 C350,362 320,352 300,335
+      C270,350 220,345 180,320 C150,300 128,260 118,210 Z`)
+    const g = ctx.createLinearGradient(120, 50, 560, 340)
+    g.addColorStop(0, '#f7dcc8')
+    g.addColorStop(0.5, '#e8b896')
+    g.addColorStop(1, '#d49872')
+    ctx.fillStyle = g
+    ctx.fill(cere)
+    ctx.shadowColor = 'transparent'
+    ctx.strokeStyle = '#5a3b2a'
+    ctx.lineWidth = 2.4
+    ctx.stroke(cere)
 
-function tracePoly(ctx: CanvasRenderingContext2D, box: BrainBox, poly: Pt[]) {
-  const first = mapPt(box, poly[0])
-  ctx.beginPath()
-  ctx.moveTo(first.x, first.y)
-  for (let i = 1; i < poly.length; i++) {
-    const p = mapPt(box, poly[i])
-    ctx.lineTo(p.x, p.y)
-  }
-  ctx.closePath()
+    for (const id of ['cerebellum', 'brainstem'] as const) {
+      const r = BRAIN_REGIONS.find((x) => x.id === id)!
+      ctx.fillStyle = id === 'cerebellum' ? '#d9a088' : '#dea88a'
+      ctx.fill(getPath(r))
+      ctx.stroke(getPath(r))
+    }
+  })
 }
 
 function roundRect(
@@ -255,77 +300,11 @@ function roundRect(
   ctx.closePath()
 }
 
-/** Fallback canvas drawing if SVG fails to load. */
-function drawFallbackBrain(ctx: CanvasRenderingContext2D, box: BrainBox) {
-  ctx.save()
-  ctx.translate(box.x, box.y)
-  ctx.scale(box.w / 640, box.h / 480)
-
-  ctx.shadowColor = 'rgba(0,0,0,0.18)'
-  ctx.shadowBlur = 12
-  ctx.shadowOffsetY = 4
-
-  // Cerebrum
-  ctx.beginPath()
-  ctx.moveTo(118, 210)
-  ctx.bezierCurveTo(108, 170, 122, 118, 168, 88)
-  ctx.bezierCurveTo(220, 52, 290, 42, 360, 48)
-  ctx.bezierCurveTo(430, 54, 500, 78, 540, 120)
-  ctx.bezierCurveTo(568, 150, 580, 190, 572, 230)
-  ctx.bezierCurveTo(566, 260, 548, 285, 520, 298)
-  ctx.bezierCurveTo(500, 308, 478, 308, 458, 300)
-  ctx.bezierCurveTo(448, 320, 420, 345, 380, 355)
-  ctx.bezierCurveTo(350, 362, 320, 352, 300, 335)
-  ctx.bezierCurveTo(270, 350, 220, 345, 180, 320)
-  ctx.bezierCurveTo(150, 300, 128, 260, 118, 210)
-  ctx.closePath()
-  const g = ctx.createLinearGradient(120, 50, 560, 340)
-  g.addColorStop(0, '#f6d7c3')
-  g.addColorStop(0.5, '#e8b896')
-  g.addColorStop(1, '#d49872')
-  ctx.fillStyle = g
-  ctx.fill()
-  ctx.shadowColor = 'transparent'
-  ctx.strokeStyle = '#5a3b2a'
-  ctx.lineWidth = 2.4
-  ctx.stroke()
-
-  // Cerebellum
-  ctx.beginPath()
-  ctx.moveTo(430, 300)
-  ctx.bezierCurveTo(455, 292, 495, 300, 520, 330)
-  ctx.bezierCurveTo(538, 352, 540, 385, 520, 408)
-  ctx.bezierCurveTo(498, 430, 460, 435, 430, 420)
-  ctx.bezierCurveTo(405, 408, 390, 380, 392, 350)
-  ctx.bezierCurveTo(394, 325, 408, 308, 430, 300)
-  ctx.closePath()
-  ctx.fillStyle = '#d49880'
-  ctx.fill()
-  ctx.stroke()
-
-  // Stem
-  ctx.beginPath()
-  ctx.moveTo(360, 340)
-  ctx.bezierCurveTo(385, 335, 405, 350, 410, 380)
-  ctx.bezierCurveTo(414, 410, 405, 445, 390, 460)
-  ctx.bezierCurveTo(370, 472, 350, 460, 345, 430)
-  ctx.bezierCurveTo(340, 400, 345, 355, 360, 340)
-  ctx.closePath()
-  ctx.fillStyle = '#dea88a'
-  ctx.fill()
-  ctx.stroke()
-  ctx.restore()
-}
-
 export function regionCentroid(box: BrainBox, region: BrainRegion): Pt {
-  let sx = 0
-  let sy = 0
-  for (const p of region.poly) {
-    sx += p.x
-    sy += p.y
+  return {
+    x: box.x + (region.label.x / SVG_W) * box.w,
+    y: box.y + (region.label.y / SVG_H) * box.h,
   }
-  const n = region.poly.length
-  return mapPt(box, { x: sx / n, y: sy / n })
 }
 
 export function drawAnatomicalBrain(
@@ -346,33 +325,30 @@ export function drawAnatomicalBrain(
     drawFallbackBrain(ctx, box)
   }
 
-  // Soft translucent tints only — let the illustration stay readable
-  for (const r of BRAIN_REGIONS) {
-    const active = opts.selected === r.id
-    const hover = opts.hover === r.id
-    if (!active && !hover) continue
-    tracePoly(ctx, box, r.poly)
-    ctx.fillStyle = active ? r.fillActive : r.fillHover
-    ctx.fill()
-    ctx.strokeStyle = active ? r.accent : 'rgba(255,255,255,0.7)'
-    ctx.lineWidth = active ? 2.5 : 1.8
-    ctx.lineJoin = 'round'
-    ctx.stroke()
-
-    if (active) {
-      const glow = 0.2 + 0.12 * Math.sin(opts.pulse * 3.2)
-      ctx.save()
-      ctx.shadowColor = `rgba(255,255,255,${glow})`
-      ctx.shadowBlur = 10
-      tracePoly(ctx, box, r.poly)
-      ctx.strokeStyle = r.accent
-      ctx.lineWidth = 2
-      ctx.stroke()
-      ctx.restore()
+  withBrainSpace(ctx, box, () => {
+    for (const r of BRAIN_REGIONS) {
+      const active = opts.selected === r.id
+      const hover = opts.hover === r.id
+      if (!active && !hover) continue
+      const path = getPath(r)
+      ctx.fillStyle = active ? r.fillActive : r.fillHover
+      ctx.fill(path)
+      ctx.strokeStyle = active ? r.accent : 'rgba(255,255,255,0.85)'
+      ctx.lineWidth = active ? 2.8 : 2
+      ctx.lineJoin = 'round'
+      ctx.stroke(path)
+      if (active) {
+        const glow = 0.18 + 0.1 * Math.sin(opts.pulse * 3.2)
+        ctx.shadowColor = `rgba(255,255,255,${glow})`
+        ctx.shadowBlur = 8
+        ctx.strokeStyle = r.accent
+        ctx.lineWidth = 2
+        ctx.stroke(path)
+        ctx.shadowBlur = 0
+      }
     }
-  }
+  })
 
-  // Single clean label on selected region only
   const selected = BRAIN_REGIONS.find((r) => r.id === opts.selected)
   if (selected) {
     const c = regionCentroid(box, selected)
@@ -400,10 +376,28 @@ export function drawAnatomicalBrain(
 }
 
 export function hitTestBrainRegion(box: BrainBox, px: number, py: number): BrainRegionId | null {
-  for (let i = BRAIN_REGIONS.length - 1; i >= 0; i--) {
-    const r = BRAIN_REGIONS[i]
-    const mapped = r.poly.map((p) => mapPt(box, p))
-    if (pointInPoly(px, py, mapped)) return r.id
+  // Inverse map into SVG space, test Path2D
+  const sx = ((px - box.x) / box.w) * SVG_W
+  const sy = ((py - box.y) / box.h) * SVG_H
+
+  // Prefer smaller rear structures first (stem / cerebellum over cerebrum lobes)
+  const order: BrainRegionId[] = [
+    'brainstem',
+    'cerebellum',
+    'occipital',
+    'temporal',
+    'parietal',
+    'frontal',
+  ]
+  const canvas = typeof OffscreenCanvas !== 'undefined'
+    ? new OffscreenCanvas(1, 1)
+    : document.createElement('canvas')
+  const ctx = canvas.getContext('2d') as OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D | null
+  if (!ctx) return null
+
+  for (const id of order) {
+    const r = BRAIN_REGIONS.find((x) => x.id === id)!
+    if (ctx.isPointInPath(getPath(r), sx, sy)) return id
   }
   return null
 }
