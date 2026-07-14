@@ -208,7 +208,7 @@ export function SeriesParallelSim() {
   return (
     <SimShell
       title="Series vs Parallel Circuits"
-      subtitle="Compare brightness and current in two-bulb series and parallel layouts."
+      subtitle="PhET CCK–style R = 10 Ω bulbs — compare series and parallel"
       canvasRef={canvasRef}
       sidebar={
         <>
@@ -225,6 +225,35 @@ export function SeriesParallelSim() {
               <option value="parallel">Parallel (two paths)</option>
             </select>
           </label>
+          <div className="sim-slider-row">
+            <label>
+              <span>Battery voltage</span>
+              <span>{state.voltage.toFixed(1)} V</span>
+            </label>
+            <input
+              type="range"
+              min={1.5}
+              max={12}
+              step={0.5}
+              value={state.voltage}
+              onChange={(e) => setState((s) => ({ ...s, voltage: Number(e.target.value) }))}
+            />
+          </div>
+          <div className="sim-slider-row">
+            <label>
+              <span>Bulb resistance</span>
+              <span>{state.bulbResistance} Ω</span>
+            </label>
+            <input
+              type="range"
+              min={5}
+              max={100}
+              step={1}
+              value={state.bulbResistance}
+              onChange={(e) => setState((s) => ({ ...s, bulbResistance: Number(e.target.value) }))}
+            />
+          </div>
+          <p className="sim-hint">Default R = 10 Ω (PhET Circuit Construction Kit).</p>
           <p className="sim-readout">
             <strong>Total R:</strong> {readout.totalResistance.toFixed(1)} Ω
             <br />

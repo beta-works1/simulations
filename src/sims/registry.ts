@@ -121,6 +121,20 @@ const loaders: Record<string, () => Promise<{ default: SimComponent }>> = {
     import('../simulations/solar-system-timeline').then((m) => ({
       default: m.SolarSystemTimelineSim,
     })),
+
+  // PhET-inspired recreations (catalog entries; models from .phet-src)
+  'projectile-motion': () =>
+    import('../simulations/projectile-motion').then((m) => ({ default: m.ProjectileMotionSim })),
+  'balancing-act': () =>
+    import('../simulations/balancing-act').then((m) => ({ default: m.BalancingActSim })),
+  'gravity-and-orbits': () =>
+    import('../simulations/gravity-and-orbits').then((m) => ({ default: m.GravityAndOrbitsSim })),
+  'build-an-atom': () =>
+    import('../simulations/build-an-atom').then((m) => ({ default: m.BuildAnAtomSim })),
+  'ph-scale': () =>
+    import('./grade8/acids/PhScaleSim').then((m) => ({ default: m.PhScaleSim })),
+  'circuit-construction': () =>
+    import('../simulations/series-parallel').then((m) => ({ default: m.SeriesParallelSim })),
 }
 
 const cache = new Map<string, SimComponent>()

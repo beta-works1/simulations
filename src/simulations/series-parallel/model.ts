@@ -9,6 +9,7 @@ export interface SeriesParallelState {
 export const DEFAULT_SERIES_PARALLEL_STATE: SeriesParallelState = {
   mode: 'series',
   voltage: 9,
+  /** CCKCConstants.DEFAULT_RESISTANCE */
   bulbResistance: 10,
 }
 

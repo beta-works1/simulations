@@ -3,6 +3,7 @@ import { SimShell, SimTransport } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
 import {
   MEDIA,
+  N_AIR,
   defaultRefractionState,
   drawRefractionMedia,
   snellRefractedAngle,
@@ -28,7 +29,7 @@ export function RefractionMediaSim() {
   }, [redraw])
 
   const medium = MEDIA.find((m) => m.id === state.mediumId) ?? MEDIA[0]
-  const refracted = snellRefractedAngle(state.incidenceDeg, 1, medium.n)
+  const refracted = snellRefractedAngle(state.incidenceDeg, N_AIR, medium.n)
 
   const sidebar = (
     <>
@@ -60,9 +61,9 @@ export function RefractionMediaSim() {
         />
       </div>
       <p className="sim-readout">
-        n₁ (air) = 1.00
+        n₁ (air) = 1.000293
         <br />
-        n₂ = {medium.n.toFixed(2)}
+        n₂ = {medium.n.toFixed(3)}
         <br />
         Refracted angle:{' '}
         <strong>{refracted !== null ? `${Math.round(refracted)}°` : '— (TIR)'}</strong>
@@ -73,7 +74,7 @@ export function RefractionMediaSim() {
   return (
     <SimShell
       title="Refraction Through Media"
-      subtitle="Light bending with Snell’s law"
+      subtitle="PhET Bending Light indices — Snell’s law at an air boundary"
       canvasRef={canvasRef}
       sidebar={sidebar}
       toolbar={

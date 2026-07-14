@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local PhET reference clones (not for publish)
+.phet-src/
+

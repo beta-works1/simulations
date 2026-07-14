@@ -23,9 +23,14 @@ export interface Medium {
 }
 
 export const MEDIA: Medium[] = [
-  { id: 'water', label: 'Water (n ≈ 1.33)', n: 1.33, color: 'rgba(56, 189, 248, 0.35)' },
-  { id: 'glass', label: 'Glass (n ≈ 1.5)', n: 1.5, color: 'rgba(148, 163, 184, 0.4)' },
+  // Indices of refraction from PhET bending-light Substance.ts (red light)
+  { id: 'water', label: 'Water (n = 1.333)', n: 1.333, color: 'rgba(56, 189, 248, 0.35)' },
+  { id: 'glass', label: 'Glass (n = 1.500)', n: 1.5, color: 'rgba(148, 163, 184, 0.4)' },
+  { id: 'diamond', label: 'Diamond (n = 2.419)', n: 2.419, color: 'rgba(165, 180, 252, 0.45)' },
 ]
+
+/** PhET Substance.AIR index for red light */
+export const N_AIR = 1.000293
 
 export interface RefractionState {
   mediumId: string
@@ -40,8 +45,6 @@ export const DEFAULT_REFRACTION_STATE: RefractionState = {
 export function defaultRefractionState(): RefractionState {
   return { ...DEFAULT_REFRACTION_STATE }
 }
-
-const N_AIR = 1
 
 export function snellRefractedAngle(incidenceDeg: number, n1: number, n2: number): number | null {
   const sinT = (n1 / n2) * Math.sin(incidenceDeg * DEG2RAD)

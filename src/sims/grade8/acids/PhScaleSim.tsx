@@ -15,18 +15,24 @@ import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import { useCanvasPointer } from '../../shared/useCanvasPointer'
 
-const SUBSTANCES: { id: string; label: string; ph: number }[] = [
-  { id: 'battery', label: 'Battery acid (~0)', ph: 0.5 },
-  { id: 'lemon', label: 'Lemon juice (~2)', ph: 2 },
-  { id: 'vinegar', label: 'Vinegar (~3)', ph: 3 },
-  { id: 'coffee', label: 'Coffee (~5)', ph: 5 },
-  { id: 'water', label: 'Pure water (7)', ph: 7 },
-  { id: 'blood', label: 'Blood (~7.4)', ph: 7.4 },
-  { id: 'soap', label: 'Soap solution (~9)', ph: 9 },
-  { id: 'ammonia', label: 'Ammonia (~11)', ph: 11 },
-  { id: 'bleach', label: 'Bleach (~12)', ph: 12 },
-  { id: 'drain', label: 'Drain cleaner (~14)', ph: 14 },
+const SUBSTANCES: { id: string; label: string; ph: number; color: string }[] = [
+  // Solute pH / colors from PhET ph-scale Solute.ts
+  { id: 'battery', label: 'Battery acid', ph: 1, color: 'rgb(255,255,0)' },
+  { id: 'vomit', label: 'Vomit', ph: 2, color: 'rgb(255,171,120)' },
+  { id: 'soda', label: 'Soda pop', ph: 2.5, color: 'rgb(204,255,102)' },
+  { id: 'oj', label: 'Orange juice', ph: 3.5, color: 'rgb(255,180,0)' },
+  { id: 'coffee', label: 'Coffee', ph: 5, color: 'rgb(164,99,7)' },
+  { id: 'soup', label: 'Chicken soup', ph: 5.8, color: 'rgb(255,240,104)' },
+  { id: 'milk', label: 'Milk', ph: 6.5, color: 'rgb(250,250,250)' },
+  { id: 'water', label: 'Water', ph: 7, color: 'rgb(200,220,255)' },
+  { id: 'blood', label: 'Blood', ph: 7.4, color: 'rgb(211,79,68)' },
+  { id: 'spit', label: 'Spit', ph: 7.4, color: 'rgb(202,240,239)' },
+  { id: 'soap', label: 'Hand soap', ph: 10, color: 'rgb(224,141,242)' },
+  { id: 'drain', label: 'Drain cleaner', ph: 13, color: 'rgb(255,255,0)' },
 ]
+
+/** PhET PHScaleConstants.PH_RANGE is −1…15; we expose the same span for custom marker. */
+export const PH_RANGE = { min: -1, max: 15 } as const
 
 export function phToColor(ph: number): string {
   const p = Math.max(0, Math.min(14, ph))
@@ -104,12 +110,13 @@ export function PhScaleSim() {
   const phFromPoint = (pt: { x: number; y: number }) => {
     const L = layoutRef.current
     if (!L) return null
+    const span = PH_RANGE.max - PH_RANGE.min
     if (L.vertical) {
       const t = clamp(1 - (pt.y - L.sy) / L.stripH, 0, 1)
-      return t * 14
+      return PH_RANGE.min + t * span
     }
     const t = clamp((pt.x - L.sx) / L.stripW, 0, 1)
-    return t * 14
+    return PH_RANGE.min + t * span
   }
 
   useEffect(() => {
@@ -117,7 +124,7 @@ export function PhScaleSim() {
       setReadoutPh(stateRef.current.displayPh)
       if (useCustom) {
         const t = paramsRef.current.targetPh
-        if (Math.abs(t - customPh) > 0.05) setCustomPh(Math.round(t * 10) / 10)
+        if (Math.abs(t - customPh) > 0.05) setCustomPh(Math.round(t * 100) / 100)
       }
     }, 120)
     return () => clearInterval(id)
@@ -142,7 +149,7 @@ export function PhScaleSim() {
       if (ph == null) return
       paramsRef.current.targetPh = ph
       setUseCustom(true)
-      setCustomPh(Math.round(ph * 10) / 10)
+      setCustomPh(Math.round(ph * 100) / 100)
     },
     onTap: (_id, pt) => {
       const ph = phFromPoint(pt)
@@ -150,7 +157,7 @@ export function PhScaleSim() {
       hintShown.current = false
       paramsRef.current.targetPh = ph
       setUseCustom(true)
-      setCustomPh(Math.round(ph * 10) / 10)
+      setCustomPh(Math.round(ph * 100) / 100)
     },
   })
 
@@ -176,7 +183,11 @@ export function PhScaleSim() {
       const grad = vertical
         ? ctx.createLinearGradient(sx, sy + stripH, sx, sy)
         : ctx.createLinearGradient(sx, sy, sx + stripW, sy)
-      for (let i = 0; i <= 14; i++) grad.addColorStop(i / 14, phToColor(i))
+      const phSpan = PH_RANGE.max - PH_RANGE.min
+      for (let i = 0; i <= 16; i++) {
+        const phVal = PH_RANGE.min + (i / 16) * phSpan
+        grad.addColorStop(i / 16, phToColor(phVal))
+      }
       withShadow(ctx, () => {
         ctx.fillStyle = grad
         roundRect(ctx, sx, sy, stripW, stripH, 10)
@@ -190,8 +201,8 @@ export function PhScaleSim() {
       ctx.fillStyle = '#1a252f'
       ctx.font = `600 ${fs}px Roboto, sans-serif`
       ctx.textBaseline = 'middle'
-      for (let i = 0; i <= 14; i += 2) {
-        const t = i / 14
+      for (let i = PH_RANGE.min; i <= PH_RANGE.max; i += 2) {
+        const t = (i - PH_RANGE.min) / phSpan
         if (vertical) {
           ctx.textAlign = 'right'
           ctx.fillText(String(i), sx - 10, sy + stripH - t * stripH)
@@ -211,7 +222,7 @@ export function PhScaleSim() {
         drawLabelPill(ctx, 'Basic', sx + stripW, sy - 36, { fontSize: Math.max(9, fs - 2), align: 'right' })
       }
 
-      const markerT = ph / 14
+      const markerT = (clamp(ph, PH_RANGE.min, PH_RANGE.max) - PH_RANGE.min) / phSpan
       const mx = vertical ? sx + stripW / 2 : sx + markerT * stripW
       const my = vertical ? sy + stripH - markerT * stripH : sy + stripH / 2
       drawHoverHalo(ctx, mx, my, 22, hover === 'marker' || hover === 'scale')
@@ -238,7 +249,7 @@ export function PhScaleSim() {
 
       const chipX = vertical ? mx + stripW / 2 + 70 : mx
       const chipY = vertical ? my : sy + stripH + 58
-      drawValueChip(ctx, 'pH', ph.toFixed(1), chipX, chipY, { fontSize: fs, accent: true })
+      drawValueChip(ctx, 'pH', ph.toFixed(2), chipX, chipY, { fontSize: fs, accent: true })
 
       layoutRef.current = { vertical, sx, sy, stripW, stripH, mx: vertical ? mx + stripW / 2 + 36 : mx, my: vertical ? my : sy + stripH + 38 }
 
@@ -265,7 +276,7 @@ export function PhScaleSim() {
   return (
     <SimShell
       title="pH Scale"
-      subtitle="Compare acidity and alkalinity of everyday substances"
+      subtitle="PhET-inspired solute list and pH values"
       canvasRef={canvasRef}
       running={running}
       onTogglePlay={() => setRunning((r) => !r)}
@@ -303,10 +314,10 @@ export function PhScaleSim() {
               <ControlSlider
                 label="Custom pH"
                 value={customPh}
-                min={0}
-                max={14}
-                step={0.1}
-                display={customPh.toFixed(1)}
+                min={PH_RANGE.min}
+                max={PH_RANGE.max}
+                step={0.01}
+                display={customPh.toFixed(2)}
                 onChange={(v) => {
                   setCustomPh(v)
                   paramsRef.current.targetPh = v
@@ -316,7 +327,7 @@ export function PhScaleSim() {
           </ControlSection>
           <ControlSection title="Reading">
             <ControlStats>
-              <ControlStat label="pH" value={readoutPh.toFixed(1)} />
+              <ControlStat label="pH" value={readoutPh.toFixed(2)} />
               <ControlStat label="Nature" value={phLabel(readoutPh)} />
             </ControlStats>
           </ControlSection>
