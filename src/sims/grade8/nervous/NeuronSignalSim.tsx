@@ -1,24 +1,57 @@
 import { useCallback, useRef, useState } from 'react'
 import { ControlHint, ControlSection, ControlToggle } from '../../shared/Controls'
 import { fontPx } from '../../shared/drawHelpers'
-import { drawHint, drawLabelPill, drawValueChip } from '../../shared/labels'
+import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
-import { createNeuronState, stepNeuron } from './neuronSignalModel'
+import { useCanvasPointer } from '../../shared/useCanvasPointer'
+import { createNeuronState, fireNeuron, stepNeuron } from './neuronSignalModel'
+
+type Layout = {
+  soma: { x: number; y: number; r: number }
+  fireBtn: { x: number; y: number; w: number; h: number }
+}
 
 export function NeuronSignalSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef(createNeuronState())
+  const layoutRef = useRef<Layout | null>(null)
+  const hoverRef = useRef<string | null>(null)
   const hintShown = useRef(true)
   const [running, setRunning] = useState(true)
   const [myelin, setMyelin] = useState(true)
   const [version, setVersion] = useState(0)
+
+  const doFire = () => {
+    hintShown.current = false
+    stateRef.current = fireNeuron(stateRef.current)
+    setVersion((v) => v + 1)
+  }
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt) => {
+      const L = layoutRef.current
+      if (!L) return null
+      if (Math.hypot(pt.x - L.soma.x, pt.y - L.soma.y) < L.soma.r + 12) return 'soma'
+      const b = L.fireBtn
+      if (pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h) return 'fire'
+      return null
+    },
+    cursorForHit: () => 'pointer',
+    onHoverChange: (id) => {
+      hoverRef.current = id
+    },
+    onTap: (id) => {
+      if (id === 'soma' || id === 'fire') doFire()
+    },
+  })
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
       if (dt > 0) stateRef.current = stepNeuron(stateRef.current, dt, myelin, running)
       const t = stateRef.current.t % 1
       const fs = fontPx(13, w, h)
+      const hover = hoverRef.current
 
       const bg = ctx.createLinearGradient(0, 0, 0, h)
       bg.addColorStop(0, '#0b1c2e')
@@ -29,11 +62,13 @@ export function NeuronSignalSim() {
       const y = h * 0.52
       const x0 = w * 0.12
       const x1 = w * 0.9
+      const somaR = Math.min(w, h) * 0.055
 
       // Soma
+      drawHoverHalo(ctx, x0, y, somaR + 10, hover === 'soma')
       ctx.fillStyle = '#5dade2'
       ctx.beginPath()
-      ctx.arc(x0, y, Math.min(w, h) * 0.055, 0, Math.PI * 2)
+      ctx.arc(x0, y, somaR, 0, Math.PI * 2)
       ctx.fill()
       ctx.strokeStyle = '#85c1e9'
       ctx.lineWidth = 2
@@ -53,6 +88,11 @@ export function NeuronSignalSim() {
       }
       drawLabelPill(ctx, 'soma (cell body)', x0, y - Math.min(w, h) * 0.09, {
         fontSize: Math.max(10, fs - 2),
+      })
+      drawLabelPill(ctx, 'Tap to fire', x0, y + somaR + 20, {
+        fontSize: Math.max(10, fs - 2),
+        bold: false,
+        bg: hover === 'soma' ? 'rgba(93,173,226,0.35)' : undefined,
       })
 
       // Axon core
@@ -82,7 +122,6 @@ export function NeuronSignalSim() {
           ctx.lineTo(xb, y)
           ctx.stroke()
         }
-        // Nodes of Ranvier gaps
         for (let i = 1; i < segCount; i++) {
           const nx = ax0 + i * (span / segCount)
           ctx.fillStyle = '#1b4f72'
@@ -150,8 +189,33 @@ export function NeuronSignalSim() {
         { align: 'left', fontSize: fs },
       )
 
+      // Fire signal button
+      const btnW = 110
+      const btnH = 32
+      const btnX = w - btnW - 16
+      const btnY = 16
+      const fireHover = hover === 'fire'
+      ctx.fillStyle = fireHover ? 'rgba(231,76,60,0.85)' : 'rgba(192,57,43,0.75)'
+      roundRect(ctx, btnX, btnY, btnW, btnH, 8)
+      ctx.fill()
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)'
+      ctx.lineWidth = 1.5
+      ctx.stroke()
+      ctx.fillStyle = '#fff'
+      ctx.font = `600 ${Math.max(11, fs - 1)}px Roboto, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('Fire signal', btnX + btnW / 2, btnY + btnH / 2)
+
+      layoutRef.current = {
+        soma: { x: x0, y, r: somaR },
+        fireBtn: { x: btnX, y: btnY, w: btnW, h: btnH },
+      }
+
       if (hintShown.current) {
-        drawHint(ctx, 'toggle myelin sheath in controls', w / 2, h - 16, w, h, { muted: true })
+        drawHint(ctx, 'tap soma or Fire signal · toggle myelin in controls', w / 2, h - 16, w, h, {
+          muted: true,
+        })
       }
     },
     [myelin, running],
@@ -184,7 +248,7 @@ export function NeuronSignalSim() {
               onChange={(v) => {
                 setMyelin(v)
                 hintShown.current = false
-                stateRef.current.t = 0
+                stateRef.current = fireNeuron(stateRef.current)
               }}
             />
           </ControlSection>
@@ -192,4 +256,22 @@ export function NeuronSignalSim() {
       }
     />
   )
+}
+
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  const rr = Math.min(r, w / 2, h / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + rr, y)
+  ctx.arcTo(x + w, y, x + w, y + h, rr)
+  ctx.arcTo(x + w, y + h, x, y + h, rr)
+  ctx.arcTo(x, y + h, x, y, rr)
+  ctx.arcTo(x, y, x + w, y, rr)
+  ctx.closePath()
 }

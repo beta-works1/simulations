@@ -7,18 +7,31 @@ import {
   ControlStats,
 } from '../../shared/Controls'
 import { drawBadge, drawLegend, fillFittedText, fontPx } from '../../shared/drawHelpers'
-import { drawHint, drawLabelPill, drawValueChip } from '../../shared/labels'
+import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
+import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
+import { useCanvasPointer } from '../../shared/useCanvasPointer'
 import {
   createCarbonOxygenState,
   stepCarbonOxygen,
   type CarbonOxygenState,
 } from './carbonOxygenModel'
 
+type HandleHit = { x: number; y: number; r: number }
+
+type Layout = {
+  photo: HandleHit
+  resp: HandleHit
+}
+
 export function CarbonOxygenCycleSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef<CarbonOxygenState>(createCarbonOxygenState())
+  const paramsRef = useRef({ photo: 0.55, resp: 0.4 })
+  const layoutRef = useRef<Layout | null>(null)
+  const hoverRef = useRef<string | null>(null)
+  const hintShown = useRef(true)
   const [running, setRunning] = useState(true)
   const [photo, setPhoto] = useState(0.55)
   const [resp, setResp] = useState(0.4)
@@ -29,17 +42,42 @@ export function CarbonOxygenCycleSim() {
     const id = window.setInterval(() => {
       const s = stateRef.current
       setReadout({ co2: s.co2, o2: s.o2 })
-    }, 200)
+      const p = paramsRef.current
+      setPhoto(Math.round(p.photo * 100) / 100)
+      setResp(Math.round(p.resp * 100) / 100)
+    }, 120)
     return () => clearInterval(id)
   }, [])
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt) => {
+      const L = layoutRef.current
+      if (!L) return null
+      if (Math.hypot(pt.x - L.photo.x, pt.y - L.photo.y) < L.photo.r + 12) return 'photo'
+      if (Math.hypot(pt.x - L.resp.x, pt.y - L.resp.y) < L.resp.r + 12) return 'resp'
+      return null
+    },
+    onHoverChange: (id) => {
+      hoverRef.current = id
+    },
+    onDrag: (id, pt, size) => {
+      hintShown.current = false
+      // Vertical drag: up = higher rate
+      const t = clamp(1 - (pt.y - size.h * 0.2) / (size.h * 0.55), 0.1, 1)
+      if (id === 'photo') paramsRef.current.photo = t
+      if (id === 'resp') paramsRef.current.resp = t
+    },
+  })
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
       const s = stateRef.current
-      s.photosynthesisRate = photo
-      s.respirationRate = resp
+      const p = paramsRef.current
+      s.photosynthesisRate = p.photo
+      s.respirationRate = p.resp
       if (dt > 0 && running) stateRef.current = stepCarbonOxygen(s, dt)
       const st = stateRef.current
+      const hover = hoverRef.current
 
       const sky = ctx.createLinearGradient(0, 0, 0, h)
       sky.addColorStop(0, '#7ec8e3')
@@ -58,7 +96,6 @@ export function CarbonOxygenCycleSim() {
       drawFlow(ctx, w * 0.7, h * 0.55, w * 0.55, h * 0.32, '#c0392b', t + 1.1, 'Respiration\nO₂→CO₂', fs)
       drawFlow(ctx, w * 0.35, h * 0.72, w * 0.65, h * 0.72, '#d68910', t + 0.5, 'Food chain', fs)
 
-      // Moving particles along flows for clarity
       drawParticle(ctx, w * 0.5, h * 0.32, w * 0.3, h * 0.55, t * 0.35, '#58d68d')
       drawParticle(ctx, w * 0.7, h * 0.55, w * 0.55, h * 0.32, t * 0.4 + 0.3, '#e74c3c')
       drawParticle(ctx, w * 0.35, h * 0.72, w * 0.65, h * 0.72, t * 0.3 + 0.15, '#f39c12')
@@ -70,6 +107,23 @@ export function CarbonOxygenCycleSim() {
       drawValueChip(ctx, 'O₂', st.o2.toFixed(0), w * 0.5 + 50, h * 0.2 - Math.min(w, h) * 0.14, {
         fontSize: Math.max(10, fs - 2),
       })
+
+      // Rate handles on photo / resp flows
+      const photoHandle = {
+        x: w * 0.38,
+        y: h * 0.38 + (1 - p.photo) * h * 0.12,
+        r: 12,
+      }
+      const respHandle = {
+        x: w * 0.64,
+        y: h * 0.42 + (1 - p.resp) * h * 0.12,
+        r: 12,
+      }
+
+      drawRateHandle(ctx, photoHandle, p.photo, '#1e8449', hover === 'photo', fs, 'Photo')
+      drawRateHandle(ctx, respHandle, p.resp, '#c0392b', hover === 'resp', fs, 'Resp')
+
+      layoutRef.current = { photo: photoHandle, resp: respHandle }
 
       const vg = ctx.createRadialGradient(
         w * 0.5,
@@ -99,7 +153,11 @@ export function CarbonOxygenCycleSim() {
         h - 16,
         fontPx(11, w, h, 10, 14),
       )
-      drawHint(ctx, 'adjust photosynthesis vs respiration rates', w / 2, h - 36, w, h, { muted: true })
+      if (hintShown.current) {
+        drawHint(ctx, 'drag Photo / Resp handles to change rates', w / 2, h - 36, w, h, {
+          muted: true,
+        })
+      }
     },
     [photo, resp, running],
   )
@@ -115,8 +173,10 @@ export function CarbonOxygenCycleSim() {
       onTogglePlay={() => setRunning((r) => !r)}
       onReset={() => {
         stateRef.current = createCarbonOxygenState()
+        paramsRef.current = { photo: 0.55, resp: 0.4 }
         setPhoto(0.55)
         setResp(0.4)
+        hintShown.current = true
         setTick((n) => n + 1)
       }}
       controls={
@@ -130,7 +190,11 @@ export function CarbonOxygenCycleSim() {
               max={1}
               step={0.05}
               display={photo.toFixed(2)}
-              onChange={setPhoto}
+              onChange={(v) => {
+                hintShown.current = false
+                paramsRef.current.photo = v
+                setPhoto(v)
+              }}
             />
             <ControlSlider
               label="Respiration"
@@ -139,7 +203,11 @@ export function CarbonOxygenCycleSim() {
               max={1}
               step={0.05}
               display={resp.toFixed(2)}
-              onChange={setResp}
+              onChange={(v) => {
+                hintShown.current = false
+                paramsRef.current.resp = v
+                setResp(v)
+              }}
             />
           </ControlSection>
           <ControlSection title="Atmosphere">
@@ -152,6 +220,29 @@ export function CarbonOxygenCycleSim() {
       }
     />
   )
+}
+
+function drawRateHandle(
+  ctx: CanvasRenderingContext2D,
+  handle: HandleHit,
+  value: number,
+  color: string,
+  hover: boolean,
+  fs: number,
+  label: string,
+) {
+  drawHoverHalo(ctx, handle.x, handle.y, handle.r + 6, hover)
+  ctx.beginPath()
+  ctx.arc(handle.x, handle.y, handle.r, 0, Math.PI * 2)
+  ctx.fillStyle = color
+  ctx.fill()
+  ctx.strokeStyle = '#fff'
+  ctx.lineWidth = 2.5
+  ctx.stroke()
+  drawLabelPill(ctx, `${label} ${value.toFixed(2)}`, handle.x, handle.y - handle.r - 14, {
+    fontSize: Math.max(10, fs - 2),
+    bg: hover ? 'rgba(0,0,0,0.45)' : undefined,
+  })
 }
 
 function drawPool(

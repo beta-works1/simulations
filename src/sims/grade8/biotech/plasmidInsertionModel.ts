@@ -19,6 +19,11 @@ export function createPlasmidState(): PlasmidState {
   return { t: 0, stage: 0 }
 }
 
+export function setPlasmidStage(s: PlasmidState, stage: number): PlasmidState {
+  const next = Math.max(0, Math.min(PLASMID_STAGES.length - 1, Math.round(stage)))
+  return { ...s, stage: next, t: 0 }
+}
+
 export function stepPlasmid(s: PlasmidState, dt: number, running: boolean): PlasmidState {
   if (!running || dt <= 0) return s
   let { t, stage } = s

@@ -32,6 +32,12 @@ export function stagesForMode(mode: DivisionMode): readonly string[] {
   return mode === 'mitosis' ? MITOSIS_STAGES : MEIOSIS_STAGES
 }
 
+/** Jump to a stage index (clamped to meiosis range; callers should clamp to mode length). */
+export function setMitosisStage(s: MitosisMeiosisState, stage: number): MitosisMeiosisState {
+  const next = Math.max(0, Math.min(MEIOSIS_STAGES.length - 1, Math.round(stage)))
+  return { stage: next, accum: 0 }
+}
+
 export function stepMitosisMeiosis(
   s: MitosisMeiosisState,
   dt: number,

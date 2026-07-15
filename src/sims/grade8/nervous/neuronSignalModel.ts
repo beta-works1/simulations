@@ -13,6 +13,10 @@ export function conductionSpeed(myelin: boolean): number {
   return myelin ? 1.35 : 0.38
 }
 
+export function fireNeuron(_s?: NeuronState): NeuronState {
+  return { t: 0 }
+}
+
 export function stepNeuron(s: NeuronState, dt: number, myelin: boolean, running: boolean): NeuronState {
   if (!running || dt <= 0) return s
   return { t: s.t + dt * conductionSpeed(myelin) }
