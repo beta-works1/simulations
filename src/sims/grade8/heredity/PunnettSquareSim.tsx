@@ -6,7 +6,7 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { clearThemedScene, fontPx } from '../../shared/drawHelpers'
+import { clearThemedScene, fillFittedText, fontPx } from '../../shared/drawHelpers'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import {
@@ -53,10 +53,17 @@ export function PunnettSquareSim() {
           ctx.strokeRect(x, y, cell, cell)
           ctx.fillStyle = '#1a252f'
           ctx.font = `600 ${fs + 8}px Roboto, sans-serif`
-          ctx.fillText(pair.slice().sort().join(''), x + cell / 2, y + cell / 2 - 4)
+          ctx.textAlign = 'center'
+          fillFittedText(ctx, pair.slice().sort().join(''), x + cell / 2, y + cell / 2 - 4, cell - 12, fs + 8, {
+            minPx: 12,
+            align: 'center',
+          })
           ctx.font = `${Math.max(11, fs - 1)}px Roboto, sans-serif`
           ctx.fillStyle = '#5d6d7e'
-          ctx.fillText(phenotype(pair), x + cell / 2, y + cell / 2 + fs + 4)
+          fillFittedText(ctx, phenotype(pair), x + cell / 2, y + cell / 2 + fs + 4, cell - 12, Math.max(11, fs - 1), {
+            minPx: 9,
+            align: 'center',
+          })
         }
       }
 

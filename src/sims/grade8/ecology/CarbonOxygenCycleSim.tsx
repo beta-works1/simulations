@@ -6,7 +6,7 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { drawBadge, drawLegend, fontPx } from '../../shared/drawHelpers'
+import { drawBadge, drawLegend, fillFittedText, fontPx } from '../../shared/drawHelpers'
 import { drawHint, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
@@ -179,9 +179,17 @@ function drawPool(
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.font = `600 ${fs}px Roboto, sans-serif`
-  ctx.fillText(title, x, y - fs * 0.45)
+  fillFittedText(ctx, title, x, y - fs * 0.45, r * 1.7, fs, {
+    minPx: 9,
+    align: 'center',
+    baseline: 'middle',
+  })
   ctx.font = `${Math.max(10, fs - 2)}px Roboto, sans-serif`
-  ctx.fillText(sub, x, y + fs * 0.7)
+  fillFittedText(ctx, sub, x, y + fs * 0.7, r * 1.7, Math.max(10, fs - 2), {
+    minPx: 8,
+    align: 'center',
+    baseline: 'middle',
+  })
 }
 
 function drawFlow(

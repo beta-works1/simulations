@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { ControlHint, ControlSection, ControlStack } from '../../shared/Controls'
-import { fontPx } from '../../shared/drawHelpers'
+import { fillFittedText, fontPx } from '../../shared/drawHelpers'
 import { drawHint, drawHoverHalo, drawLabelPill } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
@@ -126,9 +126,11 @@ export function FoodWebBuilderSim() {
         }
         ctx.fillStyle = '#fff'
         ctx.font = `600 ${fs}px Roboto, sans-serif`
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText(n.name, x, y)
+        fillFittedText(ctx, n.name, x, y, nodeR * 1.6, fs, {
+          minPx: 8,
+          align: 'center',
+          baseline: 'middle',
+        })
         if (isSel || isHover) {
           drawLabelPill(ctx, n.level, x, y + nodeR + 14, {
             fontSize: Math.max(9, fs - 3),

@@ -6,7 +6,7 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { clearThemedScene, fontPx, roundRect } from '../../shared/drawHelpers'
+import { clearThemedScene, fillFittedText, fontPx, roundRect } from '../../shared/drawHelpers'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
@@ -83,14 +83,20 @@ function drawPeriodicTable(
     ctx.stroke()
 
     ctx.fillStyle = '#fff'
+    ctx.textBaseline = 'alphabetic'
     ctx.font = `${Math.max(9, fs - 3)}px Roboto, sans-serif`
     ctx.textAlign = 'left'
-    ctx.fillText(String(el.z), x + 5, y + 12)
-    ctx.font = `700 ${fs + 2}px Roboto, sans-serif`
+    ctx.fillText(String(el.z), x + 5, y + Math.max(12, ch * 0.18))
+    // Symbol only in the tile — full name is on the Bohr panel (avoids clipped clutter)
+    ctx.font = `700 ${Math.min(fs + 4, Math.floor(ch * 0.28))}px Roboto, sans-serif`
     ctx.textAlign = 'center'
-    ctx.fillText(el.symbol, x + cw / 2, y + ch / 2 + 2)
-    ctx.font = `${Math.max(9, fs - 4)}px Roboto, sans-serif`
-    ctx.fillText(el.name.slice(0, 6), x + cw / 2, y + ch - 8)
+    ctx.textBaseline = 'middle'
+    fillFittedText(ctx, el.symbol, x + cw / 2, y + ch / 2, cw - 8, fs + 4, {
+      minPx: 11,
+      align: 'center',
+      baseline: 'middle',
+    })
+    ctx.textBaseline = 'alphabetic'
   }
 }
 

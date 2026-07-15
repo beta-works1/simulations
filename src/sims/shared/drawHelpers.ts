@@ -49,6 +49,62 @@ export function fontPx(base: number, w: number, h: number, min = 10, max = 22) {
   return Math.round(Math.max(min, Math.min(max, base * scale)))
 }
 
+/**
+ * Shrink font and/or ellipsize so text fits maxWidth.
+ * Call after setting ctx.font to the desired face (weight + family); size is adjusted.
+ */
+export function fitTextToWidth(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  startPx: number,
+  minPx = 8,
+): { text: string; fontPx: number } {
+  let size = Math.max(minPx, Math.round(startPx))
+  const weightMatch = ctx.font.match(/^(italic\s+)?(bold|600|700|\d{3})\s/)
+  const weight = weightMatch ? weightMatch[0] : ''
+  const family = ctx.font.replace(/^(italic\s+)?([\w-]+\s+)?\d+(\.\d+)?px\s+/, '') || 'Roboto, sans-serif'
+
+  const setFont = (px: number) => {
+    ctx.font = `${weight}${px}px ${family}`
+  }
+
+  setFont(size)
+  while (size > minPx && ctx.measureText(text).width > maxWidth) {
+    size -= 1
+    setFont(size)
+  }
+  if (ctx.measureText(text).width <= maxWidth) return { text, fontPx: size }
+
+  let truncated = text
+  while (truncated.length > 1 && ctx.measureText(`${truncated}…`).width > maxWidth) {
+    truncated = truncated.slice(0, -1)
+  }
+  return { text: truncated.length < text.length ? `${truncated}…` : truncated, fontPx: size }
+}
+
+/** Draw centered (or aligned) text that stays within maxWidth. */
+export function fillFittedText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  startPx: number,
+  opts?: { minPx?: number; align?: CanvasTextAlign; baseline?: CanvasTextBaseline },
+) {
+  const align = opts?.align ?? ctx.textAlign
+  const baseline = opts?.baseline ?? ctx.textBaseline
+  const { text: shown, fontPx: px } = fitTextToWidth(ctx, text, maxWidth, startPx, opts?.minPx ?? 8)
+  const weightMatch = ctx.font.match(/^(italic\s+)?(bold|600|700|\d{3})\s/)
+  const weight = weightMatch ? weightMatch[0] : ''
+  const family = ctx.font.replace(/^(italic\s+)?([\w-]+\s+)?\d+(\.\d+)?px\s+/, '') || 'Roboto, sans-serif'
+  ctx.font = `${weight}${px}px ${family}`
+  ctx.textAlign = align
+  ctx.textBaseline = baseline
+  ctx.fillText(shown, x, y)
+}
+
 export function roundRect(
   ctx: CanvasRenderingContext2D,
   x: number,
