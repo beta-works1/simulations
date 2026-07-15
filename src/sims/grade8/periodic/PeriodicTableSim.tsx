@@ -19,18 +19,7 @@ import {
   tableCell,
   type ElementInfo,
 } from './elementsData'
-
-export interface BohrAnimState {
-  time: number
-}
-
-export function createBohrAnimState(): BohrAnimState {
-  return { time: 0 }
-}
-
-export function stepBohrAnim(s: BohrAnimState, dt: number): BohrAnimState {
-  return { time: s.time + dt }
-}
+import { createBohrAnimState, stepBohrAnim } from './periodicTableModel'
 
 type CellLayout = { symbol: string; x: number; y: number; w: number; h: number }
 

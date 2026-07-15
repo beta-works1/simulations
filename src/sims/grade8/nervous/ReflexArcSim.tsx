@@ -5,22 +5,7 @@ import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../sha
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import { useCanvasPointer } from '../../shared/useCanvasPointer'
-
-export interface ReflexState {
-  progress: number
-  viaBrain: boolean
-  fired: boolean
-}
-
-export function createReflexState(viaBrain = false): ReflexState {
-  return { progress: 0, viaBrain, fired: false }
-}
-
-export function stepReflex(s: ReflexState, dt: number, playing: boolean): ReflexState {
-  if (!playing || !s.fired) return s
-  const speed = s.viaBrain ? 0.32 : 0.62
-  return { ...s, progress: Math.min(1, s.progress + dt * speed) }
-}
+import { createReflexState, stepReflex } from './reflexArcModel'
 
 type Pt = { x: number; y: number }
 

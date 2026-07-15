@@ -12,8 +12,13 @@ import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import { useCanvasPointer } from '../../shared/useCanvasPointer'
-
-const LABELS = ['Cell', 'Nucleus', 'Chromosome', 'DNA double helix', 'Gene segment']
+import {
+  DNA_ZOOM_LABELS,
+  DNA_ZOOM_MAX,
+  clampZoomLevel,
+  createDnaZoomState,
+  stepDnaZoom,
+} from './dnaZoomModel'
 
 type Layout = {
   track: { x: number; y: number; w: number; h: number }
@@ -26,7 +31,7 @@ export function DnaZoomSim() {
   const layoutRef = useRef<Layout | null>(null)
   const hoverRef = useRef<string | null>(null)
   const hintShown = useRef(true)
-  const spin = useRef(0)
+  const stateRef = useRef(createDnaZoomState())
   const [running, setRunning] = useState(true)
   const [zoom, setZoom] = useState(0)
   const [version, setVersion] = useState(0)
@@ -47,7 +52,7 @@ export function DnaZoomSim() {
       e.preventDefault()
       hintShown.current = false
       const delta = e.deltaY > 0 ? 1 : -1
-      paramsRef.current.zoom = clamp(Math.round(paramsRef.current.zoom + delta), 0, 4)
+      paramsRef.current.zoom = clampZoomLevel(paramsRef.current.zoom + delta)
       setZoom(paramsRef.current.zoom)
     }
     canvas.addEventListener('wheel', onWheel, { passive: false })
@@ -72,18 +77,19 @@ export function DnaZoomSim() {
       if (!L || (id !== 'handle' && id !== 'track')) return
       hintShown.current = false
       const t = clamp((pt.x - L.track.x) / L.track.w, 0, 1)
-      paramsRef.current.zoom = Math.round(t * 4)
+      paramsRef.current.zoom = clampZoomLevel(t * DNA_ZOOM_MAX)
     },
   })
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
-      if (dt > 0 && running) spin.current += dt
+      stateRef.current = stepDnaZoom(stateRef.current, dt, running)
       const z = paramsRef.current.zoom
       const hover = hoverRef.current
       const fs = fontPx(14, w, h)
       const cx = w / 2
       const cy = h / 2
+      const spin = stateRef.current.spin
 
       clearScene(ctx, w, h)
 
@@ -101,7 +107,7 @@ export function DnaZoomSim() {
       if (z >= 1 && z < 3) {
         const scale = z === 1 ? 0.45 : 1
         for (let i = 0; i < 6; i++) {
-          const ang = spin.current * 0.4 + i
+          const ang = spin * 0.4 + i
           const x = cx + Math.cos(ang) * 42 * scale
           const y = cy + Math.sin(ang * 1.3) * 62 * scale
           ctx.strokeStyle = '#e74c3c'
@@ -118,8 +124,8 @@ export function DnaZoomSim() {
         for (let i = 0; i < 160; i++) {
           const t = i / 20
           const x = cx - span / 2 + (i / 160) * span
-          const y1 = cy + Math.sin(t + spin.current) * 42
-          const y2 = cy + Math.sin(t + Math.PI + spin.current) * 42
+          const y1 = cy + Math.sin(t + spin) * 42
+          const y2 = cy + Math.sin(t + Math.PI + spin) * 42
           ctx.strokeStyle = i % 2 ? '#3498db' : '#e74c3c'
           ctx.lineWidth = 2
           ctx.beginPath()
@@ -142,7 +148,11 @@ export function DnaZoomSim() {
         }
       }
 
-      drawLabelPill(ctx, LABELS[z], w / 2, 26, { fontSize: fs + 1, bg: 'rgba(255,255,255,0.12)', fg: '#ecf0f1' })
+      drawLabelPill(ctx, DNA_ZOOM_LABELS[z], w / 2, 26, {
+        fontSize: fs + 1,
+        bg: 'rgba(255,255,255,0.12)',
+        fg: '#ecf0f1',
+      })
 
       const trackY = h - 48
       const trackX = w * 0.12
@@ -150,13 +160,13 @@ export function DnaZoomSim() {
       const trackH = 10
       layoutRef.current = {
         track: { x: trackX, y: trackY - 8, w: trackW, h: 24 },
-        handle: { x: trackX + (z / 4) * trackW, y: trackY, r: 12 },
+        handle: { x: trackX + (z / DNA_ZOOM_MAX) * trackW, y: trackY, r: 12 },
       }
 
       ctx.fillStyle = 'rgba(255,255,255,0.15)'
       ctx.fillRect(trackX, trackY - trackH / 2, trackW, trackH)
       ctx.fillStyle = 'rgba(41,128,185,0.6)'
-      ctx.fillRect(trackX, trackY - trackH / 2, (z / 4) * trackW, trackH)
+      ctx.fillRect(trackX, trackY - trackH / 2, (z / DNA_ZOOM_MAX) * trackW, trackH)
 
       const handleHover = hover === 'handle' || hover === 'track'
       drawHoverHalo(ctx, layoutRef.current.handle.x, trackY, 18, handleHover)
@@ -168,9 +178,9 @@ export function DnaZoomSim() {
       ctx.lineWidth = 2
       ctx.stroke()
 
-      for (let i = 0; i < LABELS.length; i++) {
-        const lx = trackX + (i / 4) * trackW
-        drawValueChip(ctx, '', LABELS[i].split(' ')[0], lx, trackY - 28, {
+      for (let i = 0; i < DNA_ZOOM_LABELS.length; i++) {
+        const lx = trackX + (i / DNA_ZOOM_MAX) * trackW
+        drawValueChip(ctx, '', DNA_ZOOM_LABELS[i].split(' ')[0], lx, trackY - 28, {
           fontSize: Math.max(9, fs - 3),
           accent: i === z,
         })
@@ -206,9 +216,9 @@ export function DnaZoomSim() {
               label="Level"
               value={zoom}
               min={0}
-              max={4}
+              max={DNA_ZOOM_MAX}
               step={1}
-              display={LABELS[zoom]}
+              display={DNA_ZOOM_LABELS[zoom]}
               onChange={(v) => {
                 paramsRef.current.zoom = v
                 setZoom(v)
@@ -217,7 +227,7 @@ export function DnaZoomSim() {
           </ControlSection>
           <ControlSection title="View">
             <ControlStats>
-              <ControlStat label="Focus" value={LABELS[zoom]} />
+              <ControlStat label="Focus" value={DNA_ZOOM_LABELS[zoom]} />
             </ControlStats>
           </ControlSection>
         </>

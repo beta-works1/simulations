@@ -9,18 +9,12 @@ import { clearThemedScene, fontPx, withShadow } from '../../shared/drawHelpers'
 import { drawGlow, SCENE } from '../../shared/canvasTheme'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
-
-export function createPlasmidState() {
-  return { t: 0, stage: 0 }
-}
-
-const STAGES = [
-  'Cut plasmid',
-  'Insert gene',
-  'Join recombinant DNA',
-  'Insert into bacterium',
-  'Replication',
-]
+import {
+  PLASMID_STAGES,
+  createPlasmidState,
+  plasmidStageProgress,
+  stepPlasmid,
+} from './plasmidInsertionModel'
 
 export function PlasmidInsertionSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -31,16 +25,11 @@ export function PlasmidInsertionSim() {
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
-      if (dt > 0 && running) {
-        stateRef.current.t += dt
-        if (stateRef.current.t > 1.65) {
-          stateRef.current.t = 0
-          stateRef.current.stage = (stateRef.current.stage + 1) % STAGES.length
-          setStageLabel(stateRef.current.stage)
-        }
-      }
+      const prev = stateRef.current.stage
+      stateRef.current = stepPlasmid(stateRef.current, dt, running)
+      if (stateRef.current.stage !== prev) setStageLabel(stateRef.current.stage)
       const stage = stateRef.current.stage
-      const f = stateRef.current.t / 1.65
+      const f = plasmidStageProgress(stateRef.current)
       const fs = fontPx(13, w, h)
 
       clearThemedScene(ctx, w, h, 'biotech')
@@ -121,7 +110,7 @@ export function PlasmidInsertionSim() {
       ctx.fillStyle = '#ecf0f1'
       ctx.font = `600 ${fs + 1}px Roboto, sans-serif`
       ctx.textAlign = 'left'
-      ctx.fillText(`Step ${stage + 1}: ${STAGES[stage]}`, 14, 28)
+      ctx.fillText(`Step ${stage + 1}: ${PLASMID_STAGES[stage]}`, 14, 28)
     },
     [running],
   )
@@ -147,8 +136,8 @@ export function PlasmidInsertionSim() {
               Follow restriction cut, insert, ligation, transformation, then copies.
             </ControlHint>
             <ControlStats>
-              <ControlStat label="Step" value={`${stageLabel + 1} / ${STAGES.length}`} />
-              <ControlStat label="Current" value={STAGES[stageLabel]} />
+              <ControlStat label="Step" value={`${stageLabel + 1} / ${PLASMID_STAGES.length}`} />
+              <ControlStat label="Current" value={PLASMID_STAGES[stageLabel]} />
             </ControlStats>
           </ControlSection>
         </>

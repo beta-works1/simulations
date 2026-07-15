@@ -9,39 +9,29 @@ import {
 import { clearThemedScene, fontPx, withShadow } from '../../shared/drawHelpers'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
-
-const MITOSIS = ['Prophase', 'Metaphase', 'Anaphase', 'Telophase', '2 identical cells']
-const MEIOSIS = [
-  'Prophase I',
-  'Metaphase I',
-  'Anaphase I',
-  'Telophase I',
-  'Meiosis II',
-  '4 unique gametes',
-]
+import {
+  createMitosisMeiosisState,
+  stagesForMode,
+  stepMitosisMeiosis,
+  type DivisionMode,
+} from './mitosisMeiosisModel'
 
 export function MitosisMeiosisSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [running, setRunning] = useState(true)
-  const [mode, setMode] = useState<'mitosis' | 'meiosis'>('mitosis')
-  const stageRef = useRef(0)
-  const accum = useRef(0)
+  const [mode, setMode] = useState<DivisionMode>('mitosis')
+  const stateRef = useRef(createMitosisMeiosisState())
   const [version, setVersion] = useState(0)
   const [stageLabel, setStageLabel] = useState(0)
 
-  const stages = mode === 'mitosis' ? MITOSIS : MEIOSIS
+  const stages = stagesForMode(mode)
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
-      if (dt > 0 && running) {
-        accum.current += dt
-        if (accum.current > 1.45) {
-          accum.current = 0
-          stageRef.current = (stageRef.current + 1) % stages.length
-          setStageLabel(stageRef.current)
-        }
-      }
-      const stage = stageRef.current
+      const prev = stateRef.current.stage
+      stateRef.current = stepMitosisMeiosis(stateRef.current, dt, running, stages.length)
+      if (stateRef.current.stage !== prev) setStageLabel(stateRef.current.stage)
+      const stage = stateRef.current.stage
       const fs = fontPx(14, w, h)
 
       clearThemedScene(ctx, w, h, 'biology')
@@ -142,9 +132,8 @@ export function MitosisMeiosisSim() {
       running={running}
       onTogglePlay={() => setRunning((r) => !r)}
       onReset={() => {
-        stageRef.current = 0
+        stateRef.current = createMitosisMeiosisState()
         setStageLabel(0)
-        accum.current = 0
         setVersion((v) => v + 1)
       }}
       controls={
@@ -159,10 +148,9 @@ export function MitosisMeiosisSim() {
                 { value: 'meiosis', label: 'Meiosis' },
               ]}
               onChange={(v) => {
-                setMode(v as 'mitosis' | 'meiosis')
-                stageRef.current = 0
+                setMode(v as DivisionMode)
+                stateRef.current = createMitosisMeiosisState()
                 setStageLabel(0)
-                accum.current = 0
                 setVersion((n) => n + 1)
               }}
             />

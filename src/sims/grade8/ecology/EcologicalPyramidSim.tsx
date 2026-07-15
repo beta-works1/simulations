@@ -12,10 +12,14 @@ import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import { useCanvasPointer } from '../../shared/useCanvasPointer'
-
-export function createPyramidState() {
-  return { baseEnergy: 10000, pulse: 0 }
-}
+import {
+  PYRAMID_COLORS,
+  PYRAMID_LABELS,
+  createPyramidState,
+  formatEnergy,
+  stepPyramid,
+  tierEnergies,
+} from './ecologicalPyramidModel'
 
 type TierLayout = { id: number; x: number; y: number; w: number; h: number; cx: number; cy: number }
 
@@ -23,9 +27,6 @@ type Layout = {
   tiers: TierLayout[]
   baseHandle: { x: number; y: number; r: number }
 }
-
-const LABELS = ['Producers', 'Primary consumers', 'Secondary', 'Tertiary']
-const COLORS = ['#27ae60', '#f1c40f', '#e67e22', '#c0392b']
 
 export function EcologicalPyramidSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -80,10 +81,10 @@ export function EcologicalPyramidSim() {
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
-      if (dt > 0 && running) stateRef.current.pulse += dt
+      stateRef.current = stepPyramid(stateRef.current, dt, running)
       const p = paramsRef.current
       stateRef.current.baseEnergy = p.base
-      const E = [p.base, p.base * 0.1, p.base * 0.01, p.base * 0.001]
+      const E = tierEnergies(p.base)
       const hover = hoverRef.current
       const fs = fontPx(13, w, h)
 
@@ -129,7 +130,7 @@ export function EcologicalPyramidSim() {
         ctx.lineTo(cx + hw * 0.72, y + 10)
         ctx.lineTo(cx - hw * 0.72, y + 10)
         ctx.closePath()
-        ctx.fillStyle = COLORS[i]
+        ctx.fillStyle = PYRAMID_COLORS[i]
         ctx.globalAlpha = isSel ? 1 : isHover ? 0.95 : 0.88 + 0.08 * Math.sin(stateRef.current.pulse * 2 + i)
         ctx.fill()
         ctx.globalAlpha = 1
@@ -139,7 +140,7 @@ export function EcologicalPyramidSim() {
           ctx.stroke()
         }
 
-        drawLabelPill(ctx, LABELS[i], cx, y + band / 2 - fs * 0.35, {
+        drawLabelPill(ctx, PYRAMID_LABELS[i], cx, y + band / 2 - fs * 0.35, {
           fontSize: fs,
           bg: 'rgba(0,0,0,0.35)',
           fg: '#fff',
@@ -235,9 +236,4 @@ export function EcologicalPyramidSim() {
       }
     />
   )
-}
-
-function formatEnergy(n: number) {
-  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`
-  return n.toFixed(n < 10 ? 1 : 0)
 }

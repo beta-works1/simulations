@@ -4,10 +4,7 @@ import { fontPx } from '../../shared/drawHelpers'
 import { drawHint, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
-
-export function createNeuronState() {
-  return { t: 0 }
-}
+import { createNeuronState, stepNeuron } from './neuronSignalModel'
 
 export function NeuronSignalSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -19,8 +16,7 @@ export function NeuronSignalSim() {
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
-      const speed = myelin ? 1.35 : 0.38
-      if (dt > 0 && running) stateRef.current.t += dt * speed
+      if (dt > 0) stateRef.current = stepNeuron(stateRef.current, dt, myelin, running)
       const t = stateRef.current.t % 1
       const fs = fontPx(13, w, h)
 

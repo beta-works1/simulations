@@ -13,32 +13,13 @@ import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import { useCanvasPointer } from '../../shared/useCanvasPointer'
-
-const METALS = [
-  { value: 'Na', label: 'Sodium (Na)', color: '#bdc3c7' },
-  { value: 'Mg', label: 'Magnesium (Mg)', color: '#aeb6bf' },
-  { value: 'Al', label: 'Aluminum (Al)', color: '#95a5a6' },
-  { value: 'Fe', label: 'Iron (Fe)', color: '#7f8c8d' },
-] as const
-
-const NONMETALS = [
-  { value: 'C', label: 'Carbon (C)', color: '#2c3e50' },
-  { value: 'N', label: 'Nitrogen (N)', color: '#3498db' },
-  { value: 'O', label: 'Oxygen (O)', color: '#e74c3c' },
-  { value: 'Cl', label: 'Chlorine (Cl)', color: '#27ae60' },
-] as const
-
-export interface MetalNonmetalState {
-  time: number
-}
-
-export function createMetalNonmetalState(): MetalNonmetalState {
-  return { time: 0 }
-}
-
-export function stepMetalNonmetal(s: MetalNonmetalState, dt: number): MetalNonmetalState {
-  return { time: s.time + dt }
-}
+import {
+  METALS,
+  NONMETALS,
+  createMetalNonmetalState,
+  cycleValue,
+  stepMetalNonmetal,
+} from './metalNonmetalModel'
 
 type PanelLayout = { id: string; x: number; y: number; w: number; h: number }
 
@@ -47,11 +28,6 @@ type Layout = {
   nonmetalPanel: PanelLayout
   reactTrack: { x: number; y: number; w: number; h: number }
   reactKnob: { x: number; y: number }
-}
-
-function cycleValue<T extends { value: string }>(list: readonly T[], current: string): string {
-  const idx = list.findIndex((m) => m.value === current)
-  return list[(idx + 1) % list.length].value
 }
 
 export function MetalNonmetalSim() {

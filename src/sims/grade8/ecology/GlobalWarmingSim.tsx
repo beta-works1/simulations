@@ -10,22 +10,7 @@ import { fontPx } from '../../shared/drawHelpers'
 import { drawLabelPill, drawValueChip } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
-
-export interface GreenhouseState {
-  co2Level: number
-  temperature: number
-  time: number
-}
-
-export function createGreenhouseState(): GreenhouseState {
-  return { co2Level: 0.4, temperature: 15, time: 0 }
-}
-
-export function stepGreenhouse(s: GreenhouseState, dt: number): GreenhouseState {
-  const target = 10 + s.co2Level * 28
-  const temperature = s.temperature + (target - s.temperature) * Math.min(1, dt * 0.35)
-  return { ...s, temperature, time: s.time + dt }
-}
+import { createGreenhouseState, stepGreenhouse } from './globalWarmingModel'
 
 export function GlobalWarmingSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)

@@ -9,25 +9,12 @@ import {
 import { clearThemedScene, fontPx } from '../../shared/drawHelpers'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
-
-type Allele = 'A' | 'a'
-
-function punnett(mother: [Allele, Allele], father: [Allele, Allele]) {
-  return [
-    [
-      [mother[0], father[0]] as [Allele, Allele],
-      [mother[0], father[1]] as [Allele, Allele],
-    ],
-    [
-      [mother[1], father[0]] as [Allele, Allele],
-      [mother[1], father[1]] as [Allele, Allele],
-    ],
-  ]
-}
-
-function phenotype(pair: [Allele, Allele]) {
-  return pair.includes('A') ? 'Dominant' : 'Recessive'
-}
+import {
+  dominantCount as countDominant,
+  phenotype,
+  punnett,
+  type Allele,
+} from './punnettSquareModel'
 
 export function PunnettSquareSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -36,7 +23,7 @@ export function PunnettSquareSim() {
   const [version, setVersion] = useState(0)
 
   const grid = useMemo(() => punnett(mother, father), [mother, father])
-  const dominantCount = grid.flat().filter((p) => p.includes('A')).length
+  const dominantCount = countDominant(grid)
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number) => {
