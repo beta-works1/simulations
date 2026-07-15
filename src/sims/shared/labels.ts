@@ -98,19 +98,15 @@ export function drawHint(
   })
 }
 
-/** Soft halo behind a interactive handle when hovered / dragged. */
+/** Reserved for hover feedback; filled disc removed — it competed with flasks/objects. */
 export function drawHoverHalo(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  radius: number,
-  active: boolean,
+  _ctx: CanvasRenderingContext2D,
+  _x: number,
+  _y: number,
+  _radius: number,
+  _active: boolean,
 ) {
-  if (!active) return
-  ctx.beginPath()
-  ctx.arc(x, y, radius, 0, Math.PI * 2)
-  ctx.fillStyle = LABEL.hover
-  ctx.fill()
+  // Intentionally empty. Interactive hit targets use pointer cursor instead.
 }
 
 export function drawAxisLabel(
