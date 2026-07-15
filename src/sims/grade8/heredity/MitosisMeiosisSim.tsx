@@ -8,7 +8,7 @@ import {
   ControlStats,
 } from '../../shared/Controls'
 import { clearThemedScene, fontPx, withShadow } from '../../shared/drawHelpers'
-import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
+import { drawHint, drawHoverHalo, drawLabelPill } from '../../shared/labels'
 import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'

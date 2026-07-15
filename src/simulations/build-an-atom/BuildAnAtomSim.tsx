@@ -22,7 +22,7 @@ import {
 
 type BucketHit = { id: string; x: number; y: number; w: number; h: number }
 
-function bucketLayout(w: number, h: number): BucketHit[] {
+function bucketLayout(_w: number, h: number): BucketHit[] {
   const bw = 40
   const bh = 40
   const x0 = 14

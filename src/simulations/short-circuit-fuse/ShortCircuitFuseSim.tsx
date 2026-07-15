@@ -226,7 +226,6 @@ export function ShortCircuitFuseSim() {
       const fuseY = tl.y
       if (Math.hypot(pt.x - fuseX, pt.y - fuseY) < 36) return 'fuse'
       const bypass = shortBypass(size.w, size.h)
-      const midX = (bypass[1].x + bypass[2].x) / 2
       const midY = bypass[1].y
       if (Math.abs(pt.y - midY) < 28 && pt.x >= bypass[1].x - 10 && pt.x <= bypass[2].x + 10) {
         return 'short'

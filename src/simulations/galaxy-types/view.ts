@@ -8,6 +8,7 @@ import { drawCaptionCard, wrapCanvasText } from '../shared/drawUtils'
 import {
   galaxyById,
   GALAXIES,
+  type GalaxyType,
   type GalaxyTypesState,
 } from './model'
 
