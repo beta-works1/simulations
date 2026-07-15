@@ -154,6 +154,73 @@ export function clearCanvas(
   fillThemeBackground(ctx, w, h, theme)
 }
 
+/** Word-wrap canvas text; returns lines that fit within maxWidth. */
+export function wrapCanvasText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  maxLines = 3,
+): string[] {
+  const words = text.split(/\s+/).filter(Boolean)
+  if (words.length === 0) return []
+  const lines: string[] = []
+  let current = words[0]!
+  for (let i = 1; i < words.length; i++) {
+    const word = words[i]!
+    const trial = `${current} ${word}`
+    if (ctx.measureText(trial).width <= maxWidth) {
+      current = trial
+    } else {
+      lines.push(current)
+      current = word
+      if (lines.length >= maxLines - 1) {
+        // pack remainder into last line, ellipsize if needed
+        const rest = [current, ...words.slice(i + 1)].join(' ')
+        let last = rest
+        while (last.length > 1 && ctx.measureText(`${last}…`).width > maxWidth) {
+          last = last.slice(0, -1)
+        }
+        lines.push(ctx.measureText(rest).width > maxWidth ? `${last}…` : rest)
+        return lines
+      }
+    }
+  }
+  lines.push(current)
+  return lines
+}
+
+/** Draw a bottom caption card with title + wrapped description; returns panel top y. */
+export function drawCaptionCard(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  title: string,
+  description: string,
+  opts?: { minHeight?: number; padX?: number },
+): number {
+  const padX = opts?.padX ?? 16
+  const minHeight = opts?.minHeight ?? 64
+  ctx.font = '12px Roboto, sans-serif'
+  const lines = wrapCanvasText(ctx, description, w - padX * 2 - 24, 2)
+  const cardH = Math.max(minHeight, 28 + 18 + lines.length * 16)
+  const top = h - cardH - 8
+  ctx.fillStyle = 'rgba(15,23,42,0.9)'
+  ctx.fillRect(padX, top, w - padX * 2, cardH)
+  ctx.strokeStyle = 'rgba(148,163,184,0.25)'
+  ctx.strokeRect(padX, top, w - padX * 2, cardH)
+  ctx.fillStyle = '#f1f5f9'
+  ctx.font = '600 15px Roboto, sans-serif'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic'
+  ctx.fillText(title, padX + 12, top + 24)
+  ctx.fillStyle = '#94a3b8'
+  ctx.font = '12px Roboto, sans-serif'
+  lines.forEach((line, i) => {
+    ctx.fillText(line, padX + 12, top + 44 + i * 16)
+  })
+  return top
+}
+
 export function canvasPoint(
   clientX: number,
   clientY: number,

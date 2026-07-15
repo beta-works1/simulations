@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { drawGlow, drawStarfield, fillThemeBackground, SCENE } from '../shared/canvasTheme'
+import { wrapCanvasText } from '../shared/drawUtils'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
 import { useRefPaintLoop } from '../shared/useRefPaintLoop'
@@ -129,12 +130,10 @@ function drawModernVignette(ctx: CanvasRenderingContext2D, w: number, h: number,
 function drawEraVignette(
   ctx: CanvasRenderingContext2D,
   w: number,
-  h: number,
+  vignetteH: number,
   event: TimelineEvent,
   animT: number,
 ) {
-  const vignetteH = h * 0.62
-
   switch (event.era) {
     case 'formation':
       drawFormationVignette(ctx, w, vignetteH, animT)
@@ -166,14 +165,38 @@ function drawTimeline(
   fillThemeBackground(ctx, w, h, 'space')
   drawStarfield(ctx, w, h, 55, 80)
 
-  drawEraVignette(ctx, w, h, event, animT)
-
-  const trackY = h * 0.72
-  const pad = 40
+  // Fixed chrome: title + wrapped desc ABOVE track, year labels BELOW — no overlap
+  const pad = Math.max(28, Math.min(48, w * 0.05))
   const trackW = w - pad * 2
+  ctx.font = '12px Roboto, sans-serif'
+  const descLines = wrapCanvasText(ctx, event.description, w - pad * 2, 2)
+  const titleBlock = 22 // title baseline from panel top
+  const descGap = 20
+  const descBlock = descLines.length * 16
+  const trackGap = 26
+  const yearRoom = 24
+  const chromeH = titleBlock + descGap + descBlock + trackGap + yearRoom + 20
+  const panelTop = Math.max(h * 0.52, h - chromeH)
+  const titleY = panelTop + titleBlock
+  const descTop = titleY + descGap
+  const trackY = descTop + descBlock + trackGap
 
-  ctx.fillStyle = 'rgba(15,23,42,0.92)'
-  ctx.fillRect(0, h * 0.62, w, h * 0.38)
+  drawEraVignette(ctx, w, panelTop, event, animT)
+
+  ctx.fillStyle = 'rgba(15,23,42,0.94)'
+  ctx.fillRect(0, panelTop, w, h - panelTop)
+
+  ctx.fillStyle = '#f1f5f9'
+  ctx.font = '600 16px Roboto, sans-serif'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic'
+  ctx.fillText(event.title, pad, titleY)
+
+  ctx.fillStyle = '#94a3b8'
+  ctx.font = '12px Roboto, sans-serif'
+  descLines.forEach((line, i) => {
+    ctx.fillText(line, pad, descTop + i * 16)
+  })
 
   ctx.strokeStyle = 'rgba(148,163,184,0.45)'
   ctx.lineWidth = 3
@@ -197,9 +220,9 @@ function drawTimeline(
     ctx.fillStyle = '#64748b'
     ctx.font = '10px Roboto, sans-serif'
     ctx.textAlign = 'center'
-    ctx.fillText(ev.yearLabel, x, trackY + 22)
-    ctx.textAlign = 'left'
+    ctx.fillText(ev.yearLabel, x, trackY + 20)
   })
+  ctx.textAlign = 'left'
 
   const thumbX = pad + (state.progress / MAX_PROGRESS) * trackW
   ctx.fillStyle = '#f1f5f9'
@@ -209,14 +232,6 @@ function drawTimeline(
   ctx.lineTo(thumbX - 8, trackY - 4)
   ctx.closePath()
   ctx.fill()
-
-  ctx.fillStyle = '#f1f5f9'
-  ctx.font = '600 16px Roboto, sans-serif'
-  ctx.fillText(event.title, 24, h * 0.62 + 36)
-  ctx.fillStyle = '#94a3b8'
-  ctx.font = '12px Roboto, sans-serif'
-  const desc = event.description
-  ctx.fillText(desc.length > 85 ? `${desc.slice(0, 82)}…` : desc, 24, h * 0.62 + 56)
 }
 
 type TimelinePaint = { sim: SolarSystemTimelineState; animT: number }

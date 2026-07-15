@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { drawGlow, drawStarfield, fillThemeBackground, SCENE, strokeWithGlow } from '../shared/canvasTheme'
+import { drawCaptionCard } from '../shared/drawUtils'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
 import { useRefPaintLoop } from '../shared/useRefPaintLoop'
@@ -189,17 +190,8 @@ function drawStarLifeCycle(
   drawStarfield(ctx, w, h, 91, 80)
 
   const stage = currentStage(state)
-  drawStageVisual(ctx, w * 0.5, h * 0.48, stage.id, state.stageProgress, state.mass)
-
-  ctx.fillStyle = 'rgba(15,23,42,0.85)'
-  ctx.fillRect(16, h - 72, w - 32, 56)
-  ctx.fillStyle = '#f1f5f9'
-  ctx.font = '600 15px Roboto, sans-serif'
-  ctx.fillText(stage.label, 28, h - 46)
-  ctx.fillStyle = '#94a3b8'
-  ctx.font = '12px Roboto, sans-serif'
-  const words = stage.description
-  ctx.fillText(words.length > 70 ? `${words.slice(0, 67)}…` : words, 28, h - 26)
+  drawStageVisual(ctx, w * 0.5, h * 0.42, stage.id, state.stageProgress, state.mass)
+  drawCaptionCard(ctx, w, h, stage.label, stage.description)
 }
 
 export function StarLifeCycleSim() {

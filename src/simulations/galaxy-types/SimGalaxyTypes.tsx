@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { drawGlow, drawStarfield, fillThemeBackground, SCENE } from '../shared/canvasTheme'
+import { drawCaptionCard, wrapCanvasText } from '../shared/drawUtils'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
 import { useRefPaintLoop } from '../shared/useRefPaintLoop'
@@ -121,47 +122,41 @@ function drawGalaxyTypes(
   fillThemeBackground(ctx, w, h, 'space')
   drawStarfield(ctx, w, h, 77, 100)
 
+  const info = galaxyById(state.selected)
+  ctx.font = '12px Roboto, sans-serif'
+  // Reserve space for caption so labels never sit on the card
+  const descProbe = wrapCanvasText(ctx, info.description, w - 56, 2)
+  const cardH = Math.max(64, 28 + 18 + descProbe.length * 16)
+  const cardTop = h - cardH - 8
+
   const compareAll = w > 520
   if (compareAll) {
     const third = w / 3
-    drawSpiralGalaxy(ctx, third * 0.5, h * 0.45, state.rotation, 0.9)
-    drawEllipticalGalaxy(ctx, third * 1.5, h * 0.45, 0.9)
-    drawIrregularGalaxy(ctx, third * 2.5, h * 0.45, 0.9)
+    const vizCy = Math.min(h * 0.42, cardTop * 0.5)
+    drawSpiralGalaxy(ctx, third * 0.5, vizCy, state.rotation, 0.9)
+    drawEllipticalGalaxy(ctx, third * 1.5, vizCy, 0.9)
+    drawIrregularGalaxy(ctx, third * 2.5, vizCy, 0.9)
 
-    ctx.fillStyle = '#64748b'
     ctx.font = '600 11px Roboto, sans-serif'
     ctx.textAlign = 'center'
     GALAXIES.forEach((g, i) => {
       ctx.fillStyle = g.id === state.selected ? '#38bdf8' : '#64748b'
-      ctx.fillText(g.label, third * (i + 0.5), h * 0.82)
+      ctx.fillText(g.label, third * (i + 0.5), cardTop - 14)
     })
     ctx.textAlign = 'left'
 
-    ctx.strokeStyle =
-      state.selected === 'spiral'
-        ? 'rgba(56,189,248,0.5)'
-        : state.selected === 'elliptical'
-          ? 'rgba(56,189,248,0.5)'
-          : 'rgba(56,189,248,0.5)'
     const hi = GALAXIES.findIndex((g) => g.id === state.selected)
-    ctx.strokeRect(third * hi + 8, 12, third - 16, h - 24)
+    ctx.strokeStyle = 'rgba(56,189,248,0.5)'
+    ctx.strokeRect(third * hi + 8, 12, third - 16, Math.max(40, cardTop - 28))
   } else {
     const cx = w * 0.5
-    const cy = h * 0.45
+    const cy = Math.min(h * 0.42, cardTop * 0.48)
     if (state.selected === 'spiral') drawSpiralGalaxy(ctx, cx, cy, state.rotation, 1.1)
     else if (state.selected === 'elliptical') drawEllipticalGalaxy(ctx, cx, cy, 1.1)
     else drawIrregularGalaxy(ctx, cx, cy, 1.1)
   }
 
-  const info = galaxyById(state.selected)
-  ctx.fillStyle = 'rgba(15,23,42,0.88)'
-  ctx.fillRect(16, h - 64, w - 32, 48)
-  ctx.fillStyle = '#f1f5f9'
-  ctx.font = '600 14px Roboto, sans-serif'
-  ctx.fillText(info.label, 28, h - 38)
-  ctx.fillStyle = '#94a3b8'
-  ctx.font = '12px Roboto, sans-serif'
-  ctx.fillText(info.description, 28, h - 20)
+  drawCaptionCard(ctx, w, h, info.label, info.description)
 }
 
 export function GalaxyTypesSim() {
