@@ -4,10 +4,10 @@ import { useCanvasSize } from '../shared/useCanvasSize'
 import { useRefPaintLoop } from '../shared/useRefPaintLoop'
 import {
   defaultRainbowState,
-  drawRainbowDispersion,
   stepRainbow,
   type RainbowState,
 } from './model'
+import { drawRainbowDispersion } from './view'
 
 export function RainbowDispersionSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)

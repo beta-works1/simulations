@@ -4,10 +4,10 @@ import { useCanvasSize } from '../shared/useCanvasSize'
 import {
   computeCurvedLayout,
   defaultCurvedState,
-  drawCurvedMirrors,
   type CurvedMirrorsState,
   type MirrorType,
 } from './model'
+import { drawCurvedMirrors } from './view'
 
 export function CurvedMirrorsSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)

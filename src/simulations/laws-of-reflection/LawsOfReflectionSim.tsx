@@ -4,11 +4,11 @@ import { useCanvasSize } from '../shared/useCanvasSize'
 import { canvasPoint } from '../shared/drawUtils'
 import {
   defaultLawsState,
-  drawLawsOfReflection,
   hitTestSource,
   incidenceFromSource,
   type LawsOfReflectionState,
 } from './model'
+import { drawLawsOfReflection } from './view'
 
 export function LawsOfReflectionSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)

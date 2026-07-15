@@ -3,10 +3,10 @@ import { SimShell, SimTransport } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
 import {
   defaultPlaneState,
-  drawPlaneMirrorPeriscope,
   type MirrorMode,
   type PlaneMirrorState,
 } from './model'
+import { drawPlaneMirrorPeriscope } from './view'
 
 export function PlaneMirrorPeriscopeSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)

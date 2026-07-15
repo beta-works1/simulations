@@ -3,10 +3,10 @@ import { SimShell, SimTransport } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
 import {
   defaultRegularState,
-  drawRegularVsDiffuse,
   type RegularVsDiffuseState,
   type SurfaceType,
 } from './model'
+import { drawRegularVsDiffuse } from './view'
 
 export function RegularVsDiffuseSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
