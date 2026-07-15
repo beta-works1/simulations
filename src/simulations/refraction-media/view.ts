@@ -75,41 +75,35 @@ export function drawRefractionMedia(
 
   drawRay(ctx, incidentStart, incidentDir, rayLen, RAY_YELLOW)
 
-  if (state.showNormal) {
-    const normalTop: Vec2 = { x: hit.x, y: hit.y - rayLen * 0.5 }
-    const normalBottom: Vec2 = { x: hit.x, y: hit.y + rayLen * 0.45 }
-    drawDashedLine(ctx, hit, normalTop, RAY_WHITE)
-    drawDashedLine(ctx, hit, normalBottom, RAY_WHITE)
-    drawLabel(ctx, 'Normal', { x: hit.x + 32, y: hit.y - rayLen * 0.25 })
-  }
+  const normalTop: Vec2 = { x: hit.x, y: hit.y - rayLen * 0.5 }
+  const normalBottom: Vec2 = { x: hit.x, y: hit.y + rayLen * 0.45 }
+  drawDashedLine(ctx, hit, normalTop, RAY_WHITE)
+  drawDashedLine(ctx, hit, normalBottom, RAY_WHITE)
+  drawLabel(ctx, 'Normal', { x: hit.x + 32, y: hit.y - rayLen * 0.25 })
 
-  if (state.showAngles) {
-    drawAngleArc(
-      ctx,
-      hit,
-      -Math.PI / 2 - iRad,
-      -Math.PI / 2,
-      34,
-      `i = ${state.incidenceDeg}°`,
-      RAY_YELLOW,
-    )
-  }
+  drawAngleArc(
+    ctx,
+    hit,
+    -Math.PI / 2 - iRad,
+    -Math.PI / 2,
+    34,
+    `i = ${state.incidenceDeg}°`,
+    RAY_YELLOW,
+  )
 
   if (refractedDeg !== null) {
     const rRad = refractedDeg * DEG2RAD
     const refractedDir = normalize({ x: Math.sin(rRad), y: Math.cos(rRad) })
     drawRay(ctx, hit, refractedDir, rayLen, RAY_CYAN)
-    if (state.showAngles) {
-      drawAngleArc(
-        ctx,
-        hit,
-        Math.PI / 2,
-        Math.PI / 2 + rRad,
-        46,
-        `r = ${Math.round(refractedDeg)}°`,
-        RAY_CYAN,
-      )
-    }
+    drawAngleArc(
+      ctx,
+      hit,
+      Math.PI / 2,
+      Math.PI / 2 + rRad,
+      46,
+      `r = ${Math.round(refractedDeg)}°`,
+      RAY_CYAN,
+    )
     drawLabel(ctx, `n₁ sin i = n₂ sin r`, { x: w * 0.5, y: h - 28 }, 'center')
   } else {
     const reflectedDir = normalize({ x: Math.sin(iRad), y: -Math.cos(iRad) })
