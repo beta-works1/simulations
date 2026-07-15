@@ -2,6 +2,7 @@
  * Build an Atom — React + Canvas recreation from PhET build-an-atom BAAModel limits.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCanvasPointer } from '../../sims/shared/useCanvasPointer'
 import { drawGlow, fillThemeBackground } from '../shared/canvasTheme'
 import { SimShell } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
@@ -18,6 +19,34 @@ import {
   netCharge,
   type AtomState,
 } from './model'
+
+type BucketHit = { id: string; x: number; y: number; w: number; h: number }
+
+function bucketLayout(w: number, h: number): BucketHit[] {
+  const bw = 40
+  const bh = 40
+  const x0 = 14
+  const gap = 8
+  const startY = Math.max(36, h * 0.2)
+  const rows = [
+    ['add-protons', 'sub-protons'],
+    ['add-neutrons', 'sub-neutrons'],
+    ['add-electrons', 'sub-electrons'],
+  ] as const
+  const hits: BucketHit[] = []
+  rows.forEach((pair, row) => {
+    pair.forEach((id, col) => {
+      hits.push({
+        id,
+        x: x0 + col * (bw + gap),
+        y: startY + row * (bh + gap),
+        w: bw,
+        h: bh,
+      })
+    })
+  })
+  return hits
+}
 
 function drawAtom(ctx: CanvasRenderingContext2D, w: number, h: number, state: AtomState) {
   fillThemeBackground(ctx, w, h, 'chemistry')
@@ -110,6 +139,37 @@ function drawAtom(ctx: CanvasRenderingContext2D, w: number, h: number, state: At
     ctx.fillStyle = q > 0 ? '#f87171' : '#60a5fa'
     ctx.fillText(q > 0 ? `+${q}` : String(q), w * 0.5 + 48, h - 68)
   }
+
+  const colors: Record<string, string> = {
+    'add-protons': '#ef4444',
+    'sub-protons': '#ef4444',
+    'add-neutrons': '#94a3b8',
+    'sub-neutrons': '#94a3b8',
+    'add-electrons': '#3b82f6',
+    'sub-electrons': '#3b82f6',
+  }
+  const labels: Record<string, string> = {
+    'add-protons': 'p +',
+    'sub-protons': 'p −',
+    'add-neutrons': 'n +',
+    'sub-neutrons': 'n −',
+    'add-electrons': 'e +',
+    'sub-electrons': 'e −',
+  }
+  for (const b of bucketLayout(w, h)) {
+    ctx.fillStyle = 'rgba(15,23,42,0.85)'
+    ctx.beginPath()
+    ctx.roundRect(b.x, b.y, b.w, b.h, 8)
+    ctx.fill()
+    ctx.strokeStyle = colors[b.id]
+    ctx.lineWidth = 2
+    ctx.stroke()
+    ctx.fillStyle = colors[b.id]
+    ctx.font = '700 14px Roboto, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(labels[b.id], b.x + b.w / 2, b.y + b.h / 2)
+  }
 }
 
 export function BuildAnAtomSim() {
@@ -132,6 +192,25 @@ export function BuildAnAtomSim() {
   const setCount = (key: keyof AtomState, delta: number) => {
     setAtom((a) => clampAtom({ [key]: a[key] + delta }, a))
   }
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt, size) => {
+      for (const b of bucketLayout(size.w, size.h)) {
+        if (pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h) return b.id
+      }
+      return null
+    },
+    cursorForHit: () => 'pointer',
+    onTap: (id) => {
+      if (!id) return
+      if (id === 'add-protons') setCount('protons', 1)
+      else if (id === 'sub-protons') setCount('protons', -1)
+      else if (id === 'add-neutrons') setCount('neutrons', 1)
+      else if (id === 'sub-neutrons') setCount('neutrons', -1)
+      else if (id === 'add-electrons') setCount('electrons', 1)
+      else if (id === 'sub-electrons') setCount('electrons', -1)
+    },
+  })
 
   const reset = () => setAtom(defaultAtomState())
 

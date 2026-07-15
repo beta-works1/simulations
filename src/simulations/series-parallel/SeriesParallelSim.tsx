@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { clamp } from '../../sims/shared/math'
+import { useCanvasPointer } from '../../sims/shared/useCanvasPointer'
 import { drawGlow, fillThemeBackground, SCENE, strokeWithGlow } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useAnimationLoop } from '../shared/useAnimationLoop'
@@ -181,10 +183,18 @@ export function SeriesParallelSim() {
       }
     }
 
-    ctx.fillStyle = '#64748b'
-    ctx.font = '12px Roboto, sans-serif'
+    const modeLabel = state.mode === 'series' ? 'Series' : 'Parallel'
+    ctx.fillStyle = 'rgba(15,23,42,0.75)'
+    ctx.beginPath()
+    ctx.roundRect(12, 10, 148, 28, 6)
+    ctx.fill()
+    ctx.strokeStyle = '#38bdf8'
+    ctx.lineWidth = 1.5
+    ctx.stroke()
+    ctx.fillStyle = '#e2e8f0'
+    ctx.font = '600 12px Roboto, sans-serif'
     ctx.textAlign = 'left'
-    ctx.fillText(`Mode: ${state.mode === 'series' ? 'Series' : 'Parallel'}`, 16, 24)
+    ctx.fillText(`Mode: ${modeLabel} (tap)`, 22, 29)
   }, [w, h, state, readout])
 
   useEffect(() => {
@@ -204,6 +214,35 @@ export function SeriesParallelSim() {
     setRunning(true)
     particlesRef.current = []
   }
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt, size) => {
+      if (pt.x >= 12 && pt.x <= 160 && pt.y >= 10 && pt.y <= 38) return 'mode'
+      if (state.mode === 'series') {
+        const loop = seriesLoop(size.w, size.h)
+        const batX = loop[0].x
+        const batY = (loop[0].y + loop[3].y) / 2
+        if (Math.hypot(pt.x - batX, pt.y - batY) < 40) return 'battery'
+      } else {
+        const { shared, top, bottom } = parallelLoops(size.w, size.h)
+        const batX = shared[0].x
+        const batY = ((top[0].y + top[2].y) / 2 + (bottom[0].y + bottom[2].y) / 2) / 2
+        if (Math.hypot(pt.x - batX, pt.y - batY) < 40) return 'battery'
+      }
+      return null
+    },
+    cursorForHit: (id) => (id === 'mode' ? 'pointer' : 'grab'),
+    onDrag: (id, pt, size) => {
+      if (id !== 'battery') return
+      const voltage = clamp(Math.round((1.5 + (pt.y / Math.max(1, size.h)) * 10.5) * 2) / 2, 1.5, 12)
+      setState((s) => ({ ...s, voltage }))
+    },
+    onTap: (id) => {
+      if (id === 'mode') {
+        setState((s) => ({ ...s, mode: s.mode === 'series' ? 'parallel' : 'series' }))
+      }
+    },
+  })
 
   return (
     <SimShell

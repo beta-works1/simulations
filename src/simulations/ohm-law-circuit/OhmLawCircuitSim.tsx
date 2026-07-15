@@ -4,6 +4,8 @@
  * formula letters that scale with magnitude, and AA battery stack.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { clamp } from '../../sims/shared/math'
+import { useCanvasPointer } from '../../sims/shared/useCanvasPointer'
 import { drawGlow, fillThemeBackground, SCENE, strokeWithGlow } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useAnimationLoop } from '../shared/useAnimationLoop'
@@ -260,6 +262,35 @@ export function OhmLawCircuitSim() {
     setRunning(true)
     particlesRef.current = []
   }
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt, size) => {
+      const loop = circuitLoop(size.w, size.h)
+      const [tl, tr, br, bl] = loop
+      const topMid = { x: (tl.x + tr.x) / 2, y: tl.y }
+      const bottomMid = { x: (bl.x + br.x) / 2, y: br.y }
+      const leftMid = { x: tl.x, y: (tl.y + bl.y) / 2 }
+      if (Math.hypot(pt.x - leftMid.x, pt.y - leftMid.y) < 42) return 'battery'
+      if (Math.hypot(pt.x - topMid.x, pt.y - topMid.y) < 48) return 'resistor'
+      if (Math.hypot(pt.x - bottomMid.x, pt.y - bottomMid.y) < 36) return 'switch'
+      return null
+    },
+    cursorForHit: (id) => (id === 'switch' ? 'pointer' : 'grab'),
+    onDrag: (id, pt, size) => {
+      if (id === 'battery') {
+        const t = clamp(1 - pt.y / Math.max(1, size.h), 0, 1)
+        const voltage = Math.round((PHET_VOLTAGE.min + t * (PHET_VOLTAGE.max - PHET_VOLTAGE.min)) * 10) / 10
+        setState((s) => ({ ...s, voltage }))
+      } else if (id === 'resistor') {
+        const t = clamp(pt.x / Math.max(1, size.w), 0, 1)
+        const resistance = Math.round(PHET_RESISTANCE.min + t * (PHET_RESISTANCE.max - PHET_RESISTANCE.min))
+        setState((s) => ({ ...s, resistance }))
+      }
+    },
+    onTap: (id) => {
+      if (id === 'switch') setState((s) => ({ ...s, switchClosed: !s.switchClosed }))
+    },
+  })
 
   return (
     <SimShell

@@ -2,6 +2,8 @@
  * Projectile Motion — React + Canvas recreation from PhET projectile-motion.
  */
 import { useRef, useState } from 'react'
+import { clamp } from '../../sims/shared/math'
+import { useCanvasPointer } from '../../sims/shared/useCanvasPointer'
 import { fillThemeBackground, SCENE, strokeWithGlow } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
@@ -91,11 +93,22 @@ function draw(
   const muzzle = worldToCanvas(0, params.height, w, h, maxX, maxY)
   const rad = (params.angleDeg * Math.PI) / 180
   const barrel = 36
+  const pullLen = 24 + (params.speed / PHET.speedRange[1]) * 40
   ctx.save()
   ctx.translate(muzzle.x, muzzle.y)
   ctx.rotate(-rad)
   ctx.fillStyle = '#475569'
   ctx.fillRect(0, -7, barrel, 14)
+  ctx.strokeStyle = 'rgba(148,163,184,0.55)'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(0, 0)
+  ctx.lineTo(-pullLen, 0)
+  ctx.stroke()
+  ctx.fillStyle = '#94a3b8'
+  ctx.beginPath()
+  ctx.arc(-pullLen, 0, 6, 0, Math.PI * 2)
+  ctx.fill()
   ctx.fillStyle = '#1e293b'
   ctx.beginPath()
   ctx.arc(0, 0, 14, 0, Math.PI * 2)
@@ -186,6 +199,37 @@ export function ProjectileMotionSim() {
       return next
     })
   }
+
+  const cannonLayout = (size: { w: number; h: number }) => {
+    const s = stateRef.current
+    const maxX = Math.max(40, s.flight.range * 1.15, 25)
+    const maxY = Math.max(s.params.height + 5, s.flight.apex * 1.15, 16)
+    return worldToCanvas(0, s.params.height, size.w, size.h, maxX, maxY)
+  }
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt, size) => {
+      const m = cannonLayout(size)
+      return Math.hypot(pt.x - m.x, pt.y - m.y) < 78 ? 'cannon' : null
+    },
+    onDrag: (_id, pt, size) => {
+      const m = cannonLayout(size)
+      const dx = pt.x - m.x
+      const dy = pt.y - m.y
+      const angleDeg = clamp(
+        Math.round((-Math.atan2(dy, dx) * 180) / Math.PI),
+        PHET.angleRange[0],
+        PHET.angleRange[1],
+      )
+      const dist = Math.hypot(dx, dy)
+      const speed = clamp(
+        Math.round(((dist - 20) / 90) * PHET.speedRange[1]),
+        PHET.speedRange[0],
+        PHET.speedRange[1],
+      )
+      update({ angleDeg, speed })
+    },
+  })
 
   const fire = () => {
     const flight = fireProjectile(params)

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { clamp } from '../../sims/shared/math'
+import { useCanvasPointer } from '../../sims/shared/useCanvasPointer'
 import { drawGlow, fillThemeBackground, SCENE, strokeWithGlow, withShadow } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useAnimationLoop } from '../shared/useAnimationLoop'
@@ -20,6 +22,22 @@ export function SpeakerMechanismSim() {
   const timeRef = useRef(0)
   const wavesRef = useRef<SoundWave[]>([])
   const lastSpawnRef = useRef(0)
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt, size) => {
+      const cx = size.w * 0.38
+      const cy = size.h * 0.52
+      const housingR = Math.min(size.h * 0.28, 120)
+      return Math.hypot(pt.x - cx, pt.y - cy) <= housingR + 24 ? 'speaker' : null
+    },
+    onDrag: (_id, pt, size) => {
+      const cy = size.h * 0.52
+      const housingR = Math.min(size.h * 0.28, 120)
+      const current = clamp(Math.round((1 - (pt.y - (cy - housingR)) / (housingR * 2)) * 20) / 20, 0, 1)
+      const frequency = clamp(Math.round((40 + (pt.x / Math.max(1, size.w)) * 360) / 10) * 10, 40, 400)
+      setState((s) => ({ ...s, current, frequency }))
+    },
+  })
 
   useAnimationLoop(state.running, (dt) => {
     timeRef.current += dt

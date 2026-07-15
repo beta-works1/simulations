@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { clamp } from '../../sims/shared/math'
+import { useCanvasPointer } from '../../sims/shared/useCanvasPointer'
 import { drawGlow, fillThemeBackground, SCENE, strokeWithGlow } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useAnimationLoop } from '../shared/useAnimationLoop'
@@ -215,6 +217,43 @@ export function ShortCircuitFuseSim() {
     setRunning(true)
     particlesRef.current = []
   }
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt, size) => {
+      const loop = mainLoop(size.w, size.h)
+      const [tl, tr] = loop
+      const fuseX = (tl.x + tr.x) / 2
+      const fuseY = tl.y
+      if (Math.hypot(pt.x - fuseX, pt.y - fuseY) < 36) return 'fuse'
+      const bypass = shortBypass(size.w, size.h)
+      const midX = (bypass[1].x + bypass[2].x) / 2
+      const midY = bypass[1].y
+      if (Math.abs(pt.y - midY) < 28 && pt.x >= bypass[1].x - 10 && pt.x <= bypass[2].x + 10) {
+        return 'short'
+      }
+      return null
+    },
+    cursorForHit: (id) => {
+      if (id === 'short') return 'pointer'
+      if (id === 'fuse' && state.fuseBlown) return 'pointer'
+      return 'grab'
+    },
+    onDrag: (id, pt, size) => {
+      if (id !== 'fuse') return
+      setState((s) => {
+        if (s.fuseBlown) return s
+        const rating = clamp(Math.round((1 + (pt.x / Math.max(1, size.w)) * 4) * 2) / 2, 1, 5)
+        return { ...s, fuseRating: rating }
+      })
+    },
+    onTap: (id) => {
+      if (id === 'short') {
+        setState((s) => (s.fuseBlown ? s : { ...s, shorted: !s.shorted, fuseBlown: false }))
+      } else if (id === 'fuse') {
+        setState((s) => (s.fuseBlown ? resetFuse(s) : s))
+      }
+    },
+  })
 
   return (
     <SimShell

@@ -2,6 +2,8 @@
  * Balancing Act — React + Canvas recreation from PhET balancing-act Plank model.
  */
 import { useRef, useState } from 'react'
+import { clamp } from '../../sims/shared/math'
+import { useCanvasPointer } from '../../sims/shared/useCanvasPointer'
 import { fillThemeBackground } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
@@ -128,6 +130,59 @@ export function BalancingActSim() {
       return next
     })
   }
+
+  const dragStartRef = useRef<{ mass: number; y: number } | null>(null)
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt, size) => {
+      const s = stateRef.current
+      const cx = size.w * 0.5
+      const fulcrumY = size.h * 0.62
+      const pxPerM = Math.min(size.w * 0.18, 110)
+      const t = s.tilt
+      const cos = Math.cos(t)
+      const sin = Math.sin(t)
+      const dx = pt.x - cx
+      const dy = pt.y - fulcrumY
+      const lx = dx * cos - dy * sin
+      const ly = dx * sin + dy * cos
+      const leftX = -s.leftDist * pxPerM
+      const rightX = s.rightDist * pxPerM
+      const leftSize = 18 + Math.sqrt(s.leftMass) * 3.2
+      const rightSize = 18 + Math.sqrt(s.rightMass) * 3.2
+      if (Math.abs(lx - leftX) < leftSize * 0.75 && ly > -8 - leftSize - 12 && ly < 16) return 'left'
+      if (Math.abs(lx - rightX) < rightSize * 0.75 && ly > -8 - rightSize - 12 && ly < 16) return 'right'
+      return null
+    },
+    onDragStart: (id, pt) => {
+      const s = stateRef.current
+      dragStartRef.current = {
+        mass: id === 'left' ? s.leftMass : s.rightMass,
+        y: pt.y,
+      }
+    },
+    onDrag: (id, pt, size) => {
+      const s = stateRef.current
+      const cx = size.w * 0.5
+      const fulcrumY = size.h * 0.62
+      const pxPerM = Math.min(size.w * 0.18, 110)
+      const t = s.tilt
+      const cos = Math.cos(t)
+      const sin = Math.sin(t)
+      const dx = pt.x - cx
+      const dy = pt.y - fulcrumY
+      const lx = dx * cos - dy * sin
+      const dist = clamp(Math.abs(lx) / pxPerM, 0.25, 2)
+      const start = dragStartRef.current
+      const massDelta = start ? (start.y - pt.y) / 4 : 0
+      const mass = clamp(Math.round(((start?.mass ?? 10) + massDelta) * 2) / 2, 1, 50)
+      if (id === 'left') patch({ leftDist: dist, leftMass: mass })
+      else patch({ rightDist: dist, rightMass: mass })
+    },
+    onDragEnd: () => {
+      dragStartRef.current = null
+    },
+  })
 
   const reset = () => {
     const d = defaultBalanceState()
