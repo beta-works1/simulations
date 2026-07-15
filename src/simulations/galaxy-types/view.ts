@@ -2,6 +2,7 @@
  * View — canvas drawing for Galaxy Types.
  * Reads model state only; no physics mutations.
  */
+import { roundRect } from '../../sims/shared/drawHelpers'
 import { drawGlow, drawStarfield, fillThemeBackground, SCENE } from '../shared/canvasTheme'
 import { drawCaptionCard, wrapCanvasText } from '../shared/drawUtils'
 import {
@@ -110,6 +111,51 @@ function drawIrregularGalaxy(ctx: CanvasRenderingContext2D, cx: number, cy: numb
   }
 }
 
+export type GalaxyHitRegion = {
+  id: GalaxyType
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+/** Hit regions for tap-to-select (wide: columns; narrow: thumbnail strip). */
+export function galaxyHitRegions(w: number, h: number): GalaxyHitRegion[] {
+  const cardH = Math.max(64, 62)
+  const cardTop = h - cardH - 8
+  if (w > 520) {
+    const third = w / 3
+    const regionH = Math.max(40, cardTop - 28)
+    return GALAXIES.map((g, i) => ({
+      id: g.id,
+      x: third * i + 8,
+      y: 12,
+      w: third - 16,
+      h: regionH,
+    }))
+  }
+  const stripY = Math.max(8, cardTop - 56)
+  const cellW = (w - 32) / 3
+  return GALAXIES.map((g, i) => ({
+    id: g.id,
+    x: 16 + i * cellW,
+    y: stripY,
+    w: cellW - 6,
+    h: 44,
+  }))
+}
+
+export function hitTestGalaxy(
+  pt: { x: number; y: number },
+  w: number,
+  h: number,
+): GalaxyType | null {
+  for (const r of galaxyHitRegions(w, h)) {
+    if (pt.x >= r.x && pt.x <= r.x + r.w && pt.y >= r.y && pt.y <= r.y + r.h) return r.id
+  }
+  return null
+}
+
 export function drawGalaxyTypes(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -147,10 +193,27 @@ export function drawGalaxyTypes(
     ctx.strokeRect(third * hi + 8, 12, third - 16, Math.max(40, cardTop - 28))
   } else {
     const cx = w * 0.5
-    const cy = Math.min(h * 0.42, cardTop * 0.48)
-    if (state.selected === 'spiral') drawSpiralGalaxy(ctx, cx, cy, state.rotation, 1.1)
-    else if (state.selected === 'elliptical') drawEllipticalGalaxy(ctx, cx, cy, 1.1)
-    else drawIrregularGalaxy(ctx, cx, cy, 1.1)
+    const cy = Math.min(h * 0.38, cardTop * 0.42)
+    if (state.selected === 'spiral') drawSpiralGalaxy(ctx, cx, cy, state.rotation, 1.0)
+    else if (state.selected === 'elliptical') drawEllipticalGalaxy(ctx, cx, cy, 1.0)
+    else drawIrregularGalaxy(ctx, cx, cy, 1.0)
+
+    // Thumbnail strip for tap-to-select on narrow layouts
+    const regions = galaxyHitRegions(w, h)
+    regions.forEach((r) => {
+      const active = r.id === state.selected
+      ctx.fillStyle = active ? 'rgba(56,189,248,0.22)' : 'rgba(15,23,42,0.55)'
+      ctx.strokeStyle = active ? 'rgba(56,189,248,0.7)' : 'rgba(100,116,139,0.45)'
+      ctx.lineWidth = 1.5
+      roundRect(ctx, r.x, r.y, r.w, r.h, 6)
+      ctx.fill()
+      ctx.stroke()
+      ctx.fillStyle = active ? '#38bdf8' : '#94a3b8'
+      ctx.font = '600 11px Roboto, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText(galaxyById(r.id).label, r.x + r.w / 2, r.y + r.h / 2 + 4)
+    })
+    ctx.textAlign = 'left'
   }
 
   drawCaptionCard(ctx, w, h, info.label, info.description)

@@ -1,4 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
+import { clamp } from '../../sims/shared/math'
+import { useCanvasPointer } from '../../sims/shared/useCanvasPointer'
 import { drawGlow, withShadow } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
@@ -163,11 +165,25 @@ export function WindTurbineSim() {
     height: h,
     stateRef,
     running,
-    step: (s, dt) => stepWindTurbine({ ...s, running: true, windSpeed }, dt),
+    step: (s, dt) => stepWindTurbine({ ...s, running: true }, dt),
     draw: drawWindTurbine,
     onSync: (s) => {
+      setWindSpeed(s.windSpeed)
       setRpm(bladeRpm(s.windSpeed))
       setPowerLabel(formatPower(powerOutputKw(s.windSpeed)))
+    },
+  })
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt, size) => {
+      // Left/center scene (not the readout box)
+      if (pt.x < size.w * 0.55) return 'wind'
+      return null
+    },
+    onDrag: (_id, pt, size) => {
+      const t = clamp(pt.x / Math.max(1, size.w * 0.55), 0, 1)
+      const v = Math.round((MIN_WIND + t * (MAX_WIND - MIN_WIND)) * 2) / 2
+      stateRef.current = { ...stateRef.current, windSpeed: v }
     },
   })
 
@@ -187,7 +203,7 @@ export function WindTurbineSim() {
           <h3>Wind Turbine</h3>
           <p className="sim-hint">
             Wind spins the blades, converting kinetic energy to mechanical rotation, then to
-            electrical power in the generator.
+            electrical power in the generator. Drag across the sky/turbine to set wind speed.
           </p>
           <div className="sim-slider-row">
             <label>

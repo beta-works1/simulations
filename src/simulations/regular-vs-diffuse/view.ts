@@ -90,19 +90,24 @@ export function drawRegularVsDiffuse(
     )
   }
 
+  const theta = (state.incidenceDeg * Math.PI) / 180
+  const incidentDir = normalize({ x: Math.sin(theta), y: Math.cos(theta) })
+
   for (let i = 0; i < state.rayCount; i++) {
     const hitX = surfaceX1 + spacing * (i + 1)
     const hit: Vec2 = { x: hitX, y: surfaceY }
-    const incidentFrom: Vec2 = { x: hitX, y: surfaceY - rayLen }
-    const incidentDir = normalize({ x: 0, y: 1 })
+    const incidentFrom: Vec2 = {
+      x: hitX - incidentDir.x * rayLen,
+      y: surfaceY - incidentDir.y * rayLen,
+    }
 
     drawGlow(ctx, incidentFrom.x, incidentFrom.y, 14, RAY_YELLOW, 0.35)
     drawRay(ctx, incidentFrom, incidentDir, rayLen, RAY_YELLOW, 2)
 
-    const scatter = seededScatter(i, state.surface)
+    const outAngle = theta + seededScatter(i, state.surface)
     const reflectDir = normalize({
-      x: Math.sin(scatter),
-      y: -Math.cos(scatter),
+      x: Math.sin(outAngle),
+      y: -Math.cos(outAngle),
     })
     drawRay(ctx, hit, reflectDir, rayLen * 0.85, RAY_CYAN, 2)
   }

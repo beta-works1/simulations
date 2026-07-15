@@ -1,19 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { clamp } from '../../sims/shared/math'
+import { useCanvasPointer } from '../../sims/shared/useCanvasPointer'
 import { drawGlow, fillThemeBackground, SCENE, strokeWithGlow, withShadow } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useAnimationLoop } from '../shared/useAnimationLoop'
 import { useCanvasSize } from '../shared/useCanvasSize'
-import { DEFAULT_MOTOR_STATE, motorSpeed, resetMotor, type MotorState } from './model'
+import { DEFAULT_MOTOR_STATE, motorSpeed, resetMotor } from './model'
 
 export function ElectricMotorSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { w, h } = useCanvasSize(canvasRef)
-  const [state, setState] = useState<MotorState>(DEFAULT_MOTOR_STATE)
+  const paramsRef = useRef({ current: DEFAULT_MOTOR_STATE.current, running: true })
   const angleRef = useRef(0)
+  const [running, setRunning] = useState(true)
+  const [current, setCurrent] = useState(DEFAULT_MOTOR_STATE.current)
+  const [version, setVersion] = useState(0)
 
-  useAnimationLoop(state.running && state.current > 0, (dt) => {
-    angleRef.current += motorSpeed(state.current) * dt
+  paramsRef.current.running = running
+
+  useAnimationLoop(running && paramsRef.current.current > 0, (dt) => {
+    angleRef.current += motorSpeed(paramsRef.current.current) * dt
   })
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setCurrent(paramsRef.current.current)
+    }, 120)
+    return () => clearInterval(id)
+  }, [])
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current
@@ -21,18 +35,19 @@ export function ElectricMotorSim() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    const cur = paramsRef.current.current
+    const isRunning = paramsRef.current.running
+
     fillThemeBackground(ctx, w, h, 'electric')
 
     const cx = w * 0.5
     const cy = h * 0.52
     const angle = angleRef.current
 
-    // Horseshoe magnets
     const magnetW = Math.min(w * 0.12, 70)
     const magnetH = Math.min(h * 0.38, 180)
     const gap = Math.min(w * 0.18, 110)
 
-    // Left magnet (N)
     withShadow(ctx, () => {
       ctx.fillStyle = '#dc2626'
       ctx.fillRect(cx - gap - magnetW, cy - magnetH / 2, magnetW, magnetH / 2)
@@ -46,7 +61,6 @@ export function ElectricMotorSim() {
     ctx.fillText('N', cx - gap - magnetW / 2, cy - magnetH / 4 + 5)
     ctx.fillText('S', cx - gap - magnetW / 2, cy + magnetH / 4 + 5)
 
-    // Right magnet (S/N flipped)
     withShadow(ctx, () => {
       ctx.fillStyle = '#1e40af'
       ctx.fillRect(cx + gap, cy - magnetH / 2, magnetW, magnetH / 2)
@@ -56,7 +70,6 @@ export function ElectricMotorSim() {
     ctx.fillText('S', cx + gap + magnetW / 2, cy - magnetH / 4 + 5)
     ctx.fillText('N', cx + gap + magnetW / 2, cy + magnetH / 4 + 5)
 
-    // Field lines
     ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)'
     ctx.lineWidth = 1
     for (let i = -2; i <= 2; i++) {
@@ -67,9 +80,8 @@ export function ElectricMotorSim() {
       ctx.stroke()
     }
 
-    // Rotating coil
     const coilR = Math.min(gap * 0.55, 48)
-    const coilActive = state.current > 0
+    const coilActive = cur > 0
     ctx.save()
     ctx.translate(cx, cy)
     ctx.rotate(angle)
@@ -99,7 +111,6 @@ export function ElectricMotorSim() {
         ctx.stroke()
       }
 
-      // Coil windings
       ctx.strokeStyle = coilActive ? SCENE.electric.hot : '#64748b'
       ctx.lineWidth = coilActive ? 2.5 : 2
       for (let i = 0; i < 6; i++) {
@@ -111,19 +122,16 @@ export function ElectricMotorSim() {
       }
     }, { blur: 10, oy: 2 })
 
-    // Commutator
     ctx.fillStyle = '#94a3b8'
     ctx.fillRect(-6, -coilR * 0.55 - 10, 12, 8)
     ctx.restore()
 
-    // Shaft
     ctx.fillStyle = '#cbd5e1'
     ctx.beginPath()
     ctx.arc(cx, cy, 5, 0, Math.PI * 2)
     ctx.fill()
 
-    // Current arrows when powered
-    if (state.current > 0 && state.running) {
+    if (cur > 0 && isRunning) {
       strokeWithGlow(
         ctx,
         () => {
@@ -147,19 +155,36 @@ export function ElectricMotorSim() {
       ctx.fillText('Current', cx, cy + magnetH / 2 + 48)
     }
 
+    // Vertical current dial
+    const dialX = w - 36
+    const dialTop = h * 0.22
+    const dialH = h * 0.5
+    const dialY = dialTop + (1 - cur) * dialH
+    ctx.fillStyle = 'rgba(15,23,42,0.55)'
+    ctx.fillRect(dialX - 8, dialTop, 16, dialH)
+    ctx.fillStyle = SCENE.electric.accent
+    ctx.fillRect(dialX - 8, dialY, 16, dialTop + dialH - dialY)
+    ctx.fillStyle = '#f8fafc'
+    ctx.beginPath()
+    ctx.arc(dialX, dialY, 8, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = '#94a3b8'
+    ctx.font = '10px Roboto, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText('I', dialX, dialTop - 10)
+
     ctx.fillStyle = '#64748b'
     ctx.font = '12px Roboto, sans-serif'
     ctx.textAlign = 'left'
     ctx.fillText('Electric motor — current → magnetic force → spin', 16, 24)
 
-    const rpm = Math.round((motorSpeed(state.current) * 60) / (2 * Math.PI))
+    const rpm = Math.round((motorSpeed(cur) * 60) / (2 * Math.PI))
     ctx.textAlign = 'right'
-    ctx.fillText(state.running && state.current > 0 ? `~${rpm} RPM` : 'Stopped', w - 16, 24)
-  }, [w, h, state])
+    ctx.fillText(isRunning && cur > 0 ? `~${rpm} RPM` : 'Stopped', w - 56, 24)
+  }, [w, h, version])
 
   useEffect(() => {
     draw()
-    if (!state.running) return
     let raf = 0
     const tick = () => {
       draw()
@@ -167,11 +192,42 @@ export function ElectricMotorSim() {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [draw, state.running])
+  }, [draw])
+
+  const setCurrentValue = (v: number) => {
+    const next = Math.round(clamp(v, 0, 1) * 20) / 20
+    paramsRef.current.current = next
+    setCurrent(next)
+    setVersion((n) => n + 1)
+  }
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt, size) => {
+      const dialX = size.w - 36
+      const dialTop = size.h * 0.22
+      const dialH = size.h * 0.5
+      if (pt.x >= dialX - 24 && pt.x <= dialX + 24 && pt.y >= dialTop - 8 && pt.y <= dialTop + dialH + 8) {
+        return 'current'
+      }
+      // Also allow vertical drag across the coil region
+      if (pt.x > size.w * 0.25 && pt.x < size.w * 0.75) return 'current'
+      return null
+    },
+    onDrag: (_id, pt, size) => {
+      const dialTop = size.h * 0.22
+      const dialH = size.h * 0.5
+      const t = 1 - clamp((pt.y - dialTop) / Math.max(1, dialH), 0, 1)
+      setCurrentValue(t)
+    },
+  })
 
   const reset = () => {
-    setState(resetMotor())
+    const next = resetMotor()
+    paramsRef.current = { current: next.current, running: true }
+    setCurrent(next.current)
+    setRunning(true)
     angleRef.current = 0
+    setVersion((n) => n + 1)
   }
 
   return (
@@ -183,20 +239,21 @@ export function ElectricMotorSim() {
         <>
           <h3>Motor</h3>
           <p className="sim-hint">
-            Current through a coil in a magnetic field produces a turning force (torque).
+            Current through a coil in a magnetic field produces a turning force (torque). Drag
+            vertically on the canvas or dial to set current.
           </p>
           <div className="sim-slider-row">
             <label>
               <span>Current (A)</span>
-              <span>{state.current.toFixed(2)} A</span>
+              <span>{current.toFixed(2)} A</span>
             </label>
             <input
               type="range"
               min={0}
               max={1}
               step={0.05}
-              value={state.current}
-              onChange={(e) => setState((s) => ({ ...s, current: Number(e.target.value) }))}
+              value={current}
+              onChange={(e) => setCurrentValue(Number(e.target.value))}
             />
           </div>
           <p className="sim-readout">
@@ -204,14 +261,19 @@ export function ElectricMotorSim() {
             <br />
             Higher current → faster rotation
             <br />
-            {state.current <= 0 ? 'No current — motor idle' : 'Motor spinning'}
+            {current <= 0 ? 'No current — motor idle' : 'Motor spinning'}
           </p>
         </>
       }
       toolbar={
         <SimTransport
-          running={state.running}
-          onToggle={() => setState((s) => ({ ...s, running: !s.running }))}
+          running={running}
+          onToggle={() => {
+            setRunning((r) => {
+              paramsRef.current.running = !r
+              return !r
+            })
+          }}
           onReset={reset}
         />
       }

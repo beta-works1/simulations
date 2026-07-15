@@ -84,3 +84,27 @@ export function photonPaths(cx: number, cy: number, time: number): PhotonPath[] 
 export function phaseLabel(phase: BlackHolePhase): string {
   return phase === 'collapse' ? 'Stellar collapse' : 'Light bending near event horizon'
 }
+
+/** Unified 0–1 timeline: first half collapse, second half light-bending cycle. */
+export function timelineProgress(state: BlackHoleState): number {
+  if (state.phase === 'collapse') return Math.min(1, Math.max(0, state.collapseProgress)) * 0.5
+  return 0.5 + (Math.min(BEND_CYCLE, Math.max(0, state.bendTime)) / BEND_CYCLE) * 0.5
+}
+
+export function scrubBlackHole(state: BlackHoleState, t: number): BlackHoleState {
+  const u = Math.min(1, Math.max(0, t))
+  if (u < 0.5) {
+    return {
+      ...state,
+      phase: 'collapse',
+      collapseProgress: u / 0.5,
+      bendTime: 0,
+    }
+  }
+  return {
+    ...state,
+    phase: 'bending',
+    collapseProgress: 1,
+    bendTime: ((u - 0.5) / 0.5) * BEND_CYCLE,
+  }
+}
