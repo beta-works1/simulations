@@ -6,7 +6,7 @@ import {
   ControlStat,
   ControlStats,
 } from '../../shared/Controls'
-import { fontPx } from '../../shared/drawHelpers'
+import { fillFittedText, fontPx } from '../../shared/drawHelpers'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
 import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
@@ -94,6 +94,20 @@ export function EcologicalPyramidSim() {
       ctx.fillStyle = bg
       ctx.fillRect(0, 0, w, h)
 
+      // Soft vignette first so it never paints over labels
+      const vg = ctx.createRadialGradient(
+        w * 0.5,
+        h * 0.4,
+        Math.min(w, h) * 0.15,
+        w * 0.5,
+        h * 0.5,
+        Math.max(w, h) * 0.75,
+      )
+      vg.addColorStop(0, 'rgba(255,255,255,0.04)')
+      vg.addColorStop(1, 'rgba(0,0,0,0.18)')
+      ctx.fillStyle = vg
+      ctx.fillRect(0, 0, w, h)
+
       const top = h * 0.1
       const bottom = h * 0.82
       const levels = 4
@@ -107,6 +121,7 @@ export function EcologicalPyramidSim() {
         const hw = (w * widthFrac) / 2
         const y = top + i * band
         const cx = w / 2
+        const midY = y + band / 2
         const isSel = p.selectedTier === i
         const isHover = hover === `tier:${i}`
 
@@ -119,10 +134,10 @@ export function EcologicalPyramidSim() {
           w: tierW,
           h: band - 10,
           cx,
-          cy: y + band / 2,
+          cy: midY,
         })
 
-        drawHoverHalo(ctx, cx, y + band / 2, hw * 0.85, isHover && !isSel)
+        drawHoverHalo(ctx, cx, midY, hw * 0.85, isHover && !isSel)
 
         ctx.beginPath()
         ctx.moveTo(cx - hw, y + band - 10)
@@ -140,18 +155,29 @@ export function EcologicalPyramidSim() {
           ctx.stroke()
         }
 
-        // One caption per tier — stacked name + Energy pills were overlapping
-        const caption = `${PYRAMID_LABELS[i]} · ${formatEnergy(E[i])}`
-        drawLabelPill(ctx, caption, cx, y + band / 2, {
-          fontSize: Math.max(10, Math.min(fs, Math.floor(band * 0.28))),
-          bg: 'rgba(0,0,0,0.45)',
-          fg: '#fff',
-          padX: 10,
-          padY: 5,
+        // Name inside band (no dark pill). Energy chip outside to the right — never stacked.
+        const nameFs = Math.max(11, Math.min(fs + 1, Math.floor(band * 0.32)))
+        ctx.save()
+        ctx.shadowColor = 'rgba(0,0,0,0.55)'
+        ctx.shadowBlur = 4
+        ctx.fillStyle = '#fff'
+        ctx.font = `700 ${nameFs}px Roboto, sans-serif`
+        fillFittedText(ctx, PYRAMID_LABELS[i], cx, midY, Math.max(40, hw * 1.2), nameFs, {
+          minPx: 9,
+          align: 'center',
+          baseline: 'middle',
+        })
+        ctx.restore()
+
+        const energyX = Math.min(w - 12, cx + hw * 0.85 + 8)
+        drawValueChip(ctx, '', formatEnergy(E[i]), energyX, midY, {
+          align: 'left',
+          fontSize: Math.max(10, fs - 1),
+          accent: true,
         })
       }
 
-      const handleX = w * 0.92
+      const handleX = w * 0.94
       const handleY = h * 0.5
       layoutRef.current.baseHandle = { x: handleX, y: handleY, r: 14 }
       const handleHover = hover === 'base-handle'
@@ -163,14 +189,13 @@ export function EcologicalPyramidSim() {
       ctx.strokeStyle = '#fff'
       ctx.lineWidth = 2
       ctx.stroke()
-      drawValueChip(ctx, 'Base', formatEnergy(p.base), handleX - 36, handleY, {
+      drawValueChip(ctx, 'Base', formatEnergy(p.base), handleX, handleY - 28, {
         fontSize: Math.max(10, fs - 1),
         accent: true,
-        align: 'right',
       })
 
       if (hintShown.current) {
-        drawHint(ctx, 'click tiers · drag handle for base energy · ~10% passes up', w / 2, h - 16, w, h, {
+        drawHint(ctx, 'click tiers · drag handle · ~10% energy up each level', w / 2, h - 16, w, h, {
           muted: true,
         })
       } else {
@@ -181,19 +206,6 @@ export function EcologicalPyramidSim() {
           bold: false,
         })
       }
-
-      const vg = ctx.createRadialGradient(
-        w * 0.5,
-        h * 0.4,
-        Math.min(w, h) * 0.15,
-        w * 0.5,
-        h * 0.5,
-        Math.max(w, h) * 0.75,
-      )
-      vg.addColorStop(0, 'rgba(255,255,255,0.04)')
-      vg.addColorStop(1, 'rgba(0,0,0,0.18)')
-      ctx.fillStyle = vg
-      ctx.fillRect(0, 0, w, h)
     },
     [base, running, selectedTier],
   )
