@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import {
+  ControlHint,
   ControlSection,
   ControlSelect,
   ControlSlider,
@@ -9,6 +10,8 @@ import {
 } from '../../sims/shared/Controls'
 import { SimShell } from '../../sims/shared/SimShell'
 import { useCanvasLoop } from '../../sims/shared/useCanvasLoop'
+import { useCanvasPointer } from '../../sims/shared/useCanvasPointer'
+import { clamp } from '../../sims/shared/math'
 import {
   MEDIA,
   computeRefraction,
@@ -40,6 +43,37 @@ export function RefractionMediaSim() {
     setVersion((v) => v + 1)
   }, [])
 
+  const incidenceFromPoint = (pt: { x: number; y: number }, size: { w: number; h: number }) => {
+    const hitX = size.w * 0.5
+    const hitY = size.h * 0.55
+    const dx = pt.x - hitX
+    const dy = hitY - pt.y // up positive (air side)
+    if (dy < 4) return null
+    const deg = (Math.atan2(Math.abs(dx), dy) * 180) / Math.PI
+    return clamp(deg, 0, 85)
+  }
+
+  useCanvasPointer(canvasRef, {
+    cursorForHit: () => 'grab',
+    hitTest: (pt, size) => (pt.y < size.h * 0.55 ? 'laser' : null),
+    onDrag: (_id, pt, size) => {
+      const deg = incidenceFromPoint(pt, size)
+      if (deg == null) return
+      stateRef.current = setIncidence(stateRef.current, deg)
+      sync(stateRef.current)
+    },
+    onTap: (_id, pt) => {
+      const size = {
+        w: canvasRef.current?.parentElement?.clientWidth ?? 640,
+        h: canvasRef.current?.parentElement?.clientHeight ?? 400,
+      }
+      const deg = incidenceFromPoint(pt, size)
+      if (deg == null) return
+      stateRef.current = setIncidence(stateRef.current, deg)
+      sync(stateRef.current)
+    },
+  })
+
   const draw = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
     drawRefractionMedia(ctx, w, h, stateRef.current)
   }, [])
@@ -61,6 +95,7 @@ export function RefractionMediaSim() {
       controls={
         <>
           <ControlSection title="Setup">
+            <ControlHint>Drag the laser in the air above the boundary — or use the slider.</ControlHint>
             <InfoTooltip title="Snell's law">
               n₁ sin i = n₂ sin r. Drag the incidence angle or pick a denser medium to bend the ray
               more toward the normal.
