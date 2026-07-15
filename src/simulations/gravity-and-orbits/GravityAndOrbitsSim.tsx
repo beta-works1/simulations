@@ -2,6 +2,7 @@
  * Gravity and Orbits — React + Canvas recreation from PhET gravity-and-orbits masses.
  */
 import { useRef, useState } from 'react'
+import { useCanvasPointer } from '../../sims/shared/useCanvasPointer'
 import { drawGlow, drawStarfield, fillThemeBackground } from '../shared/canvasTheme'
 import { SimShell, SimTransport } from '../shared/SimShell'
 import { useCanvasSize } from '../shared/useCanvasSize'
@@ -16,7 +17,23 @@ import {
   type OrbitState,
 } from './model'
 
-function draw(ctx: CanvasRenderingContext2D, w: number, h: number, state: OrbitState) {
+type BodyLayout = {
+  cx: number
+  cy: number
+  scale: number
+  moverX: number
+  moverY: number
+  moverR: number
+}
+
+function draw(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  state: OrbitState,
+  layoutRef: React.MutableRefObject<BodyLayout | null>,
+  frozenScale: React.MutableRefObject<number | null>,
+) {
   fillThemeBackground(ctx, w, h, 'space')
   drawStarfield(ctx, w, h, 48, 80)
 
@@ -28,7 +45,7 @@ function draw(ctx: CanvasRenderingContext2D, w: number, h: number, state: OrbitS
     maxR = Math.max(maxR, Math.hypot(b.x, b.y))
     for (const t of b.trail) maxR = Math.max(maxR, Math.hypot(t.x, t.y))
   }
-  const scale = (Math.min(w, h) * 0.38) / maxR
+  const scale = frozenScale.current ?? (Math.min(w, h) * 0.38) / maxR
 
   for (const b of bodies) {
     if (b.trail.length > 1) {
@@ -59,6 +76,18 @@ function draw(ctx: CanvasRenderingContext2D, w: number, h: number, state: OrbitS
     ctx.fillText(b.label, x, y + b.radius + 14)
   }
 
+  const mover = bodies[1]
+  if (mover) {
+    layoutRef.current = {
+      cx,
+      cy,
+      scale,
+      moverX: cx + mover.x * scale,
+      moverY: cy + mover.y * scale,
+      moverR: mover.radius,
+    }
+  }
+
   ctx.fillStyle = 'rgba(15,23,42,0.88)'
   ctx.fillRect(16, 16, 240, 40)
   ctx.fillStyle = '#e2e8f0'
@@ -75,11 +104,16 @@ export function GravityAndOrbitsSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { w, h } = useCanvasSize(canvasRef)
   const stateRef = useRef<OrbitState>(createOrbitState('sun-earth'))
+  const layoutRef = useRef<BodyLayout | null>(null)
+  const frozenScale = useRef<number | null>(null)
+  const runningRef = useRef(true)
+  const resumeAfterDrag = useRef(false)
   const [running, setRunning] = useState(true)
   const [mode, setMode] = useState<OrbitMode>('sun-earth')
   const [gravityOn, setGravityOn] = useState(true)
   const [note, setNote] = useState('Sun–Earth perihelion orbit')
 
+  runningRef.current = running
   stateRef.current.gravityOn = gravityOn
 
   useRefPaintLoop({
@@ -89,13 +123,39 @@ export function GravityAndOrbitsSim() {
     stateRef,
     running,
     step: (s, dt) => stepOrbit(s, dt),
-    draw,
+    draw: (ctx, ww, hh, s) => draw(ctx, ww, hh, s, layoutRef, frozenScale),
     onSync: (s) => {
       const mover = s.bodies[1]
       if (!mover) return
       setNote(
         `${mover.label}: r ≈ ${Math.hypot(mover.x, mover.y).toFixed(2)} scene units`,
       )
+    },
+  })
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt) => {
+      const L = layoutRef.current
+      if (!L) return null
+      if (Math.hypot(pt.x - L.moverX, pt.y - L.moverY) < L.moverR + 18) return 'mover'
+      return null
+    },
+    onDragStart: () => {
+      resumeAfterDrag.current = runningRef.current
+      frozenScale.current = layoutRef.current?.scale ?? null
+      setRunning(false)
+    },
+    onDrag: (_id, pt) => {
+      const L = layoutRef.current
+      const mover = stateRef.current.bodies[1]
+      if (!L || !mover) return
+      mover.x = (pt.x - L.cx) / L.scale
+      mover.y = (pt.y - L.cy) / L.scale
+      mover.trail = []
+    },
+    onDragEnd: () => {
+      frozenScale.current = null
+      if (resumeAfterDrag.current) setRunning(true)
     },
   })
 
@@ -131,8 +191,9 @@ export function GravityAndOrbitsSim() {
       </label>
       <p className="sim-readout">{note}</p>
       <p className="sim-hint" style={{ fontSize: 12, color: '#94a3b8' }}>
-        Masses from PhET: Sun {SUN_MASS.toExponential(3)} kg, Earth{' '}
-        {EARTH_MASS.toExponential(3)} kg, Moon {MOON_MASS.toExponential(3)} kg
+        Drag the orbiting body to set its position (simulation pauses while dragging). Masses from
+        PhET: Sun {SUN_MASS.toExponential(3)} kg, Earth {EARTH_MASS.toExponential(3)} kg, Moon{' '}
+        {MOON_MASS.toExponential(3)} kg
       </p>
     </>
   )

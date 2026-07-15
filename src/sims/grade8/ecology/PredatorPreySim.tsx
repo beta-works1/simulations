@@ -8,18 +8,29 @@ import {
   ControlStats,
 } from '../../shared/Controls'
 import { drawLegend, fontPx } from '../../shared/drawHelpers'
-import { drawLabelPill, drawValueChip } from '../../shared/labels'
+import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
+import { clamp } from '../../shared/math'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
+import { useCanvasPointer } from '../../shared/useCanvasPointer'
 import {
   createPredatorPreyState,
   stepPredatorPrey,
   type PredatorPreyState,
 } from './predatorPreyModel'
 
+type Layout = {
+  fieldH: number
+  growth: { x: number; y: number; r: number; trackX: number; trackW: number; min: number; max: number }
+}
+
 export function PredatorPreySim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef<PredatorPreyState>(createPredatorPreyState())
+  const paramsRef = useRef({ growth: 1.1 })
+  const layoutRef = useRef<Layout | null>(null)
+  const hoverRef = useRef<string | null>(null)
+  const hintShown = useRef(true)
   const [running, setRunning] = useState(true)
   const [mode, setMode] = useState<PredatorPreyState['mode']>('predation')
   const [growth, setGrowth] = useState(1.1)
@@ -30,18 +41,54 @@ export function PredatorPreySim() {
     const id = window.setInterval(() => {
       const s = stateRef.current
       setReadout({ prey: s.prey, predators: s.predators })
+      setGrowth(Math.round(paramsRef.current.growth * 100) / 100)
     }, 180)
     return () => clearInterval(id)
   }, [])
+
+  useCanvasPointer(canvasRef, {
+    hitTest: (pt) => {
+      const L = layoutRef.current
+      if (!L) return null
+      if (Math.hypot(pt.x - L.growth.x, pt.y - L.growth.y) < L.growth.r + 14) return 'growth'
+      if (pt.y < L.fieldH) return 'field'
+      return null
+    },
+    cursorForHit: (id) => (id === 'field' ? 'pointer' : 'grab'),
+    onHoverChange: (id) => {
+      hoverRef.current = id
+    },
+    onDrag: (id, pt) => {
+      const L = layoutRef.current
+      if (!L || id !== 'growth') return
+      hintShown.current = false
+      const t = clamp((pt.x - L.growth.trackX) / Math.max(1, L.growth.trackW), 0, 1)
+      paramsRef.current.growth = L.growth.min + t * (L.growth.max - L.growth.min)
+    },
+    onTap: (id, pt) => {
+      if (id !== 'field') return
+      const L = layoutRef.current
+      if (!L) return
+      hintShown.current = false
+      const s = stateRef.current
+      if (pt.x < (canvasRef.current?.parentElement?.clientWidth ?? 400) * 0.5) {
+        s.prey = Math.min(120, s.prey + 8)
+      } else {
+        s.predators = Math.min(80, s.predators + 4)
+      }
+      setVersion((v) => v + 1)
+    },
+  })
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
       const s = stateRef.current
       s.mode = mode
-      s.growth = growth
+      s.growth = paramsRef.current.growth
       if (dt > 0 && running) stateRef.current = stepPredatorPrey(s, dt)
       const st = stateRef.current
       const fs = fontPx(12, w, h)
+      const hover = hoverRef.current
 
       ctx.fillStyle = '#10283a'
       ctx.fillRect(0, 0, w, h)
@@ -91,6 +138,35 @@ export function PredatorPreySim() {
         plot('predators', '#e74c3c')
       }
 
+      // Growth scrub handle along bottom of chart
+      const gMin = 0.4
+      const gMax = 1.8
+      const trackX = 24
+      const trackW = w - 48
+      const g = paramsRef.current.growth
+      const handleX = trackX + ((g - gMin) / (gMax - gMin)) * trackW
+      const handleY = chartY + chartH - 16
+      ctx.strokeStyle = 'rgba(148,163,184,0.45)'
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.moveTo(trackX, handleY)
+      ctx.lineTo(trackX + trackW, handleY)
+      ctx.stroke()
+      drawHoverHalo(ctx, handleX, handleY, 16, hover === 'growth')
+      ctx.fillStyle = hover === 'growth' ? '#f1c40f' : '#f39c12'
+      ctx.beginPath()
+      ctx.arc(handleX, handleY, 9, 0, Math.PI * 2)
+      ctx.fill()
+      drawValueChip(ctx, 'growth', g.toFixed(2), handleX, handleY - 18, {
+        align: 'center',
+        fontSize: Math.max(10, fs - 2),
+      })
+
+      layoutRef.current = {
+        fieldH,
+        growth: { x: handleX, y: handleY, r: 9, trackX, trackW, min: gMin, max: gMax },
+      }
+
       drawLegend(
         ctx,
         [
@@ -107,7 +183,7 @@ export function PredatorPreySim() {
         bg: 'rgba(0,0,0,0.45)',
         fg: '#fff',
       })
-      drawValueChip(ctx, 'field', 'live populations', 14, fieldH - 14, {
+      drawValueChip(ctx, 'field', 'tap left prey · right predators', 14, fieldH - 14, {
         align: 'left',
         fontSize: Math.max(10, fs - 2),
       })
@@ -115,8 +191,11 @@ export function PredatorPreySim() {
         fontSize: Math.max(10, fs - 2),
         bold: false,
       })
+      if (hintShown.current) {
+        drawHint(ctx, 'Drag growth · tap field to seed', w / 2, fieldH * 0.5, w, h)
+      }
     },
-    [growth, mode, running],
+    [mode, running],
   )
 
   useCanvasLoop(canvasRef, draw, running, version, true)
@@ -130,6 +209,7 @@ export function PredatorPreySim() {
       onTogglePlay={() => setRunning((r) => !r)}
       onReset={() => {
         stateRef.current = createPredatorPreyState()
+        paramsRef.current.growth = 1.1
         setMode('predation')
         setGrowth(1.1)
         setVersion((v) => v + 1)
@@ -137,7 +217,9 @@ export function PredatorPreySim() {
       controls={
         <>
           <ControlSection title="Interaction">
-            <ControlHint>Watch populations rise and fall as the interaction type changes.</ControlHint>
+            <ControlHint>
+              Drag the growth handle on the chart, or tap the field (left = prey, right = predators).
+            </ControlHint>
             <ControlSelect
               label="Mode"
               value={mode}
@@ -155,7 +237,10 @@ export function PredatorPreySim() {
               max={1.8}
               step={0.05}
               display={growth.toFixed(2)}
-              onChange={setGrowth}
+              onChange={(v) => {
+                paramsRef.current.growth = v
+                setGrowth(v)
+              }}
             />
           </ControlSection>
           <ControlSection title="Population">

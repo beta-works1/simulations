@@ -150,13 +150,21 @@ function drawEraVignette(
   ctx.fillRect(0, 0, w, vignetteH)
 }
 
+export type TimelineTrackLayout = {
+  pad: number
+  trackY: number
+  trackW: number
+  hitTop: number
+  hitBottom: number
+}
+
 export function drawTimeline(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
   state: SolarSystemTimelineState,
   animT: number,
-) {
+): TimelineTrackLayout {
   const event = eventAtProgress(state.progress)
 
   fillThemeBackground(ctx, w, h, 'space')
@@ -229,4 +237,12 @@ export function drawTimeline(
   ctx.lineTo(thumbX - 8, trackY - 4)
   ctx.closePath()
   ctx.fill()
+
+  return {
+    pad,
+    trackY,
+    trackW,
+    hitTop: trackY - 28,
+    hitBottom: trackY + 24,
+  }
 }

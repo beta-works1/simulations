@@ -6,9 +6,16 @@ import { drawGlow, drawStarfield, fillThemeBackground, SCENE, strokeWithGlow } f
 import { drawCaptionCard } from '../shared/drawUtils'
 import {
   currentStage,
+  stagesForMass,
   type StarLifeCycleState,
   type StarStageId,
 } from './model'
+
+export type StarLifeLayout = {
+  scrub: { x: number; y: number; w: number; h: number }
+  lowMass: { x: number; y: number; w: number; h: number }
+  highMass: { x: number; y: number; w: number; h: number }
+}
 
 function drawStageVisual(
   ctx: CanvasRenderingContext2D,
@@ -180,11 +187,52 @@ export function drawStarLifeCycle(
   w: number,
   h: number,
   state: StarLifeCycleState,
-) {
+): StarLifeLayout {
   fillThemeBackground(ctx, w, h, 'space')
   drawStarfield(ctx, w, h, 91, 80)
 
   const stage = currentStage(state)
   drawStageVisual(ctx, w * 0.5, h * 0.42, stage.id, state.stageProgress, state.mass)
-  drawCaptionCard(ctx, w, h, stage.label, stage.description)
+  const cardTop = drawCaptionCard(ctx, w, h, stage.label, stage.description)
+
+  const stages = stagesForMass(state.mass)
+  const pad = 20
+  const scrubH = 10
+  const scrubY = Math.max(h * 0.55, cardTop - 28)
+  const scrubW = w - pad * 2
+  const zoneW = Math.min(120, w * 0.28)
+  const zoneH = 28
+  const zoneY = 16
+  const lowZone = { x: pad, y: zoneY, w: zoneW, h: zoneH }
+  const highZone = { x: w - pad - zoneW, y: zoneY, w: zoneW, h: zoneH }
+
+  ctx.fillStyle = 'rgba(15,23,42,0.75)'
+  ctx.fillRect(pad, scrubY, scrubW, scrubH)
+  const n = Math.max(1, stages.length - 1)
+  const thumbX = pad + (state.stageIndex / n) * scrubW
+  ctx.fillStyle = '#fbbf24'
+  ctx.beginPath()
+  ctx.arc(thumbX, scrubY + scrubH / 2, 7, 0, Math.PI * 2)
+  ctx.fill()
+
+  const drawZone = (z: { x: number; y: number; w: number; h: number }, label: string, on: boolean) => {
+    ctx.fillStyle = on ? 'rgba(56,189,248,0.35)' : 'rgba(15,23,42,0.7)'
+    ctx.fillRect(z.x, z.y, z.w, z.h)
+    ctx.strokeStyle = on ? '#38bdf8' : 'rgba(148,163,184,0.5)'
+    ctx.lineWidth = 1.5
+    ctx.strokeRect(z.x, z.y, z.w, z.h)
+    ctx.fillStyle = '#e2e8f0'
+    ctx.font = '600 11px Roboto, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(label, z.x + z.w / 2, z.y + z.h / 2)
+  }
+  drawZone(lowZone, 'Low mass', state.mass === 'low')
+  drawZone(highZone, 'High mass', state.mass === 'high')
+
+  return {
+    scrub: { x: pad, y: scrubY - 12, w: scrubW, h: scrubH + 24 },
+    lowMass: lowZone,
+    highMass: highZone,
+  }
 }
