@@ -6,9 +6,9 @@ Science experiment simulations organized by **Grade 1–8**, inspired by [PhET](
 
 - **React** — UI, controls, play/pause/reset
 - **Canvas 2D** — animation and rendering
-- **Model / view split** — physics & logic in plain TS functions; Canvas only draws
+- **Model / view / controller** — physics & logic in plain TS; Canvas only draws; React wires controls
 
-No p5.js, PixiJS, Three.js, or Phaser.
+No p5.js, PixiJS, Three.js, or Phaser. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full checklist.
 
 ## Flow
 
@@ -33,8 +33,14 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173). Choose **Grade 8**, then open a simulation.
 
+```bash
+npm test   # Vitest (pure model tests)
+npm run build
+```
+
 ## Add simulations
 
-1. Add metadata in `src/data/simulations.ts`  
-2. Build a Canvas sim under `src/sims/` (model + React view)  
-3. Register it in `src/sims/registry.ts`
+1. Follow [CONTRIBUTING.md](CONTRIBUTING.md) — prefer `src/simulations/<topic>/{model,view,*Sim}.ts(x)`
+2. Add metadata in `src/data/simulations.ts`
+3. Register the lazy loader in `src/sims/registry.ts`
+4. Add a cover under `public/covers/`

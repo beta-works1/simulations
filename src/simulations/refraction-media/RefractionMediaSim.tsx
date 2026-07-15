@@ -1,88 +1,105 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { SimShell, SimTransport } from '../shared/SimShell'
-import { useCanvasSize } from '../shared/useCanvasSize'
+import { useCallback, useRef, useState } from 'react'
+import {
+  ControlSection,
+  ControlSelect,
+  ControlSlider,
+  ControlStat,
+  ControlStats,
+  InfoTooltip,
+} from '../../sims/shared/Controls'
+import { SimShell } from '../../sims/shared/SimShell'
+import { useCanvasLoop } from '../../sims/shared/useCanvasLoop'
 import {
   MEDIA,
-  N_AIR,
+  computeRefraction,
   defaultRefractionState,
-  drawRefractionMedia,
-  snellRefractedAngle,
+  setIncidence,
+  setMedium,
   type RefractionState,
 } from './model'
+import { drawRefractionMedia } from './view'
 
 export function RefractionMediaSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const size = useCanvasSize(canvasRef)
-  const [state, setState] = useState<RefractionState>(defaultRefractionState)
+  const stateRef = useRef<RefractionState>(defaultRefractionState())
+  const [version, setVersion] = useState(0)
   const [running, setRunning] = useState(false)
+  const [readout, setReadout] = useState(() => {
+    const c = computeRefraction(defaultRefractionState())
+    return { mediumId: 'water', incidenceDeg: 40, n: c.medium.n, refracted: c.refractedDeg }
+  })
 
-  const redraw = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    drawRefractionMedia(ctx, size.w, size.h, state)
-  }, [size.w, size.h, state])
+  const sync = useCallback((s: RefractionState) => {
+    const c = computeRefraction(s)
+    setReadout({
+      mediumId: s.mediumId,
+      incidenceDeg: s.incidenceDeg,
+      n: c.medium.n,
+      refracted: c.refractedDeg,
+    })
+    setVersion((v) => v + 1)
+  }, [])
 
-  useEffect(() => {
-    redraw()
-  }, [redraw])
+  const draw = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
+    drawRefractionMedia(ctx, w, h, stateRef.current)
+  }, [])
 
-  const medium = MEDIA.find((m) => m.id === state.mediumId) ?? MEDIA[0]
-  const refracted = snellRefractedAngle(state.incidenceDeg, N_AIR, medium.n)
-
-  const sidebar = (
-    <>
-      <h3>Medium</h3>
-      <select
-        className="sim-select"
-        value={state.mediumId}
-        onChange={(e) => setState((s) => ({ ...s, mediumId: e.target.value }))}
-      >
-        {MEDIA.map((m) => (
-          <option key={m.id} value={m.id}>
-            {m.label}
-          </option>
-        ))}
-      </select>
-      <div className="sim-slider-row">
-        <label>
-          <span>Angle of incidence</span>
-          <span>{state.incidenceDeg}°</span>
-        </label>
-        <input
-          type="range"
-          min={0}
-          max={85}
-          value={state.incidenceDeg}
-          onChange={(e) =>
-            setState((s) => ({ ...s, incidenceDeg: Number(e.target.value) }))
-          }
-        />
-      </div>
-      <p className="sim-readout">
-        n₁ (air) = 1.000293
-        <br />
-        n₂ = {medium.n.toFixed(3)}
-        <br />
-        Refracted angle:{' '}
-        <strong>{refracted !== null ? `${Math.round(refracted)}°` : '— (TIR)'}</strong>
-      </p>
-    </>
-  )
+  useCanvasLoop(canvasRef, draw, running, version, true)
 
   return (
     <SimShell
       title="Refraction Through Media"
       subtitle="PhET Bending Light indices — Snell’s law at an air boundary"
       canvasRef={canvasRef}
-      sidebar={sidebar}
-      toolbar={
-        <SimTransport
-          running={running}
-          onToggle={() => setRunning((r) => !r)}
-          onReset={() => setState(defaultRefractionState())}
-        />
+      running={running}
+      onTogglePlay={() => setRunning((r) => !r)}
+      onReset={() => {
+        stateRef.current = defaultRefractionState()
+        setRunning(false)
+        sync(stateRef.current)
+      }}
+      controls={
+        <>
+          <ControlSection title="Setup">
+            <InfoTooltip title="Snell's law">
+              n₁ sin i = n₂ sin r. Drag the incidence angle or pick a denser medium to bend the ray
+              more toward the normal.
+            </InfoTooltip>
+            <ControlSelect
+              label="Medium"
+              value={readout.mediumId}
+              options={MEDIA.map((m) => ({ value: m.id, label: m.label }))}
+              onChange={(id) => {
+                stateRef.current = setMedium(stateRef.current, id)
+                sync(stateRef.current)
+              }}
+            />
+            <ControlSlider
+              label="Angle of incidence"
+              value={readout.incidenceDeg}
+              min={0}
+              max={85}
+              step={1}
+              unit="°"
+              onChange={(deg) => {
+                stateRef.current = setIncidence(stateRef.current, deg)
+                sync(stateRef.current)
+              }}
+            />
+          </ControlSection>
+          <ControlSection title="Readout">
+            <ControlStats>
+              <ControlStat label="n₁ (air)" value="1.000293" />
+              <ControlStat label="n₂" value={readout.n.toFixed(3)} />
+              <ControlStat
+                label="Refracted"
+                value={
+                  readout.refracted !== null ? `${Math.round(readout.refracted)}°` : '— (TIR)'
+                }
+              />
+            </ControlStats>
+          </ControlSection>
+        </>
       }
     />
   )

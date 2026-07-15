@@ -8,8 +8,17 @@ interface SimShellProps {
   running: boolean
   onTogglePlay: () => void
   onReset: () => void
+  /** Preferred sidebar slot (Grade 8 / new sims). */
   controls?: ReactNode
+  /** Alias for `controls` (topic-sim API). */
+  sidebar?: ReactNode
+  /** Optional bottom transport bar (topic-sim API). */
+  toolbar?: ReactNode
   hidePlay?: boolean
+  onPointerDown?: (e: React.PointerEvent<HTMLCanvasElement>) => void
+  onPointerMove?: (e: React.PointerEvent<HTMLCanvasElement>) => void
+  onPointerUp?: (e: React.PointerEvent<HTMLCanvasElement>) => void
+  onPointerLeave?: (e: React.PointerEvent<HTMLCanvasElement>) => void
 }
 
 export function SimShell({
@@ -20,8 +29,15 @@ export function SimShell({
   onTogglePlay,
   onReset,
   controls,
+  sidebar,
+  toolbar,
   hidePlay = false,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerLeave,
 }: SimShellProps) {
+  const panel = controls ?? sidebar
   return (
     <div className="sim-shell" role="region" aria-label={`${title} simulation`}>
       <header className="sim-shell-toolbar">
@@ -70,16 +86,49 @@ export function SimShell({
         </div>
       </header>
 
-      <div className={`sim-shell-body ${controls ? 'has-controls' : ''}`}>
+      <div className={`sim-shell-body ${panel ? 'has-controls' : ''}`}>
         <div className="sim-shell-canvas-wrap">
-          <canvas ref={canvasRef} aria-label={`${title} canvas`} />
+          <canvas
+            ref={canvasRef}
+            aria-label={`${title} canvas`}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerLeave={onPointerLeave}
+          />
         </div>
-        {controls ? (
+        {panel ? (
           <aside className="sim-shell-controls" aria-label="Simulation controls">
-            {controls}
+            {panel}
           </aside>
         ) : null}
       </div>
+      {toolbar ? <div className="sim-shell-extra-toolbar">{toolbar}</div> : null}
     </div>
+  )
+}
+
+/** Compact play/pause + reset (topic-sim transport). */
+export function SimTransport({
+  running,
+  onToggle,
+  onReset,
+  extra,
+}: {
+  running: boolean
+  onToggle: () => void
+  onReset: () => void
+  extra?: ReactNode
+}) {
+  return (
+    <>
+      <button type="button" className={`sim-shell-btn${running ? ' is-active' : ''}`} onClick={onToggle}>
+        {running ? 'Pause' : 'Play'}
+      </button>
+      <button type="button" className="sim-shell-btn" onClick={onReset}>
+        Reset
+      </button>
+      {extra}
+    </>
   )
 }
