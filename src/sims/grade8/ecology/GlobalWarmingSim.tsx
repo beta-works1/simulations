@@ -144,7 +144,7 @@ export function GlobalWarmingSim() {
       ctx.fillStyle = '#fff'
       ctx.font = `600 ${fs + 2}px Roboto, sans-serif`
       ctx.textAlign = 'left'
-      drawValueChip(ctx, 'Surface', `${s.temperature.toFixed(1)} °C`, 20, h - 40, {
+      drawValueChip(ctx, 'Surface', `${s.temperature.toFixed(1)} °C`, 20, h - 20, {
         align: 'left',
         accent: true,
         fontSize: fs,
@@ -156,17 +156,8 @@ export function GlobalWarmingSim() {
         bg: 'rgba(0,0,0,0.4)',
         fg: '#fff',
       })
-      drawLabelPill(ctx, 'drag layer to thicken', handleX, handleY - 22, {
-        fontSize: Math.max(9, fs - 3),
-        bold: false,
-      })
-      drawLabelPill(ctx, 'Yellow = sunlight · Red = trapped IR', w / 2, h - 14, {
-        fontSize: Math.max(10, fs - 2),
-        bold: false,
-      })
-
       if (hintShown.current) {
-        drawHint(ctx, 'drag the greenhouse layer edge to change CO₂', w / 2, h - 36, w, h, {
+        drawHint(ctx, 'drag greenhouse layer · yellow = sun · red = trapped IR', w / 2, h - 48, w, h, {
           muted: true,
         })
       }

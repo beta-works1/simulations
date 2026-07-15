@@ -140,14 +140,14 @@ export function EcologicalPyramidSim() {
           ctx.stroke()
         }
 
-        drawLabelPill(ctx, PYRAMID_LABELS[i], cx, y + band / 2 - fs * 0.35, {
-          fontSize: fs,
-          bg: 'rgba(0,0,0,0.35)',
+        // One caption per tier — stacked name + Energy pills were overlapping
+        const caption = `${PYRAMID_LABELS[i]} · ${formatEnergy(E[i])}`
+        drawLabelPill(ctx, caption, cx, y + band / 2, {
+          fontSize: Math.max(10, Math.min(fs, Math.floor(band * 0.28))),
+          bg: 'rgba(0,0,0,0.45)',
           fg: '#fff',
-        })
-        drawValueChip(ctx, 'Energy', `${formatEnergy(E[i])} units`, cx, y + band / 2 + fs * 0.65, {
-          fontSize: Math.max(10, fs - 1),
-          accent: true,
+          padX: 10,
+          padY: 5,
         })
       }
 
@@ -163,17 +163,23 @@ export function EcologicalPyramidSim() {
       ctx.strokeStyle = '#fff'
       ctx.lineWidth = 2
       ctx.stroke()
-      drawValueChip(ctx, 'Base', formatEnergy(p.base), handleX, handleY + 28, { fontSize: fs, accent: true })
-
-      drawLabelPill(ctx, '~10% energy passes up each level', w / 2, h - 18, {
+      drawValueChip(ctx, 'Base', formatEnergy(p.base), handleX - 36, handleY, {
         fontSize: Math.max(10, fs - 1),
-        bg: 'rgba(0,0,0,0.55)',
-        fg: '#ecf0f1',
-        bold: false,
+        accent: true,
+        align: 'right',
       })
 
       if (hintShown.current) {
-        drawHint(ctx, 'click tiers · drag handle for base energy', w / 2, h - 42, w, h, { muted: true })
+        drawHint(ctx, 'click tiers · drag handle for base energy · ~10% passes up', w / 2, h - 16, w, h, {
+          muted: true,
+        })
+      } else {
+        drawLabelPill(ctx, '~10% energy passes up each level', w / 2, h - 16, {
+          fontSize: Math.max(10, fs - 1),
+          bg: 'rgba(0,0,0,0.45)',
+          fg: '#ecf0f1',
+          bold: false,
+        })
       }
 
       const vg = ctx.createRadialGradient(

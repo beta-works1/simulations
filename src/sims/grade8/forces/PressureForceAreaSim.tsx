@@ -118,10 +118,10 @@ export function PressureForceAreaSim() {
       ctx.arc(contactX, surfaceY, 7, 0, Math.PI * 2)
       ctx.arc(contactX + contactW, surfaceY, 7, 0, Math.PI * 2)
       ctx.fill()
-      drawValueChip(ctx, 'A', `${A.toFixed(0)} cm²`, contactX + contactW / 2, surfaceY + 22, {
+      drawValueChip(ctx, 'A', `${A.toFixed(0)} cm²`, contactX + contactW / 2, surfaceY + 26, {
         fontSize: Math.max(10, fs - 1),
       })
-      drawValueChip(ctx, 'P', `${P.toFixed(1)} N/cm²`, w / 2, surfaceY + 48, {
+      drawValueChip(ctx, 'P', `${P.toFixed(1)} N/cm²`, w / 2, surfaceY + 54, {
         fontSize: fs + 1,
         accent: true,
       })
@@ -132,7 +132,12 @@ export function PressureForceAreaSim() {
       ctx.moveTo(w * 0.08, surfaceY)
       ctx.lineTo(w * 0.92, surfaceY)
       ctx.stroke()
-      drawLabelPill(ctx, 'surface', w * 0.12, surfaceY + 18, { fontSize: Math.max(9, fs - 2) })
+      // Keep "surface" clear of A chip (left edge only)
+      drawLabelPill(ctx, 'surface', w * 0.1, surfaceY - 14, {
+        fontSize: Math.max(9, fs - 2),
+        align: 'left',
+        bold: false,
+      })
 
       layoutRef.current = {
         forceHandle: { x: blockX + blockW / 2, y: blockY + blockH / 2 },

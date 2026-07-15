@@ -69,8 +69,7 @@ function drawBalancePan(
     drawLabelPill(ctx, 'Products', cx, cy - 48, { fontSize: Math.max(10, fs - 2), bold: false })
   }
 
-  drawValueChip(ctx, 'mass', `${mass.toFixed(1)} g`, cx, cy + 28, { fontSize: fs })
-  drawValueChip(ctx, '', label, cx, cy + 48, { fontSize: Math.max(10, fs - 2) })
+  drawValueChip(ctx, '', `${mass.toFixed(1)} g · ${label}`, cx, cy + 36, { fontSize: Math.max(10, fs - 1) })
 }
 
 export function ConservationOfMassSim() {

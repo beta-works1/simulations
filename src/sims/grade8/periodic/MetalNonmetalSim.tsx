@@ -159,11 +159,6 @@ export function MetalNonmetalSim() {
         ctx.lineTo(rightX + barW, wireY)
         ctx.stroke()
 
-        drawLabelPill(ctx, 'Circuit wire', leftX + barW / 2, wireY + fs + 8, {
-          fontSize: fs,
-          bold: false,
-        })
-
         for (let i = 0; i < 6; i++) {
           const phase = (t * 1.8 + i * 0.16) % 1
           const ex = leftX + phase * barW
@@ -195,11 +190,11 @@ export function MetalNonmetalSim() {
           }
         }
 
-        drawValueChip(ctx, 'Conductivity', 'high ✓', leftX + barW / 2, wireY + fs + 28, {
+        drawValueChip(ctx, 'Conducts', 'high ✓', leftX + barW / 2, wireY + fs + 14, {
           fontSize: Math.max(10, fs - 1),
           accent: true,
         })
-        drawValueChip(ctx, 'Conductivity', 'low ✗', rightX + barW / 2, wireY + fs + 28, {
+        drawValueChip(ctx, 'Conducts', 'low ✗', rightX + barW / 2, wireY + fs + 14, {
           fontSize: Math.max(10, fs - 1),
         })
       }

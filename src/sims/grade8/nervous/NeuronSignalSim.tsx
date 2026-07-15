@@ -103,7 +103,7 @@ export function NeuronSignalSim() {
       ctx.moveTo(x0 + 28, y)
       ctx.lineTo(x1 - 48, y)
       ctx.stroke()
-      drawLabelPill(ctx, 'axon', (x0 + x1) / 2, y - 36, { fontSize: Math.max(10, fs - 2) })
+      drawLabelPill(ctx, 'axon', (x0 + x1) / 2, y - 48, { fontSize: Math.max(10, fs - 2) })
 
       const segCount = 7
       const ax0 = x0 + 52
@@ -127,16 +127,12 @@ export function NeuronSignalSim() {
           ctx.fillStyle = '#1b4f72'
           ctx.fillRect(nx - 3, y - 10, 6, 20)
         }
-        drawLabelPill(ctx, 'myelin sheath', (x0 + x1) / 2, y + 40, {
+        drawLabelPill(ctx, 'myelin · nodes of Ranvier', (x0 + x1) / 2, y + 48, {
           fontSize: Math.max(10, fs - 2),
           bg: 'rgba(245,176,65,0.25)',
         })
-        drawLabelPill(ctx, 'node of Ranvier', ax0 + span * 0.28, y + 62, {
-          fontSize: Math.max(9, fs - 3),
-          bold: false,
-        })
       } else {
-        drawLabelPill(ctx, 'unmyelinated — continuous conduction', (x0 + x1) / 2, y + 40, {
+        drawLabelPill(ctx, 'unmyelinated — continuous conduction', (x0 + x1) / 2, y + 48, {
           fontSize: Math.max(10, fs - 2),
         })
       }
@@ -175,7 +171,7 @@ export function NeuronSignalSim() {
       ctx.fillStyle = '#f4d03f'
       ctx.fill()
       ctx.restore()
-      drawValueChip(ctx, 'AP', `${Math.round(t * 100)}%`, x, y - 28, {
+      drawValueChip(ctx, 'AP', `${Math.round(t * 100)}%`, x, y - 44, {
         fontSize: Math.max(10, fs - 1),
         accent: true,
       })

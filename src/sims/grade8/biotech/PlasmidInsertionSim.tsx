@@ -205,10 +205,9 @@ export function PlasmidInsertionSim() {
       for (let i = 0; i < PLASMID_STAGES.length; i++) {
         const x = stripX + i * (chipW + gapX)
         chips.push({ id: i, x, y: stripY - chipH / 2, w: chipW, h: chipH })
-        const short = PLASMID_STAGES[i].split(' ')[0]
         const isHover = hover === `chip:${i}` || (hover === 'strip' && i === stageIdx)
-        drawValueChip(ctx, '', `${i + 1} ${short}`, x + chipW / 2, stripY, {
-          fontSize: Math.max(9, fs - 3),
+        drawValueChip(ctx, '', String(i + 1), x + chipW / 2, stripY, {
+          fontSize: Math.max(10, fs - 2),
           accent: i === stageIdx || isHover,
         })
       }

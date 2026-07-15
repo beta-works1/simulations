@@ -187,37 +187,44 @@ export function MitosisMeiosisSim() {
           ? 'Produces 2 identical diploid cells'
           : 'Produces 4 genetically unique haploid gametes',
         w / 2,
-        h - 14,
+        h - 12,
         { fontSize: Math.max(10, fs - 2), bold: false },
       )
 
-      // Stage chips + horizontal scrub
-      const chipY = h - 72
-      const chipH = 22
-      const gap = 4
-      const chipW = Math.min(88, (w - 24 - gap * (stages.length - 1)) / stages.length)
-      const chipsStart = (w - (chipW * stages.length + gap * (stages.length - 1))) / 2
+      // Stage dots (numbers only) + scrub — avoid long text in tight chips
+      const chipY = h - 58
+      const chipR = 11
+      const gap = Math.min(28, (w * 0.7) / Math.max(1, stages.length - 1))
+      const chipsStart = w / 2 - ((stages.length - 1) * gap) / 2
       const chips: ChipHit[] = []
 
       for (let i = 0; i < stages.length; i++) {
-        const x = chipsStart + i * (chipW + gap)
-        chips.push({ id: i, x, y: chipY - chipH / 2, w: chipW, h: chipH })
-        const short = stages[i].split(' ')[0]
+        const x = chipsStart + i * gap
+        chips.push({ id: i, x: x - chipR - 4, y: chipY - chipR - 4, w: chipR * 2 + 8, h: chipR * 2 + 8 })
         const isHover = hover === `chip:${i}`
-        drawValueChip(ctx, '', short, x + chipW / 2, chipY, {
-          fontSize: Math.max(9, fs - 3),
-          accent: i === stageIdx || isHover,
-        })
+        const active = i === stageIdx || isHover
+        ctx.beginPath()
+        ctx.arc(x, chipY, chipR, 0, Math.PI * 2)
+        ctx.fillStyle = active ? '#3498db' : 'rgba(255,255,255,0.35)'
+        ctx.fill()
+        ctx.strokeStyle = '#fff'
+        ctx.lineWidth = 1.5
+        ctx.stroke()
+        ctx.fillStyle = active ? '#fff' : '#1a252f'
+        ctx.font = `600 ${Math.max(10, fs - 2)}px Roboto, sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(String(i + 1), x, chipY + 0.5)
       }
 
-      const trackY = h - 44
+      const trackY = h - 32
       const trackX = w * 0.1
       const trackW = w * 0.8
-      const trackH = 10
+      const trackH = 8
       const handleX = trackX + progress * trackW
       layoutRef.current = {
-        scrub: { x: trackX, y: trackY - 10, w: trackW, h: 28 },
-        handle: { x: handleX, y: trackY, r: 12 },
+        scrub: { x: trackX, y: trackY - 10, w: trackW, h: 24 },
+        handle: { x: handleX, y: trackY, r: 11 },
         chips,
         stageCount: stages.length,
       }
@@ -228,9 +235,9 @@ export function MitosisMeiosisSim() {
       ctx.fillRect(trackX, trackY - trackH / 2, progress * trackW, trackH)
 
       const scrubHover = hover === 'scrub'
-      drawHoverHalo(ctx, handleX, trackY, 18, scrubHover)
+      drawHoverHalo(ctx, handleX, trackY, 16, scrubHover)
       ctx.beginPath()
-      ctx.arc(handleX, trackY, 11, 0, Math.PI * 2)
+      ctx.arc(handleX, trackY, 10, 0, Math.PI * 2)
       ctx.fillStyle = scrubHover ? '#5dade2' : '#3498db'
       ctx.fill()
       ctx.strokeStyle = '#fff'
@@ -238,7 +245,7 @@ export function MitosisMeiosisSim() {
       ctx.stroke()
 
       if (hintShown.current) {
-        drawHint(ctx, 'tap stage chips · drag scrub to jump', w / 2, chipY - 22, w, h, { muted: true })
+        drawHint(ctx, 'tap stage · drag scrub', w / 2, chipY - 20, w, h, { muted: true })
       }
     },
     [mode, running, stages],
