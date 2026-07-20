@@ -3,9 +3,11 @@
  * Prefer these in every sim sidebar instead of one-off <input> markup.
  *
  * Aliases (Slider, Checkbox, ControlPanel, …) match common PhET naming.
+ * UI sounds play automatically via src/sims/shared/sound.ts.
  */
-import type { ChangeEvent, KeyboardEvent, ReactNode } from 'react'
+import type { ButtonHTMLAttributes, ChangeEvent, KeyboardEvent, ReactNode } from 'react'
 import { useId, useState } from 'react'
+import { playChime, playClick, playSliderTick, playToggle } from './sound'
 
 export function ControlSection({ title, children }: { title?: string; children: ReactNode }) {
   return (
@@ -46,9 +48,15 @@ export function ControlSlider({
   const id = useId()
   const shown = display ?? `${value}${unit ?? ''}`
 
+  const commit = (next: number) => {
+    if (next === value) return
+    playSliderTick()
+    onChange(next)
+  }
+
   const nudge = (dir: -1 | 1) => {
     const next = Math.min(max, Math.max(min, value + dir * step))
-    if (next !== value) onChange(Number(next.toFixed(6)))
+    commit(Number(next.toFixed(6)))
   }
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -60,10 +68,10 @@ export function ControlSlider({
       nudge(1)
     } else if (e.key === 'Home') {
       e.preventDefault()
-      onChange(min)
+      commit(min)
     } else if (e.key === 'End') {
       e.preventDefault()
-      onChange(max)
+      commit(max)
     }
   }
 
@@ -88,7 +96,7 @@ export function ControlSlider({
         aria-valuetext={shown}
         aria-label={label}
         onKeyDown={onKeyDown}
-        onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(Number(e.target.value))}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => commit(Number(e.target.value))}
       />
     </label>
   )
@@ -112,7 +120,15 @@ export function ControlSelect({
   return (
     <label className="sim-ctl" htmlFor={id}>
       <span className="sim-ctl-label">{label}</span>
-      <select id={id} value={value} aria-label={label} onChange={(e) => onChange(e.target.value)}>
+      <select
+        id={id}
+        value={value}
+        aria-label={label}
+        onChange={(e) => {
+          playClick()
+          onChange(e.target.value)
+        }}
+      >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
@@ -153,7 +169,10 @@ export function ControlRadioGroup({
                 name={name}
                 value={o.value}
                 checked={value === o.value}
-                onChange={() => onChange(o.value)}
+                onChange={() => {
+                  playToggle(true)
+                  onChange(o.value)
+                }}
               />
               <span>{o.label}</span>
             </label>
@@ -184,7 +203,10 @@ export function ControlToggle({
         type="checkbox"
         checked={checked}
         aria-label={label}
-        onChange={(e) => onChange(e.target.checked)}
+        onChange={(e) => {
+          playToggle(e.target.checked)
+          onChange(e.target.checked)
+        }}
       />
       <span>{label}</span>
     </label>
@@ -230,7 +252,10 @@ export function InfoTooltip({
         aria-expanded={open}
         aria-controls={tipId}
         aria-label={title}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          playClick()
+          setOpen((o) => !o)
+        }}
       >
         i
       </button>
@@ -238,7 +263,14 @@ export function InfoTooltip({
         <div id={tipId} className="sim-info-tooltip-panel" role="note">
           <p className="sim-info-tooltip-title">{title}</p>
           <div className="sim-info-tooltip-body">{children}</div>
-          <button type="button" className="sim-shell-btn" onClick={() => setOpen(false)}>
+          <button
+            type="button"
+            className="sim-shell-btn"
+            onClick={() => {
+              playClick()
+              setOpen(false)
+            }}
+          >
             Close
           </button>
         </div>
@@ -258,7 +290,10 @@ export function PlayPauseButton({
     <button
       type="button"
       className={`sim-shell-btn${running ? ' is-active' : ''}`}
-      onClick={onToggle}
+      onClick={() => {
+        playClick()
+        onToggle()
+      }}
       aria-label={running ? 'Pause' : 'Play'}
     >
       {running ? 'Pause' : 'Play'}
@@ -268,7 +303,15 @@ export function PlayPauseButton({
 
 export function ResetButton({ onReset }: { onReset: () => void }) {
   return (
-    <button type="button" className="sim-shell-btn" onClick={onReset} aria-label="Reset simulation">
+    <button
+      type="button"
+      className="sim-shell-btn"
+      onClick={() => {
+        playClick()
+        onReset()
+      }}
+      aria-label="Reset simulation"
+    >
       Reset
     </button>
   )
@@ -288,10 +331,55 @@ export function PlayPauseStepButton({
     <ControlStack>
       <PlayPauseButton running={running} onToggle={onToggle} />
       {onStep ? (
-        <button type="button" className="sim-shell-btn" onClick={onStep} aria-label="Step once">
+        <button
+          type="button"
+          className="sim-shell-btn"
+          onClick={() => {
+            playClick()
+            onStep()
+          }}
+          aria-label="Step once"
+        >
           Step
         </button>
       ) : null}
     </ControlStack>
   )
 }
+
+type PresetButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> & {
+  children: ReactNode
+  /** `chime` for meaningful presets; `click` for ordinary actions. */
+  sound?: 'chime' | 'click'
+  primary?: boolean
+}
+
+/**
+ * Shared action / preset button — plays click or chime so sims get sound for free.
+ */
+export function PresetButton({
+  children,
+  sound = 'chime',
+  primary = true,
+  className,
+  onClick,
+  ...rest
+}: PresetButtonProps) {
+  return (
+    <button
+      type="button"
+      className={`sim-shell-btn${primary ? ' is-primary' : ''}${className ? ` ${className}` : ''}`}
+      onClick={(e) => {
+        if (sound === 'chime') playChime()
+        else playClick()
+        onClick?.(e)
+      }}
+      {...rest}
+    >
+      {children}
+    </button>
+  )
+}
+
+/** Generic shared button alias. */
+export const Button = PresetButton

@@ -6,6 +6,7 @@ import {
   ControlStats,
   InfoTooltip,
   PlayPauseStepButton,
+  PresetButton,
   ResetButton,
   Slider,
   ToggleSwitch,
@@ -235,9 +236,7 @@ export function CarbonOxygenCycleSim() {
       onPointerMove={onCanvasPointerMove}
       onPointerLeave={onCanvasPointerLeave}
       toolbar={
-        <button type="button" className="sim-shell-btn is-primary" onClick={runDeforestation}>
-          Simulate Deforestation + Industry
-        </button>
+        <PresetButton onClick={runDeforestation}>Simulate Deforestation + Industry</PresetButton>
       }
       controls={
         <>
@@ -287,9 +286,7 @@ export function CarbonOxygenCycleSim() {
               onStep={stepOnce}
             />
             <ResetButton onReset={reset} />
-            <button type="button" className="sim-shell-btn is-primary" onClick={runDeforestation}>
-              Simulate Deforestation + Industry
-            </button>
+            <PresetButton onClick={runDeforestation}>Simulate Deforestation + Industry</PresetButton>
             {ui.takeaway ? <ControlHint>{ui.takeaway}</ControlHint> : null}
           </ControlPanel>
 

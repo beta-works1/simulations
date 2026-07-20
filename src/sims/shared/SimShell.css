@@ -314,6 +314,21 @@
   border-radius: var(--sim-radius-sm);
 }
 
+.sim-shell-mute.is-muted {
+  color: var(--sim-muted);
+  opacity: 0.85;
+}
+
+.sim-shell-mute-label {
+  font-size: 0.78rem;
+}
+
+@media (max-width: 480px) {
+  .sim-shell-mute-label {
+    display: none;
+  }
+}
+
 .sim-shell-extra-toolbar {
   display: flex;
   flex-wrap: wrap;
