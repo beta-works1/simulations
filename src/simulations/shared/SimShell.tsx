@@ -1,4 +1,10 @@
-import type { ReactNode, RefObject } from 'react'
+import { useEffect, useState, type ReactNode, type RefObject } from 'react'
+import {
+  isSoundMuted,
+  playClick,
+  subscribeSoundMuted,
+  toggleSoundMuted,
+} from '../../sims/shared/sound'
 import './SimShell.css'
 
 interface SimShellProps {
@@ -24,6 +30,9 @@ export function SimShell({
   onPointerUp,
   onPointerLeave,
 }: SimShellProps) {
+  const [muted, setMuted] = useState(() => isSoundMuted())
+  useEffect(() => subscribeSoundMuted(setMuted), [])
+
   return (
     <div className="sim-shell" role="region" aria-label={title ? `${title} simulation` : 'Simulation'}>
       {title ? (
@@ -32,6 +41,19 @@ export function SimShell({
             <h2 className="sim-shell-header-title">{title}</h2>
             {subtitle ? <p className="sim-shell-header-sub">{subtitle}</p> : null}
           </div>
+          <button
+            type="button"
+            className={`sim-btn sim-btn-ghost sim-shell-mute-btn${muted ? ' is-muted' : ''}`}
+            onClick={() => {
+              const next = toggleSoundMuted()
+              if (!next) playClick()
+            }}
+            aria-label={muted ? 'Unmute sound effects' : 'Mute sound effects'}
+            aria-pressed={muted}
+            title={muted ? 'Unmute' : 'Mute'}
+          >
+            {muted ? 'Muted' : 'Sound'}
+          </button>
         </header>
       ) : null}
       <div className="sim-shell-main">
@@ -62,10 +84,24 @@ interface TransportProps {
 export function SimTransport({ running, onToggle, onReset, extra }: TransportProps) {
   return (
     <>
-      <button type="button" className={`sim-btn ${running ? 'is-active' : ''}`} onClick={onToggle}>
+      <button
+        type="button"
+        className={`sim-btn ${running ? 'is-active' : ''}`}
+        onClick={() => {
+          playClick()
+          onToggle()
+        }}
+      >
         {running ? 'Pause' : 'Play'}
       </button>
-      <button type="button" className="sim-btn sim-btn-ghost" onClick={onReset}>
+      <button
+        type="button"
+        className="sim-btn sim-btn-ghost"
+        onClick={() => {
+          playClick()
+          onReset()
+        }}
+      >
         Reset
       </button>
       {extra}
