@@ -18,6 +18,8 @@
   justify-content: stretch;
   aspect-ratio: 16 / 10;
   min-height: clamp(320px, 58vw, 620px);
+  /* Allow scrolling to the control panel when the aspect box would otherwise clip it */
+  overflow: auto;
 }
 
 .simulation-viewer-live > * {

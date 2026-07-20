@@ -75,10 +75,11 @@ export function computeRates(s: CarbonOxygenState): ProcessRates {
   const factories = s.factoryVehicleCount
   const dead = s.deadMatterAmount
 
-  const photosynthesis = (sun / 100) * plants * 0.55
-  const respiration = (plants * 0.12 + animals * 0.35) * 0.9
-  const decomposition = dead * 0.08
-  const combustion = factories * 0.42
+  // Tuned so defaults sit near balance; night / deforestation / industry produce a clear slope.
+  const photosynthesis = (sun / 100) * plants * 0.48
+  const respiration = (plants * 0.14 + animals * 0.38) * 0.9
+  const decomposition = dead * 0.09
+  const combustion = factories * 0.55
 
   return { photosynthesis, respiration, decomposition, combustion }
 }
@@ -96,16 +97,9 @@ export function stepCarbonOxygen(s: CarbonOxygenState, dt: number): CarbonOxygen
     rates.respiration + rates.decomposition + rates.combustion - rates.photosynthesis
   const o2Delta = rates.photosynthesis - rates.respiration - rates.combustion * 0.65
 
-  let co2Level = clamp(next.co2Level + co2Delta * h, CO2_MIN, CO2_MAX)
-  let o2Level = clamp(next.o2Level + o2Delta * h, O2_MIN, O2_MAX)
-
-  // Soft coupling so gauges stay readable on a 0–100 “air mix” scale
-  const total = co2Level + o2Level
-  if (total > 0) {
-    const scale = 100 / total
-    co2Level = clamp(co2Level * scale, CO2_MIN, CO2_MAX)
-    o2Level = clamp(o2Level * scale, O2_MIN, O2_MAX)
-  }
+  // Independent clamps — no soft renormalization (that flattened the chart).
+  const co2Level = clamp(next.co2Level + co2Delta * h, CO2_MIN, CO2_MAX)
+  const o2Level = clamp(next.o2Level + o2Delta * h, O2_MIN, O2_MAX)
 
   const history = [...next.history, { co2: co2Level, o2: o2Level }]
   if (history.length > HISTORY_MAX) history.shift()
