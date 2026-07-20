@@ -5,9 +5,27 @@
  * Aliases (Slider, Checkbox, ControlPanel, …) match common PhET naming.
  * UI sounds play automatically via src/sims/shared/sound.ts.
  */
-import type { ButtonHTMLAttributes, ChangeEvent, KeyboardEvent, ReactNode } from 'react'
-import { useId, useState } from 'react'
+import type { ButtonHTMLAttributes, ChangeEvent, KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
+import { useEffect, useId, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { playChime, playClick, playSliderTick, playToggle } from './sound'
+import { Z_INDEX } from './zIndex'
+
+/** Only one InfoTooltip popover open app-wide. */
+let openInfoId: string | null = null
+const infoListeners = new Set<(id: string | null) => void>()
+
+function setOpenInfoId(id: string | null) {
+  openInfoId = id
+  infoListeners.forEach((fn) => fn(id))
+}
+
+function subscribeOpenInfo(fn: (id: string | null) => void) {
+  infoListeners.add(fn)
+  return () => {
+    infoListeners.delete(fn)
+  }
+}
 
 export function ControlSection({ title, children }: { title?: string; children: ReactNode }) {
   return (
@@ -59,7 +77,7 @@ export function ControlSlider({
     commit(Number(next.toFixed(6)))
   }
 
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+  const onKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
       e.preventDefault()
       nudge(-1)
@@ -234,7 +252,7 @@ export function ControlStack({ children }: { children: ReactNode }) {
   return <div className="sim-ctl-stack">{children}</div>
 }
 
-/** Small “i” legend / instructions popover (PhET-style). */
+/** Small “i” legend / instructions popover (PhET-style) — portaled above all sim chrome. */
 export function InfoTooltip({
   title = 'About this simulation',
   children,
@@ -242,8 +260,34 @@ export function InfoTooltip({
   title?: string
   children: ReactNode
 }) {
-  const [open, setOpen] = useState(false)
   const tipId = useId()
+  const [activeId, setActiveId] = useState<string | null>(() => openInfoId)
+  const open = activeId === tipId
+
+  useEffect(() => subscribeOpenInfo(setActiveId), [])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setOpenInfoId(null)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  const close = () => {
+    playClick()
+    setOpenInfoId(null)
+  }
+
+  const toggle = () => {
+    playClick()
+    setOpenInfoId(open ? null : tipId)
+  }
+
   return (
     <div className="sim-info-tooltip">
       <button
@@ -252,29 +296,38 @@ export function InfoTooltip({
         aria-expanded={open}
         aria-controls={tipId}
         aria-label={title}
-        onClick={() => {
-          playClick()
-          setOpen((o) => !o)
-        }}
+        onClick={toggle}
       >
         i
       </button>
-      {open ? (
-        <div id={tipId} className="sim-info-tooltip-panel" role="note">
-          <p className="sim-info-tooltip-title">{title}</p>
-          <div className="sim-info-tooltip-body">{children}</div>
-          <button
-            type="button"
-            className="sim-shell-btn"
-            onClick={() => {
-              playClick()
-              setOpen(false)
-            }}
-          >
-            Close
-          </button>
-        </div>
-      ) : null}
+      {open && typeof document !== 'undefined'
+        ? createPortal(
+            <div className="sim-info-popover-root" style={{ zIndex: Z_INDEX.popover }}>
+              <button
+                type="button"
+                className="sim-info-popover-backdrop"
+                aria-label="Close info"
+                onClick={close}
+              />
+              <div
+                id={tipId}
+                className="sim-info-popover-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={`${tipId}-title`}
+              >
+                <p id={`${tipId}-title`} className="sim-info-tooltip-title">
+                  {title}
+                </p>
+                <div className="sim-info-tooltip-body">{children}</div>
+                <button type="button" className="sim-shell-btn" onClick={close}>
+                  Close
+                </button>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   )
 }
