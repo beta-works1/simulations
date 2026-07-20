@@ -16,6 +16,8 @@ interface SimShellProps {
   /** Optional bottom transport bar (topic-sim API). */
   toolbar?: ReactNode
   hidePlay?: boolean
+  /** Hide the header Reset button (e.g. when Reset lives only in the side panel). */
+  hideReset?: boolean
   onPointerDown?: (e: React.PointerEvent<HTMLCanvasElement>) => void
   onPointerMove?: (e: React.PointerEvent<HTMLCanvasElement>) => void
   onPointerUp?: (e: React.PointerEvent<HTMLCanvasElement>) => void
@@ -33,6 +35,7 @@ export function SimShell({
   sidebar,
   toolbar,
   hidePlay = false,
+  hideReset = false,
   onPointerDown,
   onPointerMove,
   onPointerUp,
@@ -76,24 +79,26 @@ export function SimShell({
               <span>{running ? 'Pause' : 'Play'}</span>
             </button>
           )}
-          <button
-            type="button"
-            className="sim-shell-icon-btn sim-shell-reset"
-            onClick={() => {
-              playClick()
-              onReset()
-            }}
-            aria-label="Reset simulation"
-            title="Reset"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"
-                fill="currentColor"
-              />
-            </svg>
-            <span>Reset</span>
-          </button>
+          {!hideReset && (
+            <button
+              type="button"
+              className="sim-shell-icon-btn sim-shell-reset"
+              onClick={() => {
+                playClick()
+                onReset()
+              }}
+              aria-label="Reset simulation"
+              title="Reset"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"
+                  fill="currentColor"
+                />
+              </svg>
+              <span>Reset</span>
+            </button>
+          )}
           <button
             type="button"
             className={`sim-shell-icon-btn sim-shell-mute${muted ? ' is-muted' : ''}`}

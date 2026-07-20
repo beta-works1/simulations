@@ -2,8 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ControlHint,
   ControlPanel,
-  ControlStat,
-  ControlStats,
   InfoTooltip,
   PlayPauseStepButton,
   PresetButton,
@@ -19,6 +17,7 @@ import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import { useCanvasPointer } from '../../shared/useCanvasPointer'
 import {
   activeEquation,
+  balanceStatus,
   computeRates,
   createCarbonOxygenState,
   startDeforestationScenario,
@@ -36,6 +35,8 @@ type GasParticle = {
   kind: 'co2' | 'o2'
   source: 'photo' | 'resp' | 'decomp' | 'burn'
 }
+
+type Cloud = { x: number; y: number; scale: number; speed: number }
 
 type HitZone = 'trees' | 'factory' | 'soil' | 'chart'
 
@@ -70,10 +71,19 @@ const TIPS: Record<Exclude<HitZone, 'chart'>, SceneTip> = {
   },
 }
 
+function makeClouds(): Cloud[] {
+  return [
+    { x: 0.15, y: 0.1, scale: 1, speed: 0.012 },
+    { x: 0.45, y: 0.16, scale: 0.75, speed: 0.008 },
+    { x: 0.78, y: 0.12, scale: 1.15, speed: 0.01 },
+  ]
+}
+
 export function CarbonOxygenCycleSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef<CarbonOxygenState>(createCarbonOxygenState())
   const particlesRef = useRef<GasParticle[]>([])
+  const cloudsRef = useRef<Cloud[]>(makeClouds())
   const layoutRef = useRef<Layout | null>(null)
   const hoverRef = useRef<HitZone | null>(null)
   const chartHoverXRef = useRef<number | null>(null)
@@ -105,6 +115,7 @@ export function CarbonOxygenCycleSim() {
   const reset = () => {
     stateRef.current = createCarbonOxygenState()
     particlesRef.current = []
+    cloudsRef.current = makeClouds()
     visualRef.current = { plants: 12, factories: 2, co2: 42, o2: 58, skyBlend: 1 }
     setSceneTip(null)
     hoverRef.current = null
@@ -145,17 +156,12 @@ export function CarbonOxygenCycleSim() {
     cursorForHit: () => 'pointer',
     onHoverChange: (id) => {
       hoverRef.current = id as HitZone | null
-      if (id === 'trees' || id === 'factory' || id === 'soil') {
-        setSceneTip(TIPS[id])
-      } else if (id !== 'chart') {
-        setSceneTip(null)
-      }
+      if (id === 'trees' || id === 'factory' || id === 'soil') setSceneTip(TIPS[id])
+      else if (id !== 'chart') setSceneTip(null)
       if (id !== 'chart') chartHoverXRef.current = null
     },
     onTap: (id) => {
-      if (id === 'trees' || id === 'factory' || id === 'soil') {
-        setSceneTip(TIPS[id])
-      }
+      if (id === 'trees' || id === 'factory' || id === 'soil') setSceneTip(TIPS[id])
     },
   })
 
@@ -169,16 +175,16 @@ export function CarbonOxygenCycleSim() {
     }
   }
 
-  const onCanvasPointerLeave = () => {
-    chartHoverXRef.current = null
-  }
-
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
       let s = stateRef.current
       if (dt > 0 && running) {
         s = stepCarbonOxygen(s, Math.min(dt, 0.05))
         stateRef.current = s
+        for (const c of cloudsRef.current) {
+          c.x += c.speed * dt
+          if (c.x > 1.25) c.x = -0.25
+        }
       }
 
       const rates = computeRates(s)
@@ -196,12 +202,12 @@ export function CarbonOxygenCycleSim() {
       const chartH = h - chartY - 8
       const chart = { x: 10, y: chartY, w: w - 20, h: chartH, padL: 36, padB: 22 }
 
-      const layout = drawLandscape(ctx, w, sceneH, s, rates, vis)
+      const layout = drawLandscape(ctx, w, sceneH, s, rates, vis, cloudsRef.current)
       layout.chart = chart
       layoutRef.current = layout
 
       updateAndDrawParticles(ctx, particlesRef.current, w, sceneH, s, rates, dt, vis)
-      drawAtmosphereGauge(ctx, w, sceneH, vis)
+      drawAtmosphereGauge(ctx, w, sceneH, vis, s)
       drawEquationPanel(ctx, w, sceneH, s)
       drawGasChart(ctx, chart, s, vis, chartHoverXRef.current)
       drawProcessChips(ctx, w, sceneH, rates, s, hoverRef.current)
@@ -233,18 +239,24 @@ export function CarbonOxygenCycleSim() {
       running={running}
       onTogglePlay={() => setRunning((r) => !r)}
       onReset={reset}
+      hidePlay
+      hideReset
       onPointerMove={onCanvasPointerMove}
-      onPointerLeave={onCanvasPointerLeave}
-      toolbar={
-        <PresetButton onClick={runDeforestation}>Simulate Deforestation + Industry</PresetButton>
-      }
+      onPointerLeave={() => {
+        chartHoverXRef.current = null
+      }}
       controls={
         <>
           <ControlPanel title="Environment">
             <ToggleSwitch
               label={ui.isDay ? 'Day' : 'Night'}
               checked={ui.isDay}
-              onChange={(checked) => patch({ isDay: checked })}
+              onChange={(checked) => patch({ isDay: checked, autoDayNight: false })}
+            />
+            <ToggleSwitch
+              label="Auto day / night cycle"
+              checked={ui.autoDayNight}
+              onChange={(checked) => patch({ autoDayNight: checked })}
             />
             <Slider
               label="Sunlight"
@@ -279,26 +291,22 @@ export function CarbonOxygenCycleSim() {
             />
           </ControlPanel>
 
-          <ControlPanel title="Transport">
+          <ControlPanel title="Simulation Controls">
             <PlayPauseStepButton
               running={running}
               onToggle={() => setRunning((r) => !r)}
               onStep={stepOnce}
             />
             <ResetButton onReset={reset} />
+          </ControlPanel>
+
+          <ControlPanel title="Scenarios">
             <PresetButton onClick={runDeforestation}>Simulate Deforestation + Industry</PresetButton>
             {ui.takeaway ? <ControlHint>{ui.takeaway}</ControlHint> : null}
           </ControlPanel>
 
-          <ControlPanel title="Atmosphere">
-            <ControlStats>
-              <ControlStat label="CO₂" value={ui.co2Level.toFixed(0)} />
-              <ControlStat label="O₂" value={ui.o2Level.toFixed(0)} />
-            </ControlStats>
-            <ControlHint>
-              Hover trees, factory, or soil for process info. Night / low plants / high factories raise
-              CO₂.
-            </ControlHint>
+          <ControlPanel title="Learn more">
+            <ControlHint>Hover trees, factory, or soil in the scene for process info.</ControlHint>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
               <ProcessTip
                 title="Photosynthesis"
@@ -350,10 +358,12 @@ function snapshot(s: CarbonOxygenState) {
     o2Level: s.o2Level,
     sunlightIntensity: s.sunlightIntensity,
     isDay: s.isDay,
+    autoDayNight: s.autoDayNight,
     plantCount: s.plantCount,
     factoryVehicleCount: s.factoryVehicleCount,
     takeaway: s.takeaway,
     scenarioProgress: s.scenarioProgress,
+    netCo2Rate: s.netCo2Rate,
   }
 }
 
@@ -374,29 +384,42 @@ function drawLandscape(
   s: CarbonOxygenState,
   rates: ProcessRates,
   vis: Visual,
+  clouds: Cloud[],
 ): Layout {
-  const day = s.isDay
   const blend = vis.skyBlend
+  const groundY = h * 0.68
 
-  const sky = ctx.createLinearGradient(0, 0, 0, h * 0.7)
-  if (day || blend > 0.05) {
-    sky.addColorStop(0, mixHex('#0b1628', '#87ceeb', blend))
-    sky.addColorStop(1, mixHex('#1e2f45', '#c5e8b8', blend))
-  } else {
-    sky.addColorStop(0, '#0b1628')
-    sky.addColorStop(1, '#1e2f45')
-  }
+  // Sky gradient with soft horizon blend into grass
+  const sky = ctx.createLinearGradient(0, 0, 0, groundY + 20)
+  sky.addColorStop(0, mixHex('#0b1628', '#6eb6e0', blend))
+  sky.addColorStop(0.55, mixHex('#1a2740', '#a8d4a0', blend))
+  sky.addColorStop(0.85, mixHex('#243528', '#7cb068', blend))
+  sky.addColorStop(1, mixHex('#2d4a28', '#5a8f3d', blend))
   ctx.fillStyle = sky
   ctx.fillRect(0, 0, w, h)
 
-  // Sun / moon — upper-center sky (equation panel is bottom-left)
-  const orbX = w * 0.55
-  const orbY = h * 0.12
-  if (day && blend > 0.15) {
-    const sunR = 16 + blend * 10
+  // Distant hills / treeline (depth layer)
+  drawHills(ctx, w, groundY, blend)
+
+  // Clouds
+  for (const c of clouds) {
+    drawCloud(ctx, c.x * w, c.y * h, c.scale, blend)
+  }
+
+  // Sun / moon — upper-center sky (equation panel is top-right)
+  const orbX = w * 0.48
+  const orbY = h * 0.13
+  const shadowStretch = blend > 0.2 ? 1.1 : 1.6
+  if (blend > 0.15) {
+    const sunR = 14 + blend * 10
+    // Soft ground glow / shadow cue under sun
+    ctx.fillStyle = `rgba(255, 200, 80, ${0.12 * blend})`
     ctx.beginPath()
-    ctx.arc(orbX, orbY, sunR + 8, 0, Math.PI * 2)
-    ctx.fillStyle = `rgba(255, 210, 60, ${0.25 + blend * 0.4})`
+    ctx.ellipse(orbX, groundY - 4, sunR * 1.8, 5, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.arc(orbX, orbY, sunR + 10, 0, Math.PI * 2)
+    ctx.fillStyle = `rgba(255, 210, 60, ${0.22 + blend * 0.35})`
     ctx.fill()
     ctx.beginPath()
     ctx.arc(orbX, orbY, sunR, 0, Math.PI * 2)
@@ -404,27 +427,30 @@ function drawLandscape(
     ctx.fill()
   } else {
     ctx.beginPath()
-    ctx.arc(orbX, orbY, 12, 0, Math.PI * 2)
+    ctx.arc(orbX, orbY, 11, 0, Math.PI * 2)
     ctx.fillStyle = '#e8eef8'
     ctx.fill()
-    for (let i = 0; i < 18; i++) {
-      const sx = ((i * 97) % w) + 8
-      const sy = ((i * 53) % (h * 0.35)) + 6
-      ctx.fillStyle = 'rgba(255,255,255,0.7)'
-      ctx.fillRect(sx, sy, 1.5, 1.5)
+    ctx.beginPath()
+    ctx.arc(orbX + 4, orbY - 2, 9, 0, Math.PI * 2)
+    ctx.fillStyle = mixHex('#0b1628', '#1a2740', 0.3)
+    ctx.fill()
+    for (let i = 0; i < 20; i++) {
+      ctx.fillStyle = 'rgba(255,255,255,0.65)'
+      ctx.fillRect(((i * 97) % w) + 6, ((i * 53) % (h * 0.32)) + 4, 1.5, 1.5)
     }
   }
 
-  const groundY = h * 0.7
-  const ground = ctx.createLinearGradient(0, groundY, 0, h)
-  ground.addColorStop(0, mixHex('#2d4a28', '#5a8f3d', blend))
+  // Grass with soft top edge
+  const ground = ctx.createLinearGradient(0, groundY - 8, 0, h)
+  ground.addColorStop(0, 'rgba(90, 143, 61, 0)')
+  ground.addColorStop(0.08, mixHex('#2d4a28', '#5a8f3d', blend))
   ground.addColorStop(1, mixHex('#1a2e18', '#3d6b2e', blend))
   ctx.fillStyle = ground
-  ctx.fillRect(0, groundY, w, h - groundY)
+  ctx.fillRect(0, groundY - 8, w, h - groundY + 8)
 
   const soilY = h * 0.86
   const soilH = h - soilY
-  ctx.fillStyle = day ? 'rgba(92, 64, 40, 0.55)' : 'rgba(40, 28, 18, 0.7)'
+  ctx.fillStyle = blend > 0.2 ? 'rgba(92, 64, 40, 0.55)' : 'rgba(40, 28, 18, 0.75)'
   ctx.fillRect(0, soilY, w, soilH)
   if (rates.decomposition > 0.2) {
     ctx.fillStyle = 'rgba(214, 137, 16, 0.35)'
@@ -438,17 +464,22 @@ function drawLandscape(
   const trees: Layout['trees'] = []
   const treeN = Math.max(0, Math.round(vis.plants))
   for (let i = 0; i < treeN; i++) {
-    const x = w * (0.06 + (i / Math.max(1, treeN)) * 0.48 + ((i * 17) % 5) * 0.008)
-    const scale = 0.75 + ((i * 37) % 10) / 20
+    const x =
+      w * (0.05 + (i / Math.max(1, treeN)) * 0.5 + (((i * 19) % 7) - 3) * 0.006)
+    const scale = 0.65 + ((i * 41) % 11) / 18
+    const yOff = ((i * 23) % 9) - 4
     const tint = (i * 13) % 3
-    drawTree(ctx, x, groundY + 4, day, rates.photosynthesis > 0.3, scale, tint)
-    trees.push({ x, y: groundY - 28 * scale, r: 18 * scale })
+    const baseY = groundY + 2 + yOff * 0.4
+    drawEllipseShadow(ctx, x, baseY + 2, 14 * scale * shadowStretch, 4 * scale, blend)
+    drawTree(ctx, x, baseY, blend > 0.2, rates.photosynthesis > 0.3, scale, tint)
+    trees.push({ x, y: baseY - 28 * scale, r: 18 * scale })
   }
 
   const animalN = Math.round(s.animalPopulation)
   for (let i = 0; i < animalN; i++) {
     const x = w * (0.1 + (i / Math.max(1, animalN)) * 0.42)
-    drawAnimal(ctx, x, groundY - 6, day)
+    drawEllipseShadow(ctx, x, groundY + 2, 12, 3.5, blend)
+    drawAnimal(ctx, x, groundY - 6, blend > 0.2)
   }
 
   const factories: Layout['factories'] = []
@@ -457,11 +488,13 @@ function drawLandscape(
   for (let i = 0; i < buildingN; i++) {
     const x = w * (0.58 + (i / Math.max(1, 10)) * 0.36)
     const smoke = rates.combustion * (0.4 + i * 0.05)
-    drawFactory(ctx, x, groundY, day, smoke)
+    drawEllipseShadow(ctx, x, groundY + 2, 18 * shadowStretch, 5, blend)
+    drawFactory(ctx, x, groundY, blend > 0.2, smoke)
     factories.push({ x: x - 16, y: groundY - 56, w: 36, h: 56 })
   }
   for (let i = 10; i < facN; i++) {
     const x = w * (0.55 + ((i - 10) / 10) * 0.4)
+    drawEllipseShadow(ctx, x + 7, groundY + 1, 10, 3, blend)
     ctx.fillStyle = '#555'
     ctx.fillRect(x, groundY - 8, 14, 6)
     ctx.fillStyle = '#222'
@@ -479,6 +512,62 @@ function drawLandscape(
     soil: { x: 0, y: soilY, w, h: soilH },
     chart: { x: 0, y: 0, w: 0, h: 0, padL: 0, padB: 0 },
   }
+}
+
+function drawHills(ctx: CanvasRenderingContext2D, w: number, groundY: number, blend: number) {
+  const far = mixHex('#1a2838', '#6a8f78', blend * 0.85)
+  const near = mixHex('#152230', '#4d7358', blend * 0.9)
+  ctx.fillStyle = far
+  ctx.beginPath()
+  ctx.moveTo(0, groundY)
+  ctx.quadraticCurveTo(w * 0.18, groundY - 48, w * 0.35, groundY - 28)
+  ctx.quadraticCurveTo(w * 0.55, groundY - 62, w * 0.72, groundY - 30)
+  ctx.quadraticCurveTo(w * 0.88, groundY - 50, w, groundY - 22)
+  ctx.lineTo(w, groundY)
+  ctx.closePath()
+  ctx.fill()
+
+  ctx.fillStyle = near
+  ctx.beginPath()
+  ctx.moveTo(0, groundY)
+  ctx.quadraticCurveTo(w * 0.22, groundY - 28, w * 0.4, groundY - 14)
+  ctx.quadraticCurveTo(w * 0.62, groundY - 36, w * 0.85, groundY - 12)
+  ctx.lineTo(w, groundY)
+  ctx.closePath()
+  ctx.fill()
+}
+
+function drawCloud(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  scale: number,
+  blend: number,
+) {
+  const a = 0.2 + blend * 0.35
+  ctx.fillStyle = blend > 0.15 ? `rgba(255,255,255,${a})` : `rgba(160,175,200,${a * 0.55})`
+  const r = 14 * scale
+  ctx.beginPath()
+  ctx.arc(x, y, r, 0, Math.PI * 2)
+  ctx.arc(x + r * 0.9, y + 2, r * 0.75, 0, Math.PI * 2)
+  ctx.arc(x - r * 0.85, y + 3, r * 0.7, 0, Math.PI * 2)
+  ctx.arc(x + r * 0.2, y - r * 0.45, r * 0.65, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+function drawEllipseShadow(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  rx: number,
+  ry: number,
+  blend: number,
+) {
+  const a = blend > 0.2 ? 0.22 : 0.35
+  ctx.fillStyle = `rgba(0,0,0,${a})`
+  ctx.beginPath()
+  ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2)
+  ctx.fill()
 }
 
 function drawTree(
@@ -540,7 +629,7 @@ function drawFactory(
   if (smokeStrength > 0.15) {
     const puffs = Math.min(4, 1 + Math.floor(smokeStrength))
     for (let i = 0; i < puffs; i++) {
-      const a = Math.min(0.55, 0.15 + smokeStrength * 0.12)
+      const a = Math.min(0.55, 0.15 + smokeStrength * 0.08)
       ctx.fillStyle = `rgba(70,70,70,${a})`
       ctx.beginPath()
       ctx.arc(x + 8 + i * 5, groundY - 58 - i * 10, 5 + i * 2.5, 0, Math.PI * 2)
@@ -559,13 +648,13 @@ function updateAndDrawParticles(
   dt: number,
   vis: Visual,
 ) {
-  const groundY = h * 0.7
-  const skyY = h * 0.15
-  const spawnBudget = Math.min(10, 2 + Math.floor(dt * 60))
+  const groundY = h * 0.68
+  const skyY = h * 0.12
+  const spawnBudget = Math.min(12, 2 + Math.floor(dt * 60))
   const plantFactor = Math.max(0.15, vis.plants / 12)
 
   if (s.isDay && rates.photosynthesis > 0.1) {
-    const chance = rates.photosynthesis * 0.1 * plantFactor * (s.sunlightIntensity / 80)
+    const chance = rates.photosynthesis * 0.08 * plantFactor * (s.sunlightIntensity / 80)
     for (let i = 0; i < spawnBudget && Math.random() < chance; i++) {
       particles.push({
         x: w * (0.08 + Math.random() * 0.45),
@@ -580,7 +669,7 @@ function updateAndDrawParticles(
   }
 
   if (rates.respiration > 0.1) {
-    for (let i = 0; i < spawnBudget && Math.random() < rates.respiration * 0.1; i++) {
+    for (let i = 0; i < spawnBudget && Math.random() < rates.respiration * 0.08; i++) {
       particles.push({
         x: w * (0.1 + Math.random() * 0.45),
         y: groundY - 10,
@@ -594,7 +683,7 @@ function updateAndDrawParticles(
   }
 
   if (rates.decomposition > 0.12) {
-    for (let i = 0; i < 3 && Math.random() < rates.decomposition * 0.25; i++) {
+    for (let i = 0; i < 3 && Math.random() < rates.decomposition * 0.2; i++) {
       particles.push({
         x: w * (0.12 + Math.random() * 0.4),
         y: h * 0.9,
@@ -608,7 +697,7 @@ function updateAndDrawParticles(
   }
 
   if (rates.combustion > 0.15) {
-    const chance = rates.combustion * 0.12 * Math.max(0.2, vis.factories / 8)
+    const chance = rates.combustion * 0.07 * Math.max(0.2, vis.factories / 8)
     for (let i = 0; i < spawnBudget && Math.random() < chance; i++) {
       particles.push({
         x: w * (0.58 + Math.random() * 0.35),
@@ -642,20 +731,28 @@ function updateAndDrawParticles(
   }
 }
 
-function drawAtmosphereGauge(ctx: CanvasRenderingContext2D, w: number, h: number, vis: Visual) {
+function drawAtmosphereGauge(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  vis: Visual,
+  s: CarbonOxygenState,
+) {
   const gx = 12
-  const gy = 56
-  const gw = Math.min(140, w * 0.28)
-  const gh = 14
+  const gy = 52
+  const gw = Math.min(150, w * 0.3)
+  const gh = 13
+  const status = balanceStatus(s.netCo2Rate)
+  const trend = s.netCo2Rate
 
-  ctx.fillStyle = 'rgba(0,0,0,0.45)'
-  roundRect(ctx, gx - 4, gy - 22, gw + 8, 58, 8)
+  ctx.fillStyle = 'rgba(0,0,0,0.5)'
+  roundRect(ctx, gx - 4, gy - 20, gw + 8, 78, 8)
   ctx.fill()
 
   ctx.fillStyle = '#fff'
   ctx.font = `600 ${fontPx(11, w, h)}px Roboto, sans-serif`
   ctx.textAlign = 'left'
-  ctx.fillText('Atmosphere', gx, gy - 8)
+  ctx.fillText('Atmosphere', gx, gy - 6)
 
   ctx.fillStyle = 'rgba(255,255,255,0.15)'
   roundRect(ctx, gx, gy, gw, gh, 4)
@@ -665,9 +762,10 @@ function drawAtmosphereGauge(ctx: CanvasRenderingContext2D, w: number, h: number
   ctx.fill()
   ctx.fillStyle = '#fff'
   ctx.font = `${fontPx(10, w, h)}px Roboto, sans-serif`
-  ctx.fillText(`CO₂ ${vis.co2.toFixed(0)}`, gx + 4, gy + 11)
+  const arrow = trend > 0.4 ? '▲' : trend < -0.4 ? '▼' : '●'
+  ctx.fillText(`CO₂ ${vis.co2.toFixed(0)} ${arrow}`, gx + 4, gy + 10)
 
-  const gy2 = gy + gh + 6
+  const gy2 = gy + gh + 5
   ctx.fillStyle = 'rgba(255,255,255,0.15)'
   roundRect(ctx, gx, gy2, gw, gh, 4)
   ctx.fill()
@@ -675,7 +773,13 @@ function drawAtmosphereGauge(ctx: CanvasRenderingContext2D, w: number, h: number
   roundRect(ctx, gx, gy2, (vis.o2 / 100) * gw, gh, 4)
   ctx.fill()
   ctx.fillStyle = '#fff'
-  ctx.fillText(`O₂ ${vis.o2.toFixed(0)}`, gx + 4, gy2 + 11)
+  ctx.fillText(`O₂ ${vis.o2.toFixed(0)}`, gx + 4, gy2 + 10)
+
+  const statusColor =
+    status === 'Balanced' ? '#a7f3d0' : status === 'CO₂ rising' ? '#fca5a5' : '#86efac'
+  ctx.fillStyle = statusColor
+  ctx.font = `600 ${fontPx(10, w, h, 9, 12)}px Roboto, sans-serif`
+  ctx.fillText(status, gx + 4, gy2 + gh + 16)
 }
 
 function drawEquationPanel(
@@ -685,44 +789,46 @@ function drawEquationPanel(
   s: CarbonOxygenState,
 ) {
   const active = activeEquation(s)
-  const panelW = Math.min(280, w * 0.42)
-  const px = 10
-  // Bottom-left of the scene — clear of the sun (upper-center sky)
-  const py = h - 82
-  const ph = 72
+  const panelW = Math.min(260, w * 0.4)
+  // Stay in upper sky — right side, below sun path, above trees/ground
+  const px = w - panelW - 10
+  const py = 8
+  const ph = 68
+  const groundY = h * 0.68
+  if (py + ph > groundY - 8) return // safety: never draw into ground
 
   ctx.fillStyle = 'rgba(11, 28, 44, 0.9)'
   roundRect(ctx, px, py, panelW, ph, 8)
   ctx.fill()
 
-  const fs = fontPx(10, w, h, 9, 12)
+  const fs = fontPx(9, w, h, 8, 11)
   ctx.font = `${fs}px Roboto, sans-serif`
   ctx.textAlign = 'left'
 
   const row1 = active === 'photosynthesis'
   if (row1) {
     ctx.fillStyle = 'rgba(39, 174, 96, 0.35)'
-    roundRect(ctx, px + 4, py + 6, panelW - 8, 28, 5)
+    roundRect(ctx, px + 4, py + 4, panelW - 8, 26, 5)
     ctx.fill()
   }
   ctx.fillStyle = row1 ? '#2ecc71' : 'rgba(255,255,255,0.55)'
-  ctx.fillText('Photosynthesis', px + 10, py + 18)
+  ctx.fillText('Photosynthesis', px + 10, py + 15)
   ctx.fillStyle = row1 ? '#ecf0f1' : 'rgba(255,255,255,0.4)'
-  ctx.font = `${Math.max(8, fs - 1)}px Roboto, sans-serif`
-  ctx.fillText('6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂', px + 10, py + 30)
+  ctx.font = `${Math.max(7, fs - 1)}px Roboto, sans-serif`
+  ctx.fillText('6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂', px + 10, py + 26)
 
   ctx.font = `${fs}px Roboto, sans-serif`
   const row2 = active === 'respiration'
   if (row2) {
     ctx.fillStyle = 'rgba(231, 76, 60, 0.3)'
-    roundRect(ctx, px + 4, py + 38, panelW - 8, 28, 5)
+    roundRect(ctx, px + 4, py + 34, panelW - 8, 28, 5)
     ctx.fill()
   }
   ctx.fillStyle = row2 ? '#e74c3c' : 'rgba(255,255,255,0.55)'
-  ctx.fillText('Respiration', px + 10, py + 50)
+  ctx.fillText('Respiration', px + 10, py + 46)
   ctx.fillStyle = row2 ? '#ecf0f1' : 'rgba(255,255,255,0.4)'
-  ctx.font = `${Math.max(8, fs - 1)}px Roboto, sans-serif`
-  ctx.fillText('C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + energy', px + 10, py + 62)
+  ctx.font = `${Math.max(7, fs - 1)}px Roboto, sans-serif`
+  ctx.fillText('C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + energy', px + 10, py + 58)
 }
 
 function drawGasChart(
@@ -742,7 +848,6 @@ function drawGasChart(
   const plotW = w - padL - 10
   const plotH = h - padB - 10
 
-  // Gridlines + axis labels
   ctx.strokeStyle = 'rgba(255,255,255,0.12)'
   ctx.lineWidth = 1
   ctx.fillStyle = 'rgba(255,255,255,0.45)'
@@ -791,8 +896,7 @@ function drawGasChart(
       ctx.moveTo(cx, plotY)
       ctx.lineTo(cx, plotY + plotH)
       ctx.stroke()
-      const tip = `CO₂ ${sample.co2.toFixed(0)}  ·  O₂ ${sample.o2.toFixed(0)}`
-      drawLabelPill(ctx, tip, cx, plotY + 14, {
+      drawLabelPill(ctx, `CO₂ ${sample.co2.toFixed(0)}  ·  O₂ ${sample.o2.toFixed(0)}`, cx, plotY + 14, {
         fontSize: 11,
         bg: 'rgba(0,0,0,0.75)',
         fg: '#fff',
@@ -821,32 +925,33 @@ function drawProcessChips(
   hover: HitZone | null,
 ) {
   const fs = fontPx(10, w, h, 9, 12)
+  // Positions kept clear of equation (top-right), gauge (top-left), and each other
   const items: { label: string; x: number; y: number; on: boolean; hot: boolean }[] = [
     {
       label: 'Photosynthesis',
-      x: w * 0.22,
-      y: h * 0.38,
+      x: w * 0.28,
+      y: h * 0.42,
       on: rates.photosynthesis > 0.15,
       hot: hover === 'trees',
     },
     {
       label: 'Respiration',
-      x: w * 0.22,
-      y: h * 0.52,
+      x: w * 0.42,
+      y: h * 0.58,
       on: rates.respiration > 0.1,
       hot: false,
     },
     {
       label: 'Decomposition',
-      x: w * 0.2,
-      y: h * 0.82,
+      x: w * 0.28,
+      y: h * 0.92,
       on: rates.decomposition > 0.15,
       hot: hover === 'soil',
     },
     {
       label: 'Combustion',
       x: w * 0.78,
-      y: h * 0.36,
+      y: h * 0.48,
       on: rates.combustion > 0.2,
       hot: hover === 'factory',
     },
@@ -863,7 +968,7 @@ function drawProcessChips(
   }
 
   if (!s.isDay) {
-    drawLabelPill(ctx, 'Night — photosynthesis paused', w * 0.42, h * 0.22, {
+    drawLabelPill(ctx, 'Night — photosynthesis paused', w * 0.38, h * 0.28, {
       fontSize: fs,
       bg: 'rgba(11,22,40,0.85)',
       fg: '#dce6f5',
@@ -872,9 +977,9 @@ function drawProcessChips(
 
   if (hover === 'trees' || hover === 'factory' || hover === 'soil') {
     const tip = TIPS[hover]
-    const tw = Math.min(w - 24, 340)
+    const tw = Math.min(w - 24, 320)
     const tx = 12
-    const ty = 100
+    const ty = 118
     ctx.fillStyle = 'rgba(11, 28, 44, 0.94)'
     roundRect(ctx, tx, ty, tw, tip.equation ? 70 : 54, 8)
     ctx.fill()
@@ -919,7 +1024,7 @@ function wrapText(
 function drawTakeaway(ctx: CanvasRenderingContext2D, w: number, h: number, text: string) {
   const tw = Math.min(w - 24, 440)
   const tx = (w - tw) / 2
-  const ty = h * 0.48
+  const ty = h * 0.5
   ctx.fillStyle = 'rgba(192, 57, 43, 0.92)'
   roundRect(ctx, tx, ty, tw, 40, 8)
   ctx.fill()
