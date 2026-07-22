@@ -234,6 +234,8 @@ export const simulations: Simulation[] = [
     color: '#1e8449',
     accent: '#5dade2',
     image: '/covers/carbon-oxygen-cycle.svg',
+    sceneryHtml: '/downloads/carbon-oxygen-offline.html',
+    offlineHtml: '/downloads/carbon-oxygen-offline.html',
   },
   {
     id: 'food-web-builder',
