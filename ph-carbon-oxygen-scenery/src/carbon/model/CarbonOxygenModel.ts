@@ -362,7 +362,8 @@ export class CarbonOxygenModel implements TModel {
     )
     this.o2Property.value = clamp(this.o2Property.value + netO2 * h, CarbonConstants.O2_MIN, CarbonConstants.O2_MAX)
 
-    this.deadMatterProperty.value = clamp(4 + this.plantCountProperty.value * 0.55, 2, 22)
+    // Dead matter is derived when plants change (see onEnvChange), not every frame,
+    // so decomposition rate slider adjustments persist.
 
     const history = [...this.historyProperty.value, { co2: this.co2Property.value, o2: this.o2Property.value }]
     if (history.length > CarbonConstants.HISTORY_MAX) history.shift()
