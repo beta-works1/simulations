@@ -22,6 +22,20 @@ export interface FoodWebSnapshot {
   links: FoodLink[]
 }
 
+export interface RemovalImpact {
+  name: string
+  brokenLinks: number
+  stranded: string[]
+  message: string
+}
+
+export const SPECIES_PALETTE: { level: TrophicLevel; label: string; names: string[] }[] = [
+  { level: 'producer', label: 'Producer', names: ['Grass', 'Algae', 'Tree', 'Bush', 'Phytoplankton'] },
+  { level: 'herbivore', label: 'Primary consumer', names: ['Rabbit', 'Deer', 'Grasshopper', 'Mouse', 'Goat'] },
+  { level: 'carnivore', label: 'Consumer', names: ['Fox', 'Hawk', 'Frog', 'Snake', 'Eagle', 'Bird'] },
+  { level: 'decomposer', label: 'Decomposer', names: ['Fungi', 'Bacteria', 'Earthworm', 'Beetle'] },
+]
+
 export function canLink(from: FoodNode, to: FoodNode): boolean {
   if (from.id === to.id) return false
   if (to.level === 'producer') return false
@@ -128,6 +142,11 @@ export function computeNodeEnergy(snapshot: FoodWebSnapshot, base = EcologyConst
   return energy
 }
 
+export function formatEnergy(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`
+  return String(Math.round(n))
+}
+
 export function webStability(snapshot: FoodWebSnapshot): { score: number; atRisk: string[]; message: string } {
   const consumers = snapshot.nodes.filter((n) => n.level !== 'producer' && n.level !== 'decomposer')
   if (consumers.length === 0) return { score: 100, atRisk: [], message: 'Add consumers to explore stability.' }
@@ -150,6 +169,43 @@ export function webStability(snapshot: FoodWebSnapshot): { score: number; atRisk
   return { score, atRisk, message }
 }
 
+export function removalImpact(snapshot: FoodWebSnapshot, id: string): RemovalImpact {
+  const node = snapshot.nodes.find((n) => n.id === id)
+  const name = node?.name ?? 'Species'
+  const broken = snapshot.links.filter((l) => l.from === id || l.to === id)
+  const stranded: string[] = []
+  for (const l of broken) {
+    const otherId = l.from === id ? l.to : l.from
+    const other = snapshot.nodes.find((n) => n.id === otherId)
+    if (!other || other.level === 'producer') continue
+    const remainingPrey = snapshot.links.filter(
+      (x) => x.to === otherId && x.from !== id && snapshot.nodes.some((n) => n.id === x.from),
+    ).length
+    if (remainingPrey === 0 && other.level !== 'decomposer') stranded.push(other.name)
+  }
+  const message =
+    stranded.length > 0
+      ? `Removing ${name} strands ${stranded.slice(0, 2).join(', ')}.`
+      : `Removing ${name} breaks ${broken.length} link${broken.length === 1 ? '' : 's'}.`
+  return { name, brokenLinks: broken.length, stranded, message }
+}
+
+function pickName(level: TrophicLevel, existing: FoodNode[]): string {
+  const entry = SPECIES_PALETTE.find((p) => p.level === level)
+  const names = entry?.names ?? [level]
+  const used = new Set(existing.map((n) => n.name))
+  const free = names.filter((n) => !used.has(n))
+  if (free.length > 0) return free[Math.floor(Math.random() * free.length)]!
+  return `${names[0]} ${existing.filter((n) => n.level === level).length + 1}`
+}
+
+function defaultYForLevel(level: TrophicLevel): number {
+  if (level === 'producer') return 0.78
+  if (level === 'herbivore') return 0.52
+  if (level === 'carnivore') return 0.28
+  return 0.88
+}
+
 export class FoodWebModel implements TModel {
   public readonly webProperty: Property<FoodWebSnapshot>
   public readonly selectedIdProperty: Property<string | null>
@@ -160,6 +216,7 @@ export class FoodWebModel implements TModel {
   public readonly statusProperty: StringProperty
   public readonly stabilityScoreProperty: NumberProperty
   public readonly stabilityMessageProperty: StringProperty
+  public readonly takeawayProperty: StringProperty
 
   public constructor() {
     this.webProperty = new Property(starterWeb())
@@ -169,10 +226,11 @@ export class FoodWebModel implements TModel {
     this.energyPulseProperty = new NumberProperty(0)
     this.baseEnergyProperty = new NumberProperty(EcologyConstants.BASE_ENERGY)
     this.statusProperty = new StringProperty(
-      'Drag species · toggle Link mode to connect eaters to food · ~10% energy up each link.',
+      'Drag palette chips onto the scene · drag species to rearrange · Link mode to connect who eats whom.',
     )
     this.stabilityScoreProperty = new NumberProperty(0)
     this.stabilityMessageProperty = new StringProperty('')
+    this.takeawayProperty = new StringProperty('')
     this.refreshStability()
     this.webProperty.link(this.refreshStability.bind(this))
   }
@@ -191,7 +249,8 @@ export class FoodWebModel implements TModel {
     this.energyPulseProperty.value = 0
     this.baseEnergyProperty.value = EcologyConstants.BASE_ENERGY
     this.statusProperty.value =
-      'Drag species · toggle Link mode to connect eaters to food · ~10% energy up each link.'
+      'Drag palette chips onto the scene · drag species to rearrange · Link mode to connect who eats whom.'
+    this.takeawayProperty.value = ''
     this.refreshStability()
   }
 
@@ -203,6 +262,7 @@ export class FoodWebModel implements TModel {
     this.webProperty.value = snapshot
     this.selectedIdProperty.value = null
     this.linkFromIdProperty.value = null
+    this.takeawayProperty.value = ''
   }
 
   public selectNode(id: string | null): void {
@@ -222,6 +282,9 @@ export class FoodWebModel implements TModel {
   public toggleLinkMode(on: boolean): void {
     this.linkModeProperty.value = on
     this.linkFromIdProperty.value = null
+    this.statusProperty.value = on
+      ? 'Link mode on — tap an eater, then its food (or reverse). Tap again to remove a link.'
+      : 'Link mode off — drag species or drop palette chips onto the scene.'
   }
 
   public handleNodePress(id: string): void {
@@ -244,7 +307,9 @@ export class FoodWebModel implements TModel {
             ? snap.links.filter((l) => !(l.from === from.id && l.to === to.id))
             : [...snap.links, { from: from.id, to: to.id }]
           this.webProperty.value = { ...snap, links }
-          this.statusProperty.value = exists ? 'Link removed.' : 'Link added — energy flows along arrows.'
+          this.statusProperty.value = exists ? 'Link removed.' : 'Link added — ~10% of energy flows up each arrow.'
+        } else {
+          this.statusProperty.value = 'Those roles cannot link (energy only flows to valid eaters).'
         }
       }
       this.linkFromIdProperty.value = null
@@ -255,7 +320,9 @@ export class FoodWebModel implements TModel {
     const node = this.webProperty.value.nodes.find((n) => n.id === id)
     if (node) {
       const e = computeNodeEnergy(this.webProperty.value, this.baseEnergyProperty.value).get(id) ?? 0
-      this.statusProperty.value = `${node.name} · ${node.level} · energy ${Math.round(e)}`
+      const impact = removalImpact(this.webProperty.value, id)
+      this.statusProperty.value = `${node.name} · ${node.level} · energy ${formatEnergy(e)}`
+      this.takeawayProperty.value = impact.brokenLinks > 0 ? impact.message : ''
     }
   }
 
@@ -263,33 +330,44 @@ export class FoodWebModel implements TModel {
     const id = this.selectedIdProperty.value
     if (!id) return
     const snap = this.webProperty.value
-    const name = snap.nodes.find((n) => n.id === id)?.name ?? 'Species'
+    const impact = removalImpact(snap, id)
     this.webProperty.value = {
       nodes: snap.nodes.filter((n) => n.id !== id),
       links: snap.links.filter((l) => l.from !== id && l.to !== id),
     }
     this.selectedIdProperty.value = null
-    this.statusProperty.value = `Removed ${name}. See which links broke.`
+    this.statusProperty.value = `Removed ${impact.name}.`
+    this.takeawayProperty.value = impact.message
   }
 
-  public addSpecies(level: TrophicLevel, name: string): void {
+  public addSpecies(level: TrophicLevel, name?: string): void {
+    this.addSpeciesAt(level, 0.3 + Math.random() * 0.4, defaultYForLevel(level) + (Math.random() - 0.5) * 0.08, name)
+  }
+
+  /** Drop a palette species onto the scene at normalized coords. */
+  public addSpeciesAt(level: TrophicLevel, x: number, y: number, name?: string): void {
     const snap = this.webProperty.value
     const id = `${level}-${Date.now()}`
     const node: FoodNode = {
       id,
-      name,
+      name: name ?? pickName(level, snap.nodes),
       level,
-      x: 0.3 + Math.random() * 0.4,
-      y: 0.25 + Math.random() * 0.5,
+      x: Math.max(0.06, Math.min(0.94, x)),
+      y: Math.max(0.06, Math.min(0.94, y)),
     }
     const prey = snap.nodes.find((n) => {
       if (level === 'herbivore') return n.level === 'producer'
-      if (level === 'carnivore') return n.level === 'herbivore'
+      if (level === 'carnivore') return n.level === 'herbivore' || n.level === 'carnivore'
       if (level === 'decomposer') return n.level !== 'decomposer'
       return false
     })
-    const links = prey ? [...snap.links, { from: prey.id, to: id }] : snap.links
+    const links = prey && level !== 'producer' ? [...snap.links, { from: prey.id, to: id }] : snap.links
     this.webProperty.value = { nodes: [...snap.nodes, node], links }
     this.selectedIdProperty.value = id
+    this.statusProperty.value =
+      level === 'producer'
+        ? `Added ${node.name}. Link mode to connect who eats it.`
+        : `Added ${node.name}${prey ? ` (auto-linked to ${prey.name})` : ''}.`
+    this.takeawayProperty.value = ''
   }
 }
