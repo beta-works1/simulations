@@ -12,6 +12,10 @@ export interface Simulation {
   accent: string
   /** Cover image path (served from /public) */
   image: string
+  /** Optional PhET-style single-file HTML for offline download */
+  offlineHtml?: string
+  /** When set, the play page embeds this SceneryStack HTML instead of the React canvas sim */
+  sceneryHtml?: string
 }
 
 export const GRADES: Grade[] = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -534,6 +538,35 @@ export const simulations: Simulation[] = [
   },
 
   // Grade 8 — Ch 7 Acids, Bases, Salts
+  {
+    id: 'ph-laboratory',
+    title: 'pH Laboratory',
+    grade: 8,
+    chapter: 'Ch 7 – Acids, Bases, Salts',
+    description:
+      'Drag substances, dip litmus paper, choose indicators, read a digital pH meter, neutralize acids and bases, mix solutions, and predict results.',
+    learningGoals: [
+      'Classify solutions as acidic, basic, or neutral using indicators and a pH meter',
+      'Describe color changes for litmus, phenolphthalein, methyl orange, and universal indicator',
+      'Explain neutralization by adding acid or base and watching pH move toward 7',
+      'Predict mixture results and check them experimentally',
+    ],
+    keywords: [
+      'pH',
+      'laboratory',
+      'litmus',
+      'indicator',
+      'neutralization',
+      'acid',
+      'base',
+      'meter',
+    ],
+    color: '#0f766e',
+    accent: '#f59e0b',
+    image: '/covers/ph-laboratory.svg',
+    sceneryHtml: '/downloads/ph-laboratory-offline.html',
+    offlineHtml: '/downloads/ph-laboratory-offline.html',
+  },
   {
     id: 'acids-ph-scale',
     title: 'Interactive pH Scale',

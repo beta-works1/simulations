@@ -1,0 +1,18 @@
+{
+  "title": "pH Laboratory",
+  "screen": {
+    "lab": "pH Lab"
+  },
+  "controls": "Controls",
+  "pourAcid": "Pour acid (HCl)",
+  "pourBase": "Pour base (NaOH)",
+  "pourWater": "Pour water",
+  "dipLitmus": "Dip litmus paper",
+  "emptyBeaker": "Empty beaker",
+  "litmusGuide": "Litmus: red = acid, blue = base",
+  "phLabel": "pH",
+  "categoryLabel": "Category",
+  "volumeLabel": "Volume",
+  "litmusLabel": "Litmus",
+  "instruction": "Tap a reagent beaker (or use Controls) to pour with animation. Then dip litmus."
+}

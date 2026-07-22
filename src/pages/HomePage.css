@@ -1,55 +1,72 @@
+.home-page {
+  position: relative;
+  isolation: isolate;
+  min-height: 100%;
+}
+
+.home-foreground {
+  position: relative;
+  z-index: 1;
+}
+
+.home-panels {
+  padding: 0 var(--space-md) var(--space-2xl);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.25rem, 3vw, 2rem);
+}
+
+.section-kicker {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-brand);
+}
+
+.intro-section,
+.subjects-section,
+.featured-wrap,
+.cta-section {
+  width: min(100%, var(--content-max));
+  margin-inline: auto;
+  background: var(--color-glass);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
 .intro-section {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: var(--space-2xl) var(--space-md) var(--space-lg);
-  text-align: center;
-}
-
-.intro-buttons {
-  margin-bottom: var(--space-2xl);
-}
-
-.play-with-sims-button::before {
-  content: '';
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236acef5'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E");
-  background-size: 28px 28px;
-  width: 28px;
-  height: 28px;
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 10px;
-  flex-shrink: 0;
-}
-
-#what-is-simlab {
+  max-width: 640px;
+  padding: clamp(1.75rem, 4vw, 2.5rem);
   text-align: left;
 }
 
-#what-is-simlab h2 {
-  font-size: var(--text-lg);
-  font-weight: 400;
-  color: var(--color-text);
+.intro-section h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
   margin: 0 0 var(--space-md);
+  color: var(--color-ink);
 }
 
-#what-is-simlab p {
-  font-size: var(--text-md);
+.intro-section p:last-child {
+  font-size: 1.05rem;
   line-height: 1.7;
   color: var(--color-muted);
   margin: 0;
 }
 
 .subjects-section {
-  max-width: var(--content-max);
-  margin: 0 auto;
-  padding: var(--space-lg) var(--space-md) var(--space-xl);
+  padding: clamp(1.75rem, 4vw, 2.75rem) clamp(1.25rem, 3vw, 2rem);
   text-align: center;
 }
 
 .subjects-section h2 {
-  font-size: var(--text-xl);
+  font-size: clamp(1.5rem, 3vw, 2rem);
   margin: 0 0 var(--space-sm);
-  color: var(--color-text);
+  color: var(--color-ink);
 }
 
 .subjects-intro {
@@ -62,9 +79,9 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   gap: 12px;
-  max-width: 900px;
+  max-width: 880px;
   margin-inline: auto;
 }
 
@@ -73,19 +90,19 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 20px 12px;
+  padding: 22px 12px 18px;
   text-decoration: none;
   color: var(--color-text);
   background: #fff;
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(7, 19, 31, 0.06);
   border-radius: var(--radius-md);
-  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 16px rgba(7, 19, 31, 0.04);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .subject-card:hover {
-  border-color: var(--color-brand);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-card);
+  border-color: rgba(20, 184, 166, 0.45);
+  box-shadow: 0 12px 28px rgba(15, 118, 110, 0.12);
 }
 
 .subject-card:focus-visible {
@@ -94,8 +111,11 @@
 }
 
 .subject-card-icon {
-  font-size: 1.75rem;
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
   line-height: 1;
+  color: var(--color-brand);
 }
 
 .subject-card-name {
@@ -104,15 +124,45 @@
 }
 
 .subject-card-count {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--color-muted);
 }
 
+.featured-wrap {
+  padding: clamp(1.5rem, 3vw, 2rem) 0.5rem;
+}
+
+.featured-wrap .simulation-grid-section {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
 .cta-section {
+  max-width: 640px;
+  padding: clamp(2rem, 4vw, 3rem) clamp(1.25rem, 3vw, 2rem);
   text-align: center;
-  padding: var(--space-md) var(--space-md) var(--space-2xl);
+}
+
+.cta-title {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.4rem, 3vw, 1.85rem);
+  color: var(--color-ink);
+}
+
+.cta-copy {
+  margin: 0 0 1.5rem;
+  color: var(--color-muted);
+}
+
+.cta-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   justify-content: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subject-card {
+    transition: none;
+  }
 }

@@ -1,5 +1,6 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Logo } from './Logo'
 import { GRADES, gradeLabel } from '../data/simulations'
 import './Header.css'
@@ -40,11 +41,14 @@ export function Header({ onSearch }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isWide, setIsWide] = useState(true)
+  const [scrolled, setScrolled] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const searchWrapRef = useRef<HTMLDivElement>(null)
   const simsRef = useRef<HTMLDivElement>(null)
   const searchInputId = useId()
   const location = useLocation()
+  const reduce = useReducedMotion()
+  const isHome = location.pathname === '/'
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 900px)')
@@ -52,6 +56,13 @@ export function Header({ onSearch }: HeaderProps) {
     apply()
     mq.addEventListener('change', apply)
     return () => mq.removeEventListener('change', apply)
+  }, [])
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   useEffect(() => {
@@ -114,7 +125,7 @@ export function Header({ onSearch }: HeaderProps) {
     setSimsOpen(false)
   }
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
+  const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault()
     onSearch?.(searchQuery)
     setSearchOpen(false)
@@ -126,11 +137,7 @@ export function Header({ onSearch }: HeaderProps) {
         All Grades
       </NavLink>
       {GRADES.map((grade) => (
-        <NavLink
-          key={grade}
-          to={`/simulations?grade=${grade}`}
-          onClick={closeAll}
-        >
+        <NavLink key={grade} to={`/simulations?grade=${grade}`} onClick={closeAll}>
           {gradeLabel(grade)}
         </NavLink>
       ))}
@@ -143,7 +150,19 @@ export function Header({ onSearch }: HeaderProps) {
         <a href="#page-content">Skip to Main Content</a>
       </div>
 
-      <header id="site-header" className={isWide ? 'is-wide' : 'is-narrow'}>
+      <motion.header
+        id="site-header"
+        className={[
+          isWide ? 'is-wide' : 'is-narrow',
+          scrolled || !isHome ? 'is-solid' : 'is-transparent',
+          isHome ? 'on-home' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        initial={reduce ? false : { y: -24, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="header-bar">
           <Link to="/" className="brand-link" onClick={closeAll} aria-label="SimLab home">
             <Logo />
@@ -163,7 +182,19 @@ export function Header({ onSearch }: HeaderProps) {
                     Simulations
                     <span className="caret" aria-hidden="true" />
                   </button>
-                  {simsOpen && <div className="dropdown-menu">{simsLinks}</div>}
+                  <AnimatePresence>
+                    {simsOpen && (
+                      <motion.div
+                        className="dropdown-menu"
+                        initial={reduce ? false : { opacity: 0, y: 8, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {simsLinks}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
                 <NavLink
                   to="/about"
@@ -241,20 +272,30 @@ export function Header({ onSearch }: HeaderProps) {
           </div>
         </div>
 
-        {!isWide && menuOpen && (
-          <nav id="mobile-nav-panel" className="mobile-nav" aria-label="Primary">
-            <p className="mobile-nav-label">Simulations</p>
-            <div className="mobile-sims-links">{simsLinks}</div>
-            <NavLink
-              to="/about"
-              className={({ isActive }) => `nav-link${isActive ? ' is-active' : ''}`}
-              onClick={closeAll}
+        <AnimatePresence>
+          {!isWide && menuOpen && (
+            <motion.nav
+              id="mobile-nav-panel"
+              className="mobile-nav"
+              aria-label="Primary"
+              initial={reduce ? false : { height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             >
-              About
-            </NavLink>
-          </nav>
-        )}
-      </header>
+              <p className="mobile-nav-label">Simulations</p>
+              <div className="mobile-sims-links">{simsLinks}</div>
+              <NavLink
+                to="/about"
+                className={({ isActive }) => `nav-link${isActive ? ' is-active' : ''}`}
+                onClick={closeAll}
+              >
+                About
+              </NavLink>
+            </motion.nav>
+          )}
+        </AnimatePresence>
+      </motion.header>
     </>
   )
 }

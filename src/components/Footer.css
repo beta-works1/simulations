@@ -1,26 +1,40 @@
-#page-footer {
-  margin-top: var(--space-2xl);
+.site-footer {
+  margin-top: auto;
+  position: relative;
+  z-index: 2;
 }
 
-.footer-highlight-background {
-  background: #f0f0f0;
+.footer-band {
+  background: linear-gradient(135deg, #07131f 0%, #0f2a3a 55%, #134e4a 100%);
+  color: #fff;
   text-align: center;
-  padding: var(--space-xl) var(--space-md);
+  padding: clamp(2.5rem, 6vw, 4rem) var(--space-md);
 }
 
-.footer-top p {
-  margin: 0 0 10px;
-  color: var(--color-text);
-  font-size: var(--text-sm);
-  line-height: 1.6;
-  max-width: 700px;
-  margin-inline: auto;
+.footer-brand {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  background: linear-gradient(90deg, #fb923c, #38bdf8, #34d399, #fbbf24);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.footer-tagline {
+  margin: 0 auto;
+  max-width: 36rem;
+  color: rgba(226, 232, 240, 0.82);
+  font-size: 1rem;
+  line-height: 1.65;
 }
 
 .main-footer {
   background: #fff;
-  padding: var(--space-lg);
-  border-top: 1px solid var(--color-border);
+  padding: var(--space-xl) var(--space-md);
+  border-top: 1px solid rgba(7, 19, 31, 0.06);
 }
 
 .footer-content {
@@ -30,34 +44,30 @@
 }
 
 .footer-links {
-  margin-bottom: var(--space-md);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 0.85rem;
+  margin-bottom: 1.25rem;
 }
 
-.inline-link {
-  color: #555;
+.footer-links a {
+  color: var(--color-ink-soft);
   text-decoration: none;
-  font-weight: 400;
-  font-size: var(--text-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.25rem 0.4rem;
+  border-radius: 8px;
+  transition: color 0.2s, background 0.2s;
 }
 
-.inline-link:hover {
-  color: var(--color-accent);
-  text-decoration: underline;
-}
-
-.inline-link:focus-visible {
-  outline: 3px solid var(--color-focus);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-
-.footer-separator {
-  color: #ccc;
-  margin: 0 8px;
+.footer-links a:hover {
+  color: var(--color-brand);
+  background: rgba(20, 184, 166, 0.08);
 }
 
 .footer-copyright {
-  color: #666;
-  font-size: 0.75rem;
   margin: 0;
+  color: var(--color-muted);
+  font-size: 0.8rem;
 }

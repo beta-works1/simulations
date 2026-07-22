@@ -1,8 +1,13 @@
 import { Link } from 'react-router-dom'
+import { motion, useReducedMotion } from 'motion/react'
 import { PageMeta } from '../components/PageMeta'
 import './AboutPage.css'
 
+const ease = [0.22, 1, 0.36, 1] as const
+
 export function AboutPage() {
+  const reduce = useReducedMotion()
+
   return (
     <div className="about-page page-content">
       <PageMeta
@@ -11,15 +16,27 @@ export function AboutPage() {
         path="/about"
       />
 
-      <header className="about-header">
+      <motion.header
+        className="about-header"
+        initial={reduce ? false : { opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease }}
+      >
+        <p className="about-kicker">About</p>
         <h1>About SimLab</h1>
         <p>
           SimLab is a free platform for interactive science experiment simulations organized by
           grade level from Grade 1 to Grade 8.
         </p>
-      </header>
+      </motion.header>
 
-      <section className="about-section">
+      <motion.section
+        className="about-section"
+        initial={reduce ? false : { opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.55, ease }}
+      >
         <h2>How it works</h2>
         <ol className="workflow-steps">
           <li>
@@ -32,9 +49,15 @@ export function AboutPage() {
             <strong>Open a simulation</strong> — run the experiment and review learning goals.
           </li>
         </ol>
-      </section>
+      </motion.section>
 
-      <section className="about-section">
+      <motion.section
+        className="about-section"
+        initial={reduce ? false : { opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.55, delay: 0.08, ease }}
+      >
         <h2>What’s next</h2>
         <p>
           More interactive experiments will be added under each grade over time. The grade panel is
@@ -48,7 +71,7 @@ export function AboutPage() {
             Back to Home
           </Link>
         </div>
-      </section>
+      </motion.section>
     </div>
   )
 }

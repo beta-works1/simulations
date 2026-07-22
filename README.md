@@ -38,6 +38,19 @@ npm test   # Vitest (pure model tests)
 npm run build
 ```
 
+## Offline download (PhET-style)
+
+**pH Laboratory** also has a SceneryStack build you can download as a single HTML file:
+
+- In the app: open the sim → **Download HTML (offline)**
+- Or open [`/downloads/ph-laboratory-offline.html`](public/downloads/ph-laboratory-offline.html) after building:
+
+```bash
+npm run build:ph-lab-offline
+```
+
+See [`ph-laboratory-scenery/README.md`](ph-laboratory-scenery/README.md).
+
 ## Add simulations
 
 1. Follow [CONTRIBUTING.md](CONTRIBUTING.md) — prefer `src/simulations/<topic>/{model,view,*Sim}.ts(x)`

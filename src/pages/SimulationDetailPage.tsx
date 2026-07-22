@@ -112,6 +112,15 @@ export function SimulationDetailPage() {
         <button type="button" className="btn btn-primary" onClick={() => setFullscreen(true)}>
           Open fullscreen
         </button>
+        {sim.offlineHtml ? (
+          <a
+            className="btn btn-secondary"
+            href={sim.offlineHtml}
+            download={`${sim.id}-offline.html`}
+          >
+            Download HTML (offline)
+          </a>
+        ) : null}
         <Link to={gradePath} className="btn btn-secondary">
           More {gradeLabel(sim.grade)}
         </Link>
@@ -119,6 +128,13 @@ export function SimulationDetailPage() {
           All Grades
         </Link>
       </div>
+
+      {sim.offlineHtml ? (
+        <p className="offline-download-note">
+          PhET-style offline file: open the downloaded HTML in any browser with no install (built
+          with <a href="https://scenerystack.org/">SceneryStack</a>).
+        </p>
+      ) : null}
 
       <div className="simulation-info">
         <div className="simulation-info-cover">

@@ -1,13 +1,6 @@
 #page-content {
-  padding-top: 64px;
-  min-height: calc(100vh - 64px);
-}
-
-@media (min-width: 900px) {
-  #page-content {
-    padding-top: 72px;
-    min-height: calc(100vh - 72px);
-  }
+  padding-top: var(--header-h);
+  min-height: calc(100vh - var(--header-h));
 }
 
 .route-fallback {
@@ -16,4 +9,5 @@
   padding: var(--space-2xl) var(--space-md);
   text-align: center;
   color: var(--color-muted);
+  font-family: var(--font-display);
 }

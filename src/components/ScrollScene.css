@@ -1,0 +1,32 @@
+.scroll-scene-pin {
+  position: sticky;
+  top: var(--header-h);
+  height: calc(100svh - var(--header-h));
+  margin-bottom: calc(-100svh + var(--header-h));
+  z-index: 0;
+  pointer-events: none;
+}
+
+.scroll-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 70% 50% at 72% 38%, rgba(56, 189, 198, 0.16), transparent 55%),
+    radial-gradient(ellipse 45% 35% at 12% 78%, rgba(46, 204, 113, 0.1), transparent 50%),
+    linear-gradient(165deg, #041018 0%, #0a1f33 45%, #0f2a40 100%);
+}
+
+.scroll-scene-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-scene {
+    background:
+      radial-gradient(ellipse 70% 50% at 70% 40%, rgba(56, 189, 198, 0.18), transparent 55%),
+      linear-gradient(165deg, #041018 0%, #0a1f33 45%, #123048 100%);
+  }
+}

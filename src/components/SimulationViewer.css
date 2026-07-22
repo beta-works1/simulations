@@ -27,6 +27,11 @@
   min-height: inherit;
 }
 
+.simulation-viewer-scenery {
+  aspect-ratio: 16 / 9;
+  min-height: clamp(480px, 62vw, 720px);
+}
+
 @media (max-width: 720px) {
   .simulation-viewer-stage,
   .simulation-viewer-live {

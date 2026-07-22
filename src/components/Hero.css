@@ -1,0 +1,201 @@
+.hero {
+  --hero-ink: #07131f;
+  --hero-mist: #9eb6c8;
+  --hero-accent: #2dd4bf;
+  --hero-font: var(--font-display);
+
+  position: relative;
+  isolation: isolate;
+  min-height: min(calc(100svh - var(--header-h)), 860px);
+  display: grid;
+  align-items: end;
+  overflow: hidden;
+  background: transparent;
+  color: #fff;
+}
+
+.hero-wash {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(4, 16, 24, 0.78) 0%, rgba(4, 16, 24, 0.3) 48%, transparent 80%),
+    linear-gradient(180deg, transparent 30%, rgba(4, 16, 24, 0.62) 100%);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  width: min(740px, 100%);
+  padding: clamp(4.5rem, 12vh, 7rem) clamp(1.25rem, 4vw, 3.5rem) clamp(3rem, 8vh, 5rem);
+}
+
+.hero-brand {
+  font-family: var(--hero-font);
+  font-size: clamp(3.4rem, 12vw, 6.75rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.92;
+  margin: 0 0 1.35rem;
+}
+
+.hero-brand span {
+  display: inline-block;
+}
+
+.hero-brand .c-s { color: #fb923c; }
+.hero-brand .c-i { color: #38bdf8; }
+.hero-brand .c-m { color: #34d399; }
+.hero-brand .c-l { color: #67e8f9; }
+.hero-brand .c-a { color: #f87171; }
+.hero-brand .c-b { color: #fbbf24; }
+
+.hero-headline {
+  font-family: var(--hero-font);
+  font-size: clamp(1.4rem, 3.4vw, 2.15rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0 0 0.9rem;
+  max-width: 16ch;
+  text-wrap: balance;
+}
+
+.hero-lede {
+  font-family: var(--hero-font);
+  font-size: clamp(0.98rem, 1.7vw, 1.15rem);
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--hero-mist);
+  margin: 0 0 1.85rem;
+  max-width: 34ch;
+  text-wrap: pretty;
+}
+
+.hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding: 0.75rem 1.4rem;
+  border-radius: 999px;
+  font-family: var(--hero-font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  transition: transform 0.2s var(--ease-out), background 0.2s, border-color 0.2s;
+}
+
+.hero-cta:focus-visible {
+  outline: 3px solid var(--hero-accent);
+  outline-offset: 3px;
+}
+
+.hero-cta-primary {
+  background: #fff;
+  color: var(--hero-ink);
+}
+
+.hero-cta-primary:hover {
+  background: #e6fffb;
+  color: var(--hero-ink);
+  transform: translateY(-2px);
+}
+
+.hero-cta-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(8px);
+}
+
+.hero-cta-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.hero-cta-arrow {
+  display: inline-block;
+  transition: transform 0.2s var(--ease-out);
+}
+
+.hero-cta-primary:hover .hero-cta-arrow {
+  transform: translateX(4px);
+}
+
+.hero-scroll-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 2.75rem 0 0;
+  font-family: var(--hero-font);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(158, 182, 200, 0.8);
+}
+
+.hero-scroll-line {
+  width: 1px;
+  height: 2.4rem;
+  background: linear-gradient(180deg, var(--hero-accent), transparent);
+  animation: scroll-pulse 1.8s ease-in-out infinite;
+  transform-origin: top;
+}
+
+@keyframes scroll-pulse {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 720px) {
+  .hero {
+    min-height: min(calc(100svh - var(--header-h)), 720px);
+  }
+
+  .hero-wash {
+    background:
+      linear-gradient(180deg, rgba(4, 16, 24, 0.18) 0%, rgba(4, 16, 24, 0.5) 42%, rgba(4, 16, 24, 0.88) 100%);
+  }
+
+  .hero-content {
+    width: 100%;
+  }
+
+  .hero-ctas {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-cta {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-cta,
+  .hero-cta-arrow,
+  .hero-scroll-line {
+    transition: none;
+    animation: none;
+  }
+}

@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import type { Simulation } from '../data/simulations'
 import { gradeLabel } from '../data/simulations'
 import { getLazySim, hasInteractiveSim } from '../sims/registry'
+import { SceneryEmbedViewer } from './SceneryEmbedViewer'
 import { ViewerSkeleton } from './Skeleton'
 import './SimulationViewer.css'
 
@@ -34,6 +35,14 @@ function Placeholder({ sim }: { sim: Simulation }) {
 }
 
 export function SimulationViewer({ sim }: SimulationViewerProps) {
+  if (sim.sceneryHtml) {
+    return (
+      <div className="simulation-viewer-stage simulation-viewer-live simulation-viewer-scenery">
+        <SceneryEmbedViewer src={sim.sceneryHtml} title={sim.title} />
+      </div>
+    )
+  }
+
   const Interactive = hasInteractiveSim(sim.id) ? getLazySim(sim.id) : null
 
   if (!Interactive) {

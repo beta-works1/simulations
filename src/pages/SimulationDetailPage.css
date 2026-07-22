@@ -48,7 +48,7 @@
 }
 
 .detail-tags .tag-grade {
-  background: #2a326a;
+  background: var(--color-ink);
   color: #fff;
   border: none;
 }
@@ -116,7 +116,19 @@
   display: flex;
   gap: var(--space-md);
   flex-wrap: wrap;
-  margin-bottom: var(--space-xl);
+  margin-bottom: var(--space-md);
+}
+
+.offline-download-note {
+  margin: 0 0 var(--space-xl);
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  line-height: 1.5;
+  max-width: 40rem;
+}
+
+.offline-download-note a {
+  color: var(--color-brand);
 }
 
 .simulation-info h2 {

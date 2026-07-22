@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { motion, useReducedMotion } from 'motion/react'
 import { PageMeta } from '../components/PageMeta'
 import { SimulationGrid } from '../components/SimulationGrid'
 import {
@@ -13,7 +14,10 @@ import {
 } from '../data/simulations'
 import './SimulationsPage.css'
 
+const ease = [0.22, 1, 0.36, 1] as const
+
 export function SimulationsPage() {
+  const reduce = useReducedMotion()
   const [searchParams, setSearchParams] = useSearchParams()
   const gradeParam = searchParams.get('grade')
   const chapterParam = searchParams.get('chapter')
@@ -58,15 +62,25 @@ export function SimulationsPage() {
         path="/simulations"
       />
 
-      <header className="simulations-header">
+      <motion.header
+        className="simulations-header"
+        initial={reduce ? false : { opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, ease }}
+      >
         <h1>Simulations</h1>
         <p>
           Choose a grade
           {hasChapters ? ', then a chapter,' : ''} then open a science experiment simulation.
         </p>
-      </header>
+      </motion.header>
 
-      <div className={`grade-layout${hasChapters ? ' has-chapters' : ''}`}>
+      <motion.div
+        className={`grade-layout${hasChapters ? ' has-chapters' : ''}`}
+        initial={reduce ? false : { opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, delay: 0.08, ease }}
+      >
         <aside className="grade-panel" aria-label="Grades">
           <div className="grade-panel-head">
             <h2 className="grade-panel-title">Grade panel</h2>
@@ -143,7 +157,7 @@ export function SimulationsPage() {
             </div>
           )}
         </section>
-      </div>
+      </motion.div>
     </div>
   )
 }

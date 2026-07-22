@@ -56,7 +56,7 @@ const loaders: Record<string, () => Promise<{ default: SimComponent }>> = {
       default: m.ConservationOfMassSim,
     })),
 
-  // Grade 8 — Ch 7 Acids, Bases, Salts
+  // Grade 8 — Ch 7 Acids, Bases, Salts (pH Laboratory uses SceneryStack embed on play page)
   'acids-ph-scale': () =>
     import('./grade8/acids/PhScaleSim').then((m) => ({ default: m.PhScaleSim })),
   'acid-base-neutralization': () =>

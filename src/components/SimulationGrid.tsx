@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom'
+import { motion, useReducedMotion } from 'motion/react'
 import type { Simulation } from '../data/simulations'
 import { chapterShortLabel, gradeLabel } from '../data/simulations'
 import './SimulationGrid.css'
+
+const ease = [0.22, 1, 0.36, 1] as const
 
 function SimulationThumbnail({ sim }: { sim: Simulation }) {
   const label = sim.chapter ? chapterShortLabel(sim.chapter) : gradeLabel(sim.grade)
@@ -12,13 +15,12 @@ function SimulationThumbnail({ sim }: { sim: Simulation }) {
         className="simulation-cover"
         src={sim.image}
         alt=""
-        width={130}
-        height={85}
+        width={200}
+        height={130}
         loading="lazy"
         decoding="async"
       />
       <span className="simulation-subject">{label}</span>
-      <span className="sim-badge">HTML5</span>
     </div>
   )
 }
@@ -27,15 +29,23 @@ interface SimulationGridProps {
   items: Simulation[]
   title?: string
   showTags?: boolean
+  animated?: boolean
 }
 
-export function SimulationGrid({ items, title, showTags = true }: SimulationGridProps) {
+export function SimulationGrid({
+  items,
+  title,
+  showTags = true,
+  animated = false,
+}: SimulationGridProps) {
+  const reduce = useReducedMotion()
+
   return (
     <div className="simulation-grid-section">
       {title && <h2 className="simulation-grid-title">{title}</h2>}
       <ul className="simulation-grid">
-        {items.map((sim) => (
-          <li key={sim.id} className="simulation-list-item">
+        {items.map((sim, i) => {
+          const card = (
             <Link
               to={`/play/${sim.id}`}
               className="simulation-link"
@@ -50,8 +60,30 @@ export function SimulationGrid({ items, title, showTags = true }: SimulationGrid
                 </span>
               )}
             </Link>
-          </li>
-        ))}
+          )
+
+          if (!animated) {
+            return (
+              <li key={sim.id} className="simulation-list-item">
+                {card}
+              </li>
+            )
+          }
+
+          return (
+            <motion.li
+              key={sim.id}
+              className="simulation-list-item"
+              initial={reduce ? false : { opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.5, delay: Math.min(i * 0.06, 0.4), ease }}
+              whileHover={reduce ? undefined : { y: -6, transition: { duration: 0.2 } }}
+            >
+              {card}
+            </motion.li>
+          )
+        })}
       </ul>
     </div>
   )
