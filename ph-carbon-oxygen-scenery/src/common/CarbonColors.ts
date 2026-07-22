@@ -17,5 +17,7 @@ export const CarbonConstants = {
   HISTORY_MAX: 180,
   CO2_MIN: 5,
   CO2_MAX: 95,
+  O2_MIN: 5,
+  O2_MAX: 95,
   DAY_NIGHT_PERIOD: 16,
 }

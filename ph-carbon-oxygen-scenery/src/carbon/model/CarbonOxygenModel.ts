@@ -15,6 +15,7 @@ export interface ProcessRates {
 }
 
 export type BalanceStatus = 'Balanced' | 'CO₂ rising' | 'O₂ rising'
+export type ScenarioKind = 'none' | 'deforestation' | 'reforestation'
 
 export function effectiveSunlight(isDay: boolean, sunlight: number): number {
   return isDay ? sunlight : 0
@@ -59,6 +60,13 @@ function lerp(a: number, b: number, t: number) {
 
 const SCENARIO_DURATION = 6
 
+const EMPTY_RATES: ProcessRates = {
+  photosynthesis: 0,
+  respiration: 0,
+  decomposition: 0,
+  combustion: 0,
+}
+
 export class CarbonOxygenModel implements TModel {
   public readonly co2Property: NumberProperty
   public readonly o2Property: NumberProperty
@@ -68,17 +76,23 @@ export class CarbonOxygenModel implements TModel {
   public readonly plantCountProperty: NumberProperty
   public readonly animalCountProperty: NumberProperty
   public readonly factoryCountProperty: NumberProperty
+  public readonly simSpeedProperty: NumberProperty
   public readonly runningProperty: BooleanProperty
+  public readonly deadMatterProperty: NumberProperty
+  public readonly netCo2RateProperty: NumberProperty
+  public readonly netO2RateProperty: NumberProperty
+  public readonly scenarioProgressProperty: NumberProperty
   public readonly historyProperty: Property<GasSample[]>
+  public readonly ratesProperty: Property<ProcessRates>
   public readonly statusProperty: StringProperty
   public readonly takeawayProperty: StringProperty
   public readonly balanceProperty: StringProperty
   public readonly activeProcessProperty: StringProperty
+  public readonly scenarioKindProperty: StringProperty
 
   private time = 0
-  private scenarioProgress: number | null = null
   private scenarioFrom: { plants: number; factories: number; animals: number } | null = null
-  private deadMatter = 8
+  private scenarioUpdating = false
 
   public constructor() {
     this.co2Property = new NumberProperty(42)
@@ -89,15 +103,37 @@ export class CarbonOxygenModel implements TModel {
     this.plantCountProperty = new NumberProperty(12)
     this.animalCountProperty = new NumberProperty(6)
     this.factoryCountProperty = new NumberProperty(2)
+    this.simSpeedProperty = new NumberProperty(1)
     this.runningProperty = new BooleanProperty(true)
+    this.deadMatterProperty = new NumberProperty(8)
+    this.netCo2RateProperty = new NumberProperty(0)
+    this.netO2RateProperty = new NumberProperty(0)
+    this.scenarioProgressProperty = new NumberProperty(-1)
     this.historyProperty = new Property<GasSample[]>([{ co2: 42, o2: 58 }])
+    this.ratesProperty = new Property<ProcessRates>({ ...EMPTY_RATES })
     this.statusProperty = new StringProperty(
-      'Tap trees, factory, or soil to learn each process. Adjust sliders and watch CO₂ and O₂.',
+      'Tap trees, animals, factory, or soil. Adjust sliders and watch how each process shifts CO₂ and O₂.',
     )
     this.takeawayProperty = new StringProperty('')
     this.balanceProperty = new StringProperty('Balanced')
     this.activeProcessProperty = new StringProperty('photosynthesis')
+    this.scenarioKindProperty = new StringProperty('none')
+    this.wireUserInputListeners()
     this.refreshDerived()
+  }
+
+  private wireUserInputListeners(): void {
+    const cancelIfUserEdit = () => {
+      if (this.scenarioActive && !this.scenarioUpdating) this.clearScenario()
+    }
+    this.plantCountProperty.lazyLink(cancelIfUserEdit)
+    this.animalCountProperty.lazyLink(cancelIfUserEdit)
+    this.factoryCountProperty.lazyLink(cancelIfUserEdit)
+    this.sunlightProperty.lazyLink(cancelIfUserEdit)
+  }
+
+  public get scenarioActive(): boolean {
+    return this.scenarioProgressProperty.value >= 0
   }
 
   private refreshDerived(): void {
@@ -105,16 +141,26 @@ export class CarbonOxygenModel implements TModel {
       this.plantCountProperty.value,
       this.animalCountProperty.value,
       this.factoryCountProperty.value,
-      this.deadMatter,
+      this.deadMatterProperty.value,
       this.isDayProperty.value,
       this.sunlightProperty.value,
     )
-    const { netCo2 } = netGasRates(rates)
+    const { netCo2, netO2 } = netGasRates(rates)
+    this.ratesProperty.value = rates
+    this.netCo2RateProperty.value = netCo2
+    this.netO2RateProperty.value = netO2
     this.balanceProperty.value = balanceStatus(netCo2)
     this.activeProcessProperty.value =
-      rates.photosynthesis > rates.respiration * 0.35 && effectiveSunlight(this.isDayProperty.value, this.sunlightProperty.value) > 5
+      rates.photosynthesis > rates.respiration * 0.35 &&
+      effectiveSunlight(this.isDayProperty.value, this.sunlightProperty.value) > 5
         ? 'photosynthesis'
         : 'respiration'
+  }
+
+  private clearScenario(): void {
+    this.scenarioProgressProperty.value = -1
+    this.scenarioFrom = null
+    this.scenarioKindProperty.value = 'none'
   }
 
   public reset(): void {
@@ -126,44 +172,61 @@ export class CarbonOxygenModel implements TModel {
     this.plantCountProperty.value = 12
     this.animalCountProperty.value = 6
     this.factoryCountProperty.value = 2
+    this.simSpeedProperty.value = 1
     this.runningProperty.value = true
+    this.deadMatterProperty.value = 8
     this.historyProperty.value = [{ co2: 42, o2: 58 }]
     this.statusProperty.value =
-      'Tap trees, factory, or soil to learn each process. Adjust sliders and watch CO₂ and O₂.'
+      'Tap trees, animals, factory, or soil. Adjust sliders and watch how each process shifts CO₂ and O₂.'
     this.takeawayProperty.value = ''
     this.time = 0
-    this.scenarioProgress = null
-    this.scenarioFrom = null
-    this.deadMatter = 8
+    this.clearScenario()
     this.refreshDerived()
   }
 
   public step(dt: number): void {
     if (!this.runningProperty.value || dt <= 0) return
+    const h = dt * this.simSpeedProperty.value
 
-    if (this.scenarioProgress !== null) {
-      const progress = Math.min(1, this.scenarioProgress + dt / SCENARIO_DURATION)
+    if (this.scenarioActive) {
+      const progress = Math.min(1, this.scenarioProgressProperty.value + h / SCENARIO_DURATION)
       const from = this.scenarioFrom ?? {
         plants: this.plantCountProperty.value,
         factories: this.factoryCountProperty.value,
         animals: this.animalCountProperty.value,
       }
-      this.plantCountProperty.value = lerp(from.plants, 2, progress)
-      this.factoryCountProperty.value = lerp(from.factories, 18, progress)
-      this.animalCountProperty.value = lerp(from.animals, 3, progress)
+      const kind = this.scenarioKindProperty.value
+      this.scenarioUpdating = true
+      if (kind === 'deforestation') {
+        this.plantCountProperty.value = lerp(from.plants, 2, progress)
+        this.factoryCountProperty.value = lerp(from.factories, 18, progress)
+        this.animalCountProperty.value = lerp(from.animals, 3, progress)
+        if (progress >= 0.25) {
+          this.takeawayProperty.value =
+            'Cutting forests and burning fuels raise CO₂ and lower O₂ — the cycle falls out of balance.'
+        }
+      } else if (kind === 'reforestation') {
+        this.plantCountProperty.value = lerp(from.plants, 18, progress)
+        this.factoryCountProperty.value = lerp(from.factories, 1, progress)
+        this.animalCountProperty.value = lerp(from.animals, 10, progress)
+        if (progress >= 0.25) {
+          this.takeawayProperty.value =
+            'More plants and fewer smokestacks pull CO₂ down and push O₂ up — the cycle moves toward balance.'
+        }
+      }
       this.isDayProperty.value = true
       this.autoDayNightProperty.value = false
       this.sunlightProperty.value = Math.max(this.sunlightProperty.value, 70)
-      if (progress >= 0.25) {
-        this.takeawayProperty.value =
-          'Cutting forests and burning fuels raise CO₂ and lower O₂ — the cycle falls out of balance.'
+      this.scenarioProgressProperty.value = progress >= 1 ? -1 : progress
+      if (progress >= 1) {
+        this.scenarioFrom = null
+        this.scenarioKindProperty.value = 'none'
       }
-      this.scenarioProgress = progress >= 1 ? null : progress
-      if (progress >= 1) this.scenarioFrom = null
+      this.scenarioUpdating = false
     }
 
     if (this.autoDayNightProperty.value) {
-      const phase = ((this.time + dt) / CarbonConstants.DAY_NIGHT_PERIOD) % 1
+      const phase = ((this.time + h) / CarbonConstants.DAY_NIGHT_PERIOD) % 1
       this.isDayProperty.value = phase < 0.5
     }
 
@@ -171,30 +234,26 @@ export class CarbonOxygenModel implements TModel {
       this.plantCountProperty.value,
       this.animalCountProperty.value,
       this.factoryCountProperty.value,
-      this.deadMatter,
+      this.deadMatterProperty.value,
       this.isDayProperty.value,
       this.sunlightProperty.value,
     )
     const { netCo2, netO2 } = netGasRates(rates)
 
     this.co2Property.value = clamp(
-      this.co2Property.value + netCo2 * dt,
+      this.co2Property.value + netCo2 * h,
       CarbonConstants.CO2_MIN,
       CarbonConstants.CO2_MAX,
     )
-    this.o2Property.value = clamp(
-      this.o2Property.value + netO2 * dt,
-      5,
-      95,
-    )
+    this.o2Property.value = clamp(this.o2Property.value + netO2 * h, CarbonConstants.O2_MIN, CarbonConstants.O2_MAX)
 
-    this.deadMatter = clamp(4 + this.plantCountProperty.value * 0.55, 2, 22)
+    this.deadMatterProperty.value = clamp(4 + this.plantCountProperty.value * 0.55, 2, 22)
 
     const history = [...this.historyProperty.value, { co2: this.co2Property.value, o2: this.o2Property.value }]
     if (history.length > CarbonConstants.HISTORY_MAX) history.shift()
     this.historyProperty.value = history
 
-    this.time += dt
+    this.time += h
     this.refreshDerived()
   }
 
@@ -202,22 +261,41 @@ export class CarbonOxygenModel implements TModel {
     this.step(0.05)
   }
 
-  public startDeforestationScenario(): void {
+  private startScenario(kind: ScenarioKind): void {
     this.scenarioFrom = {
       plants: this.plantCountProperty.value,
       factories: this.factoryCountProperty.value,
       animals: this.animalCountProperty.value,
     }
-    this.scenarioProgress = 0
+    this.scenarioProgressProperty.value = 0
+    this.scenarioKindProperty.value = kind
     this.takeawayProperty.value = ''
     this.runningProperty.value = true
+  }
+
+  public startDeforestationScenario(): void {
+    this.startScenario('deforestation')
     this.statusProperty.value = 'Deforestation + industry scenario running…'
   }
 
-  public setSceneTip(zone: 'trees' | 'factory' | 'soil'): void {
+  public startReforestationScenario(): void {
+    this.startScenario('reforestation')
+    this.statusProperty.value = 'Reforestation scenario running — planting trees and cutting emissions…'
+  }
+
+  public cancelScenario(): void {
+    this.clearScenario()
+    this.takeawayProperty.value = ''
+    this.statusProperty.value = 'Scenario cancelled. Adjust the ecosystem and keep exploring.'
+  }
+
+  public setSceneTip(zone: 'trees' | 'animals' | 'factory' | 'soil'): void {
     if (zone === 'trees') {
       this.statusProperty.value =
         'Photosynthesis: plants use sunlight to turn CO₂ + H₂O into food and release O₂. 6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂'
+    } else if (zone === 'animals') {
+      this.statusProperty.value =
+        'Respiration: animals (and plants at night) use O₂ and release CO₂. C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + energy'
     } else if (zone === 'factory') {
       this.statusProperty.value =
         'Combustion: burning fuels uses O₂ and releases CO₂ into the atmosphere.'
@@ -229,15 +307,19 @@ export class CarbonOxygenModel implements TModel {
 
   public bumpPlants(delta: number): void {
     this.plantCountProperty.value = clamp(this.plantCountProperty.value + delta, 0, 20)
-    this.scenarioProgress = null
-    this.scenarioFrom = null
+    this.clearScenario()
+    this.refreshDerived()
+  }
+
+  public bumpAnimals(delta: number): void {
+    this.animalCountProperty.value = clamp(this.animalCountProperty.value + delta, 0, 12)
+    this.clearScenario()
     this.refreshDerived()
   }
 
   public bumpFactories(delta: number): void {
     this.factoryCountProperty.value = clamp(this.factoryCountProperty.value + delta, 0, 20)
-    this.scenarioProgress = null
-    this.scenarioFrom = null
+    this.clearScenario()
     this.refreshDerived()
   }
 
