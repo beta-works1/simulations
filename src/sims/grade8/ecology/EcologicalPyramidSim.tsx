@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import {
   ControlHint,
   ControlSection,
+  ControlSelect,
   ControlSlider,
   ControlStat,
   ControlStats,
@@ -14,13 +15,17 @@ import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import { useCanvasPointer } from '../../shared/useCanvasPointer'
 import {
+  DECOMPOSER_LABEL,
   PYRAMID_COLORS,
   PYRAMID_LABELS,
   createPyramidState,
-  formatEnergy,
+  formatTierValue,
+  modeUnit,
   stepPyramid,
   tierDetail,
-  tierEnergies,
+  tierDotCount,
+  tierValues,
+  type PyramidMode,
 } from './ecologicalPyramidModel'
 import { TROPHIC_LEVELS } from './foodWebGuide'
 
@@ -28,32 +33,82 @@ type TierLayout = { id: number; x: number; y: number; w: number; h: number; cx: 
 
 type Layout = {
   tiers: TierLayout[]
+  decomposer: { x: number; y: number; w: number; h: number }
   baseHandle: { x: number; y: number; r: number }
+}
+
+function drawSun(ctx: CanvasRenderingContext2D, cx: number, y: number, pulse: number) {
+  const r = 16 + Math.sin(pulse * 2) * 2
+  const g = ctx.createRadialGradient(cx, y, 0, cx, y, r * 2.5)
+  g.addColorStop(0, 'rgba(255,220,80,0.6)')
+  g.addColorStop(1, 'rgba(255,180,40,0)')
+  ctx.fillStyle = g
+  ctx.beginPath()
+  ctx.arc(cx, y, r * 2.5, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.arc(cx, y, r, 0, Math.PI * 2)
+  ctx.fillStyle = '#f4d03f'
+  ctx.fill()
+}
+
+function drawTierDots(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  midY: number,
+  hw: number,
+  bandH: number,
+  count: number,
+  color: string,
+) {
+  const cols = Math.ceil(Math.sqrt(count))
+  const rows = Math.ceil(count / cols)
+  const spacing = Math.min(hw * 1.2 / cols, bandH * 0.55 / rows)
+  let drawn = 0
+  for (let row = 0; row < rows && drawn < count; row++) {
+    for (let col = 0; col < cols && drawn < count; col++) {
+      const x = cx - ((cols - 1) * spacing) / 2 + col * spacing
+      const y = midY - ((rows - 1) * spacing) / 2 + row * spacing + bandH * 0.08
+      ctx.beginPath()
+      ctx.arc(x, y, Math.max(2, spacing * 0.22), 0, Math.PI * 2)
+      ctx.fillStyle = color
+      ctx.globalAlpha = 0.55
+      ctx.fill()
+      ctx.globalAlpha = 1
+      drawn++
+    }
+  }
 }
 
 export function EcologicalPyramidSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef(createPyramidState())
-  const paramsRef = useRef({ base: 10000, selectedTier: 0 })
-  const layoutRef = useRef<Layout>({ tiers: [], baseHandle: { x: 0, y: 0, r: 14 } })
+  const paramsRef = useRef({ base: 10000, selectedTier: 0, mode: 'energy' as PyramidMode })
+  const layoutRef = useRef<Layout>({
+    tiers: [],
+    decomposer: { x: 0, y: 0, w: 0, h: 0 },
+    baseHandle: { x: 0, y: 0, r: 14 },
+  })
   const hoverRef = useRef<string | null>(null)
   const hintShown = useRef(true)
   const [running, setRunning] = useState(true)
   const [base, setBase] = useState(10000)
   const [selectedTier, setSelectedTier] = useState(0)
+  const [mode, setMode] = useState<PyramidMode>('energy')
   const [version, setVersion] = useState(0)
 
-  paramsRef.current = { base, selectedTier }
+  paramsRef.current = { base, selectedTier, mode }
 
   useCanvasPointer(canvasRef, {
     hitTest: (pt, size) => {
       const L = layoutRef.current
       const h = L.baseHandle
       if (Math.hypot(pt.x - h.x, pt.y - h.y) < h.r + 10) return 'base-handle'
+      const d = L.decomposer
+      if (pt.x >= d.x && pt.x <= d.x + d.w && pt.y >= d.y && pt.y <= d.y + d.h) return 'decomposer'
       for (const t of L.tiers) {
         if (pt.x >= t.x && pt.x <= t.x + t.w && pt.y >= t.y && pt.y <= t.y + t.h) return `tier:${t.id}`
       }
-      // Base drag zone along bottom on narrow screens
       if (size.w < 520 && pt.y > size.h * 0.88) return 'base-strip'
       return null
     },
@@ -84,7 +139,7 @@ export function EcologicalPyramidSim() {
       stateRef.current = stepPyramid(stateRef.current, dt, running)
       const p = paramsRef.current
       stateRef.current.baseEnergy = p.base
-      const E = tierEnergies(p.base)
+      const values = tierValues(p.base, p.mode)
       const hover = hoverRef.current
       const fs = fontPx(13, w, h)
       const narrow = w < 520
@@ -95,21 +150,16 @@ export function EcologicalPyramidSim() {
       ctx.fillStyle = bg
       ctx.fillRect(0, 0, w, h)
 
-      const vg = ctx.createRadialGradient(
-        w * 0.5,
-        h * 0.4,
-        Math.min(w, h) * 0.15,
-        w * 0.5,
-        h * 0.5,
-        Math.max(w, h) * 0.75,
-      )
+      const vg = ctx.createRadialGradient(w * 0.5, h * 0.4, Math.min(w, h) * 0.15, w * 0.5, h * 0.5, Math.max(w, h) * 0.75)
       vg.addColorStop(0, 'rgba(255,255,255,0.04)')
       vg.addColorStop(1, 'rgba(0,0,0,0.18)')
       ctx.fillStyle = vg
       ctx.fillRect(0, 0, w, h)
 
+      drawSun(ctx, w / 2, h * 0.05, stateRef.current.pulse)
+
       const top = h * 0.1
-      const bottom = h * (narrow ? 0.78 : 0.82)
+      const bottom = h * (narrow ? 0.72 : 0.76)
       const levels = 4
       const band = (bottom - top) / levels
 
@@ -125,13 +175,11 @@ export function EcologicalPyramidSim() {
         const isSel = p.selectedTier === i
         const isHover = hover === `tier:${i}`
 
-        const left = cx - hw
-        const tierW = hw * 2
         layoutRef.current.tiers.push({
           id: i,
-          x: left,
+          x: cx - hw,
           y: y + 10,
-          w: tierW,
+          w: hw * 2,
           h: band - 10,
           cx,
           cy: midY,
@@ -149,6 +197,10 @@ export function EcologicalPyramidSim() {
         ctx.globalAlpha = isSel ? 1 : isHover ? 0.95 : 0.88 + 0.08 * Math.sin(stateRef.current.pulse * 2 + i)
         ctx.fill()
         ctx.globalAlpha = 1
+
+        const dots = tierDotCount(p.base, i, p.mode)
+        drawTierDots(ctx, cx, midY, hw * 0.65, band, dots, '#fff')
+
         if (isSel || isHover) {
           ctx.strokeStyle = '#fff'
           ctx.lineWidth = isSel ? 3 : 2
@@ -161,23 +213,63 @@ export function EcologicalPyramidSim() {
         ctx.shadowBlur = 4
         ctx.fillStyle = '#fff'
         ctx.font = `700 ${nameFs}px Roboto, sans-serif`
-        fillFittedText(ctx, PYRAMID_LABELS[i], cx, midY, Math.max(40, hw * 1.2), nameFs, {
+        fillFittedText(ctx, PYRAMID_LABELS[i], cx, midY - band * 0.12, Math.max(40, hw * 1.2), nameFs, {
           minPx: 9,
           align: 'center',
           baseline: 'middle',
         })
         ctx.restore()
 
-        const energyX = narrow
-          ? cx
-          : Math.min(w - 12, cx + hw * 0.85 + 8)
-        const energyY = narrow ? y + band - 4 : midY
-        drawValueChip(ctx, narrow ? '' : '', formatEnergy(E[i]), energyX, energyY, {
+        const energyX = narrow ? cx : Math.min(w - 12, cx + hw * 0.85 + 8)
+        const energyY = narrow ? y + band - 4 : midY + band * 0.18
+        drawValueChip(ctx, narrow ? '' : '', formatTierValue(values[i], p.mode), energyX, energyY, {
           align: narrow ? 'center' : 'left',
           fontSize: Math.max(10, fs - 1),
           accent: true,
         })
+
+        // Energy loss particles between tiers
+        if (running && i < levels - 1 && p.mode === 'energy') {
+          const lossY = y + band
+          const phase = (stateRef.current.pulse * 0.8 + i) % 1
+          for (let k = 0; k < 3; k++) {
+            const lx = cx + (k - 1) * hw * 0.25
+            const ly = lossY + phase * band * 0.5 + k * 8
+            ctx.beginPath()
+            ctx.arc(lx, ly, 2.5, 0, Math.PI * 2)
+            ctx.fillStyle = 'rgba(231,76,60,0.5)'
+            ctx.fill()
+          }
+          if (i === 0) {
+            drawLabelPill(ctx, '~90% lost as heat', cx, lossY + band * 0.15, {
+              fontSize: Math.max(8, fs - 3),
+              bold: false,
+              bg: 'rgba(231,76,60,0.35)',
+              fg: '#fff',
+            })
+          }
+        }
       }
+
+      // Decomposer band
+      const decoY = bottom + 6
+      const decoH = h * (narrow ? 0.1 : 0.08)
+      const decoW = w * 0.7
+      const decoX = (w - decoW) / 2
+      layoutRef.current.decomposer = { x: decoX, y: decoY, w: decoW, h: decoH }
+      const decoHover = hover === 'decomposer'
+      ctx.fillStyle = decoHover ? 'rgba(142,68,173,0.55)' : 'rgba(142,68,173,0.4)'
+      ctx.beginPath()
+      ctx.roundRect(decoX, decoY, decoW, decoH, 6)
+      ctx.fill()
+      ctx.fillStyle = '#fff'
+      ctx.font = `600 ${Math.max(10, fs - 1)}px Roboto, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.fillText(DECOMPOSER_LABEL, w / 2, decoY + decoH / 2 + 4)
+      ctx.textAlign = 'left'
+      ctx.font = `400 ${Math.max(9, fs - 2)}px Roboto, sans-serif`
+      ctx.fillStyle = 'rgba(255,255,255,0.75)'
+      ctx.fillText('Recycle nutrients → back to producers', w / 2, decoY + decoH + 14)
 
       const handleX = narrow ? w * 0.5 : w * 0.9
       const handleY = narrow ? h * 0.92 : h * 0.5
@@ -191,7 +283,7 @@ export function EcologicalPyramidSim() {
       ctx.strokeStyle = '#fff'
       ctx.lineWidth = 2
       ctx.stroke()
-      drawValueChip(ctx, 'Base', formatEnergy(p.base), handleX, handleY - (narrow ? 22 : 28), {
+      drawValueChip(ctx, 'Base', formatTierValue(p.base, p.mode), handleX, handleY - (narrow ? 22 : 28), {
         fontSize: Math.max(10, fs - 1),
         accent: true,
         align: 'center',
@@ -200,22 +292,13 @@ export function EcologicalPyramidSim() {
       if (hintShown.current) {
         drawHint(
           ctx,
-          narrow
-            ? 'tap tiers · drag blue handle · ~10% up each level'
-            : 'click tiers · drag handle · ~10% energy up each level',
+          narrow ? 'tap tiers · switch pyramid type · drag handle' : 'click tiers · ~10% energy up each level',
           w / 2,
-          h - 16,
+          h - 12,
           w,
           h,
           { muted: true },
         )
-      } else {
-        drawLabelPill(ctx, '~10% energy passes up each level', w / 2, h - 16, {
-          fontSize: Math.max(10, fs - 1),
-          bg: 'rgba(0,0,0,0.45)',
-          fg: '#ecf0f1',
-          bold: false,
-        })
       }
     },
     [running],
@@ -223,41 +306,66 @@ export function EcologicalPyramidSim() {
 
   useCanvasLoop(canvasRef, draw, running, version, true)
 
-  const detail = tierDetail(base, selectedTier)
+  const detail = tierDetail(base, selectedTier, mode)
 
   return (
     <SimShell
       title="Ecological Pyramid"
-      subtitle="The 10% rule — energy shrinks at each trophic level"
+      subtitle="Energy, biomass, and numbers shrink at each trophic level"
       canvasRef={canvasRef}
       running={running}
       onTogglePlay={() => setRunning((r) => !r)}
       onReset={() => {
         stateRef.current = createPyramidState()
-        paramsRef.current = { base: 10000, selectedTier: 0 }
+        paramsRef.current = { base: 10000, selectedTier: 0, mode: 'energy' }
         setBase(10000)
         setSelectedTier(0)
+        setMode('energy')
         hintShown.current = true
         setVersion((v) => v + 1)
       }}
       controls={
         <>
+          <ControlSection title="Pyramid type">
+            <ControlSelect
+              label="Show"
+              value={mode}
+              options={[
+                { value: 'energy', label: 'Energy (10% rule)' },
+                { value: 'biomass', label: 'Biomass (kg)' },
+                { value: 'numbers', label: 'Organism count' },
+              ]}
+              onChange={(v) => {
+                setMode(v as PyramidMode)
+                paramsRef.current.mode = v as PyramidMode
+                setVersion((n) => n + 1)
+              }}
+            />
+            <ControlHint>
+              Dots inside each tier represent relative {modeUnit(mode)}. Fewer organisms at higher levels.
+            </ControlHint>
+          </ControlSection>
+
           <ControlSection title="Selected tier">
             <ControlStats>
               <ControlStat label="Level" value={detail.label} />
-              <ControlStat label="Energy" value={formatEnergy(detail.energy)} />
-              <ControlStat label="% of base" value={`${detail.pctOfBase.toFixed(detail.pctOfBase < 1 ? 2 : 1)}%`} />
-              {selectedTier > 0 ? (
+              <ControlStat label={modeUnit(mode)} value={formatTierValue(detail.energy, mode)} />
+              {mode === 'energy' ? (
+                <ControlStat label="% of base" value={`${detail.pctOfBase.toFixed(detail.pctOfBase < 1 ? 2 : 1)}%`} />
+              ) : null}
+              {mode === 'numbers' ? (
+                <ControlStat label="Organisms" value={String(detail.organisms)} />
+              ) : null}
+              {mode === 'biomass' ? (
+                <ControlStat label="Biomass" value={`${Math.round(detail.biomass)} kg`} />
+              ) : null}
+              {selectedTier > 0 && mode === 'energy' ? (
                 <>
-                  <ControlStat
-                    label="From level below"
-                    value={`${detail.pctFromBelow.toFixed(1)}%`}
-                  />
+                  <ControlStat label="From level below" value={`${detail.pctFromBelow.toFixed(1)}%`} />
                   <ControlStat label="Lost as heat" value={`${detail.lostFromBelow.toFixed(0)}%`} />
                 </>
               ) : null}
             </ControlStats>
-            <ControlHint>Tap a tier on the pyramid to inspect it.</ControlHint>
           </ControlSection>
 
           <ControlSection title="Energy base">
@@ -267,14 +375,13 @@ export function EcologicalPyramidSim() {
               </InfoTooltip>
               <strong style={{ fontSize: 13 }}>Trophic levels</strong>
             </div>
-            <ControlHint>Only about 10% of energy moves to the next level; the rest is lost as heat.</ControlHint>
             <ControlSlider
-              label="Producer energy"
+              label="Producer level"
               value={base}
               min={1000}
               max={50000}
               step={500}
-              display={formatEnergy(base)}
+              display={formatTierValue(base, mode)}
               onChange={(v) => {
                 setBase(v)
                 paramsRef.current.base = v
@@ -282,11 +389,15 @@ export function EcologicalPyramidSim() {
             />
           </ControlSection>
 
-          <ControlSection title="Outcomes">
+          <ControlSection title="Compare levels">
             <ControlStats>
-              <ControlStat label="Producers" value={formatEnergy(base)} />
-              <ControlStat label="Primary" value={formatEnergy(base * 0.1)} />
-              <ControlStat label="Top predator" value={formatEnergy(base * 0.001)} />
+              {PYRAMID_LABELS.map((label, i) => (
+                <ControlStat
+                  key={label}
+                  label={label}
+                  value={formatTierValue(tierValues(base, mode)[i], mode)}
+                />
+              ))}
             </ControlStats>
           </ControlSection>
         </>

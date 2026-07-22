@@ -1,13 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import {
   canLink,
+  computeNodeEnergy,
   createFoodWebState,
   createGrasslandChainState,
+  createGrasslandWebState,
   linkExists,
   removeNode,
   toggleLink,
+  webStability,
 } from './foodWebModel'
-import { tierDetail, tierEnergies } from './ecologicalPyramidModel'
+import {
+  tierDetail,
+  tierEnergies,
+  tierOrganismCounts,
+  tierValues,
+} from './ecologicalPyramidModel'
 
 describe('foodWebModel', () => {
   it('allows producer → herbivore links', () => {
@@ -40,6 +48,21 @@ describe('foodWebModel', () => {
     expect(s.nodes.some((n) => n.id === 'rabbit')).toBe(false)
     expect(s.links.some((l) => l.from === 'rabbit' || l.to === 'rabbit')).toBe(false)
   })
+
+  it('computes energy flow with 10% rule', () => {
+    const s = createGrasslandChainState()
+    const e = computeNodeEnergy(s, 10000)
+    expect(e.get('grass')).toBe(10000)
+    expect(e.get('grasshopper')).toBeCloseTo(1000)
+    expect(e.get('eagle')).toBeCloseTo(1)
+  })
+
+  it('flags single-source consumers as at-risk', () => {
+    const chain = webStability(createGrasslandChainState())
+    expect(chain.atRisk.length).toBeGreaterThan(0)
+    const web = webStability(createGrasslandWebState())
+    expect(web.score).toBeGreaterThan(chain.score)
+  })
 })
 
 describe('ecologicalPyramidModel', () => {
@@ -52,5 +75,11 @@ describe('ecologicalPyramidModel', () => {
     const d = tierDetail(10000, 1)
     expect(d.pctFromBelow).toBeCloseTo(10)
     expect(d.lostFromBelow).toBeCloseTo(90)
+  })
+
+  it('supports organism count pyramid', () => {
+    const counts = tierOrganismCounts(10000)
+    expect(counts[0]).toBeGreaterThan(counts[3])
+    expect(tierValues(10000, 'numbers')[0]).toBe(10000)
   })
 })
