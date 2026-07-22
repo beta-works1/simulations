@@ -1,13 +1,19 @@
 import { Range, Dimension2 } from 'scenerystack/dot'
-import { EmptySelfOptions, optionize } from 'scenerystack/phet-core'
+import { optionize } from 'scenerystack/phet-core'
 import { HSlider, Panel, PanelOptions, RectangularPushButton, ToggleSwitch } from 'scenerystack/sun'
 import { HBox, Node, Rectangle, Text, VBox } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
 import { CarbonColors } from '../../common/CarbonColors.js'
 import { CarbonStrings } from '../../CarbonStrings.js'
 import { CarbonOxygenModel, ProcessRates } from '../model/CarbonOxygenModel.js'
+import { ScrollableNode } from './ScrollableNode.js'
 
-type Options = EmptySelfOptions & PanelOptions
+type SelfOptions = {
+  /** Max visible height for the panel body; content scrolls if taller. */
+  panelMaxHeight?: number
+}
+
+type Options = SelfOptions & PanelOptions
 
 function rateBar(label: string, value: number, max: number, color: string, width: number): Node {
   const trackW = width - 8
@@ -37,8 +43,10 @@ function rateBar(label: string, value: number, max: number, color: string, width
 export class CarbonControlPanel extends Panel {
   public constructor(model: CarbonOxygenModel, providedOptions: Options) {
     const w = (providedOptions.maxWidth as number | undefined) ?? 260
-    const options = optionize<Options, EmptySelfOptions, PanelOptions>()(
+    const panelMaxHeight = providedOptions.panelMaxHeight ?? 420
+    const options = optionize<Options, SelfOptions, PanelOptions>()(
       {
+        panelMaxHeight: 420,
         xMargin: 10,
         yMargin: 10,
         stroke: CarbonColors.panelBorderProperty,
@@ -111,7 +119,7 @@ export class CarbonControlPanel extends Panel {
             ],
           }),
           new HSlider(property, range, {
-            trackSize: new Dimension2(w - 24, 5),
+            trackSize: new Dimension2(w - 32, 5),
             thumbSize: new Dimension2(14, 22),
             majorTickLength: 0,
             minorTickLength: 0,
@@ -182,6 +190,10 @@ export class CarbonControlPanel extends Panel {
       ],
     })
 
-    super(content, options)
+    const scrollInnerWidth = w - 4
+    const scrollViewport = Math.max(180, panelMaxHeight - 20)
+    const scrollable = new ScrollableNode(content, scrollInnerWidth, scrollViewport)
+
+    super(scrollable, options)
   }
 }

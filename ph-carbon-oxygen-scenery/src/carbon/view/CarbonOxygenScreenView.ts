@@ -309,6 +309,7 @@ export class CarbonOxygenScreenView extends ScreenView {
         right: b.right - margin,
         top: sceneTop,
         maxWidth: panelW,
+        panelMaxHeight: b.bottom - sceneTop - margin,
       }),
     )
 
