@@ -1,0 +1,11 @@
+{
+  "title": "Global Warming Mechanism",
+  "screen": {
+    "lab": "Global Warming"
+  },
+  "sun": "Sun",
+  "greenhouseGases": "Greenhouse gases",
+  "infrared": "Infrared",
+  "temperature": "Temperature",
+  "reset": "Reset"
+}

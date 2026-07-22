@@ -1,0 +1,14 @@
+{
+  "title": "Ecological Pyramid",
+  "screen": {
+    "lab": "Pyramid"
+  },
+  "controls": "Energy base",
+  "ruleTitle": "The 10% rule",
+  "ruleBody": "Only about 10% of energy moves up each trophic level. The rest is used or lost as heat.",
+  "baseEnergy": "Producer energy",
+  "statsTitle": "Outcomes",
+  "baseStat": "Base energy",
+  "topStat": "Top predator energy",
+  "tip": "Tap tiers · drag handle · ~10% energy up each level"
+}

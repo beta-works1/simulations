@@ -1,0 +1,15 @@
+{
+  "title": "Food Web Builder",
+  "screen": {
+    "lab": "Food Web"
+  },
+  "controls": "Add species",
+  "addProducer": "+ Producer (Algae)",
+  "addHerbivore": "+ Herbivore (Deer)",
+  "addCarnivore": "+ Carnivore (Hawk)",
+  "addDecomposer": "+ Decomposer (Bacteria)",
+  "reset": "Reset",
+  "play": "Play energy",
+  "pause": "Pause energy",
+  "tip": "Drag species · energy flows along links"
+}

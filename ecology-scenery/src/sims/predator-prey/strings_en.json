@@ -1,0 +1,17 @@
+{
+  "title": "Predator–Prey Dynamics",
+  "screen": {
+    "lab": "Predator–Prey"
+  },
+  "prey": "Prey",
+  "predators": "Predators",
+  "growth": "Prey growth",
+  "mode": "Interaction",
+  "predation": "Predation",
+  "competition": "Competition",
+  "mutualism": "Mutualism",
+  "play": "Play",
+  "pause": "Pause",
+  "hint": "Tap left for prey · right for predators",
+  "chartTitle": "Population over time"
+}
