@@ -27,3 +27,27 @@ export function formatEnergy(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`
   return n.toFixed(n < 10 ? 1 : 0)
 }
+
+export interface TierDetail {
+  label: string
+  energy: number
+  pctOfBase: number
+  pctFromBelow: number
+  lostFromBelow: number
+}
+
+/** Stats for a pyramid tier (10% rule). */
+export function tierDetail(base: number, tier: number): TierDetail {
+  const energies = tierEnergies(base)
+  const energy = energies[tier] ?? 0
+  const below = tier > 0 ? energies[tier - 1]! : base
+  const pctOfBase = base > 0 ? (energy / base) * 100 : 0
+  const pctFromBelow = below > 0 ? (energy / below) * 100 : 0
+  return {
+    label: PYRAMID_LABELS[tier] ?? '',
+    energy,
+    pctOfBase,
+    pctFromBelow,
+    lostFromBelow: Math.max(0, 100 - pctFromBelow),
+  }
+}

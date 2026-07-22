@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import {
   ControlHint,
   ControlSection,
@@ -19,6 +19,7 @@ import {
   createPyramidState,
   formatEnergy,
   stepPyramid,
+  tierDetail,
   tierEnergies,
 } from './ecologicalPyramidModel'
 import { TROPHIC_LEVELS } from './foodWebGuide'
@@ -44,22 +45,16 @@ export function EcologicalPyramidSim() {
 
   paramsRef.current = { base, selectedTier }
 
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setBase(paramsRef.current.base)
-      setSelectedTier(paramsRef.current.selectedTier)
-    }, 120)
-    return () => clearInterval(id)
-  }, [])
-
   useCanvasPointer(canvasRef, {
-    hitTest: (pt) => {
+    hitTest: (pt, size) => {
       const L = layoutRef.current
       const h = L.baseHandle
       if (Math.hypot(pt.x - h.x, pt.y - h.y) < h.r + 10) return 'base-handle'
       for (const t of L.tiers) {
         if (pt.x >= t.x && pt.x <= t.x + t.w && pt.y >= t.y && pt.y <= t.y + t.h) return `tier:${t.id}`
       }
+      // Base drag zone along bottom on narrow screens
+      if (size.w < 520 && pt.y > size.h * 0.88) return 'base-strip'
       return null
     },
     onHoverChange: (id) => {
@@ -69,15 +64,18 @@ export function EcologicalPyramidSim() {
       if (!id) return
       hintShown.current = false
       if (id.startsWith('tier:')) {
-        paramsRef.current.selectedTier = Number(id.slice(5))
-        setSelectedTier(paramsRef.current.selectedTier)
+        const tier = Number(id.slice(5))
+        paramsRef.current.selectedTier = tier
+        setSelectedTier(tier)
       }
     },
     onDrag: (id, pt, size) => {
-      if (id !== 'base-handle') return
+      if (id !== 'base-handle' && id !== 'base-strip') return
       hintShown.current = false
-      const t = clamp((size.h - pt.y) / (size.h * 0.7), 0, 1)
-      paramsRef.current.base = Math.round(1000 + t * 49000)
+      const t = clamp((size.h - pt.y) / (size.h * 0.75), 0, 1)
+      const next = Math.round(1000 + t * 49000)
+      paramsRef.current.base = next
+      setBase(next)
     },
   })
 
@@ -89,6 +87,7 @@ export function EcologicalPyramidSim() {
       const E = tierEnergies(p.base)
       const hover = hoverRef.current
       const fs = fontPx(13, w, h)
+      const narrow = w < 520
 
       const bg = ctx.createLinearGradient(0, 0, 0, h)
       bg.addColorStop(0, '#0e2433')
@@ -96,7 +95,6 @@ export function EcologicalPyramidSim() {
       ctx.fillStyle = bg
       ctx.fillRect(0, 0, w, h)
 
-      // Soft vignette first so it never paints over labels
       const vg = ctx.createRadialGradient(
         w * 0.5,
         h * 0.4,
@@ -111,7 +109,7 @@ export function EcologicalPyramidSim() {
       ctx.fillRect(0, 0, w, h)
 
       const top = h * 0.1
-      const bottom = h * 0.82
+      const bottom = h * (narrow ? 0.78 : 0.82)
       const levels = 4
       const band = (bottom - top) / levels
 
@@ -157,7 +155,6 @@ export function EcologicalPyramidSim() {
           ctx.stroke()
         }
 
-        // Name inside band (no dark pill). Energy chip outside to the right — never stacked.
         const nameFs = Math.max(11, Math.min(fs + 1, Math.floor(band * 0.32)))
         ctx.save()
         ctx.shadowColor = 'rgba(0,0,0,0.55)'
@@ -171,18 +168,21 @@ export function EcologicalPyramidSim() {
         })
         ctx.restore()
 
-        const energyX = Math.min(w - 12, cx + hw * 0.85 + 8)
-        drawValueChip(ctx, '', formatEnergy(E[i]), energyX, midY, {
-          align: 'left',
+        const energyX = narrow
+          ? cx
+          : Math.min(w - 12, cx + hw * 0.85 + 8)
+        const energyY = narrow ? y + band - 4 : midY
+        drawValueChip(ctx, narrow ? '' : '', formatEnergy(E[i]), energyX, energyY, {
+          align: narrow ? 'center' : 'left',
           fontSize: Math.max(10, fs - 1),
           accent: true,
         })
       }
 
-      const handleX = w * 0.94
-      const handleY = h * 0.5
+      const handleX = narrow ? w * 0.5 : w * 0.9
+      const handleY = narrow ? h * 0.92 : h * 0.5
       layoutRef.current.baseHandle = { x: handleX, y: handleY, r: 14 }
-      const handleHover = hover === 'base-handle'
+      const handleHover = hover === 'base-handle' || hover === 'base-strip'
       drawHoverHalo(ctx, handleX, handleY, 20, handleHover)
       ctx.beginPath()
       ctx.arc(handleX, handleY, 14, 0, Math.PI * 2)
@@ -191,15 +191,24 @@ export function EcologicalPyramidSim() {
       ctx.strokeStyle = '#fff'
       ctx.lineWidth = 2
       ctx.stroke()
-      drawValueChip(ctx, 'Base', formatEnergy(p.base), handleX, handleY - 28, {
+      drawValueChip(ctx, 'Base', formatEnergy(p.base), handleX, handleY - (narrow ? 22 : 28), {
         fontSize: Math.max(10, fs - 1),
         accent: true,
+        align: 'center',
       })
 
       if (hintShown.current) {
-        drawHint(ctx, 'click tiers · drag handle · ~10% energy up each level', w / 2, h - 16, w, h, {
-          muted: true,
-        })
+        drawHint(
+          ctx,
+          narrow
+            ? 'tap tiers · drag blue handle · ~10% up each level'
+            : 'click tiers · drag handle · ~10% energy up each level',
+          w / 2,
+          h - 16,
+          w,
+          h,
+          { muted: true },
+        )
       } else {
         drawLabelPill(ctx, '~10% energy passes up each level', w / 2, h - 16, {
           fontSize: Math.max(10, fs - 1),
@@ -209,10 +218,12 @@ export function EcologicalPyramidSim() {
         })
       }
     },
-    [base, running, selectedTier],
+    [running],
   )
 
   useCanvasLoop(canvasRef, draw, running, version, true)
+
+  const detail = tierDetail(base, selectedTier)
 
   return (
     <SimShell
@@ -231,6 +242,24 @@ export function EcologicalPyramidSim() {
       }}
       controls={
         <>
+          <ControlSection title="Selected tier">
+            <ControlStats>
+              <ControlStat label="Level" value={detail.label} />
+              <ControlStat label="Energy" value={formatEnergy(detail.energy)} />
+              <ControlStat label="% of base" value={`${detail.pctOfBase.toFixed(detail.pctOfBase < 1 ? 2 : 1)}%`} />
+              {selectedTier > 0 ? (
+                <>
+                  <ControlStat
+                    label="From level below"
+                    value={`${detail.pctFromBelow.toFixed(1)}%`}
+                  />
+                  <ControlStat label="Lost as heat" value={`${detail.lostFromBelow.toFixed(0)}%`} />
+                </>
+              ) : null}
+            </ControlStats>
+            <ControlHint>Tap a tier on the pyramid to inspect it.</ControlHint>
+          </ControlSection>
+
           <ControlSection title="Energy base">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <InfoTooltip title={TROPHIC_LEVELS.title}>
@@ -252,9 +281,11 @@ export function EcologicalPyramidSim() {
               }}
             />
           </ControlSection>
+
           <ControlSection title="Outcomes">
             <ControlStats>
-              <ControlStat label="Base" value={formatEnergy(base)} />
+              <ControlStat label="Producers" value={formatEnergy(base)} />
+              <ControlStat label="Primary" value={formatEnergy(base * 0.1)} />
               <ControlStat label="Top predator" value={formatEnergy(base * 0.001)} />
             </ControlStats>
           </ControlSection>

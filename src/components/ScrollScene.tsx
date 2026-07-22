@@ -91,7 +91,7 @@ export function ScrollScene() {
       const radius = 1.4 + i * 0.55
       const tilt = (i * Math.PI) / 5 + 0.25
       const curve = new THREE.EllipseCurve(0, 0, radius, radius * 0.42, 0, Math.PI * 2, false, 0)
-      const pts = curve.getPoints(96).map((p) => new THREE.Vector3(p.x, p.y, 0))
+      const pts = curve.getPoints(96).map((p: THREE.Vector2) => new THREE.Vector3(p.x, p.y, 0))
       const ringGeo = new THREE.BufferGeometry().setFromPoints(pts)
       const ringMat = new THREE.LineBasicMaterial({
         color: 0xffffff,

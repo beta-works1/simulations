@@ -18,6 +18,7 @@ export interface FoodWebState {
   links: FoodLink[]
   energyPulse: number
   selectedId: string | null
+  linkFromId: string | null
 }
 
 const COLORS: Record<TrophicLevel, string> = {
@@ -29,6 +30,21 @@ const COLORS: Record<TrophicLevel, string> = {
 
 export function levelColor(level: TrophicLevel) {
   return COLORS[level]
+}
+
+export function canLink(from: FoodNode, to: FoodNode): boolean {
+  if (from.id === to.id) return false
+  if (to.level === 'producer') return false
+  if (from.level === 'decomposer') return false
+  if (to.level === 'decomposer') return true
+  if (from.level === 'producer' && to.level === 'herbivore') return true
+  if (from.level === 'herbivore' && to.level === 'carnivore') return true
+  if (from.level === 'carnivore' && to.level === 'carnivore') return true
+  return false
+}
+
+export function linkExists(links: FoodLink[], fromId: string, toId: string): boolean {
+  return links.some((l) => l.from === fromId && l.to === toId)
 }
 
 /** Simple starter web: grass → rabbit → fox, plus decomposer links. */
@@ -48,10 +64,11 @@ export function createFoodWebState(): FoodWebState {
     ],
     energyPulse: 0,
     selectedId: null,
+    linkFromId: null,
   }
 }
 
-/** Linear grassland chain: Sun → grass → grasshopper → frog → snake → eagle. */
+/** Linear grassland chain: grass → grasshopper → frog → snake → eagle. */
 export function createGrasslandChainState(): FoodWebState {
   return {
     nodes: [
@@ -69,6 +86,7 @@ export function createGrasslandChainState(): FoodWebState {
     ],
     energyPulse: 0,
     selectedId: null,
+    linkFromId: null,
   }
 }
 
@@ -105,6 +123,7 @@ export function createGrasslandWebState(): FoodWebState {
     ],
     energyPulse: 0,
     selectedId: null,
+    linkFromId: null,
   }
 }
 
@@ -128,7 +147,49 @@ export function addSpecies(s: FoodWebState, level: TrophicLevel, name: string): 
     return false
   })
   const links = prey ? [...s.links, { from: prey.id, to: id }] : s.links
-  return { ...s, nodes: [...s.nodes, node], links }
+  return { ...s, nodes: [...s.nodes, node], links, selectedId: id, linkFromId: null }
+}
+
+export function removeNode(s: FoodWebState, id: string): FoodWebState {
+  return {
+    ...s,
+    nodes: s.nodes.filter((n) => n.id !== id),
+    links: s.links.filter((l) => l.from !== id && l.to !== id),
+    selectedId: s.selectedId === id ? null : s.selectedId,
+    linkFromId: s.linkFromId === id ? null : s.linkFromId,
+  }
+}
+
+export function toggleLink(s: FoodWebState, fromId: string, toId: string): FoodWebState {
+  const from = s.nodes.find((n) => n.id === fromId)
+  const to = s.nodes.find((n) => n.id === toId)
+  if (!from || !to || !canLink(from, to)) return { ...s, linkFromId: null }
+
+  if (linkExists(s.links, fromId, toId)) {
+    return {
+      ...s,
+      links: s.links.filter((l) => !(l.from === fromId && l.to === toId)),
+      linkFromId: null,
+      selectedId: toId,
+    }
+  }
+  return {
+    ...s,
+    links: [...s.links, { from: fromId, to: toId }],
+    linkFromId: null,
+    selectedId: toId,
+  }
+}
+
+export function setLinkFrom(s: FoodWebState, id: string | null): FoodWebState {
+  return { ...s, linkFromId: id }
+}
+
+export function connectionsFor(s: FoodWebState, id: string): { inCount: number; outCount: number } {
+  return {
+    inCount: s.links.filter((l) => l.to === id).length,
+    outCount: s.links.filter((l) => l.from === id).length,
+  }
 }
 
 export function moveNode(s: FoodWebState, id: string, x: number, y: number): FoodWebState {
