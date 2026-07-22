@@ -10,7 +10,8 @@
     "test": "vitest run",
     "preview": "vite preview",
     "build:ph-lab-offline": "npm --prefix ph-laboratory-scenery run build",
-    "build:ecology-offline": "npm --prefix ph-ecology-scenery run build",
+    "build:ecology-offline": "npm --prefix ecology-scenery run build",
+    "build:ph-ecology-offline": "npm --prefix ph-ecology-scenery run build",
     "build:carbon-offline": "npm --prefix ph-carbon-oxygen-scenery run build",
     "build:pyramid-offline": "npm --prefix ph-ecological-pyramid-scenery run build"
   },

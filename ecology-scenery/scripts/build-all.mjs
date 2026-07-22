@@ -41,6 +41,14 @@ for (const sim of SIMS) {
   } else {
     copyFileSync(from, join(destDir, `${sim}-offline.html`))
   }
+  // Catalog aliases used by simulations.ts for a couple of sims
+  const aliases = {
+    'carbon-oxygen-cycle': 'carbon-oxygen-offline.html',
+    'food-web-builder': 'food-web-offline.html',
+  }
+  if (aliases[sim]) {
+    copyFileSync(join(destDir, `${sim}-offline.html`), join(destDir, aliases[sim]))
+  }
   console.log(`→ public/downloads/${sim}-offline.html`)
 }
 

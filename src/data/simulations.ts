@@ -302,6 +302,8 @@ export const simulations: Simulation[] = [
     color: '#0e6655',
     accent: '#e74c3c',
     image: '/covers/predator-prey.svg',
+    sceneryHtml: '/downloads/predator-prey-offline.html',
+    offlineHtml: '/downloads/predator-prey-offline.html',
   },
   {
     id: 'global-warming',
@@ -319,6 +321,8 @@ export const simulations: Simulation[] = [
     color: '#1a5276',
     accent: '#e74c3c',
     image: '/covers/global-warming.svg',
+    sceneryHtml: '/downloads/global-warming-offline.html',
+    offlineHtml: '/downloads/global-warming-offline.html',
   },
 
   // Grade 8 — Ch 2 Nervous system
