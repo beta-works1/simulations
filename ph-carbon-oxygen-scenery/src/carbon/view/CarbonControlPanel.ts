@@ -1,44 +1,19 @@
 import { Range, Dimension2 } from 'scenerystack/dot'
 import { optionize } from 'scenerystack/phet-core'
 import { HSlider, Panel, PanelOptions, RectangularPushButton, ToggleSwitch } from 'scenerystack/sun'
-import { HBox, Node, Rectangle, Text, VBox } from 'scenerystack/scenery'
+import { HBox, Text, VBox } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
-import { CarbonColors } from '../../common/CarbonColors.js'
+import { NumberProperty } from 'scenerystack/axon'
+import { CarbonColors, CarbonConstants } from '../../common/CarbonColors.js'
 import { CarbonStrings } from '../../CarbonStrings.js'
-import { CarbonOxygenModel, ProcessRates } from '../model/CarbonOxygenModel.js'
+import { CarbonOxygenModel } from '../model/CarbonOxygenModel.js'
 import { ScrollableNode } from './ScrollableNode.js'
 
 type SelfOptions = {
-  /** Max visible height for the panel body; content scrolls if taller. */
   panelMaxHeight?: number
 }
 
 type Options = SelfOptions & PanelOptions
-
-function rateBar(label: string, value: number, max: number, color: string, width: number): Node {
-  const trackW = width - 8
-  const fillW = Math.max(2, Math.min(trackW, (value / Math.max(max, 0.01)) * trackW))
-  const row = new Node()
-  row.addChild(
-    new Text(label, {
-      font: new PhetFont(9),
-      fill: '#bdc3c7',
-      x: 0,
-      y: 0,
-    }),
-  )
-  row.addChild(
-    new Text(value.toFixed(1), {
-      font: new PhetFont(9),
-      fill: '#ecf0f1',
-      right: width,
-      y: 0,
-    }),
-  )
-  row.addChild(new Rectangle(0, 12, trackW, 5, { fill: 'rgba(255,255,255,0.12)', cornerRadius: 2 }))
-  row.addChild(new Rectangle(0, 12, fillW, 5, { fill: color, cornerRadius: 2 }))
-  return row
-}
 
 export class CarbonControlPanel extends Panel {
   public constructor(model: CarbonOxygenModel, providedOptions: Options) {
@@ -90,19 +65,37 @@ export class CarbonControlPanel extends Panel {
         s === 'Balanced' ? '#a7f3d0' : s === 'CO₂ rising' ? '#fca5a5' : '#86efac'
     })
 
-    const ratesBox = new VBox({ align: 'left', spacing: 6 })
-    const refreshRates = (r: ProcessRates) => {
-      const max = Math.max(r.photosynthesis, r.respiration, r.decomposition, r.combustion, 1)
-      ratesBox.children = [
-        rateBar('Photosynthesis', r.photosynthesis, max, '#2ecc71', w - 16),
-        rateBar('Respiration', r.respiration, max, '#e67e22', w - 16),
-        rateBar('Decomposition', r.decomposition, max, '#d4a017', w - 16),
-        rateBar('Combustion', r.combustion, max, '#e74c3c', w - 16),
-      ]
+    /** Same look as the old rate bars, but interactive — linked to Environment. */
+    const rateSlider = (label: string, property: NumberProperty, range: Range, color: string) => {
+      const readout = new Text('', { font: new PhetFont(9), fill: '#ecf0f1', maxWidth: 40 })
+      property.link((v) => {
+        readout.string = v.toFixed(1)
+      })
+      return new VBox({
+        align: 'left',
+        spacing: 2,
+        children: [
+          new HBox({
+            spacing: 6,
+            children: [
+              new Text(label, { font: new PhetFont(9), fill: '#bdc3c7', maxWidth: w - 50 }),
+              readout,
+            ],
+          }),
+          new HSlider(property, range, {
+            trackSize: new Dimension2(w - 28, 6),
+            thumbSize: new Dimension2(14, 20),
+            trackFillEnabled: color,
+            thumbFill: color,
+            thumbFillHighlighted: color,
+            majorTickLength: 0,
+            minorTickLength: 0,
+          }),
+        ],
+      })
     }
-    model.ratesProperty.link(refreshRates)
 
-    const sliderRow = (label: string, property: CarbonOxygenModel['sunlightProperty'], range: Range) => {
+    const sliderRow = (label: string, property: NumberProperty, range: Range) => {
       const readout = new Text('', { font: new PhetFont(10), fill: '#ecf0f1', maxWidth: 36 })
       property.link((v) => {
         readout.string = String(Math.round(v * (range.max <= 3 ? 10 : 1)) / (range.max <= 3 ? 10 : 1))
@@ -159,7 +152,35 @@ export class CarbonControlPanel extends Panel {
         netText,
         balText,
         section('Process rates'),
-        ratesBox,
+        new Text('Sliders ↔ environment (plants, animals, factories…)', {
+          font: new PhetFont(8),
+          fill: '#95a5a6',
+          maxWidth: w,
+        }),
+        rateSlider(
+          'Photosynthesis',
+          model.photosynthesisRateProperty,
+          new Range(0, CarbonConstants.RATE_PHOTO_MAX),
+          '#2ecc71',
+        ),
+        rateSlider(
+          'Respiration',
+          model.respirationRateProperty,
+          new Range(0, CarbonConstants.RATE_RESP_MAX),
+          '#e67e22',
+        ),
+        rateSlider(
+          'Decomposition',
+          model.decompositionRateProperty,
+          new Range(0, CarbonConstants.RATE_DECOMP_MAX),
+          '#d4a017',
+        ),
+        rateSlider(
+          'Combustion',
+          model.combustionRateProperty,
+          new Range(0, CarbonConstants.RATE_BURN_MAX),
+          '#e74c3c',
+        ),
         section('Environment'),
         new HBox({
           spacing: 8,

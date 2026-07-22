@@ -23,4 +23,9 @@ export const CarbonConstants = {
   O2_MIN: 5,
   O2_MAX: 95,
   DAY_NIGHT_PERIOD: 16,
+  /** Slider ranges for process rates (environment-derived). */
+  RATE_PHOTO_MAX: 30,
+  RATE_RESP_MAX: 15,
+  RATE_DECOMP_MAX: 5,
+  RATE_BURN_MAX: 45,
 }

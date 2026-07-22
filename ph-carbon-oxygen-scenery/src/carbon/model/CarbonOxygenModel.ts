@@ -84,6 +84,11 @@ export class CarbonOxygenModel implements TModel {
   public readonly scenarioProgressProperty: NumberProperty
   public readonly historyProperty: Property<GasSample[]>
   public readonly ratesProperty: Property<ProcessRates>
+  /** Live rate values — editable via sliders; stay synced with Environment. */
+  public readonly photosynthesisRateProperty: NumberProperty
+  public readonly respirationRateProperty: NumberProperty
+  public readonly decompositionRateProperty: NumberProperty
+  public readonly combustionRateProperty: NumberProperty
   public readonly statusProperty: StringProperty
   public readonly takeawayProperty: StringProperty
   public readonly balanceProperty: StringProperty
@@ -93,6 +98,8 @@ export class CarbonOxygenModel implements TModel {
   private time = 0
   private scenarioFrom: { plants: number; factories: number; animals: number } | null = null
   private scenarioUpdating = false
+  private syncingRatesFromEnv = false
+  private applyingRateSlider = false
 
   public constructor() {
     this.co2Property = new NumberProperty(42)
@@ -111,14 +118,19 @@ export class CarbonOxygenModel implements TModel {
     this.scenarioProgressProperty = new NumberProperty(-1)
     this.historyProperty = new Property<GasSample[]>([{ co2: 42, o2: 58 }])
     this.ratesProperty = new Property<ProcessRates>({ ...EMPTY_RATES })
+    this.photosynthesisRateProperty = new NumberProperty(0)
+    this.respirationRateProperty = new NumberProperty(0)
+    this.decompositionRateProperty = new NumberProperty(0)
+    this.combustionRateProperty = new NumberProperty(0)
     this.statusProperty = new StringProperty(
-      'Tap trees, animals, factory, or soil. Adjust sliders and watch how each process shifts CO₂ and O₂.',
+      'Drag process-rate or environment sliders — they stay linked. Watch CO₂ and O₂ respond.',
     )
     this.takeawayProperty = new StringProperty('')
     this.balanceProperty = new StringProperty('Balanced')
     this.activeProcessProperty = new StringProperty('photosynthesis')
     this.scenarioKindProperty = new StringProperty('none')
     this.wireUserInputListeners()
+    this.wireRateSliderListeners()
     this.refreshDerived()
   }
 
@@ -130,6 +142,36 @@ export class CarbonOxygenModel implements TModel {
     this.animalCountProperty.lazyLink(cancelIfUserEdit)
     this.factoryCountProperty.lazyLink(cancelIfUserEdit)
     this.sunlightProperty.lazyLink(cancelIfUserEdit)
+
+    const onEnvChange = () => {
+      if (this.applyingRateSlider || this.scenarioUpdating) return
+      this.deadMatterProperty.value = clamp(4 + this.plantCountProperty.value * 0.55, 2, 22)
+      this.refreshDerived()
+    }
+    this.plantCountProperty.lazyLink(onEnvChange)
+    this.animalCountProperty.lazyLink(onEnvChange)
+    this.factoryCountProperty.lazyLink(onEnvChange)
+    this.sunlightProperty.lazyLink(onEnvChange)
+    this.isDayProperty.lazyLink(onEnvChange)
+  }
+
+  private wireRateSliderListeners(): void {
+    this.photosynthesisRateProperty.lazyLink((v) => {
+      if (this.syncingRatesFromEnv) return
+      this.applyPhotosynthesisRate(v)
+    })
+    this.respirationRateProperty.lazyLink((v) => {
+      if (this.syncingRatesFromEnv) return
+      this.applyRespirationRate(v)
+    })
+    this.decompositionRateProperty.lazyLink((v) => {
+      if (this.syncingRatesFromEnv) return
+      this.applyDecompositionRate(v)
+    })
+    this.combustionRateProperty.lazyLink((v) => {
+      if (this.syncingRatesFromEnv) return
+      this.applyCombustionRate(v)
+    })
   }
 
   public get scenarioActive(): boolean {
@@ -155,6 +197,79 @@ export class CarbonOxygenModel implements TModel {
       effectiveSunlight(this.isDayProperty.value, this.sunlightProperty.value) > 5
         ? 'photosynthesis'
         : 'respiration'
+
+    if (!this.applyingRateSlider) {
+      this.syncingRatesFromEnv = true
+      this.photosynthesisRateProperty.value = rates.photosynthesis
+      this.respirationRateProperty.value = rates.respiration
+      this.decompositionRateProperty.value = rates.decomposition
+      this.combustionRateProperty.value = rates.combustion
+      this.syncingRatesFromEnv = false
+    }
+  }
+
+  /** Photosynthesis ← plants × sunlight (day). */
+  private applyPhotosynthesisRate(target: number): void {
+    this.applyingRateSlider = true
+    this.clearScenario()
+    if (!this.isDayProperty.value) this.isDayProperty.value = true
+    this.autoDayNightProperty.value = false
+    if (this.sunlightProperty.value < 15) this.sunlightProperty.value = 80
+    const sunFrac = this.sunlightProperty.value / 100
+    let plants = sunFrac > 0.01 ? target / (sunFrac * 1.35) : 0
+    plants = clamp(plants, 0, 20)
+    this.plantCountProperty.value = plants
+    // If plants maxed but rate still low, raise sunlight
+    const achieved = (this.sunlightProperty.value / 100) * this.plantCountProperty.value * 1.35
+    if (target > achieved + 0.3 && this.plantCountProperty.value >= 19.5) {
+      this.sunlightProperty.value = clamp((target / (20 * 1.35)) * 100, 0, 100)
+    }
+    this.deadMatterProperty.value = clamp(4 + this.plantCountProperty.value * 0.55, 2, 22)
+    this.statusProperty.value = 'Photosynthesis linked to plants + sunlight — environment updated.'
+    this.refreshDerived()
+    this.applyingRateSlider = false
+  }
+
+  /** Respiration ← plants + animals. */
+  private applyRespirationRate(target: number): void {
+    this.applyingRateSlider = true
+    this.clearScenario()
+    const plants = this.plantCountProperty.value
+    const animals = clamp((target / 1.15 - plants * 0.22) / 0.55, 0, 12)
+    this.animalCountProperty.value = animals
+    // If animals maxed, nudge plants down/up to hit target
+    const achieved = (plants * 0.22 + this.animalCountProperty.value * 0.55) * 1.15
+    if (Math.abs(achieved - target) > 0.4 && this.animalCountProperty.value >= 11.5) {
+      const needPlants = clamp((target / 1.15 - 12 * 0.55) / 0.22, 0, 20)
+      this.plantCountProperty.value = needPlants
+      this.deadMatterProperty.value = clamp(4 + needPlants * 0.55, 2, 22)
+    }
+    this.statusProperty.value = 'Respiration linked to animals (and plants) — environment updated.'
+    this.refreshDerived()
+    this.applyingRateSlider = false
+  }
+
+  /** Decomposition ← dead matter (tied to plant cover). */
+  private applyDecompositionRate(target: number): void {
+    this.applyingRateSlider = true
+    this.clearScenario()
+    const dead = clamp(target / 0.18, 2, 22)
+    this.deadMatterProperty.value = dead
+    // Keep plants consistent with dead-matter formula used in step()
+    this.plantCountProperty.value = clamp((dead - 4) / 0.55, 0, 20)
+    this.statusProperty.value = 'Decomposition linked to soil / plant cover — environment updated.'
+    this.refreshDerived()
+    this.applyingRateSlider = false
+  }
+
+  /** Combustion ← factories. */
+  private applyCombustionRate(target: number): void {
+    this.applyingRateSlider = true
+    this.clearScenario()
+    this.factoryCountProperty.value = clamp(target / 2.1, 0, 20)
+    this.statusProperty.value = 'Combustion linked to factories — environment updated.'
+    this.refreshDerived()
+    this.applyingRateSlider = false
   }
 
   private clearScenario(): void {
@@ -177,7 +292,7 @@ export class CarbonOxygenModel implements TModel {
     this.deadMatterProperty.value = 8
     this.historyProperty.value = [{ co2: 42, o2: 58 }]
     this.statusProperty.value =
-      'Tap trees, animals, factory, or soil. Adjust sliders and watch how each process shifts CO₂ and O₂.'
+      'Drag process-rate or environment sliders — they stay linked. Watch CO₂ and O₂ respond.'
     this.takeawayProperty.value = ''
     this.time = 0
     this.clearScenario()
