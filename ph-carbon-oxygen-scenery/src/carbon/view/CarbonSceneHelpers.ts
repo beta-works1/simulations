@@ -151,15 +151,13 @@ export function makeAtmosphereGauge(
   model: {
     co2Property: { link: (fn: (v: number) => void) => void; value: number }
     o2Property: { link: (fn: (v: number) => void) => void; value: number }
-    netCo2RateProperty: { link: (fn: (v: number) => void) => void; value: number }
-    balanceProperty: { link: (fn: (v: string) => void) => void; value: string }
   },
   x: number,
   y: number,
   width: number,
 ): Node {
   const root = new Node({ x, y })
-  const bg = new Rectangle(0, 0, width + 8, 78, { fill: 'rgba(0,0,0,0.5)', cornerRadius: 8 })
+  const bg = new Rectangle(0, 0, width + 8, 62, { fill: 'rgba(0,0,0,0.5)', cornerRadius: 8 })
   root.addChild(bg)
   root.addChild(new Text('Atmosphere', { font: new PhetFont({ size: 10, weight: 'bold' }), fill: 'white', x: 4, y: 2 }))
 
@@ -169,7 +167,6 @@ export function makeAtmosphereGauge(
   const o2BarBg = new Rectangle(4, 35, width, 12, { fill: 'rgba(255,255,255,0.15)', cornerRadius: 4 })
   const o2Bar = new Rectangle(4, 35, width * 0.58, 12, { fill: '#27ae60', cornerRadius: 4 })
   const o2Label = new Text('', { font: new PhetFont(9), fill: 'white', x: 8, y: 44 })
-  const statusText = new Text(model.balanceProperty.value, { font: new PhetFont({ size: 9, weight: 'bold' }), fill: '#a7f3d0', x: 4, y: 58 })
 
   root.addChild(co2BarBg)
   root.addChild(co2Bar)
@@ -177,28 +174,14 @@ export function makeAtmosphereGauge(
   root.addChild(o2BarBg)
   root.addChild(o2Bar)
   root.addChild(o2Label)
-  root.addChild(statusText)
 
   model.co2Property.link((v) => {
     co2Bar.rectWidth = (v / 100) * width
-    const trend = model.netCo2RateProperty.value
-    const arrow = trend > 0.4 ? '▲' : trend < -0.4 ? '▼' : '●'
-    co2Label.string = `CO₂ ${v.toFixed(0)} ${arrow}`
+    co2Label.string = `CO₂ ${v.toFixed(0)}%`
   })
   model.o2Property.link((v) => {
     o2Bar.rectWidth = (v / 100) * width
-    o2Label.string = `O₂ ${v.toFixed(0)}`
-  })
-  model.netCo2RateProperty.link(() => {
-    const v = model.co2Property.value
-    const trend = model.netCo2RateProperty.value
-    const arrow = trend > 0.4 ? '▲' : trend < -0.4 ? '▼' : '●'
-    co2Label.string = `CO₂ ${v.toFixed(0)} ${arrow}`
-  })
-  model.balanceProperty.link((s) => {
-    statusText.string = s
-    statusText.fill =
-      s === 'Balanced' ? '#a7f3d0' : s === 'CO₂ rising' ? '#fca5a5' : '#86efac'
+    o2Label.string = `O₂ ${v.toFixed(0)}%`
   })
 
   return root
