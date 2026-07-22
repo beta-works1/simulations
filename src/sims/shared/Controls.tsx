@@ -3,9 +3,29 @@
  * Prefer these in every sim sidebar instead of one-off <input> markup.
  *
  * Aliases (Slider, Checkbox, ControlPanel, …) match common PhET naming.
+ * UI sounds play automatically via src/sims/shared/sound.ts.
  */
-import type { ChangeEvent, KeyboardEvent, ReactNode } from 'react'
-import { useId, useState } from 'react'
+import type { ButtonHTMLAttributes, ChangeEvent, KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
+import { useEffect, useId, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { playChime, playClick, playSliderTick, playToggle } from './sound'
+import { Z_INDEX } from './zIndex'
+
+/** Only one InfoTooltip popover open app-wide. */
+let openInfoId: string | null = null
+const infoListeners = new Set<(id: string | null) => void>()
+
+function setOpenInfoId(id: string | null) {
+  openInfoId = id
+  infoListeners.forEach((fn) => fn(id))
+}
+
+function subscribeOpenInfo(fn: (id: string | null) => void) {
+  infoListeners.add(fn)
+  return () => {
+    infoListeners.delete(fn)
+  }
+}
 
 export function ControlSection({ title, children }: { title?: string; children: ReactNode }) {
   return (
@@ -46,12 +66,18 @@ export function ControlSlider({
   const id = useId()
   const shown = display ?? `${value}${unit ?? ''}`
 
-  const nudge = (dir: -1 | 1) => {
-    const next = Math.min(max, Math.max(min, value + dir * step))
-    if (next !== value) onChange(Number(next.toFixed(6)))
+  const commit = (next: number) => {
+    if (next === value) return
+    playSliderTick()
+    onChange(next)
   }
 
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+  const nudge = (dir: -1 | 1) => {
+    const next = Math.min(max, Math.max(min, value + dir * step))
+    commit(Number(next.toFixed(6)))
+  }
+
+  const onKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
       e.preventDefault()
       nudge(-1)
@@ -60,10 +86,10 @@ export function ControlSlider({
       nudge(1)
     } else if (e.key === 'Home') {
       e.preventDefault()
-      onChange(min)
+      commit(min)
     } else if (e.key === 'End') {
       e.preventDefault()
-      onChange(max)
+      commit(max)
     }
   }
 
@@ -88,7 +114,7 @@ export function ControlSlider({
         aria-valuetext={shown}
         aria-label={label}
         onKeyDown={onKeyDown}
-        onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(Number(e.target.value))}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => commit(Number(e.target.value))}
       />
     </label>
   )
@@ -112,7 +138,15 @@ export function ControlSelect({
   return (
     <label className="sim-ctl" htmlFor={id}>
       <span className="sim-ctl-label">{label}</span>
-      <select id={id} value={value} aria-label={label} onChange={(e) => onChange(e.target.value)}>
+      <select
+        id={id}
+        value={value}
+        aria-label={label}
+        onChange={(e) => {
+          playClick()
+          onChange(e.target.value)
+        }}
+      >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
@@ -153,7 +187,10 @@ export function ControlRadioGroup({
                 name={name}
                 value={o.value}
                 checked={value === o.value}
-                onChange={() => onChange(o.value)}
+                onChange={() => {
+                  playToggle(true)
+                  onChange(o.value)
+                }}
               />
               <span>{o.label}</span>
             </label>
@@ -184,7 +221,10 @@ export function ControlToggle({
         type="checkbox"
         checked={checked}
         aria-label={label}
-        onChange={(e) => onChange(e.target.checked)}
+        onChange={(e) => {
+          playToggle(e.target.checked)
+          onChange(e.target.checked)
+        }}
       />
       <span>{label}</span>
     </label>
@@ -212,7 +252,7 @@ export function ControlStack({ children }: { children: ReactNode }) {
   return <div className="sim-ctl-stack">{children}</div>
 }
 
-/** Small “i” legend / instructions popover (PhET-style). */
+/** Small “i” legend / instructions popover (PhET-style) — portaled above all sim chrome. */
 export function InfoTooltip({
   title = 'About this simulation',
   children,
@@ -220,8 +260,34 @@ export function InfoTooltip({
   title?: string
   children: ReactNode
 }) {
-  const [open, setOpen] = useState(false)
   const tipId = useId()
+  const [activeId, setActiveId] = useState<string | null>(() => openInfoId)
+  const open = activeId === tipId
+
+  useEffect(() => subscribeOpenInfo(setActiveId), [])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setOpenInfoId(null)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  const close = () => {
+    playClick()
+    setOpenInfoId(null)
+  }
+
+  const toggle = () => {
+    playClick()
+    setOpenInfoId(open ? null : tipId)
+  }
+
   return (
     <div className="sim-info-tooltip">
       <button
@@ -230,19 +296,38 @@ export function InfoTooltip({
         aria-expanded={open}
         aria-controls={tipId}
         aria-label={title}
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
       >
         i
       </button>
-      {open ? (
-        <div id={tipId} className="sim-info-tooltip-panel" role="note">
-          <p className="sim-info-tooltip-title">{title}</p>
-          <div className="sim-info-tooltip-body">{children}</div>
-          <button type="button" className="sim-shell-btn" onClick={() => setOpen(false)}>
-            Close
-          </button>
-        </div>
-      ) : null}
+      {open && typeof document !== 'undefined'
+        ? createPortal(
+            <div className="sim-info-popover-root" style={{ zIndex: Z_INDEX.popover }}>
+              <button
+                type="button"
+                className="sim-info-popover-backdrop"
+                aria-label="Close info"
+                onClick={close}
+              />
+              <div
+                id={tipId}
+                className="sim-info-popover-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={`${tipId}-title`}
+              >
+                <p id={`${tipId}-title`} className="sim-info-tooltip-title">
+                  {title}
+                </p>
+                <div className="sim-info-tooltip-body">{children}</div>
+                <button type="button" className="sim-shell-btn" onClick={close}>
+                  Close
+                </button>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   )
 }
@@ -258,7 +343,10 @@ export function PlayPauseButton({
     <button
       type="button"
       className={`sim-shell-btn${running ? ' is-active' : ''}`}
-      onClick={onToggle}
+      onClick={() => {
+        playClick()
+        onToggle()
+      }}
       aria-label={running ? 'Pause' : 'Play'}
     >
       {running ? 'Pause' : 'Play'}
@@ -268,7 +356,15 @@ export function PlayPauseButton({
 
 export function ResetButton({ onReset }: { onReset: () => void }) {
   return (
-    <button type="button" className="sim-shell-btn" onClick={onReset} aria-label="Reset simulation">
+    <button
+      type="button"
+      className="sim-shell-btn"
+      onClick={() => {
+        playClick()
+        onReset()
+      }}
+      aria-label="Reset simulation"
+    >
       Reset
     </button>
   )
@@ -288,10 +384,55 @@ export function PlayPauseStepButton({
     <ControlStack>
       <PlayPauseButton running={running} onToggle={onToggle} />
       {onStep ? (
-        <button type="button" className="sim-shell-btn" onClick={onStep} aria-label="Step once">
+        <button
+          type="button"
+          className="sim-shell-btn"
+          onClick={() => {
+            playClick()
+            onStep()
+          }}
+          aria-label="Step once"
+        >
           Step
         </button>
       ) : null}
     </ControlStack>
   )
 }
+
+type PresetButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> & {
+  children: ReactNode
+  /** `chime` for meaningful presets; `click` for ordinary actions. */
+  sound?: 'chime' | 'click'
+  primary?: boolean
+}
+
+/**
+ * Shared action / preset button — plays click or chime so sims get sound for free.
+ */
+export function PresetButton({
+  children,
+  sound = 'chime',
+  primary = true,
+  className,
+  onClick,
+  ...rest
+}: PresetButtonProps) {
+  return (
+    <button
+      type="button"
+      className={`sim-shell-btn${primary ? ' is-primary' : ''}${className ? ` ${className}` : ''}`}
+      onClick={(e) => {
+        if (sound === 'chime') playChime()
+        else playClick()
+        onClick?.(e)
+      }}
+      {...rest}
+    >
+      {children}
+    </button>
+  )
+}
+
+/** Generic shared button alias. */
+export const Button = PresetButton

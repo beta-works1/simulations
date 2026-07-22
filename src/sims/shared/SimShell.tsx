@@ -1,4 +1,5 @@
-import type { ReactNode, RefObject } from 'react'
+import { useEffect, useState, type ReactNode, type RefObject } from 'react'
+import { playClick, isSoundMuted, subscribeSoundMuted, toggleSoundMuted } from './sound'
 import './SimShell.css'
 
 interface SimShellProps {
@@ -15,6 +16,8 @@ interface SimShellProps {
   /** Optional bottom transport bar (topic-sim API). */
   toolbar?: ReactNode
   hidePlay?: boolean
+  /** Hide the header Reset button (e.g. when Reset lives only in the side panel). */
+  hideReset?: boolean
   onPointerDown?: (e: React.PointerEvent<HTMLCanvasElement>) => void
   onPointerMove?: (e: React.PointerEvent<HTMLCanvasElement>) => void
   onPointerUp?: (e: React.PointerEvent<HTMLCanvasElement>) => void
@@ -32,12 +35,17 @@ export function SimShell({
   sidebar,
   toolbar,
   hidePlay = false,
+  hideReset = false,
   onPointerDown,
   onPointerMove,
   onPointerUp,
   onPointerLeave,
 }: SimShellProps) {
   const panel = controls ?? sidebar
+  const [muted, setMuted] = useState(() => isSoundMuted())
+
+  useEffect(() => subscribeSoundMuted(setMuted), [])
+
   return (
     <div className="sim-shell" role="region" aria-label={`${title} simulation`}>
       <header className="sim-shell-toolbar">
@@ -51,7 +59,10 @@ export function SimShell({
             <button
               type="button"
               className={`sim-shell-icon-btn sim-shell-play ${running ? 'is-running' : ''}`}
-              onClick={onTogglePlay}
+              onClick={() => {
+                playClick()
+                onTogglePlay()
+              }}
               aria-label={running ? 'Pause simulation' : 'Play simulation'}
               title={running ? 'Pause' : 'Play'}
             >
@@ -68,20 +79,52 @@ export function SimShell({
               <span>{running ? 'Pause' : 'Play'}</span>
             </button>
           )}
+          {!hideReset && (
+            <button
+              type="button"
+              className="sim-shell-icon-btn sim-shell-reset"
+              onClick={() => {
+                playClick()
+                onReset()
+              }}
+              aria-label="Reset simulation"
+              title="Reset"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"
+                  fill="currentColor"
+                />
+              </svg>
+              <span>Reset</span>
+            </button>
+          )}
           <button
             type="button"
-            className="sim-shell-icon-btn sim-shell-reset"
-            onClick={onReset}
-            aria-label="Reset simulation"
-            title="Reset"
+            className={`sim-shell-icon-btn sim-shell-mute${muted ? ' is-muted' : ''}`}
+            onClick={() => {
+              const next = toggleSoundMuted()
+              // Brief click only when unmuting so mute itself stays silent
+              if (!next) playClick()
+            }}
+            aria-label={muted ? 'Unmute sound effects' : 'Mute sound effects'}
+            aria-pressed={muted}
+            title={muted ? 'Unmute' : 'Mute'}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"
-                fill="currentColor"
-              />
-            </svg>
-            <span>Reset</span>
+            {muted ? (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63z" />
+                <path d="M19 12c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71z" />
+                <path d="M4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 9v6h4l5 5V4L7 9H3z" />
+                <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
+                <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+              </svg>
+            )}
+            <span className="sim-shell-mute-label">{muted ? 'Muted' : 'Sound'}</span>
           </button>
         </div>
       </header>
@@ -122,10 +165,24 @@ export function SimTransport({
 }) {
   return (
     <>
-      <button type="button" className={`sim-shell-btn${running ? ' is-active' : ''}`} onClick={onToggle}>
+      <button
+        type="button"
+        className={`sim-shell-btn${running ? ' is-active' : ''}`}
+        onClick={() => {
+          playClick()
+          onToggle()
+        }}
+      >
         {running ? 'Pause' : 'Play'}
       </button>
-      <button type="button" className="sim-shell-btn" onClick={onReset}>
+      <button
+        type="button"
+        className="sim-shell-btn"
+        onClick={() => {
+          playClick()
+          onReset()
+        }}
+      >
         Reset
       </button>
       {extra}
