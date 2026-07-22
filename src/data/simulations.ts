@@ -283,6 +283,8 @@ export const simulations: Simulation[] = [
     color: '#145a32',
     accent: '#e67e22',
     image: '/covers/ecological-pyramid.svg',
+    sceneryHtml: '/downloads/ecological-pyramid-offline.html',
+    offlineHtml: '/downloads/ecological-pyramid-offline.html',
   },
   {
     id: 'predator-prey',

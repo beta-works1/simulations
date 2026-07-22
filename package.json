@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "build:ph-lab-offline": "npm --prefix ph-laboratory-scenery run build",
     "build:ecology-offline": "npm --prefix ph-ecology-scenery run build",
-    "build:carbon-offline": "npm --prefix ph-carbon-oxygen-scenery run build"
+    "build:carbon-offline": "npm --prefix ph-carbon-oxygen-scenery run build",
+    "build:pyramid-offline": "npm --prefix ph-ecological-pyramid-scenery run build"
   },
   "dependencies": {
     "@fontsource/roboto": "^5.2.10",
