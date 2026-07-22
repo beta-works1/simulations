@@ -1,13 +1,34 @@
 import { useCallback, useRef, useState } from 'react'
-import { ControlHint, ControlSection, ControlStack } from '../../shared/Controls'
+import {
+  ControlHint,
+  ControlSection,
+  ControlStack,
+  InfoTooltip,
+} from '../../shared/Controls'
 import { fillFittedText, fontPx } from '../../shared/drawHelpers'
 import { drawHint, drawHoverHalo, drawLabelPill } from '../../shared/labels'
 import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import { useCanvasPointer } from '../../shared/useCanvasPointer'
 import {
+  DECOMPOSER,
+  FOOD_CHAIN,
+  FOOD_WEB,
+  INTRO,
+  LEVEL_HINTS,
+  LEVEL_LABELS,
+  PRIMARY_CONSUMER,
+  PRODUCER,
+  SECONDARY_CONSUMER,
+  TERTIARY_CONSUMER,
+  TROPHIC_LEVELS,
+  WEB_STABILITY,
+} from './foodWebGuide'
+import {
   addSpecies,
   createFoodWebState,
+  createGrasslandChainState,
+  createGrasslandWebState,
   levelColor,
   stepFoodWeb,
   type FoodWebState,
@@ -16,6 +37,17 @@ import {
 
 function clamp01(n: number) {
   return Math.max(0.08, Math.min(0.92, n))
+}
+
+function TermTip({ title, body }: { title: string; body: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+      <InfoTooltip title={title}>
+        <p>{body}</p>
+      </InfoTooltip>
+      <strong style={{ fontSize: 13 }}>{title}</strong>
+    </div>
+  )
 }
 
 export function FoodWebBuilderSim() {
@@ -132,9 +164,15 @@ export function FoodWebBuilderSim() {
           baseline: 'middle',
         })
         if (isSel || isHover) {
-          drawLabelPill(ctx, n.level, x, y + nodeR + 14, {
+          drawLabelPill(ctx, LEVEL_LABELS[n.level], x, y + nodeR + 14, {
             fontSize: Math.max(9, fs - 3),
             bold: false,
+          })
+          drawLabelPill(ctx, LEVEL_HINTS[n.level], x, y + nodeR + 30, {
+            fontSize: Math.max(8, fs - 4),
+            bold: false,
+            bg: 'rgba(0,0,0,0.3)',
+            fg: '#ecf0f1',
           })
         }
       }
@@ -147,7 +185,9 @@ export function FoodWebBuilderSim() {
       })
 
       if (hintShown.current) {
-        drawHint(ctx, 'drag nodes · yellow = energy flow', w / 2, h - 18, w, h, { muted: true })
+        drawHint(ctx, 'drag nodes · tap for role · yellow = energy flow', w / 2, h - 18, w, h, {
+          muted: true,
+        })
       }
 
       const vg = ctx.createRadialGradient(
@@ -168,6 +208,12 @@ export function FoodWebBuilderSim() {
 
   useCanvasLoop(canvasRef, draw, true, version, true)
 
+  const load = (factory: () => FoodWebState) => {
+    stateRef.current = factory()
+    hintShown.current = true
+    setVersion((v) => v + 1)
+  }
+
   const add = (level: TrophicLevel, name: string) => {
     stateRef.current = addSpecies(stateRef.current, level, name)
     setVersion((v) => v + 1)
@@ -176,28 +222,61 @@ export function FoodWebBuilderSim() {
   return (
     <SimShell
       title="Food Chain / Food Web"
-      subtitle="Build links and watch energy move between species"
+      subtitle="See how energy moves from producers to consumers and decomposers"
       canvasRef={canvasRef}
       running={running}
       onTogglePlay={() => setRunning((r) => !r)}
-      onReset={() => {
-        stateRef.current = createFoodWebState()
-        hintShown.current = true
-        setVersion((v) => v + 1)
-      }}
+      onReset={() => load(createFoodWebState)}
       controls={
         <>
+          <ControlSection title="Key ideas">
+            <ControlHint>{INTRO}</ControlHint>
+            <TermTip title={FOOD_CHAIN.title} body={FOOD_CHAIN.body} />
+            <TermTip title={FOOD_WEB.title} body={FOOD_WEB.body} />
+            <TermTip title={TROPHIC_LEVELS.title} body={TROPHIC_LEVELS.body} />
+            <TermTip title={WEB_STABILITY.title} body={WEB_STABILITY.body} />
+          </ControlSection>
+
+          <ControlSection title="Roles">
+            <TermTip title={PRODUCER.title} body={PRODUCER.body} />
+            <TermTip title={PRIMARY_CONSUMER.title} body={PRIMARY_CONSUMER.body} />
+            <TermTip title={SECONDARY_CONSUMER.title} body={SECONDARY_CONSUMER.body} />
+            <TermTip title={TERTIARY_CONSUMER.title} body={TERTIARY_CONSUMER.body} />
+            <TermTip title={DECOMPOSER.title} body={DECOMPOSER.body} />
+          </ControlSection>
+
+          <ControlSection title="Examples">
+            <ControlStack>
+              <button
+                type="button"
+                className="sim-shell-btn"
+                onClick={() => load(createGrasslandChainState)}
+              >
+                Load food chain
+              </button>
+              <button
+                type="button"
+                className="sim-shell-btn"
+                onClick={() => load(createGrasslandWebState)}
+              >
+                Load grassland web
+              </button>
+            </ControlStack>
+            <ControlHint>
+              Chain: grass → grasshopper → frog → snake → eagle. Web: many linked paths.
+            </ControlHint>
+          </ControlSection>
+
           <ControlSection title="Add species">
-            <ControlHint>Producers make energy; consumers eat; decomposers recycle.</ControlHint>
             <ControlStack>
               <button type="button" className="sim-shell-btn" onClick={() => add('producer', 'Algae')}>
                 + Producer
               </button>
               <button type="button" className="sim-shell-btn" onClick={() => add('herbivore', 'Deer')}>
-                + Herbivore
+                + Primary consumer
               </button>
               <button type="button" className="sim-shell-btn" onClick={() => add('carnivore', 'Hawk')}>
-                + Carnivore
+                + Consumer
               </button>
               <button
                 type="button"

@@ -5,6 +5,7 @@ import {
   ControlSlider,
   ControlStat,
   ControlStats,
+  InfoTooltip,
 } from '../../shared/Controls'
 import { fillFittedText, fontPx } from '../../shared/drawHelpers'
 import { drawHint, drawHoverHalo, drawLabelPill, drawValueChip } from '../../shared/labels'
@@ -20,6 +21,7 @@ import {
   stepPyramid,
   tierEnergies,
 } from './ecologicalPyramidModel'
+import { TROPHIC_LEVELS } from './foodWebGuide'
 
 type TierLayout = { id: number; x: number; y: number; w: number; h: number; cx: number; cy: number }
 
@@ -230,6 +232,12 @@ export function EcologicalPyramidSim() {
       controls={
         <>
           <ControlSection title="Energy base">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <InfoTooltip title={TROPHIC_LEVELS.title}>
+                <p>{TROPHIC_LEVELS.body}</p>
+              </InfoTooltip>
+              <strong style={{ fontSize: 13 }}>Trophic levels</strong>
+            </div>
             <ControlHint>Only about 10% of energy moves to the next level; the rest is lost as heat.</ControlHint>
             <ControlSlider
               label="Producer energy"
