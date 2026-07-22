@@ -1,0 +1,9 @@
+{
+  "title": "Food Chain / Food Web",
+  "screen": {
+    "foodWeb": "Food Web"
+  },
+  "controls": "Controls",
+  "linkModeOn": "Link mode: ON",
+  "linkModeOff": "Link mode: OFF"
+}

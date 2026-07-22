@@ -261,6 +261,8 @@ export const simulations: Simulation[] = [
     color: '#196f3d',
     accent: '#f1c40f',
     image: '/covers/food-web-builder.svg',
+    sceneryHtml: '/downloads/food-web-offline.html',
+    offlineHtml: '/downloads/food-web-offline.html',
   },
   {
     id: 'ecological-pyramid',
