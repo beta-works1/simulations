@@ -1,7 +1,8 @@
 import { Vector2 } from 'scenerystack/dot'
-import { Circle, DragListener, Node, Rectangle, Text } from 'scenerystack/scenery'
+import { DragListener, Node, Rectangle, Text } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
 import { LEVEL_COLORS } from '../../common/EcologyColors.js'
+import { createEcologyIcon } from '../../common/EcologyArt.js'
 import type { TrophicLevel } from '../model/FoodWebModel.js'
 import type { EcologySounds } from './EcologySounds.js'
 
@@ -9,6 +10,13 @@ export type DropTarget = {
   containsGlobalPoint: (x: number, y: number) => boolean
   globalToNormalized: (x: number, y: number) => { x: number; y: number } | null
   setHighlight?: (on: boolean) => void
+}
+
+const LEVEL_ICON: Record<TrophicLevel, string> = {
+  producer: 'grass',
+  herbivore: 'rabbit',
+  carnivore: 'fox',
+  decomposer: 'fungi',
 }
 
 /**
@@ -27,25 +35,27 @@ export class SpeciesPaletteChip extends Node {
     super({ cursor: 'grab' })
 
     const color = LEVEL_COLORS[level]
-    const bg = new Rectangle(0, 0, width, 36, {
+    const bg = new Rectangle(0, 0, width, 40, {
       fill: color,
       cornerRadius: 8,
       stroke: 'rgba(255,255,255,0.35)',
       lineWidth: 1,
     })
-    const icon = new Circle(8, { fill: 'rgba(255,255,255,0.9)', left: 10, centerY: 18 })
+    const icon = createEcologyIcon(LEVEL_ICON[level], 26)
+    icon.left = 6
+    icon.centerY = 20
     const text = new Text(label, {
       font: new PhetFont({ size: 11, weight: 'bold' }),
       fill: 'white',
-      left: 30,
-      centerY: 18,
-      maxWidth: width - 40,
+      left: 36,
+      centerY: 20,
+      maxWidth: width - 70,
     })
     const hint = new Text('drag →', {
       font: new PhetFont(8),
       fill: 'rgba(255,255,255,0.7)',
       right: width - 8,
-      centerY: 18,
+      centerY: 20,
     })
 
     this.addChild(bg)
@@ -71,12 +81,12 @@ export class SpeciesPaletteChip extends Node {
           this.opacity = 0.45
           sounds?.grabStart()
           ghost = new Node({ pickable: false })
-          ghost.addChild(new Circle(22, { fill: color, stroke: 'white', lineWidth: 2, opacity: 0.85 }))
+          ghost.addChild(createEcologyIcon(LEVEL_ICON[level], 44))
           ghost.addChild(
             new Text(label, {
               font: new PhetFont(10),
               fill: 'white',
-              centerY: 0,
+              centerY: 22,
               centerX: 0,
               maxWidth: 70,
             }),
@@ -98,7 +108,10 @@ export class SpeciesPaletteChip extends Node {
           if (!point) return
           if (dropTarget.containsGlobalPoint(point.x, point.y)) {
             const norm = dropTarget.globalToNormalized(point.x, point.y)
-            if (norm) onDrop(level, norm.x, norm.y)
+            if (norm) {
+              onDrop(level, norm.x, norm.y)
+              sounds?.dropOk()
+            }
           } else {
             sounds?.dropMiss()
           }

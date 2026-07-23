@@ -14,6 +14,7 @@ import {
 import { EcologyControlPanel } from './EcologyControlPanel.js'
 import { EcologySounds } from './EcologySounds.js'
 import { SpeciesNode } from './SpeciesNode.js'
+import { createEcologyIcon } from '../../common/EcologyArt.js'
 
 type Options = EmptySelfOptions & ScreenViewOptions
 
@@ -162,22 +163,25 @@ export class FoodWebScreenView extends ScreenView {
       }),
     )
 
-    // Legend
-    const legendY = areaTop + areaHeight - 22
+    // Legend with pictures
+    const legendY = areaTop + areaHeight - 26
     const legendItems = [
-      { c: '#27ae60', t: 'Producer' },
-      { c: '#f1c40f', t: 'Herbivore' },
-      { c: '#e74c3c', t: 'Carnivore' },
-      { c: '#8e44ad', t: 'Decomposer' },
+      { key: 'grass', t: 'Plant' },
+      { key: 'rabbit', t: 'Plant-eater' },
+      { key: 'fox', t: 'Meat-eater' },
+      { key: 'fungi', t: 'Decomposer' },
     ]
     legendItems.forEach((item, i) => {
-      const x = areaLeft + 12 + i * 90
-      this.addChild(new Circle(5, { fill: item.c, centerX: x, centerY: legendY }))
+      const x = areaLeft + 18 + i * 100
+      const pic = createEcologyIcon(item.key, 22)
+      pic.centerX = x
+      pic.centerY = legendY
+      this.addChild(pic)
       this.addChild(
         new Text(item.t, {
           font: new PhetFont(9),
-          fill: 'rgba(255,255,255,0.7)',
-          left: x + 8,
+          fill: 'rgba(255,255,255,0.85)',
+          left: x + 14,
           centerY: legendY,
         }),
       )

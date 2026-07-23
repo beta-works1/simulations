@@ -15,6 +15,7 @@ import {
 } from '../model/EcologicalPyramidModel.js'
 import { PyramidControlPanel } from './PyramidControlPanel.js'
 import { PyramidSounds } from './PyramidSounds.js'
+import { createEcologyIcon } from '../../common/EcologyArt.js'
 
 type Options = EmptySelfOptions & ScreenViewOptions
 
@@ -712,32 +713,13 @@ export class EcologicalPyramidScreenView extends ScreenView {
 }
 
 function makeTierSilhouette(tier: number, x: number, y: number): Node {
-  const n = new Node({ pickable: false, opacity: 0.55 })
-  if (tier === 0) {
-    // plant
-    n.addChild(new Rectangle(-1, 0, 2, 10, { fill: 'rgba(255,255,255,0.85)', centerX: x, top: y }))
-    n.addChild(new Circle(5, { fill: 'rgba(255,255,255,0.75)', centerX: x, centerY: y - 2 }))
-  } else if (tier === 1) {
-    // herbivore blob
-    n.addChild(new Circle(5, { fill: 'rgba(255,255,255,0.8)', centerX: x, centerY: y }))
-    n.addChild(new Circle(3, { fill: 'rgba(255,255,255,0.8)', centerX: x + 5, centerY: y - 2 }))
-  } else if (tier === 2) {
-    // carnivore diamond-ish
-    const sh = new Shape()
-    sh.moveTo(x, y - 6)
-    sh.lineTo(x + 5, y)
-    sh.lineTo(x, y + 5)
-    sh.lineTo(x - 5, y)
-    sh.close()
-    n.addChild(new Path(sh, { fill: 'rgba(255,255,255,0.8)' }))
-  } else {
-    // bird / top predator
-    const wing = new Shape()
-    wing.moveTo(x - 7, y)
-    wing.quadraticCurveTo(x, y - 5, x + 7, y)
-    wing.quadraticCurveTo(x, y + 2, x - 7, y)
-    n.addChild(new Path(wing, { fill: 'rgba(255,255,255,0.85)' }))
-  }
+  const names = ['grass', 'rabbit', 'fox', 'eagle'] as const
+  const n = new Node({ pickable: false })
+  const icon = createEcologyIcon(names[tier] ?? 'grass', tier === 0 ? 34 : 30)
+  icon.centerX = x
+  icon.centerY = y
+  icon.opacity = 0.95
+  n.addChild(icon)
   return n
 }
 

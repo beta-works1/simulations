@@ -19,6 +19,7 @@ import { DepthCard } from '../../../shared/ui/DepthCard.js'
 import { DepthSlider } from '../../../shared/ui/DepthSlider.js'
 import { SoftButton } from '../../../shared/ui/SoftButton.js'
 import { WarmingStrings } from '../WarmingStrings.js'
+import { createEcologyIcon } from '../../../shared/EcologyArt.js'
 
 type SelfOptions = EmptySelfOptions
 type Options = SelfOptions & ScreenViewOptions
@@ -91,6 +92,11 @@ export class WarmingScreenView extends ScreenView {
     })
     this.addChild(this.sunGlow)
     this.addChild(this.sunCore)
+    const sunPic = createEcologyIcon('sun', 48)
+    sunPic.centerX = this.sunX
+    sunPic.centerY = this.sunY
+    sunPic.pickable = false
+    this.addChild(sunPic)
 
     const sunLabel = new Text(WarmingStrings.sunStringProperty, {
       font: new PhetFont({ size: 13, weight: 'bold' }),
@@ -261,6 +267,45 @@ export class WarmingScreenView extends ScreenView {
     })
     this.addChild(this.ground)
     this.addChild(this.shimmer)
+
+    const earth = createEcologyIcon('earth', 56)
+    earth.centerX = this.sceneW * 0.5
+    earth.centerY = this.groundTop + 36
+    earth.pickable = false
+    this.addChild(earth)
+    const treeL = createEcologyIcon('tree', 36)
+    treeL.centerX = this.sceneW * 0.22
+    treeL.centerY = this.groundTop + 28
+    treeL.pickable = false
+    this.addChild(treeL)
+    const treeR = createEcologyIcon('factory', 40)
+    treeR.centerX = this.sceneW * 0.78
+    treeR.centerY = this.groundTop + 28
+    treeR.pickable = false
+    this.addChild(treeR)
+
+    const howBg = new Rectangle(0, 0, this.sceneW - m * 2, 44, {
+      cornerRadius: 10,
+      fill: 'rgba(15,23,42,0.82)',
+      stroke: 'rgba(125,211,252,0.35)',
+      lineWidth: 1,
+      left: m,
+      top: my,
+      pickable: false,
+    })
+    const howText = new Text(
+      'How it works: sunlight warms Earth → Earth sends heat up → thicker gas layer traps more heat → temperature rises.',
+      {
+        font: new PhetFont(12),
+        fill: '#e2e8f0',
+        maxWidth: this.sceneW - m * 2 - 20,
+        left: m + 10,
+        centerY: howBg.centerY,
+        pickable: false,
+      },
+    )
+    this.addChild(howBg)
+    this.addChild(howText)
 
     // Temperature chip with depth
     const tempCard = new DepthCard(200, 72, {

@@ -8,6 +8,7 @@ import { RectangularPushButton } from 'scenerystack/sun'
 import { CarbonOxygenModel } from '../model/CarbonOxygenModel.js'
 import { CarbonControlPanel } from './CarbonControlPanel.js'
 import { CarbonSounds } from './CarbonSounds.js'
+import { createEcologyIcon } from '../../common/EcologyArt.js'
 import {
   CarbonCloudLayer,
   CarbonParticleLayer,
@@ -20,7 +21,7 @@ import {
 type Options = EmptySelfOptions & ScreenViewOptions
 
 const DEFAULT_STATUS =
-  'Tap trees, animals, factory, or soil. Adjust sliders and watch how each process shifts CO₂ and O₂.'
+  'Tap trees, animals, factory, or soil. Green trees make O₂. Animals and factories make CO₂.'
 
 function isProcessTip(status: string): boolean {
   return (
@@ -430,14 +431,11 @@ export class CarbonOxygenScreenView extends ScreenView {
 
   private makeTree(x: number, y: number, scale: number, glowing: boolean): Node {
     const n = new Node({ x, y })
-    n.addChild(new Rectangle(-3 * scale, 0, 6 * scale, 18 * scale, { fill: '#6d4c41' }))
-    const canopy = new Circle(14 * scale, {
-      fill: this.model.isDayProperty.value ? '#2ecc71' : '#1a6b3a',
-      centerY: -8 * scale,
-    })
-    n.addChild(canopy)
+    const icon = createEcologyIcon('tree', 28 * scale + 10)
+    icon.centerY = -6 * scale
+    n.addChild(icon)
     if (glowing) {
-      n.addChild(new Circle(16 * scale, { fill: 'rgba(46,204,113,0.2)', centerY: -8 * scale }))
+      n.addChild(new Circle(18 * scale, { fill: 'rgba(46,204,113,0.18)', centerY: -8 * scale }))
     }
     return n
   }
@@ -450,20 +448,7 @@ export class CarbonOxygenScreenView extends ScreenView {
     for (let i = 0; i < count; i++) {
       const x = s.left + s.width * (0.1 + (i / Math.max(1, count)) * 0.38)
       const animal = new Node({ x, y: groundY, cursor: 'pointer' })
-      animal.addChild(
-        new Circle(6, {
-          fill: this.model.isDayProperty.value ? '#8e5a2b' : '#5c3a1a',
-          centerX: 0,
-          centerY: 0,
-        }),
-      )
-      animal.addChild(
-        new Circle(4, {
-          fill: this.model.isDayProperty.value ? '#8e5a2b' : '#5c3a1a',
-          centerX: 8,
-          centerY: -4,
-        }),
-      )
+      animal.addChild(createEcologyIcon(i % 2 === 0 ? 'cow' : 'deer', 30))
       animal.addInputListener({
         up: () => {
           this.model.setSceneTip('animals')
@@ -489,8 +474,9 @@ export class CarbonOxygenScreenView extends ScreenView {
     for (let i = 0; i < Math.min(count, 10); i++) {
       const x = s.left + s.width * (0.58 + (i / 10) * 0.36)
       const g = new Node({ x, y: groundY, cursor: 'pointer' })
-      g.addChild(new Rectangle(-14, -36, 28, 36, { fill: '#7f8c8d', stroke: '#2c3e50', lineWidth: 1 }))
-      g.addChild(new Rectangle(4, -52, 8, 16, { fill: '#95a5a6' }))
+      const icon = createEcologyIcon('factory', 42)
+      icon.centerY = -18
+      g.addChild(icon)
       const smoke = rates.combustion * (0.4 + i * 0.05)
       if (smoke > 0.15) {
         const puffs = Math.min(3, 1 + Math.floor(smoke))

@@ -408,16 +408,16 @@ export class CarbonOxygenModel implements TModel {
   public setSceneTip(zone: 'trees' | 'animals' | 'factory' | 'soil'): void {
     if (zone === 'trees') {
       this.statusProperty.value =
-        'Photosynthesis: plants use sunlight to turn CO₂ + H₂O into food and release O₂. 6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂'
+        'Trees (photosynthesis): take in CO₂, give out O₂ in daylight. Tap trees to remember this.'
     } else if (zone === 'animals') {
       this.statusProperty.value =
-        'Respiration: animals (and plants at night) use O₂ and release CO₂. C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + energy'
+        'Animals (respiration): breathe in O₂, breathe out CO₂. More animals → more CO₂.'
     } else if (zone === 'factory') {
       this.statusProperty.value =
-        'Combustion: burning fuels uses O₂ and releases CO₂ into the atmosphere.'
+        'Factories (combustion): burn fuel → use O₂ and release lots of CO₂ (smoke).'
     } else {
       this.statusProperty.value =
-        'Decomposition: bacteria and fungi break down dead matter and release CO₂.'
+        'Soil (decomposition): fungi and bacteria break dead matter and release CO₂.'
     }
   }
 

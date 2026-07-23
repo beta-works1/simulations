@@ -1,0 +1,16 @@
+---
+description: Chapter 1 Ecology simulation UX standards (new tab, images, self-explanatory)
+alwaysApply: true
+---
+
+# Chapter 1 Ecology sims
+
+When changing Grade 8 **Ch 1 – Ecology** simulations (carbon–oxygen, food web, ecological pyramid, predator–prey, global warming):
+
+1. **Open in a new tab, full page** — Catalog cards link to `/run/:id` with `target="_blank"`. Keep `/run/:id` chrome-free (no site header/footer). Do not send students into a cramped in-page iframe as the primary open path.
+
+2. **Relatable images, not abstract shapes** — Organisms and key scene objects use the ecology icon art (`EcologyArt.ts` / friendly SVGs: rabbit, fox, plant, tree, factory, Earth, etc.). Prefer pictures students recognize over plain circles or diamonds.
+
+3. **Self-explanatory on screen** — Live **NOW / WHY / Next** (or equivalent) captions, plain Class-8 language (rabbits/foxes, not only “prey/predator”), and graph legends that say what green/red mean. Depth stays in the model; the UI narrates it clearly.
+
+4. After SceneryStack package changes, rebuild offline HTML (`build:*-offline` / package `npm run build`) so `public/downloads/*` stays in sync.

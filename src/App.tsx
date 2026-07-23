@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Outlet, useNavigate } from 'react-router-dom'
 import { Header } from './components/Header'
 import { Footer } from './components/Footer'
 import { HomePage } from './pages/HomePage'
@@ -11,7 +11,11 @@ const SimulationDetailPage = lazy(() =>
   import('./pages/SimulationDetailPage').then((m) => ({ default: m.SimulationDetailPage })),
 )
 
-function AppContent() {
+const SimulationRunPage = lazy(() =>
+  import('./pages/SimulationRunPage').then((m) => ({ default: m.SimulationRunPage })),
+)
+
+function CatalogLayout() {
   const navigate = useNavigate()
 
   const handleSearch = (query: string) => {
@@ -26,7 +30,32 @@ function AppContent() {
     <>
       <Header onSearch={handleSearch} />
       <main id="page-content" tabIndex={-1}>
-        <Routes>
+        <Outlet />
+      </main>
+      <Footer />
+    </>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/run/:id"
+          element={
+            <Suspense
+              fallback={
+                <div className="route-fallback" role="status">
+                  Loading simulation…
+                </div>
+              }
+            >
+              <SimulationRunPage />
+            </Suspense>
+          }
+        />
+        <Route element={<CatalogLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/simulations" element={<SimulationsPage />} />
           <Route path="/about" element={<AboutPage />} />
@@ -44,17 +73,8 @@ function AppContent() {
               </Suspense>
             }
           />
-        </Routes>
-      </main>
-      <Footer />
-    </>
-  )
-}
-
-function App() {
-  return (
-    <BrowserRouter>
-      <AppContent />
+        </Route>
+      </Routes>
     </BrowserRouter>
   )
 }

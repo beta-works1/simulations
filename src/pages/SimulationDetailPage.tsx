@@ -109,8 +109,16 @@ export function SimulationDetailPage() {
       </div>
 
       <div className="simulation-actions">
-        <button type="button" className="btn btn-primary" onClick={() => setFullscreen(true)}>
-          Open fullscreen
+        <a
+          className="btn btn-primary"
+          href={`/run/${sim.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Open simulation (new tab)
+        </a>
+        <button type="button" className="btn btn-secondary" onClick={() => setFullscreen(true)}>
+          Open fullscreen here
         </button>
         {sim.offlineHtml ? (
           <a

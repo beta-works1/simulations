@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'motion/react'
 import type { Simulation } from '../data/simulations'
 import { chapterShortLabel, gradeLabel } from '../data/simulations'
@@ -32,6 +31,11 @@ interface SimulationGridProps {
   animated?: boolean
 }
 
+/** Full-page sim URL — opened in a new tab from the catalog. */
+export function simulationRunPath(id: string) {
+  return `/run/${id}`
+}
+
 export function SimulationGrid({
   items,
   title,
@@ -46,10 +50,12 @@ export function SimulationGrid({
       <ul className="simulation-grid">
         {items.map((sim, i) => {
           const card = (
-            <Link
-              to={`/play/${sim.id}`}
+            <a
+              href={simulationRunPath(sim.id)}
+              target="_blank"
+              rel="noopener noreferrer"
               className="simulation-link"
-              aria-label={`${sim.title}, ${gradeLabel(sim.grade)}`}
+              aria-label={`Open ${sim.title} in a new tab (${gradeLabel(sim.grade)})`}
             >
               <SimulationThumbnail sim={sim} />
               <span className="simulation-list-title">{sim.title}</span>
@@ -59,7 +65,7 @@ export function SimulationGrid({
                   {sim.chapter ? <span className="tag">{sim.chapter}</span> : null}
                 </span>
               )}
-            </Link>
+            </a>
           )
 
           if (!animated) {

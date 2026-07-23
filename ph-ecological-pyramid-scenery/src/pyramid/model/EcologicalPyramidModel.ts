@@ -2,8 +2,13 @@ import { BooleanProperty, NumberProperty, Property, StringProperty } from 'scene
 import { TModel } from 'scenerystack/joist'
 import { PyramidConstants } from '../../common/PyramidColors.js'
 
-export const PYRAMID_LABELS = ['Producers', 'Primary consumers', 'Secondary', 'Tertiary'] as const
-export const PYRAMID_SHORT = ['Producers', 'Herbivores', 'Carnivores', 'Top predators'] as const
+export const PYRAMID_LABELS = [
+  'Plants (producers)',
+  'Rabbits & plant-eaters',
+  'Foxes & meat-eaters',
+  'Eagles (top hunters)',
+] as const
+export const PYRAMID_SHORT = ['Plants', 'Rabbits', 'Foxes', 'Eagles'] as const
 export const PYRAMID_COLORS = ['#27ae60', '#f1c40f', '#e67e22', '#c0392b'] as const
 export const PYRAMID_ICONS = ['🌿', '🐰', '🦊', '🦅'] as const
 export const DECOMPOSER_LABEL = 'Decomposers'

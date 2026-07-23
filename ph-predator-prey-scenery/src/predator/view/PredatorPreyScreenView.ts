@@ -6,6 +6,7 @@ import { PhetFont } from 'scenerystack/scenery-phet'
 import { PredatorPreyModel, REFUGE } from '../model/PredatorPreyModel.js'
 import { PreyControlPanel } from './PreyControlPanel.js'
 import { PreySounds } from './PreySounds.js'
+import { createEcologyIcon } from '../../common/EcologyArt.js'
 
 type Options = EmptySelfOptions & ScreenViewOptions
 
@@ -257,7 +258,7 @@ export class PredatorPreyScreenView extends ScreenView {
       }),
     )
     this.addChild(
-      new Text('Tap left: + rabbits (green)', {
+      new Text('Tap left: + rabbits', {
         font: new PhetFont({ size: 11, weight: 'bold' }),
         fill: 'rgba(255,255,255,0.55)',
         centerX: sceneLeft + sceneW * 0.25,
@@ -266,11 +267,41 @@ export class PredatorPreyScreenView extends ScreenView {
       }),
     )
     this.addChild(
-      new Text('Tap right: + foxes (red)', {
+      new Text('Tap right: + foxes', {
         font: new PhetFont({ size: 11, weight: 'bold' }),
         fill: 'rgba(255,255,255,0.55)',
         centerX: sceneLeft + sceneW * 0.75,
         bottom: sceneTop + sceneH - 8,
+        pickable: false,
+      }),
+    )
+
+    // Picture key so students know what they are looking at
+    const keyRabbit = createEcologyIcon('rabbit', 28)
+    keyRabbit.left = sceneLeft + 10
+    keyRabbit.top = sceneTop + 36
+    keyRabbit.pickable = false
+    this.addChild(keyRabbit)
+    this.addChild(
+      new Text('= rabbit (prey)', {
+        font: new PhetFont(10),
+        fill: '#ecfeff',
+        left: keyRabbit.right + 4,
+        centerY: keyRabbit.centerY,
+        pickable: false,
+      }),
+    )
+    const keyFox = createEcologyIcon('fox', 28)
+    keyFox.left = sceneLeft + 130
+    keyFox.top = sceneTop + 36
+    keyFox.pickable = false
+    this.addChild(keyFox)
+    this.addChild(
+      new Text('= fox (predator)', {
+        font: new PhetFont(10),
+        fill: '#ecfeff',
+        left: keyFox.right + 4,
+        centerY: keyFox.centerY,
         pickable: false,
       }),
     )
@@ -650,29 +681,23 @@ export class PredatorPreyScreenView extends ScreenView {
       const node = new Node({ cursor: 'grab', pickable: true })
       if (a.kind === 'prey') {
         const bob = Math.sin(a.phase) * 1.5
-        const body = new Circle(4.4, {
-          fill: a.inRefuge ? '#86efac' : '#2ecc71',
-          stroke: a.inRefuge ? '#fde68a' : 'rgba(255,255,255,0.55)',
-          lineWidth: a.inRefuge ? 2 : 1,
-          centerY: bob,
-        })
-        node.addChild(body)
-        node.addChild(new Circle(2.2, { fill: '#a7f3d0', centerX: 3, centerY: bob - 2 }))
+        const icon = createEcologyIcon('rabbit', a.inRefuge ? 28 : 32)
+        icon.centerY = bob
+        icon.opacity = a.inRefuge ? 0.85 : 1
+        node.addChild(icon)
+        if (a.inRefuge) {
+          node.addChild(
+            new Circle(16, {
+              stroke: '#fde68a',
+              lineWidth: 2,
+              fill: null,
+              centerY: bob,
+            }),
+          )
+        }
       } else {
-        node.addChild(
-          new Circle(5.8, {
-            fill: mode === 'mutualism' ? '#f59e0b' : '#e74c3c',
-            stroke: 'rgba(255,255,255,0.45)',
-            lineWidth: 1,
-          }),
-        )
-        node.addChild(
-          new Circle(2.2, {
-            fill: mode === 'mutualism' ? '#fbbf24' : '#c0392b',
-            centerX: 4,
-            centerY: -4,
-          }),
-        )
+        const icon = createEcologyIcon(mode === 'mutualism' ? 'bird' : 'fox', 34)
+        node.addChild(icon)
       }
       node.centerX = x
       node.centerY = y
