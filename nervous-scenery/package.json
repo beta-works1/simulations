@@ -1,0 +1,26 @@
+{
+  "name": "nervous-scenery",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "title": "Human Nervous System Simulations",
+  "author": "SimLab",
+  "scripts": {
+    "dev": "NERVOUS_SIM=reflex-arc vite",
+    "dev:reflex": "NERVOUS_SIM=reflex-arc vite",
+    "dev:neuron": "NERVOUS_SIM=neuron-signal vite",
+    "dev:brain": "NERVOUS_SIM=brain-mapping vite",
+    "build": "node ./scripts/build-all.mjs",
+    "build:one": "tsc --noEmit && vite build && node ./scripts/copy-one.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "scenerystack": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.7.2",
+    "vite": "^5.4.10",
+    "vite-plugin-singlefile": "^2.1.0",
+    "vite-raw-plugin": "^1.0.2"
+  }
+}

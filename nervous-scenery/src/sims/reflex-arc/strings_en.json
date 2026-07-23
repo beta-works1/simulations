@@ -1,0 +1,17 @@
+{
+  "title": "Reflex Arc",
+  "screen": {
+    "lab": "Reflex Arc"
+  },
+  "pathway": "Pathway",
+  "viaBrain": "Route via brain",
+  "stimulate": "Stimulate",
+  "hint": "Tap receptor to fire · toggle brain pathway",
+  "fast": "Fast reflex — brain skipped",
+  "slow": "Slower — path went through the brain",
+  "receptor": "Receptor",
+  "effector": "Effector",
+  "spinal": "Spinal cord",
+  "brainOn": "Brain (on path)",
+  "brainOff": "Brain (tap to include)"
+}

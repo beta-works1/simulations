@@ -1,0 +1,14 @@
+{
+  "title": "Brain Region Mapping",
+  "screen": {
+    "lab": "Brain Mapping"
+  },
+  "mode": "Mode",
+  "study": "Study — explore regions",
+  "quiz": "Quiz — test yourself",
+  "explored": "Explored",
+  "score": "Score",
+  "hint": "Click a colored region on the brain",
+  "correct": "Correct!",
+  "wrong": "Not quite"
+}

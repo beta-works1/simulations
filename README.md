@@ -22,7 +22,7 @@ No p5.js, PixiJS, Three.js, or Phaser. See [CONTRIBUTING.md](CONTRIBUTING.md) fo
 ## Grade 8 chapters (interactive)
 
 - **Ch 1 Ecology** — carbon–oxygen cycle, food web, ecological pyramid, predator–prey, global warming  
-- **Ch 2 Nervous system** — reflex arc, neuron signal, brain mapping  
+- **Ch 2 Nervous system** — reflex arc, neuron signal, brain mapping (SceneryStack offline HTML)  
 - **Ch 3 Heredity** — mitosis/meiosis, DNA zoom, Punnett square  
 - **Ch 4 Biotechnology** — plasmid insertion, fermentation  
 

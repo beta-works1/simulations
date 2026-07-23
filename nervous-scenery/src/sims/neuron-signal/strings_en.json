@@ -1,0 +1,16 @@
+{
+  "title": "Neuron Signal Transmission",
+  "screen": {
+    "lab": "Neuron Signal"
+  },
+  "axon": "Axon",
+  "myelin": "Myelin sheath",
+  "fire": "Fire signal",
+  "soma": "soma (cell body)",
+  "terminal": "synaptic terminal",
+  "saltatory": "Saltatory — jumps node to node (fast)",
+  "continuous": "Continuous — slower propagation",
+  "hint": "Tap soma or Fire · toggle myelin",
+  "nodes": "myelin · nodes of Ranvier",
+  "unmyelinated": "unmyelinated — continuous conduction"
+}

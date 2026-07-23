@@ -342,6 +342,8 @@ export const simulations: Simulation[] = [
     color: '#6c3483',
     accent: '#f5b041',
     image: '/covers/reflex-arc.svg',
+    sceneryHtml: '/downloads/reflex-arc-offline.html',
+    offlineHtml: '/downloads/reflex-arc-offline.html',
   },
   {
     id: 'neuron-signal',
@@ -358,6 +360,8 @@ export const simulations: Simulation[] = [
     color: '#5b2c6f',
     accent: '#5dade2',
     image: '/covers/neuron-signal.svg',
+    sceneryHtml: '/downloads/neuron-signal-offline.html',
+    offlineHtml: '/downloads/neuron-signal-offline.html',
   },
   {
     id: 'brain-mapping',
@@ -375,6 +379,8 @@ export const simulations: Simulation[] = [
     color: '#4a235a',
     accent: '#85c1e9',
     image: '/covers/brain-mapping.svg',
+    sceneryHtml: '/downloads/brain-mapping-offline.html',
+    offlineHtml: '/downloads/brain-mapping-offline.html',
   },
 
   // Grade 8 — Ch 3 Heredity
