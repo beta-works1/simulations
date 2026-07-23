@@ -1,5 +1,7 @@
 # SimLab — Interactive Simulations
 
+Powered by Beta Works.
+
 Science experiment simulations organized by **Grade 1–8**, inspired by [PhET](https://phet.colorado.edu/).
 
 ## Stack (sim interactives)

@@ -71,3 +71,10 @@
   color: var(--color-muted);
   font-size: 0.8rem;
 }
+
+.footer-powered {
+  margin: 0.35rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  opacity: 0.85;
+}

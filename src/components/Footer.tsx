@@ -39,6 +39,7 @@ export function Footer() {
           <p className="footer-copyright">
             &copy; {new Date().getFullYear()} SimLab Interactive Simulations
           </p>
+          <p className="footer-powered">Powered by Beta Works</p>
         </div>
       </div>
     </motion.footer>

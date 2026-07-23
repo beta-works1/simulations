@@ -28,6 +28,7 @@ export function AboutPage() {
           SimLab is a free platform for interactive science experiment simulations organized by
           grade level from Grade 1 to Grade 8.
         </p>
+        <p>Powered by Beta Works.</p>
       </motion.header>
 
       <motion.section
