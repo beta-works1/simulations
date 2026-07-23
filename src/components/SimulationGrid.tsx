@@ -31,7 +31,16 @@ interface SimulationGridProps {
   animated?: boolean
 }
 
-/** Full-page sim URL — opened in a new tab from the catalog. */
+/**
+ * PhET-style open target: SceneryStack HTML fills the tab like Color Vision;
+ * other sims use the full-page /run shell.
+ */
+export function simulationOpenHref(sim: Simulation) {
+  if (sim.sceneryHtml) return sim.sceneryHtml
+  return `/run/${sim.id}`
+}
+
+/** @deprecated prefer simulationOpenHref(sim) */
 export function simulationRunPath(id: string) {
   return `/run/${id}`
 }
@@ -51,7 +60,7 @@ export function SimulationGrid({
         {items.map((sim, i) => {
           const card = (
             <a
-              href={simulationRunPath(sim.id)}
+              href={simulationOpenHref(sim)}
               target="_blank"
               rel="noopener noreferrer"
               className="simulation-link"
