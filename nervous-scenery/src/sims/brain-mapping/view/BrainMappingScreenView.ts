@@ -1,6 +1,6 @@
 import { EmptySelfOptions } from 'scenerystack/phet-core'
 import { ScreenView, ScreenViewOptions } from 'scenerystack/sim'
-import { Node, Path, Rectangle, Text } from 'scenerystack/scenery'
+import { Node, Path, Rectangle, RichText, Text } from 'scenerystack/scenery'
 import { Shape } from 'scenerystack/kite'
 import { Matrix3 } from 'scenerystack/dot'
 import { PhetFont, ResetAllButton } from 'scenerystack/scenery-phet'
@@ -19,6 +19,7 @@ import { DepthCard } from '../../../shared/ui/DepthCard.js'
 import { SoftButton } from '../../../shared/ui/SoftButton.js'
 import { GuidanceBanner } from '../../../shared/ui/GuidanceBanner.js'
 import { ScrollableNode } from '../../../shared/ui/ScrollableNode.js'
+import { createPanelTip } from '../../../shared/ui/createPanelTip.js'
 import { BrainMappingStrings } from '../BrainMappingStrings.js'
 
 type SelfOptions = EmptySelfOptions
@@ -34,8 +35,8 @@ export class BrainMappingScreenView extends ScreenView {
   private readonly quizPrompt: Text
   private readonly promptBg: Rectangle
   private readonly detailTitle: Text
-  private readonly detailBody: Text
-  private readonly detailExamples: Text
+  private readonly detailBody: RichText
+  private readonly detailExamples: RichText
   private readonly exploredText: Text
   private readonly scoreText: Text
   private readonly studyBtn: SoftButton
@@ -261,26 +262,24 @@ export class BrainMappingScreenView extends ScreenView {
     panelContent.addChild(this.scoreText)
 
     this.detailTitle = new Text('', {
-      font: new PhetFont({ size: 15, weight: 'bold' }),
+      font: new PhetFont({ size: 16, weight: 'bold' }),
       fill: NervousColors.accent,
       left: 4,
       top: 168,
       maxWidth: rightW - 48,
     })
-    this.detailBody = new Text('', {
-      font: new PhetFont(16),
-      fill: NervousColors.ink,
-      left: 4,
-      top: 194,
-      maxWidth: rightW - 48,
+    this.detailBody = createPanelTip('', {
+      width: rightW - 48,
+      fontSize: 17,
     })
-    this.detailExamples = new Text('', {
-      font: new PhetFont(16),
-      fill: NervousColors.ink,
-      left: 4,
-      top: 280,
-      maxWidth: rightW - 48,
+    this.detailBody.left = 4
+    this.detailBody.top = 194
+    this.detailExamples = createPanelTip('', {
+      width: rightW - 48,
+      fontSize: 16,
     })
+    this.detailExamples.left = 4
+    this.detailExamples.top = 290
     panelContent.addChild(this.detailTitle)
     panelContent.addChild(this.detailBody)
     panelContent.addChild(this.detailExamples)
@@ -310,15 +309,13 @@ export class BrainMappingScreenView extends ScreenView {
       this.regionButtons.set(region.id, btn)
     }
 
-    panelContent.addChild(
-      new Text(BrainMappingStrings.learnMoreStringProperty.value, {
-        font: new PhetFont(17),
-        fill: NervousColors.ink,
-        left: 4,
-        top: yBtn + 8,
-        maxWidth: rightW - 48,
-      }),
-    )
+    const learnTip = createPanelTip(BrainMappingStrings.learnMoreStringProperty.value, {
+      width: rightW - 48,
+      fontSize: 17,
+    })
+    learnTip.left = 4
+    learnTip.top = yBtn + 8
+    panelContent.addChild(learnTip)
 
     const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 52)
     scroller.left = 12
@@ -363,6 +360,7 @@ export class BrainMappingScreenView extends ScreenView {
       this.detailTitle.string = region.name
       this.detailBody.string = `${part?.label ?? ''}: ${region.detail}`
       this.detailExamples.string = `Examples: ${region.examples.join(' · ')}`
+      this.detailExamples.top = this.detailBody.bottom + 10
     }
 
     const syncMode = () => {

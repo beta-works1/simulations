@@ -16,6 +16,7 @@ import { NervousColors } from '../../../shared/NervousColors.js'
 import { DepthCard } from '../../../shared/ui/DepthCard.js'
 import { SoftButton } from '../../../shared/ui/SoftButton.js'
 import { GuidanceBanner } from '../../../shared/ui/GuidanceBanner.js'
+import { createPanelTip } from '../../../shared/ui/createPanelTip.js'
 import { NeuronSignalStrings } from '../NeuronSignalStrings.js'
 
 type SelfOptions = EmptySelfOptions
@@ -347,24 +348,21 @@ export class NeuronSignalScreenView extends ScreenView {
     this.playButton.top = 148
     card.content.addChild(this.playButton)
 
-    card.content.addChild(
-      new Text(NeuronSignalStrings.tapNodeStringProperty.value, {
-        font: new PhetFont(16),
-        fill: NervousColors.ink,
-        left: 16,
-        top: 208,
-        maxWidth: rightW - 32,
-      }),
-    )
-    card.content.addChild(
-      new Text(NeuronSignalStrings.learnMoreStringProperty.value, {
-        font: new PhetFont(17),
-        fill: NervousColors.ink,
-        left: 16,
-        top: 270,
-        maxWidth: rightW - 32,
-      }),
-    )
+    const tapTip = createPanelTip(NeuronSignalStrings.tapNodeStringProperty.value, {
+      width: rightW - 32,
+      fontSize: 16,
+    })
+    tapTip.left = 16
+    tapTip.top = 208
+    card.content.addChild(tapTip)
+
+    const learnTip = createPanelTip(NeuronSignalStrings.learnMoreStringProperty.value, {
+      width: rightW - 32,
+      fontSize: 18,
+    })
+    learnTip.left = 16
+    learnTip.top = 270
+    card.content.addChild(learnTip)
 
     this.addChild(
       new ResetAllButton({

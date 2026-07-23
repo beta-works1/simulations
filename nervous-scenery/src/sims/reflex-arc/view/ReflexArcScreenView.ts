@@ -9,6 +9,7 @@ import { NervousColors } from '../../../shared/NervousColors.js'
 import { DepthCard } from '../../../shared/ui/DepthCard.js'
 import { SoftButton } from '../../../shared/ui/SoftButton.js'
 import { GuidanceBanner } from '../../../shared/ui/GuidanceBanner.js'
+import { createPanelTip } from '../../../shared/ui/createPanelTip.js'
 import { ReflexArcStrings } from '../ReflexArcStrings.js'
 
 type SelfOptions = EmptySelfOptions
@@ -374,15 +375,13 @@ export class ReflexArcScreenView extends ScreenView {
     this.viaBrainButton.top = 96
     card.content.addChild(this.viaBrainButton)
 
-    card.content.addChild(
-      new Text(ReflexArcStrings.learnMoreStringProperty.value, {
-        font: new PhetFont(17),
-        fill: NervousColors.ink,
-        left: 16,
-        top: 156,
-        maxWidth: rightW - 32,
-      }),
-    )
+    const learnTip = createPanelTip(ReflexArcStrings.learnMoreStringProperty.value, {
+      width: rightW - 32,
+      fontSize: 18,
+    })
+    learnTip.left = 16
+    learnTip.top = 156
+    card.content.addChild(learnTip)
 
     this.addChild(
       new ResetAllButton({
