@@ -25,11 +25,10 @@ export class PredatorPreyScreenView extends ScreenView {
   private readonly phasePath: Path
   private readonly tipCard: Node
   private readonly tipText: Text
+  private readonly guideCard: Node
+  private readonly guideText: Text
   private readonly phaseBadge: Text
   private readonly modeBadge: Text
-  private readonly cycleBadge: Text
-  private readonly ratioBadge: Text
-  private readonly eventBadge: Text
   private readonly sun: Circle
   private readonly sunGlow: Circle
   private readonly moon: Circle
@@ -155,9 +154,9 @@ export class PredatorPreyScreenView extends ScreenView {
     })
     this.addChild(bush)
     this.addChild(
-      new Text('Refuge', {
-        font: new PhetFont(9),
-        fill: 'rgba(255,255,255,0.7)',
+      new Text('Safe bush (prey can hide)', {
+        font: new PhetFont(10),
+        fill: 'rgba(255,255,255,0.75)',
         centerX: refugeCx,
         centerY: refugeCy,
         pickable: false,
@@ -174,33 +173,33 @@ export class PredatorPreyScreenView extends ScreenView {
       this.addChild(new Circle(9, { fill: '#1b5e20', centerX: tx, centerY: ty - 2, pickable: false }))
     }
 
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 10; i++) {
       this.flowers.push({
         x: sceneLeft + 20 + Math.random() * (sceneW - 40),
         y: sceneTop + sceneH * 0.55 + Math.random() * (sceneH * 0.35),
         c: ['#f472b6', '#fbbf24', '#c084fc', '#fb7185'][i % 4]!,
       })
     }
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 24; i++) {
       this.grassBlades.push({
-        x: sceneLeft + 10 + (i / 40) * (sceneW - 20),
+        x: sceneLeft + 10 + (i / 24) * (sceneW - 20),
         h: 6 + (i % 5) * 2,
         phase: i * 0.4,
       })
     }
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       this.clouds.push({
-        x: sceneLeft + 40 + i * 90,
-        y: sceneTop + 22 + (i % 2) * 10,
+        x: sceneLeft + 50 + i * 140,
+        y: sceneTop + 24 + (i % 2) * 8,
         r: 14 + i * 3,
-        speed: 8 + i * 4,
+        speed: 4 + i * 2,
       })
     }
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 2; i++) {
       this.birds.push({
-        x: sceneLeft + 30 + i * 70,
-        y: sceneTop + 18 + (i % 2) * 8,
-        speed: 22 + i * 5,
+        x: sceneLeft + 40 + i * 120,
+        y: sceneTop + 20 + (i % 2) * 8,
+        speed: 10 + i * 3,
         phase: i,
       })
     }
@@ -255,18 +254,18 @@ export class PredatorPreyScreenView extends ScreenView {
       }),
     )
     this.addChild(
-      new Text('＋ Prey  ·  drag animals', {
-        font: new PhetFont({ size: 10, weight: 'bold' }),
-        fill: 'rgba(255,255,255,0.42)',
+      new Text('Tap left: add prey (rabbits)', {
+        font: new PhetFont({ size: 11, weight: 'bold' }),
+        fill: 'rgba(255,255,255,0.5)',
         centerX: sceneLeft + sceneW * 0.25,
         bottom: sceneTop + sceneH - 8,
         pickable: false,
       }),
     )
     this.addChild(
-      new Text('＋ Predators  ·  drag animals', {
-        font: new PhetFont({ size: 10, weight: 'bold' }),
-        fill: 'rgba(255,255,255,0.42)',
+      new Text('Tap right: add predators (foxes)', {
+        font: new PhetFont({ size: 11, weight: 'bold' }),
+        fill: 'rgba(255,255,255,0.5)',
         centerX: sceneLeft + sceneW * 0.75,
         bottom: sceneTop + sceneH - 8,
         pickable: false,
@@ -314,25 +313,18 @@ export class PredatorPreyScreenView extends ScreenView {
     this.addChild(leftZone)
     this.addChild(rightZone)
 
-    // Badges row
-    this.modeBadge = new Text('', { font: new PhetFont({ size: 10, weight: 'bold' }), fill: '#ecfeff', pickable: false })
+    // Badges — only mode + phase for Grade 8 clarity
+    this.modeBadge = new Text('', { font: new PhetFont({ size: 11, weight: 'bold' }), fill: '#ecfeff', pickable: false })
     this.phaseBadge = new Text(model.phaseLabelProperty, {
-      font: new PhetFont({ size: 10, weight: 'bold' }),
+      font: new PhetFont({ size: 11, weight: 'bold' }),
       fill: '#fde68a',
-      pickable: false,
-    })
-    this.cycleBadge = new Text('', { font: new PhetFont(10), fill: '#a5b4fc', pickable: false })
-    this.ratioBadge = new Text('', { font: new PhetFont(10), fill: '#86efac', pickable: false })
-    this.eventBadge = new Text(model.eventLabelProperty, {
-      font: new PhetFont({ size: 10, weight: 'bold' }),
-      fill: '#fda4af',
       pickable: false,
     })
 
     const placeBadge = (node: Text, x: number, y: number, minW = 70) => {
-      const bg = new Rectangle(0, 0, minW, 18, {
-        fill: 'rgba(15,23,42,0.72)',
-        cornerRadius: 9,
+      const bg = new Rectangle(0, 0, minW, 22, {
+        fill: 'rgba(15,23,42,0.78)',
+        cornerRadius: 10,
         pickable: false,
       })
       bg.left = x
@@ -340,59 +332,64 @@ export class PredatorPreyScreenView extends ScreenView {
       this.addChild(bg)
       this.addChild(node)
       const sync = () => {
-        bg.rectWidth = Math.max(minW, node.width + 14)
-        node.left = bg.left + 7
+        bg.rectWidth = Math.max(minW, node.width + 16)
+        node.left = bg.left + 8
         node.centerY = bg.centerY
       }
       sync()
       return sync
     }
 
-    const syncMode = placeBadge(this.modeBadge, sceneLeft + 8, sceneTop + 8, 88)
-    const syncPhase = placeBadge(this.phaseBadge, sceneLeft + 110, sceneTop + 8, 120)
-    const syncCycle = placeBadge(this.cycleBadge, sceneLeft + 8, sceneTop + 30, 90)
-    const syncRatio = placeBadge(this.ratioBadge, sceneLeft + 110, sceneTop + 30, 100)
-    const syncEvent = placeBadge(this.eventBadge, sceneLeft + 230, sceneTop + 8, 80)
+    const syncMode = placeBadge(this.modeBadge, sceneLeft + 8, sceneTop + 8, 110)
+    const syncPhase = placeBadge(this.phaseBadge, sceneLeft + 130, sceneTop + 8, 160)
 
     model.modeProperty.link(mode => {
       this.modeBadge.string =
-        mode === 'predation' ? 'Predation' : mode === 'competition' ? 'Competition' : 'Mutualism'
+        mode === 'predation' ? 'Predator–prey' : mode === 'competition' ? 'Competition' : 'Mutualism'
       syncMode()
     })
     model.phaseLabelProperty.link(() => syncPhase())
-    model.cycleCountProperty.link(n => {
-      this.cycleBadge.string = `Cycles: ${n}`
-      syncCycle()
-    })
-    model.ratioProperty.link(r => {
-      this.ratioBadge.string = `Prey∶Pred ${r.toFixed(1)}`
-      syncRatio()
-    })
-    model.eventLabelProperty.link(() => {
-      this.eventBadge.visible = model.eventLabelProperty.value.length > 0
-      syncEvent()
-    })
 
-    // Tip
-    this.tipText = new Text('', { font: new PhetFont(10), fill: '#ecfeff', maxWidth: sceneW * 0.62 })
+    // Teaching tip + live guide
+    this.tipText = new Text('', { font: new PhetFont(11), fill: '#ecfeff', maxWidth: sceneW * 0.72 })
     const tipBg = new Rectangle(0, 0, 20, 20, {
-      fill: 'rgba(8, 18, 32, 0.88)',
+      fill: 'rgba(8, 18, 32, 0.9)',
       cornerRadius: 8,
-      stroke: 'rgba(125, 211, 252, 0.4)',
+      stroke: 'rgba(125, 211, 252, 0.45)',
       lineWidth: 1,
     })
     this.tipCard = new Node({ children: [tipBg, this.tipText], pickable: false })
     this.addChild(this.tipCard)
+
+    this.guideText = new Text('', { font: new PhetFont(11), fill: '#fde68a', maxWidth: sceneW * 0.72 })
+    const guideBg = new Rectangle(0, 0, 20, 20, {
+      fill: 'rgba(30, 58, 40, 0.9)',
+      cornerRadius: 8,
+      stroke: 'rgba(134, 239, 172, 0.4)',
+      lineWidth: 1,
+    })
+    this.guideCard = new Node({ children: [guideBg, this.guideText], pickable: false })
+    this.addChild(this.guideCard)
+
     const refreshTip = () => {
       this.tipText.string = model.tipProperty.value
       tipBg.rectWidth = this.tipText.width + 16
       tipBg.rectHeight = this.tipText.height + 12
       this.tipText.center = tipBg.center
       this.tipCard.left = sceneLeft + 10
-      this.tipCard.bottom = sceneTop + sceneH - 26
+      this.tipCard.bottom = sceneTop + sceneH - 36
       this.tipCard.visible = model.showTipsProperty.value
+
+      this.guideText.string = model.guideProperty.value
+      guideBg.rectWidth = this.guideText.width + 16
+      guideBg.rectHeight = this.guideText.height + 12
+      this.guideText.center = guideBg.center
+      this.guideCard.left = sceneLeft + 10
+      this.guideCard.bottom = this.tipCard.top - 6
+      this.guideCard.visible = model.showTipsProperty.value
     }
     model.tipProperty.link(refreshTip)
+    model.guideProperty.link(refreshTip)
     model.showTipsProperty.link(refreshTip)
 
     // Chart card
@@ -404,20 +401,20 @@ export class PredatorPreyScreenView extends ScreenView {
     })
     this.addChild(chartBg)
     this.addChild(
-      new Text('Population · time  |  Phase plot (prey×pred)', {
-        font: new PhetFont({ size: 10, weight: 'bold' }),
+      new Text('Graph: populations over time (green = prey, red = predators)', {
+        font: new PhetFont({ size: 11, weight: 'bold' }),
         fill: '#bdc3c7',
         left: sceneLeft + 12,
         top: chartTop + 6,
       }),
     )
-    this.addChild(new Text('Prey', { font: new PhetFont(9), fill: '#2ecc71', right: sceneLeft + sceneW - 100, top: chartTop + 6 }))
-    this.addChild(new Text('Predators', { font: new PhetFont(9), fill: '#e74c3c', right: sceneLeft + sceneW - 14, top: chartTop + 6 }))
+    this.addChild(new Text('Prey', { font: new PhetFont(10), fill: '#2ecc71', right: sceneLeft + sceneW - 100, top: chartTop + 6 }))
+    this.addChild(new Text('Predators', { font: new PhetFont(10), fill: '#e74c3c', right: sceneLeft + sceneW - 14, top: chartTop + 6 }))
 
     this.preyFill = new Path(null, { fill: 'rgba(46, 204, 113, 0.12)', pickable: false })
-    this.preyPath = new Path(null, { stroke: '#2ecc71', lineWidth: 2.2, lineJoin: 'round' })
-    this.predPath = new Path(null, { stroke: '#e74c3c', lineWidth: 2.2, lineJoin: 'round' })
-    this.phasePath = new Path(null, { stroke: 'rgba(167, 139, 250, 0.85)', lineWidth: 1.6, lineJoin: 'round' })
+    this.preyPath = new Path(null, { stroke: '#2ecc71', lineWidth: 2.4, lineJoin: 'round' })
+    this.predPath = new Path(null, { stroke: '#e74c3c', lineWidth: 2.4, lineJoin: 'round' })
+    this.phasePath = new Path(null, { stroke: 'rgba(167, 139, 250, 0.7)', lineWidth: 1.5, lineJoin: 'round' })
     this.addChild(this.preyFill)
     this.addChild(this.preyPath)
     this.addChild(this.predPath)
@@ -666,7 +663,7 @@ export class PredatorPreyScreenView extends ScreenView {
     }
 
     if (this.model.huntFlashProperty.value > 0.2 && mode === 'predation') {
-      if (Date.now() - this.lastHuntSound > 400) {
+      if (Date.now() - this.lastHuntSound > 1200) {
         this.lastHuntSound = Date.now()
         this.sounds.hunt()
       }

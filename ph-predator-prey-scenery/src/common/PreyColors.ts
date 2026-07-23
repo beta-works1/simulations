@@ -25,5 +25,11 @@ export const PreyConstants = {
   PRED_MAX: 80,
   GROWTH_MIN: 0.4,
   GROWTH_MAX: 1.8,
-  HISTORY_MAX: 200,
+  /** Calmer default for Grade 8 — easier to watch the cycle. */
+  SPEED_DEFAULT: 0.45,
+  SPEED_MIN: 0.2,
+  SPEED_MAX: 1.5,
+  HISTORY_MAX: 160,
+  MAX_PREY_AGENTS: 32,
+  MAX_PRED_AGENTS: 16,
 }

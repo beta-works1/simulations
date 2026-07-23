@@ -7,6 +7,7 @@ import { NumberProperty } from 'scenerystack/axon'
 import { PreyColors, PreyConstants } from '../../common/PreyColors.js'
 import { PreyStrings } from '../../PreyStrings.js'
 import {
+  ADVANCED_SCENARIOS,
   InteractionMode,
   PredatorPreyModel,
   QUIZ_BANK,
@@ -30,8 +31,8 @@ export class PreyControlPanel extends Panel {
     const options = optionize<Options, SelfOptions, PanelOptions>()(
       {
         panelMaxHeight: 520,
-        xMargin: 8,
-        yMargin: 8,
+        xMargin: 10,
+        yMargin: 10,
         stroke: PreyColors.panelBorderProperty,
         lineWidth: 2,
         fill: 'rgba(11, 28, 40, 0.94)',
@@ -41,44 +42,50 @@ export class PreyControlPanel extends Panel {
 
     const mkBtn = (label: string, fn: () => void, baseColor = PreyColors.buttonProperty) =>
       new RectangularPushButton({
-        content: new Text(label, { font: new PhetFont(10), fill: 'white', maxWidth: w - 28 }),
+        content: new Text(label, { font: new PhetFont(11), fill: 'white', maxWidth: w - 28 }),
         baseColor,
-        xMargin: 6,
-        yMargin: 4,
+        xMargin: 8,
+        yMargin: 5,
         listener: fn,
         minWidth: w - 16,
       })
 
     const section = (t: string) =>
-      new Text(t, { font: new PhetFont({ size: 11, weight: 'bold' }), fill: '#7dcea0', maxWidth: w })
+      new Text(t, { font: new PhetFont({ size: 12, weight: 'bold' }), fill: '#7dcea0', maxWidth: w })
 
-    const preyReadout = new Text('', { font: new PhetFont({ size: 13, weight: 'bold' }), fill: '#2ecc71', maxWidth: w })
-    const predReadout = new Text('', { font: new PhetFont({ size: 13, weight: 'bold' }), fill: '#e74c3c', maxWidth: w })
-    const ratioReadout = new Text('', { font: new PhetFont(11), fill: '#a5b4fc', maxWidth: w })
-    const cycleReadout = new Text('', { font: new PhetFont(11), fill: '#f4d03f', maxWidth: w })
+    const help = (t: string) =>
+      new Text(t, { font: new PhetFont(10), fill: '#94a3b8', maxWidth: w })
+
+    const preyReadout = new Text('', { font: new PhetFont({ size: 14, weight: 'bold' }), fill: '#2ecc71', maxWidth: w })
+    const predReadout = new Text('', { font: new PhetFont({ size: 14, weight: 'bold' }), fill: '#e74c3c', maxWidth: w })
     const phaseReadout = new Text(model.phaseLabelProperty, {
-      font: new PhetFont(11),
+      font: new PhetFont({ size: 12, weight: 'bold' }),
       fill: '#fde68a',
       maxWidth: w,
     })
-    const modeReadout = new Text('', { font: new PhetFont(11), fill: '#ecf0f1', maxWidth: w })
-    const quizPrompt = new Text('', { font: new PhetFont(10), fill: '#e2e8f0', maxWidth: w - 8 })
-    const quizFeedback = new Text('', { font: new PhetFont(9), fill: '#a8d4a0', maxWidth: w - 8 })
-    const quizScore = new Text('', { font: new PhetFont(10), fill: '#f4d03f', maxWidth: w })
-    const quizChoices = new VBox({ align: 'left', spacing: 3 })
+    const guideReadout = new Text(model.guideProperty, {
+      font: new PhetFont(11),
+      fill: '#e2e8f0',
+      maxWidth: w,
+    })
+    const tipReadout = new Text(model.tipProperty, {
+      font: new PhetFont(11),
+      fill: '#a7f3d0',
+      maxWidth: w,
+    })
+
+    const quizPrompt = new Text('', { font: new PhetFont(11), fill: '#e2e8f0', maxWidth: w - 8 })
+    const quizFeedback = new Text('', { font: new PhetFont(10), fill: '#a8d4a0', maxWidth: w - 8 })
+    const quizScore = new Text('', { font: new PhetFont(11), fill: '#f4d03f', maxWidth: w })
+    const quizChoices = new VBox({ align: 'left', spacing: 4 })
+    const advancedBox = new VBox({ align: 'left', spacing: 5 })
 
     const refresh = () => {
-      preyReadout.string = `Prey: ${model.preyProperty.value.toFixed(1)}`
-      predReadout.string = `Predators: ${model.predatorsProperty.value.toFixed(1)}`
-      ratioReadout.string = `Ratio prey∶pred = ${model.ratioProperty.value.toFixed(2)}`
-      cycleReadout.string = `Completed cycles: ${model.cycleCountProperty.value}`
-      modeReadout.string = `Mode: ${model.modeProperty.value}`
+      preyReadout.string = `Prey (rabbits): ${Math.round(model.preyProperty.value)}`
+      predReadout.string = `Predators (foxes): ${Math.round(model.predatorsProperty.value)}`
     }
     model.preyProperty.link(refresh)
     model.predatorsProperty.link(refresh)
-    model.ratioProperty.link(refresh)
-    model.cycleCountProperty.link(refresh)
-    model.modeProperty.link(refresh)
 
     const refreshQuiz = () => {
       const q = QUIZ_BANK[model.quizIndexProperty.value % QUIZ_BANK.length]!
@@ -91,7 +98,7 @@ export class PreyControlPanel extends Panel {
           () => {
             model.answerQuiz(i)
             if (i === q.correct) sounds.cyclePeak()
-            else sounds.hunt()
+            else sounds.softClick()
           },
           PreyColors.playbackButtonProperty,
         ),
@@ -109,32 +116,32 @@ export class PreyControlPanel extends Panel {
         last = v
       })
     }
-    tick(model.growthProperty, 0.02)
-    tick(model.predationRateProperty, 0.001)
-    tick(model.predatorGrowthProperty, 0.001)
-    tick(model.deathProperty, 0.02)
+    tick(model.growthProperty, 0.03)
     tick(model.simSpeedProperty, 0.05)
-    tick(model.carryingCapacityProperty, 1)
+    tick(model.predationRateProperty, 0.002)
+    tick(model.predatorGrowthProperty, 0.002)
+    tick(model.deathProperty, 0.03)
+    tick(model.carryingCapacityProperty, 2)
 
     const sliderRow = (label: string, property: NumberProperty, range: Range, digits = 2) => {
-      const readout = new Text('', { font: new PhetFont(10), fill: '#ecf0f1', maxWidth: 48 })
+      const readout = new Text('', { font: new PhetFont(11), fill: '#ecf0f1', maxWidth: 48 })
       property.link(v => {
         readout.string = v.toFixed(digits)
       })
       return new VBox({
         align: 'left',
-        spacing: 2,
+        spacing: 3,
         children: [
           new HBox({
             spacing: 6,
             children: [
-              new Text(label, { font: new PhetFont(10), fill: '#bdc3c7', maxWidth: w - 60 }),
+              new Text(label, { font: new PhetFont(11), fill: '#bdc3c7', maxWidth: w - 60 }),
               readout,
             ],
           }),
           new HSlider(property, range, {
-            trackSize: new Dimension2(w - 28, 5),
-            thumbSize: new Dimension2(14, 22),
+            trackSize: new Dimension2(w - 28, 6),
+            thumbSize: new Dimension2(16, 24),
             majorTickLength: 0,
             minorTickLength: 0,
           }),
@@ -150,15 +157,15 @@ export class PreyControlPanel extends Panel {
     }
 
     const playPauseLabel = new Text(model.runningProperty.value ? 'Pause' : 'Play', {
-      font: new PhetFont(10),
+      font: new PhetFont(11),
       fill: 'white',
       maxWidth: w - 24,
     })
     const playPauseBtn = new RectangularPushButton({
       content: playPauseLabel,
       baseColor: PreyColors.playbackButtonProperty,
-      xMargin: 6,
-      yMargin: 4,
+      xMargin: 8,
+      yMargin: 5,
       listener: () => {
         model.runningProperty.value = !model.runningProperty.value
         sounds.playPause(model.runningProperty.value)
@@ -169,167 +176,42 @@ export class PreyControlPanel extends Panel {
       playPauseLabel.string = running ? 'Pause' : 'Play'
     })
 
-    const soundLabel = new Text(model.soundEnabledProperty.value ? 'Sound: On' : 'Sound: Off', {
-      font: new PhetFont(10),
-      fill: 'white',
-      maxWidth: w - 24,
-    })
-    const soundBtn = new RectangularPushButton({
-      content: soundLabel,
-      baseColor: PreyColors.accentProperty,
-      xMargin: 6,
-      yMargin: 4,
-      listener: () => {
-        model.soundEnabledProperty.value = !model.soundEnabledProperty.value
-        sounds.setEnabled(model.soundEnabledProperty.value)
-        soundLabel.string = model.soundEnabledProperty.value ? 'Sound: On' : 'Sound: Off'
-        if (model.soundEnabledProperty.value) sounds.button()
-      },
-      minWidth: w - 16,
-    })
-
-    const tipsLabel = new Text(model.showTipsProperty.value ? 'Tips: On' : 'Tips: Off', {
-      font: new PhetFont(10),
-      fill: 'white',
-      maxWidth: w - 24,
-    })
-    const tipsBtn = new RectangularPushButton({
-      content: tipsLabel,
-      baseColor: PreyColors.playbackButtonProperty,
-      xMargin: 6,
-      yMargin: 4,
-      listener: () => {
-        model.showTipsProperty.value = !model.showTipsProperty.value
-        sounds.button()
-      },
-      minWidth: w - 16,
-    })
-    model.showTipsProperty.link(on => {
-      tipsLabel.string = on ? 'Tips: On' : 'Tips: Off'
-    })
-
-    model.isDayProperty.lazyLink(() => sounds.softClick())
-
-    const content = new VBox({
-      align: 'left',
-      spacing: 5,
-      children: [
-        new Text(PreyStrings.controlsStringProperty, {
-          font: new PhetFont({ size: 15, weight: 'bold' }),
-          fill: 'white',
-          maxWidth: w,
-        }),
-        section('Live populations'),
-        preyReadout,
-        predReadout,
-        ratioReadout,
-        cycleReadout,
-        phaseReadout,
-        section('Interaction mode'),
-        modeReadout,
-        mkBtn('Predation (cycles)', setMode('predation')),
-        mkBtn('Competition', setMode('competition')),
-        mkBtn('Mutualism', setMode('mutualism')),
-        section('Seed meadow'),
-        new HBox({
-          spacing: 6,
-          children: [
-            new RectangularPushButton({
-              content: new Text('+ Prey', { font: new PhetFont(10), fill: 'white' }),
-              baseColor: PreyColors.preyProperty,
-              xMargin: 8,
-              yMargin: 4,
-              listener: () => {
-                model.addPrey()
-                sounds.spawnPrey()
-              },
-              minWidth: (w - 22) / 2,
-            }),
-            new RectangularPushButton({
-              content: new Text('+ Predators', { font: new PhetFont(10), fill: 'white' }),
-              baseColor: PreyColors.predatorProperty,
-              xMargin: 8,
-              yMargin: 4,
-              listener: () => {
-                model.addPredators()
-                sounds.spawnPredator()
-              },
-              minWidth: (w - 22) / 2,
-            }),
-          ],
-        }),
-        new HBox({
-          spacing: 6,
-          children: [
-            new RectangularPushButton({
-              content: new Text('− Prey', { font: new PhetFont(10), fill: 'white' }),
-              baseColor: PreyColors.playbackButtonProperty,
-              xMargin: 8,
-              yMargin: 4,
-              listener: () => {
-                model.cullPrey()
-                sounds.cull()
-              },
-              minWidth: (w - 22) / 2,
-            }),
-            new RectangularPushButton({
-              content: new Text('− Predators', { font: new PhetFont(10), fill: 'white' }),
-              baseColor: PreyColors.playbackButtonProperty,
-              xMargin: 8,
-              yMargin: 4,
-              listener: () => {
-                model.cullPredators()
-                sounds.cull()
-              },
-              minWidth: (w - 22) / 2,
-            }),
-          ],
-        }),
-        section('Environment'),
+    const buildAdvanced = () => {
+      if (!model.showAdvancedProperty.value) {
+        advancedBox.children = [
+          help('Extra tools stay hidden so the main lesson stays clear.'),
+        ]
+        return
+      }
+      advancedBox.children = [
+        help('Use these after you understand the basic cycle.'),
+        sliderRow('How often prey are eaten', model.predationRateProperty, new Range(0.01, 0.05), 3),
+        sliderRow('Predator birth rate', model.predatorGrowthProperty, new Range(0.01, 0.04), 3),
+        sliderRow('Predator death rate', model.deathProperty, new Range(0.35, 1.0)),
+        sliderRow('Space / food limit', model.carryingCapacityProperty, new Range(50, 120), 0),
         new HBox({
           spacing: 8,
           children: [
-            new Text('Day', { font: new PhetFont(10), fill: '#bdc3c7' }),
-            new ToggleSwitch(model.isDayProperty, false, true, { scale: 0.55 }),
-          ],
-        }),
-        new HBox({
-          spacing: 8,
-          children: [
-            new Text('Auto day/night', { font: new PhetFont(10), fill: '#bdc3c7', maxWidth: 100 }),
-            new ToggleSwitch(model.autoDayNightProperty, false, true, { scale: 0.55 }),
-          ],
-        }),
-        new HBox({
-          spacing: 8,
-          children: [
-            new Text('Refuge bush', { font: new PhetFont(10), fill: '#bdc3c7', maxWidth: 100 }),
+            new Text('Hide in bush', { font: new PhetFont(11), fill: '#bdc3c7', maxWidth: 110 }),
             new ToggleSwitch(model.refugeEnabledProperty, false, true, { scale: 0.55 }),
           ],
         }),
         new HBox({
           spacing: 8,
           children: [
-            new Text('Chase lines', { font: new PhetFont(10), fill: '#bdc3c7', maxWidth: 100 }),
+            new Text('Show chase lines', { font: new PhetFont(11), fill: '#bdc3c7', maxWidth: 110 }),
             new ToggleSwitch(model.showChaseLinesProperty, false, true, { scale: 0.55 }),
           ],
         }),
         new HBox({
           spacing: 8,
           children: [
-            new Text('Phase plot', { font: new PhetFont(10), fill: '#bdc3c7', maxWidth: 100 }),
-            new ToggleSwitch(model.showPhasePlotProperty, false, true, { scale: 0.55 }),
+            new Text('Day / night auto', { font: new PhetFont(11), fill: '#bdc3c7', maxWidth: 110 }),
+            new ToggleSwitch(model.autoDayNightProperty, false, true, { scale: 0.55 }),
           ],
         }),
-        section('Rates'),
-        sliderRow('Prey growth', model.growthProperty, new Range(PreyConstants.GROWTH_MIN, PreyConstants.GROWTH_MAX)),
-        sliderRow('Kill / predation', model.predationRateProperty, new Range(0.01, 0.06), 3),
-        sliderRow('Predator birth', model.predatorGrowthProperty, new Range(0.01, 0.05), 3),
-        sliderRow('Predator death', model.deathProperty, new Range(0.3, 1.2)),
-        sliderRow('Carrying capacity', model.carryingCapacityProperty, new Range(40, 120), 0),
-        sliderRow('Speed ×', model.simSpeedProperty, new Range(0.25, 3), 2),
-        section('Disturbance events'),
-        mkBtn('Drought', () => {
+        section('What if…?'),
+        mkBtn('Drought (slower prey growth)', () => {
           model.triggerEvent('drought')
           sounds.scenario()
         }, PreyColors.dangerProperty),
@@ -337,18 +219,17 @@ export class PreyControlPanel extends Panel {
           model.triggerEvent('disease')
           sounds.scenario()
         }, PreyColors.predatorProperty),
-        mkBtn('Plant bloom', () => {
+        mkBtn('Plant bloom (+ prey)', () => {
           model.triggerEvent('bloom')
           sounds.spawnPrey()
         }, PreyColors.preyProperty),
-        section('Scenarios'),
-        ...SCENARIOS.map(s =>
+        ...ADVANCED_SCENARIOS.map(s =>
           mkBtn(s.name, () => {
             model.applyScenario(s.id)
             sounds.scenario()
           }),
         ),
-        section('Quiz'),
+        section('Quick check'),
         quizScore,
         quizPrompt,
         quizChoices,
@@ -357,22 +238,106 @@ export class PreyControlPanel extends Panel {
           model.nextQuiz()
           sounds.button()
         }, PreyColors.playbackButtonProperty),
-        section('Simulation'),
-        soundBtn,
-        tipsBtn,
-        playPauseBtn,
-        mkBtn('Clear chart', () => {
+        mkBtn('Clear graph', () => {
           model.clearHistory()
           sounds.softClick()
         }, PreyColors.playbackButtonProperty),
+      ]
+    }
+    model.showAdvancedProperty.link(buildAdvanced)
+
+    const advancedLabel = new Text('Show more options', {
+      font: new PhetFont(11),
+      fill: 'white',
+      maxWidth: w - 24,
+    })
+    const advancedBtn = new RectangularPushButton({
+      content: advancedLabel,
+      baseColor: PreyColors.playbackButtonProperty,
+      xMargin: 8,
+      yMargin: 5,
+      listener: () => {
+        model.showAdvancedProperty.value = !model.showAdvancedProperty.value
+        advancedLabel.string = model.showAdvancedProperty.value ? 'Hide extra options' : 'Show more options'
+        sounds.button()
+      },
+      minWidth: w - 16,
+    })
+    model.showAdvancedProperty.link(on => {
+      advancedLabel.string = on ? 'Hide extra options' : 'Show more options'
+    })
+
+    const content = new VBox({
+      align: 'left',
+      spacing: 7,
+      children: [
+        new Text(PreyStrings.controlsStringProperty, {
+          font: new PhetFont({ size: 16, weight: 'bold' }),
+          fill: 'white',
+          maxWidth: w,
+        }),
+        help('Grade 8 tip: watch one full cycle before changing settings.'),
+        section('What to notice'),
+        tipReadout,
+        guideReadout,
+        section('Populations now'),
+        preyReadout,
+        predReadout,
+        phaseReadout,
+        section('Lesson modes'),
+        mkBtn('Predator–prey cycle', setMode('predation')),
+        mkBtn('Competition', setMode('competition')),
+        mkBtn('Mutualism (help)', setMode('mutualism')),
+        section('Try a starting story'),
+        ...SCENARIOS.map(s =>
+          mkBtn(s.name, () => {
+            model.applyScenario(s.id)
+            sounds.scenario()
+          }),
+        ),
+        section('Add animals'),
+        help('Or tap the meadow: left = prey, right = predators.'),
+        new HBox({
+          spacing: 6,
+          children: [
+            new RectangularPushButton({
+              content: new Text('+ Prey', { font: new PhetFont(11), fill: 'white' }),
+              baseColor: PreyColors.preyProperty,
+              xMargin: 10,
+              yMargin: 5,
+              listener: () => {
+                model.addPrey()
+                sounds.spawnPrey()
+              },
+              minWidth: (w - 22) / 2,
+            }),
+            new RectangularPushButton({
+              content: new Text('+ Predators', { font: new PhetFont(11), fill: 'white' }),
+              baseColor: PreyColors.predatorProperty,
+              xMargin: 10,
+              yMargin: 5,
+              listener: () => {
+                model.addPredators()
+                sounds.spawnPredator()
+              },
+              minWidth: (w - 22) / 2,
+            }),
+          ],
+        }),
+        section('Simple controls'),
+        sliderRow('Prey growth (how fast rabbits increase)', model.growthProperty, new Range(PreyConstants.GROWTH_MIN, PreyConstants.GROWTH_MAX)),
+        sliderRow('Watching speed (slower = easier)', model.simSpeedProperty, new Range(PreyConstants.SPEED_MIN, PreyConstants.SPEED_MAX)),
+        playPauseBtn,
         mkBtn(
-          'Reset',
+          'Reset to start',
           () => {
             model.reset()
             sounds.resetAll()
           },
           PreyColors.dangerProperty,
         ),
+        advancedBtn,
+        advancedBox,
       ],
     })
 

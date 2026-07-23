@@ -38,99 +38,91 @@ export interface QuizQuestion {
   explain: string
 }
 
+/** Keep the starter list short for Grade 8 — advanced scenarios stay available by id. */
 export const SCENARIOS: ScenarioDef[] = [
   {
     id: 'classic',
-    name: 'Classic cycle',
+    name: '1. Predator–prey cycle',
     mode: 'predation',
     prey: 40,
     predators: 12,
-    growth: 1.1,
+    growth: 1.0,
+    predation: 0.024,
+    predatorGrowth: 0.022,
+    death: 0.65,
+    blurb: 'Start here: rabbits rise first, foxes follow, then both fall — then it repeats.',
+  },
+  {
+    id: 'compete',
+    name: '2. Competition',
+    mode: 'competition',
+    prey: 45,
+    predators: 28,
+    growth: 0.95,
     predation: 0.028,
     predatorGrowth: 0.025,
     death: 0.7,
-    blurb: 'Classic Lotka–Volterra boom–bust: prey rise, predators follow, then both crash.',
+    blurb: 'Both species need the same limited food. When crowded, both grow more slowly.',
   },
+  {
+    id: 'mutual',
+    name: '3. Mutualism (help each other)',
+    mode: 'mutualism',
+    prey: 35,
+    predators: 20,
+    growth: 0.85,
+    predation: 0.028,
+    predatorGrowth: 0.025,
+    death: 0.7,
+    blurb: 'Each species helps the other. Numbers climb together — no boom–bust chase.',
+  },
+]
+
+export const ADVANCED_SCENARIOS: ScenarioDef[] = [
   {
     id: 'prey-boom',
     name: 'Prey boom',
     mode: 'predation',
-    prey: 70,
+    prey: 65,
     predators: 6,
-    growth: 1.5,
+    growth: 1.35,
     predation: 0.02,
     predatorGrowth: 0.02,
-    death: 0.85,
-    blurb: 'High prey growth and few predators — watch prey explode, then predators catch up.',
+    death: 0.8,
+    blurb: 'Many prey and few predators — watch prey climb, then predators catch up.',
   },
   {
     id: 'overhunt',
-    name: 'Overhunting risk',
+    name: 'Too many predators',
     mode: 'predation',
-    prey: 25,
-    predators: 28,
-    growth: 0.7,
-    predation: 0.045,
-    predatorGrowth: 0.03,
-    death: 0.45,
-    blurb: 'Too many predators / high kill rate — prey can crash and starve the predators.',
-  },
-  {
-    id: 'compete',
-    name: 'Competition',
-    mode: 'competition',
-    prey: 45,
-    predators: 30,
-    growth: 1.0,
-    predation: 0.028,
-    predatorGrowth: 0.025,
-    death: 0.7,
-    blurb: 'Two species compete for limited resources — both grow slower when crowded.',
-  },
-  {
-    id: 'mutual',
-    name: 'Mutualism garden',
-    mode: 'mutualism',
-    prey: 35,
-    predators: 20,
-    growth: 0.9,
-    predation: 0.028,
-    predatorGrowth: 0.025,
-    death: 0.7,
-    blurb: 'Each species helps the other — populations climb together toward carrying capacity.',
+    prey: 28,
+    predators: 24,
+    growth: 0.75,
+    predation: 0.04,
+    predatorGrowth: 0.028,
+    death: 0.5,
+    blurb: 'Lots of predators can eat prey down low — then predators also struggle.',
   },
 ]
 
 export const QUIZ_BANK: QuizQuestion[] = [
   {
-    prompt: 'In predation, which population usually peaks first?',
-    choices: ['Predators', 'Prey', 'They peak together', 'Neither changes'],
+    prompt: 'In a predator–prey cycle, which usually goes up first?',
+    choices: ['Predators (foxes)', 'Prey (rabbits)', 'Both at the same time'],
     correct: 1,
-    explain: 'Prey rise first; predators catch up after, so predator peaks lag behind prey.',
+    explain: 'Prey increase first. Predators increase later because they need prey for food.',
   },
   {
-    prompt: 'Why do predator numbers fall after a prey crash?',
-    choices: ['They migrate to space', 'Not enough food left', 'Sunlight decreases', 'Mutualism stops'],
+    prompt: 'After prey numbers fall, predators usually…',
+    choices: ['Keep rising forever', 'Also fall (less food)', 'Turn into prey'],
     correct: 1,
-    explain: 'Fewer prey means less food, so predator births drop and deaths rise.',
+    explain: 'With fewer prey, predators have less food, so their numbers drop too.',
   },
   {
-    prompt: 'Competition differs from predation because…',
-    choices: ['Both species hurt each other when crowded', 'Only prey grow', 'Predators always win', 'No carrying capacity'],
-    correct: 0,
-    explain: 'Competitors share limited resources — dense populations slow each other’s growth.',
-  },
-  {
-    prompt: 'Mutualism tends to make the graph…',
-    choices: ['Crash to zero', 'Oscillate forever', 'Rise together toward a limit', 'Only show predators'],
-    correct: 2,
-    explain: 'Helpers boost each other, so both climb toward carrying capacity instead of boom–bust.',
-  },
-  {
-    prompt: 'A bush refuge mainly helps…',
-    choices: ['Predators hunt better', 'Prey avoid being eaten', 'Increase kill rate', 'Stop all growth'],
+    prompt: 'Competition means…',
+    choices: ['One animal eats the other', 'Both struggle for the same limited resources', 'Both always help each other'],
     correct: 1,
-    explain: 'Hiding spots lower effective predation — a key idea in real ecosystems.',
+    explain: 'In competition, both species use similar resources, so crowded places slow both down.',
   },
 ]
 
@@ -165,6 +157,7 @@ export class PredatorPreyModel implements TModel {
   public readonly refugeEnabledProperty: BooleanProperty
   public readonly showChaseLinesProperty: BooleanProperty
   public readonly showPhasePlotProperty: BooleanProperty
+  public readonly showAdvancedProperty: BooleanProperty
   public readonly timeProperty: NumberProperty
   public readonly dayPhaseProperty: NumberProperty
   public readonly cycleCountProperty: NumberProperty
@@ -172,6 +165,7 @@ export class PredatorPreyModel implements TModel {
   public readonly statusProperty: StringProperty
   public readonly tipProperty: StringProperty
   public readonly phaseLabelProperty: StringProperty
+  public readonly guideProperty: StringProperty
   public readonly eventLabelProperty: StringProperty
   public readonly historyProperty: Property<PopulationSample[]>
   public readonly huntFlashProperty: NumberProperty
@@ -189,63 +183,69 @@ export class PredatorPreyModel implements TModel {
   private nextAgentId = 1
   private lastPhase = ''
   private sawPreyPeak = false
+  private historyAcc = 0
 
   public constructor() {
     this.preyProperty = new NumberProperty(40)
     this.predatorsProperty = new NumberProperty(12)
-    this.growthProperty = new NumberProperty(1.1)
-    this.predationRateProperty = new NumberProperty(0.028)
-    this.predatorGrowthProperty = new NumberProperty(0.025)
-    this.deathProperty = new NumberProperty(0.7)
-    this.simSpeedProperty = new NumberProperty(1)
+    this.growthProperty = new NumberProperty(1.0)
+    this.predationRateProperty = new NumberProperty(0.024)
+    this.predatorGrowthProperty = new NumberProperty(0.022)
+    this.deathProperty = new NumberProperty(0.65)
+    this.simSpeedProperty = new NumberProperty(PreyConstants.SPEED_DEFAULT)
     this.carryingCapacityProperty = new NumberProperty(100)
     this.modeProperty = new Property<InteractionMode>('predation')
     this.runningProperty = new BooleanProperty(true)
     this.soundEnabledProperty = new BooleanProperty(true)
     this.showTipsProperty = new BooleanProperty(true)
     this.isDayProperty = new BooleanProperty(true)
-    this.autoDayNightProperty = new BooleanProperty(true)
+    this.autoDayNightProperty = new BooleanProperty(false)
     this.refugeEnabledProperty = new BooleanProperty(true)
-    this.showChaseLinesProperty = new BooleanProperty(true)
-    this.showPhasePlotProperty = new BooleanProperty(true)
+    this.showChaseLinesProperty = new BooleanProperty(false)
+    this.showPhasePlotProperty = new BooleanProperty(false)
+    this.showAdvancedProperty = new BooleanProperty(false)
     this.timeProperty = new NumberProperty(0)
     this.dayPhaseProperty = new NumberProperty(0.25)
     this.cycleCountProperty = new NumberProperty(0)
     this.ratioProperty = new NumberProperty(40 / 12)
     this.statusProperty = new StringProperty(
-      'Tap left = prey · right = predators · drag animals · try events & quiz.',
+      'Watch the meadow slowly. Green = prey (rabbits). Red = predators (foxes).',
     )
     this.tipProperty = new StringProperty(
-      'Predation: prey rise first, predators follow, then both fall — a classic boom–bust cycle.',
+      'Step 1: Watch prey (green) go up. Step 2: Predators (red) follow. Step 3: Both fall — then repeat.',
     )
-    this.phaseLabelProperty = new StringProperty('Prey rising')
+    this.phaseLabelProperty = new StringProperty('Prey are increasing')
+    this.guideProperty = new StringProperty(
+      'Look at the graph below: green line = prey, red line = predators.',
+    )
     this.eventLabelProperty = new StringProperty('')
     this.historyProperty = new Property<PopulationSample[]>([{ prey: 40, predators: 12 }])
     this.huntFlashProperty = new NumberProperty(0)
     this.eventTimerProperty = new NumberProperty(0)
     this.quizIndexProperty = new NumberProperty(0)
     this.quizScoreProperty = new NumberProperty(0)
-    this.quizFeedbackProperty = new StringProperty('Test yourself on predator–prey cycles.')
+    this.quizFeedbackProperty = new StringProperty('Check what you learned — take your time.')
     this.rebuildAgents()
   }
 
   public reset(): void {
     this.preyProperty.value = 40
     this.predatorsProperty.value = 12
-    this.growthProperty.value = 1.1
-    this.predationRateProperty.value = 0.028
-    this.predatorGrowthProperty.value = 0.025
-    this.deathProperty.value = 0.7
-    this.simSpeedProperty.value = 1
+    this.growthProperty.value = 1.0
+    this.predationRateProperty.value = 0.024
+    this.predatorGrowthProperty.value = 0.022
+    this.deathProperty.value = 0.65
+    this.simSpeedProperty.value = PreyConstants.SPEED_DEFAULT
     this.carryingCapacityProperty.value = 100
     this.modeProperty.value = 'predation'
     this.runningProperty.value = true
     this.showTipsProperty.value = true
     this.isDayProperty.value = true
-    this.autoDayNightProperty.value = true
+    this.autoDayNightProperty.value = false
     this.refugeEnabledProperty.value = true
-    this.showChaseLinesProperty.value = true
-    this.showPhasePlotProperty.value = true
+    this.showChaseLinesProperty.value = false
+    this.showPhasePlotProperty.value = false
+    this.showAdvancedProperty.value = false
     this.timeProperty.value = 0
     this.dayPhaseProperty.value = 0.25
     this.cycleCountProperty.value = 0
@@ -256,16 +256,19 @@ export class PredatorPreyModel implements TModel {
     this.eventKind = 'none'
     this.eventLabelProperty.value = ''
     this.statusProperty.value =
-      'Tap left = prey · right = predators · drag animals · try events & quiz.'
+      'Watch the meadow slowly. Green = prey (rabbits). Red = predators (foxes).'
     this.tipProperty.value =
-      'Predation: prey rise first, predators follow, then both fall — a classic boom–bust cycle.'
-    this.phaseLabelProperty.value = 'Prey rising'
+      'Step 1: Watch prey (green) go up. Step 2: Predators (red) follow. Step 3: Both fall — then repeat.'
+    this.phaseLabelProperty.value = 'Prey are increasing'
+    this.guideProperty.value =
+      'Look at the graph below: green line = prey, red line = predators.'
     this.quizIndexProperty.value = 0
     this.quizScoreProperty.value = 0
-    this.quizFeedbackProperty.value = 'Test yourself on predator–prey cycles.'
+    this.quizFeedbackProperty.value = 'Check what you learned — take your time.'
     this.lastPhase = ''
     this.sawPreyPeak = false
     this.chaseLinks = []
+    this.historyAcc = 0
     this.rebuildAgents()
   }
 
@@ -280,14 +283,25 @@ export class PredatorPreyModel implements TModel {
     this.modeProperty.value = mode
     const tips: Record<InteractionMode, string> = {
       predation:
-        'Predation: prey rise first, predators follow, then both fall — a classic boom–bust cycle.',
+        'Step 1: Prey (green) go up. Step 2: Predators (red) follow. Step 3: Both fall — then the cycle repeats.',
       competition:
-        'Competition: both species hurt each other when dense — neither “follows” the other in a clean lag.',
+        'Both need similar food. When there are many of them, both grow more slowly.',
       mutualism:
-        'Mutualism: each species boosts the other — populations climb together instead of oscillating.',
+        'Each species helps the other. Watch both lines climb together — not chase each other.',
+    }
+    const guides: Record<InteractionMode, string> = {
+      predation: 'Focus on the graph: green peaks first, then red peaks a little later.',
+      competition: 'Compare with predation: do you still see a clear chase cycle?',
+      mutualism: 'Compare with predation: do the lines rise together instead of oscillating?',
     }
     this.tipProperty.value = tips[mode]
-    this.statusProperty.value = `Mode: ${mode} — compare how the graph shape changes.`
+    this.guideProperty.value = guides[mode]
+    this.statusProperty.value =
+      mode === 'predation'
+        ? 'Mode: predator–prey. Take your time and watch one full cycle.'
+        : mode === 'competition'
+          ? 'Mode: competition. Notice how both populations affect each other.'
+          : 'Mode: mutualism. Notice how both populations can rise together.'
   }
 
   public addPrey(amount = 8): void {
@@ -329,7 +343,10 @@ export class PredatorPreyModel implements TModel {
   }
 
   public applyScenario(id: string): void {
-    const s = SCENARIOS.find(x => x.id === id) ?? SCENARIOS[0]!
+    const s =
+      SCENARIOS.find(x => x.id === id) ??
+      ADVANCED_SCENARIOS.find(x => x.id === id) ??
+      SCENARIOS[0]!
     this.growthProperty.value = s.growth
     this.predationRateProperty.value = s.predation
     this.predatorGrowthProperty.value = s.predatorGrowth
@@ -342,8 +359,9 @@ export class PredatorPreyModel implements TModel {
     this.eventTimerProperty.value = 0
     this.eventKind = 'none'
     this.eventLabelProperty.value = ''
+    this.historyAcc = 0
     this.setMode(s.mode)
-    this.statusProperty.value = `${s.name}: ${s.blurb}`
+    this.statusProperty.value = s.blurb
     this.tipProperty.value = s.blurb
     this.updateRatio()
     this.rebuildAgents()
@@ -398,7 +416,7 @@ export class PredatorPreyModel implements TModel {
     }
 
     if (this.autoDayNightProperty.value && this.runningProperty.value) {
-      this.dayPhaseProperty.value = (this.dayPhaseProperty.value + dt * 0.04 * this.simSpeedProperty.value) % 1
+      this.dayPhaseProperty.value = (this.dayPhaseProperty.value + dt * 0.012 * this.simSpeedProperty.value) % 1
       this.isDayProperty.value = this.dayPhaseProperty.value < 0.55
     }
 
@@ -465,10 +483,15 @@ export class PredatorPreyModel implements TModel {
     this.timeProperty.value += scaled
     this.updateRatio()
 
-    const hist = this.historyProperty.value.slice()
-    hist.push({ prey, predators })
-    if (hist.length > PreyConstants.HISTORY_MAX) hist.shift()
-    this.historyProperty.value = hist
+    // Sample history less often so the chart stays calm and readable
+    this.historyAcc += scaled
+    if (this.historyAcc >= 0.12) {
+      this.historyAcc = 0
+      const hist = this.historyProperty.value.slice()
+      hist.push({ prey, predators })
+      if (hist.length > PreyConstants.HISTORY_MAX) hist.shift()
+      this.historyProperty.value = hist
+    }
 
     this.updatePhase(prevPrey, prevPred, prey, predators)
     this.syncAgentCounts()
@@ -482,41 +505,55 @@ export class PredatorPreyModel implements TModel {
   private updatePhase(prevPrey: number, prevPred: number, prey: number, predators: number): void {
     if (this.modeProperty.value !== 'predation') {
       this.phaseLabelProperty.value =
-        this.modeProperty.value === 'competition' ? 'Competing for resources' : 'Mutual growth'
+        this.modeProperty.value === 'competition' ? 'Both competing for resources' : 'Both helping each other'
       return
     }
     const dPrey = prey - prevPrey
     const dPred = predators - prevPred
-    let phase = 'Steady'
-    if (dPrey > 0.05 && dPred <= 0.05) phase = 'Prey rising'
-    else if (dPrey > 0 && dPred > 0) phase = 'Predators catching up'
-    else if (dPrey <= 0 && dPred > 0.02) phase = 'Predator peak'
-    else if (dPrey < 0 && dPred < 0) phase = 'Crash / recovery'
-    else if (dPrey < 0 && dPred <= 0) phase = 'Prey falling'
+    let phase = 'Populations steady'
+    let guide = this.guideProperty.value
+    if (dPrey > 0.04 && dPred <= 0.04) {
+      phase = 'Prey are increasing'
+      guide = 'Notice: green prey rising. Predators will catch up next.'
+    } else if (dPrey > 0 && dPred > 0) {
+      phase = 'Predators catching up'
+      guide = 'Notice: red predators rising after prey. This lag is the key idea.'
+    } else if (dPrey <= 0 && dPred > 0.015) {
+      phase = 'Predator numbers high'
+      guide = 'Many predators eat a lot of prey — prey will start to fall.'
+    } else if (dPrey < 0 && dPred < 0) {
+      phase = 'Both falling (recovery soon)'
+      guide = 'Both drop. When predators are low, prey can grow again.'
+    } else if (dPrey < 0 && dPred <= 0) {
+      phase = 'Prey are falling'
+      guide = 'Prey falling means less food for predators soon.'
+    }
 
-    if (phase === 'Prey rising' || phase === 'Predators catching up') this.sawPreyPeak = true
-    if (phase === 'Predator peak' && this.sawPreyPeak && this.lastPhase !== 'Predator peak') {
+    if (phase === 'Prey are increasing' || phase === 'Predators catching up') this.sawPreyPeak = true
+    if (phase === 'Predator numbers high' && this.sawPreyPeak && this.lastPhase !== phase) {
       this.cycleCountProperty.value += 1
       this.sawPreyPeak = false
-      this.huntFlashProperty.value = 0.9
+      this.huntFlashProperty.value = 0.7
+      guide = `Cycle ${this.cycleCountProperty.value} complete — watch it start again slowly.`
     }
 
     this.phaseLabelProperty.value = phase
+    this.guideProperty.value = guide
     this.lastPhase = phase
   }
 
   private rebuildAgents(): void {
     this.agents = []
     this.nextAgentId = 1
-    const preyN = Math.min(48, Math.round(this.preyProperty.value))
-    const predN = Math.min(28, Math.round(this.predatorsProperty.value))
+    const preyN = Math.min(PreyConstants.MAX_PREY_AGENTS, Math.round(this.preyProperty.value * 0.7))
+    const predN = Math.min(PreyConstants.MAX_PRED_AGENTS, Math.round(this.predatorsProperty.value * 0.7))
     for (let i = 0; i < preyN; i++) this.spawnAgents('prey', 1)
     for (let i = 0; i < predN; i++) this.spawnAgents('predator', 1)
   }
 
   private spawnAgents(kind: 'prey' | 'predator', n: number): void {
     for (let i = 0; i < n; i++) {
-      const speed = kind === 'prey' ? 0.08 + Math.random() * 0.12 : 0.1 + Math.random() * 0.16
+      const speed = kind === 'prey' ? 0.035 + Math.random() * 0.05 : 0.045 + Math.random() * 0.06
       const ang = Math.random() * Math.PI * 2
       const x = 0.08 + Math.random() * 0.84
       const y = 0.1 + Math.random() * 0.75
@@ -537,8 +574,8 @@ export class PredatorPreyModel implements TModel {
   private trimAgents(kind: 'prey' | 'predator'): void {
     const target =
       kind === 'prey'
-        ? Math.min(48, Math.round(this.preyProperty.value))
-        : Math.min(28, Math.round(this.predatorsProperty.value))
+        ? Math.min(PreyConstants.MAX_PREY_AGENTS, Math.round(this.preyProperty.value * 0.7))
+        : Math.min(PreyConstants.MAX_PRED_AGENTS, Math.round(this.predatorsProperty.value * 0.7))
     let count = this.agents.filter(a => a.kind === kind).length
     while (count > target) {
       const idx = this.agents.findIndex(a => a.kind === kind)
@@ -549,8 +586,8 @@ export class PredatorPreyModel implements TModel {
   }
 
   private syncAgentCounts(): void {
-    const preyTarget = Math.min(48, Math.round(this.preyProperty.value))
-    const predTarget = Math.min(28, Math.round(this.predatorsProperty.value))
+    const preyTarget = Math.min(PreyConstants.MAX_PREY_AGENTS, Math.round(this.preyProperty.value * 0.7))
+    const predTarget = Math.min(PreyConstants.MAX_PRED_AGENTS, Math.round(this.predatorsProperty.value * 0.7))
     let preyN = this.agents.filter(a => a.kind === 'prey').length
     let predN = this.agents.filter(a => a.kind === 'predator').length
     while (preyN < preyTarget) {
@@ -578,9 +615,10 @@ export class PredatorPreyModel implements TModel {
     const prey = this.agents.filter(a => a.kind === 'prey')
     const preds = this.agents.filter(a => a.kind === 'predator')
     this.chaseLinks = []
+    const chaseStrength = 0.18
 
     for (const a of this.agents) {
-      a.phase += dt * 3
+      a.phase += dt * 1.6
       a.inRefuge = false
 
       if (mode === 'predation' && a.kind === 'predator' && prey.length) {
@@ -597,14 +635,13 @@ export class PredatorPreyModel implements TModel {
         const dx = nearest.x - a.x
         const dy = nearest.y - a.y
         const dist = Math.sqrt(dx * dx + dy * dy) || 0.001
-        a.vx += (dx / dist) * 0.4 * dt
-        a.vy += (dy / dist) * 0.4 * dt
-        if (dist < 0.22) this.chaseLinks.push({ fromId: a.id, toId: nearest.id })
-        if (dist < 0.04 && !nearest.inRefuge) {
-          this.huntFlashProperty.value = Math.max(this.huntFlashProperty.value, 0.35)
-          nearest.vx += (Math.random() - 0.5) * 0.5
-          nearest.vy += (Math.random() - 0.5) * 0.5
-          nearest.energy = Math.max(0.2, nearest.energy - 0.15)
+        a.vx += (dx / dist) * chaseStrength * dt
+        a.vy += (dy / dist) * chaseStrength * dt
+        if (dist < 0.18) this.chaseLinks.push({ fromId: a.id, toId: nearest.id })
+        if (dist < 0.045 && !nearest.inRefuge) {
+          this.huntFlashProperty.value = Math.max(this.huntFlashProperty.value, 0.25)
+          nearest.vx += (Math.random() - 0.5) * 0.25
+          nearest.vy += (Math.random() - 0.5) * 0.25
         }
       } else if (mode === 'predation' && a.kind === 'prey' && preds.length) {
         let nearest = preds[0]!
@@ -619,37 +656,33 @@ export class PredatorPreyModel implements TModel {
         const dx = a.x - nearest.x
         const dy = a.y - nearest.y
         const dist = Math.sqrt(dx * dx + dy * dy) || 0.001
-        if (dist < 0.22) {
-          a.vx += (dx / dist) * 0.55 * dt
-          a.vy += (dy / dist) * 0.55 * dt
-          // Seek refuge when scared
+        if (dist < 0.2) {
+          a.vx += (dx / dist) * 0.28 * dt
+          a.vy += (dy / dist) * 0.28 * dt
           if (this.refugeEnabledProperty.value) {
-            const rx = REFUGE.x - a.x
-            const ry = REFUGE.y - a.y
-            a.vx += rx * 0.35 * dt
-            a.vy += ry * 0.35 * dt
+            a.vx += (REFUGE.x - a.x) * 0.2 * dt
+            a.vy += (REFUGE.y - a.y) * 0.2 * dt
           }
         }
       } else if (mode === 'mutualism') {
-        a.vx += (0.5 - a.x) * 0.05 * dt
-        a.vy += (0.5 - a.y) * 0.05 * dt
+        a.vx += (0.5 - a.x) * 0.03 * dt
+        a.vy += (0.5 - a.y) * 0.03 * dt
       } else if (mode === 'competition') {
-        // Spread out / avoid same kind crowding
         for (const o of this.agents) {
           if (o.id === a.id || o.kind !== a.kind) continue
           const dx = a.x - o.x
           const dy = a.y - o.y
           const d2 = dx * dx + dy * dy
-          if (d2 < 0.01 && d2 > 0) {
-            a.vx += (dx / Math.sqrt(d2)) * 0.2 * dt
-            a.vy += (dy / Math.sqrt(d2)) * 0.2 * dt
+          if (d2 < 0.012 && d2 > 0) {
+            a.vx += (dx / Math.sqrt(d2)) * 0.12 * dt
+            a.vy += (dy / Math.sqrt(d2)) * 0.12 * dt
           }
         }
       }
 
-      a.vx += (Math.random() - 0.5) * 0.15 * dt
-      a.vy += (Math.random() - 0.5) * 0.15 * dt
-      const maxSp = a.kind === 'prey' ? 0.24 : 0.3
+      a.vx += (Math.random() - 0.5) * 0.06 * dt
+      a.vy += (Math.random() - 0.5) * 0.06 * dt
+      const maxSp = a.kind === 'prey' ? 0.11 : 0.14
       const sp = Math.hypot(a.vx, a.vy)
       if (sp > maxSp) {
         a.vx = (a.vx / sp) * maxSp
@@ -668,8 +701,8 @@ export class PredatorPreyModel implements TModel {
 
       if (this.refugeEnabledProperty.value && a.kind === 'prey' && inRefuge(a.x, a.y)) {
         a.inRefuge = true
-        a.vx *= 0.85
-        a.vy *= 0.85
+        a.vx *= 0.9
+        a.vy *= 0.9
       }
     }
   }
