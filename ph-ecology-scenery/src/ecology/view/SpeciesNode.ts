@@ -1,12 +1,14 @@
 import { Circle, Node, Text } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
 import { LEVEL_COLORS } from '../../common/EcologyColors.js'
-import { createEcologyIcon } from '../../common/EcologyArt.js'
+import { createEcologyAvatar } from '../../common/EcologyArt.js'
 import type { FoodNode } from '../model/FoodWebModel.js'
 import type { EcologySounds } from './EcologySounds.js'
 
 /**
- * Clean circular avatar: picture + thin ring + name/energy under it.
+ * Clean circular avatar: picture + thin ring locked to the same center,
+ * with name/energy under it. Position uses translation of local (0,0)
+ * so the avatar — not the label-shifted bounds — sits on the trophic band.
  */
 export class SpeciesNode extends Node {
   public readonly nodeId: string
@@ -28,16 +30,12 @@ export class SpeciesNode extends Node {
     this.avatarRadius = Math.max(24, radius)
     this.levelColor = LEVEL_COLORS[node.level]
 
-    const avatar = createEcologyIcon(node.name, this.avatarRadius * 2)
-    avatar.centerX = 0
-    avatar.centerY = 0
-
-    this.ring = new Circle(this.avatarRadius, {
-      fill: null,
-      stroke: 'rgba(255,255,255,0.7)',
-      lineWidth: 2,
-      pickable: false,
-    })
+    const { root: avatar, ring } = createEcologyAvatar(
+      node.name,
+      this.avatarRadius,
+      'rgba(255,255,255,0.75)',
+    )
+    this.ring = ring
 
     this.label = new Text(node.name, {
       font: new PhetFont({ size: 11, weight: 'bold' }),
@@ -55,7 +53,6 @@ export class SpeciesNode extends Node {
     })
 
     this.addChild(avatar)
-    this.addChild(this.ring)
     this.addChild(this.label)
     this.addChild(this.energyLabel)
 
@@ -99,12 +96,12 @@ export class SpeciesNode extends Node {
   }
 
   public setSelected(selected: boolean, atRisk: boolean): void {
-    this.ring.lineWidth = selected ? 3.5 : 2
+    this.ring.lineWidth = selected ? 3.5 : 2.5
     this.ring.stroke = selected
       ? '#ffffff'
       : atRisk
         ? this.levelColor
-        : 'rgba(255,255,255,0.7)'
+        : 'rgba(255,255,255,0.75)'
     this.ring.lineDash = []
     this.label.fill = atRisk && !selected ? '#fecaca' : '#f8fafc'
   }
@@ -115,7 +112,9 @@ export class SpeciesNode extends Node {
   }
 
   public setPositionNorm(x: number, y: number, areaWidth: number, areaHeight: number, ox: number, oy: number): void {
-    this.centerX = ox + x * areaWidth
-    this.centerY = oy + y * areaHeight
+    // Place local origin (avatar center) on the band — do NOT use centerX/centerY,
+    // which would shift by the label below the avatar.
+    this.x = ox + x * areaWidth
+    this.y = oy + y * areaHeight
   }
 }

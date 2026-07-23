@@ -1,7 +1,7 @@
 /**
  * Friendly Class-8 ecology icons + circular pfp avatars (inline SVG → Image).
  */
-import { Image, Node } from 'scenerystack/scenery'
+import { Circle, Image, Node } from 'scenerystack/scenery'
 
 function svgDataUri(svg: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
@@ -273,9 +273,43 @@ export function createEcologyIcon(nameOrKey: string, size = 36): Image {
     maxHeight: size,
     pickable: false,
   })
-  img.centerX = 0
-  img.centerY = 0
+  // Re-center whenever bounds resolve (data-URI images often start empty).
+  const center = () => {
+    if (img.localBounds.isEmpty()) return
+    img.centerX = 0
+    img.centerY = 0
+  }
+  center()
+  img.localBoundsProperty.link(center)
   return img
+}
+
+/** Circular avatar with a perfectly matched ring (same local origin). */
+export function createEcologyAvatar(nameOrKey: string, radius: number, ringColor = 'rgba(255,255,255,0.75)'): {
+  root: Node
+  ring: Circle
+} {
+  const size = radius * 2
+  const root = new Node({ pickable: false })
+  const img = createEcologyIcon(nameOrKey, size)
+  const ring = new Circle(radius, {
+    fill: null,
+    stroke: ringColor,
+    lineWidth: 2.5,
+    centerX: 0,
+    centerY: 0,
+    pickable: false,
+  })
+  root.addChild(img)
+  root.addChild(ring)
+  // Keep image locked to ring center after load
+  img.localBoundsProperty.link(() => {
+    if (!img.localBounds.isEmpty()) {
+      img.centerX = 0
+      img.centerY = 0
+    }
+  })
+  return { root, ring }
 }
 
 export function createLabeledEcologyIcon(name: string, size = 40): Node {
