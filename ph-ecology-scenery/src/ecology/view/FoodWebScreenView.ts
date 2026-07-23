@@ -264,7 +264,7 @@ export class FoodWebScreenView extends ScreenView {
     }
 
     const b = this.areaBounds
-    const r = Math.min(30, b.width * 0.042)
+    const r = Math.min(34, b.width * 0.048)
 
     for (const n of snap.nodes) {
       let view = this.speciesNodes.get(n.id)

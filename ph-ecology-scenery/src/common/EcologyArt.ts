@@ -1,6 +1,5 @@
 /**
- * Friendly Class-8 ecology icons (inline SVG → Image).
- * Relatable pictures beat plain circles for student understanding.
+ * Friendly Class-8 ecology icons + circular pfp avatars (inline SVG → Image).
  */
 import { Image, Node } from 'scenerystack/scenery'
 
@@ -8,207 +7,204 @@ function svgDataUri(svg: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 }
 
-const RABBIT = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="32" cy="42" rx="16" ry="14" fill="#f5f5f5" stroke="#94a3b8" stroke-width="1.5"/>
-  <ellipse cx="22" cy="18" rx="6" ry="16" fill="#f5f5f5" stroke="#94a3b8" stroke-width="1.2"/>
-  <ellipse cx="42" cy="18" rx="6" ry="16" fill="#f5f5f5" stroke="#94a3b8" stroke-width="1.2"/>
-  <ellipse cx="22" cy="18" rx="3" ry="10" fill="#fda4af"/>
-  <ellipse cx="42" cy="18" rx="3" ry="10" fill="#fda4af"/>
-  <circle cx="26" cy="40" r="2.2" fill="#1e293b"/>
-  <circle cx="38" cy="40" r="2.2" fill="#1e293b"/>
-  <ellipse cx="32" cy="46" rx="3" ry="2" fill="#fda4af"/>
-  <ellipse cx="48" cy="48" rx="5" ry="4" fill="#e2e8f0"/>
+/** Circular profile-picture style avatar with soft tinted background. */
+function pfp(bg: string, art: string): string {
+  return svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="32" fill="${bg}"/>
+  ${art}
 </svg>`)
+}
 
-const FOX = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="32" cy="40" rx="18" ry="14" fill="#ea580c" stroke="#9a3412" stroke-width="1.5"/>
-  <path d="M14 28 L22 18 L28 30 Z" fill="#ea580c" stroke="#9a3412" stroke-width="1"/>
-  <path d="M50 28 L42 18 L36 30 Z" fill="#ea580c" stroke="#9a3412" stroke-width="1"/>
-  <path d="M14 28 L22 18 L24 28 Z" fill="#fecaca"/>
-  <path d="M50 28 L42 18 L40 28 Z" fill="#fecaca"/>
-  <circle cx="26" cy="38" r="2.4" fill="#1e293b"/>
-  <circle cx="38" cy="38" r="2.4" fill="#1e293b"/>
-  <ellipse cx="32" cy="44" rx="3.5" ry="2.2" fill="#1e293b"/>
-  <ellipse cx="50" cy="46" rx="7" ry="4" fill="#ea580c"/>
-  <ellipse cx="54" cy="46" rx="4" ry="2.5" fill="#f8fafc"/>
-</svg>`)
+const RABBIT = pfp(
+  '#fef9c3',
+  `<ellipse cx="22" cy="14" rx="7" ry="16" fill="#f8fafc"/><ellipse cx="42" cy="14" rx="7" ry="16" fill="#f8fafc"/>
+   <ellipse cx="22" cy="14" rx="3.5" ry="10" fill="#fda4af"/><ellipse cx="42" cy="14" rx="3.5" ry="10" fill="#fda4af"/>
+   <circle cx="32" cy="38" r="18" fill="#f8fafc"/>
+   <circle cx="25" cy="36" r="2.8" fill="#1e293b"/><circle cx="39" cy="36" r="2.8" fill="#1e293b"/>
+   <ellipse cx="32" cy="44" rx="4" ry="3" fill="#fda4af"/>
+   <circle cx="26" cy="35" r="1" fill="#fff"/><circle cx="40" cy="35" r="1" fill="#fff"/>`,
+)
 
-const GRASS = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect x="0" y="48" width="64" height="16" fill="#65a30d"/>
-  <path d="M12 48 Q14 20 10 8" stroke="#4d7c0f" stroke-width="3" fill="none" stroke-linecap="round"/>
-  <path d="M22 48 Q24 16 20 6" stroke="#65a30d" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-  <path d="M32 48 Q34 14 32 4" stroke="#4d7c0f" stroke-width="4" fill="none" stroke-linecap="round"/>
-  <path d="M42 48 Q40 18 44 8" stroke="#65a30d" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-  <path d="M52 48 Q50 22 54 10" stroke="#4d7c0f" stroke-width="3" fill="none" stroke-linecap="round"/>
-  <circle cx="20" cy="28" r="3" fill="#facc15"/>
-  <circle cx="44" cy="24" r="3" fill="#f472b6"/>
-</svg>`)
+const FOX = pfp(
+  '#ffedd5',
+  `<path d="M12 22 L22 6 L28 26 Z" fill="#ea580c"/><path d="M52 22 L42 6 L36 26 Z" fill="#ea580c"/>
+   <path d="M12 22 L22 6 L24 24 Z" fill="#fecaca"/><path d="M52 22 L42 6 L40 24 Z" fill="#fecaca"/>
+   <circle cx="32" cy="36" r="18" fill="#ea580c"/>
+   <path d="M18 42 L32 52 L46 42 Z" fill="#ffedd5"/>
+   <circle cx="25" cy="34" r="2.8" fill="#1e293b"/><circle cx="39" cy="34" r="2.8" fill="#1e293b"/>
+   <ellipse cx="32" cy="42" rx="4" ry="2.5" fill="#1e293b"/>
+   <circle cx="26" cy="33" r="1" fill="#fff"/><circle cx="40" cy="33" r="1" fill="#fff"/>`,
+)
 
-const TREE = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect x="28" y="40" width="8" height="18" rx="2" fill="#92400e"/>
-  <circle cx="32" cy="28" r="18" fill="#16a34a"/>
-  <circle cx="22" cy="32" r="10" fill="#15803d"/>
-  <circle cx="42" cy="30" r="11" fill="#22c55e"/>
-  <circle cx="32" cy="18" r="9" fill="#4ade80"/>
-</svg>`)
+const GRASS = pfp(
+  '#dcfce7',
+  `<ellipse cx="32" cy="52" rx="28" ry="10" fill="#86efac"/>
+   <path d="M14 48 Q16 18 12 6" stroke="#166534" stroke-width="4" fill="none" stroke-linecap="round"/>
+   <path d="M24 50 Q26 14 22 4" stroke="#22c55e" stroke-width="5" fill="none" stroke-linecap="round"/>
+   <path d="M32 50 Q34 10 32 2" stroke="#15803d" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+   <path d="M40 50 Q38 14 42 4" stroke="#22c55e" stroke-width="5" fill="none" stroke-linecap="round"/>
+   <path d="M50 48 Q48 20 52 8" stroke="#166534" stroke-width="4" fill="none" stroke-linecap="round"/>
+   <circle cx="20" cy="28" r="3.5" fill="#facc15"/><circle cx="44" cy="24" r="3.5" fill="#f472b6"/>`,
+)
 
-const DEER = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="34" cy="40" rx="16" ry="12" fill="#b45309"/>
-  <ellipse cx="48" cy="30" rx="8" ry="7" fill="#b45309"/>
-  <path d="M44 24 L40 10 M44 24 L48 8 M50 24 L54 10" stroke="#78350f" stroke-width="2" fill="none"/>
-  <circle cx="52" cy="28" r="1.8" fill="#1e293b"/>
-  <rect x="24" y="48" width="4" height="10" fill="#92400e"/>
-  <rect x="40" y="48" width="4" height="10" fill="#92400e"/>
-</svg>`)
+const TREE = pfp(
+  '#dcfce7',
+  `<rect x="28" y="40" width="8" height="18" rx="2" fill="#92400e"/>
+   <circle cx="32" cy="26" r="18" fill="#16a34a"/><circle cx="20" cy="32" r="11" fill="#15803d"/>
+   <circle cx="44" cy="30" r="12" fill="#22c55e"/><circle cx="32" cy="16" r="10" fill="#4ade80"/>`,
+)
 
-const HAWK = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="32" cy="34" rx="10" ry="8" fill="#78716c"/>
-  <path d="M8 36 Q32 10 56 36 Q32 28 8 36" fill="#a8a29e"/>
-  <circle cx="38" cy="32" r="2" fill="#1e293b"/>
-  <path d="M40 36 L48 40" stroke="#f59e0b" stroke-width="2"/>
-</svg>`)
+const DEER = pfp(
+  '#ffedd5',
+  `<path d="M22 18 L18 4 M26 18 L28 2 M38 18 L36 2 M42 18 L46 4" stroke="#78350f" stroke-width="2.5" fill="none"/>
+   <circle cx="32" cy="36" r="18" fill="#b45309"/>
+   <circle cx="25" cy="34" r="2.5" fill="#1e293b"/><circle cx="39" cy="34" r="2.5" fill="#1e293b"/>
+   <ellipse cx="32" cy="44" rx="5" ry="3" fill="#78350f"/>`,
+)
 
-const FROG = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="32" cy="38" rx="18" ry="14" fill="#22c55e"/>
-  <circle cx="22" cy="28" r="7" fill="#4ade80"/>
-  <circle cx="42" cy="28" r="7" fill="#4ade80"/>
-  <circle cx="22" cy="28" r="3" fill="#1e293b"/>
-  <circle cx="42" cy="28" r="3" fill="#1e293b"/>
-  <ellipse cx="32" cy="44" rx="6" ry="3" fill="#15803d"/>
-</svg>`)
+const HAWK = pfp(
+  '#fee2e2',
+  `<path d="M6 38 Q32 10 58 38 Q32 28 6 38" fill="#a8a29e"/>
+   <circle cx="32" cy="36" r="14" fill="#78716c"/>
+   <circle cx="38" cy="34" r="2.5" fill="#1e293b"/>
+   <path d="M40 38 L50 44" stroke="#f59e0b" stroke-width="3"/>`,
+)
 
-const SNAKE = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <path d="M10 40 C20 20, 28 52, 38 28 C46 12, 54 40, 58 34" stroke="#84cc16" stroke-width="8" fill="none" stroke-linecap="round"/>
-  <circle cx="56" cy="32" r="5" fill="#65a30d"/>
-  <circle cx="58" cy="31" r="1.5" fill="#1e293b"/>
-</svg>`)
+const FROG = pfp(
+  '#dcfce7',
+  `<circle cx="32" cy="36" r="20" fill="#22c55e"/>
+   <circle cx="20" cy="24" r="8" fill="#4ade80"/><circle cx="44" cy="24" r="8" fill="#4ade80"/>
+   <circle cx="20" cy="24" r="3.5" fill="#1e293b"/><circle cx="44" cy="24" r="3.5" fill="#1e293b"/>
+   <ellipse cx="32" cy="44" rx="7" ry="3.5" fill="#15803d"/>`,
+)
 
-const FUNGI = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <path d="M16 36 Q32 12 48 36 Z" fill="#ef4444"/>
-  <ellipse cx="32" cy="36" rx="16" ry="5" fill="#fca5a5"/>
-  <rect x="28" y="36" width="8" height="16" rx="2" fill="#fef3c7"/>
-  <circle cx="24" cy="28" r="2" fill="#fff"/>
-  <circle cx="36" cy="24" r="2.5" fill="#fff"/>
-</svg>`)
+const SNAKE = pfp(
+  '#ecfccb',
+  `<path d="M12 40 C22 18, 30 50, 40 26 C48 10, 54 42, 58 34" stroke="#84cc16" stroke-width="9" fill="none" stroke-linecap="round"/>
+   <circle cx="54" cy="32" r="7" fill="#65a30d"/><circle cx="56" cy="30" r="2" fill="#1e293b"/>`,
+)
 
-const FACTORY = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect x="8" y="28" width="40" height="28" fill="#64748b"/>
-  <rect x="40" y="16" width="10" height="40" fill="#94a3b8"/>
-  <rect x="14" y="34" width="8" height="8" fill="#38bdf8"/>
-  <rect x="28" y="34" width="8" height="8" fill="#38bdf8"/>
-  <path d="M44 16 Q50 8 56 4" stroke="#94a3b8" stroke-width="4" fill="none" opacity="0.7"/>
-  <path d="M48 16 Q56 6 60 2" stroke="#cbd5e1" stroke-width="3" fill="none" opacity="0.5"/>
-</svg>`)
+const FUNGI = pfp(
+  '#f3e8ff',
+  `<path d="M12 38 Q32 8 52 38 Z" fill="#ef4444"/>
+   <ellipse cx="32" cy="38" rx="20" ry="6" fill="#fca5a5"/>
+   <rect x="27" y="38" width="10" height="18" rx="3" fill="#fef3c7"/>
+   <circle cx="22" cy="28" r="2.5" fill="#fff"/><circle cx="36" cy="22" r="3" fill="#fff"/>`,
+)
 
-const EARTH = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <circle cx="32" cy="32" r="26" fill="#38bdf8"/>
-  <path d="M18 24 Q28 20 34 28 Q40 36 28 40 Q16 38 18 24" fill="#22c55e"/>
-  <path d="M40 18 Q50 22 48 34 Q44 42 38 36 Q36 24 40 18" fill="#16a34a"/>
-  <path d="M12 40 Q22 44 30 42" stroke="#15803d" stroke-width="3" fill="none"/>
-</svg>`)
+const FACTORY = pfp(
+  '#e2e8f0',
+  `<rect x="8" y="28" width="40" height="28" fill="#64748b"/><rect x="40" y="14" width="12" height="42" fill="#94a3b8"/>
+   <rect x="14" y="34" width="8" height="8" fill="#38bdf8"/><rect x="28" y="34" width="8" height="8" fill="#38bdf8"/>
+   <path d="M46 14 Q54 6 60 2" stroke="#94a3b8" stroke-width="4" fill="none"/>`,
+)
 
-const SUN = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <circle cx="32" cy="32" r="14" fill="#facc15"/>
-  <g stroke="#fbbf24" stroke-width="3" stroke-linecap="round">
-    <line x1="32" y1="4" x2="32" y2="12"/><line x1="32" y1="52" x2="32" y2="60"/>
-    <line x1="4" y1="32" x2="12" y2="32"/><line x1="52" y1="32" x2="60" y2="32"/>
-    <line x1="12" y1="12" x2="18" y2="18"/><line x1="46" y1="46" x2="52" y2="52"/>
-    <line x1="52" y1="12" x2="46" y2="18"/><line x1="12" y1="52" x2="18" y2="46"/>
-  </g>
-</svg>`)
+const EARTH = pfp(
+  '#e0f2fe',
+  `<circle cx="32" cy="32" r="24" fill="#38bdf8"/>
+   <path d="M18 24 Q28 20 34 28 Q40 36 28 40 Q16 38 18 24" fill="#22c55e"/>
+   <path d="M40 18 Q50 22 48 34 Q44 42 38 36 Q36 24 40 18" fill="#16a34a"/>`,
+)
 
-const COW = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="32" cy="38" rx="18" ry="14" fill="#f8fafc" stroke="#64748b" stroke-width="1.5"/>
-  <ellipse cx="20" cy="34" rx="5" ry="4" fill="#1e293b"/>
-  <ellipse cx="40" cy="42" rx="6" ry="5" fill="#1e293b"/>
-  <ellipse cx="48" cy="28" rx="9" ry="8" fill="#f8fafc" stroke="#64748b" stroke-width="1"/>
-  <circle cx="52" cy="26" r="2" fill="#1e293b"/>
-  <ellipse cx="50" cy="32" rx="4" ry="2.5" fill="#fda4af"/>
-  <rect x="22" y="48" width="5" height="10" fill="#64748b"/>
-  <rect x="38" y="48" width="5" height="10" fill="#64748b"/>
-</svg>`)
+const SUN = pfp(
+  '#fef9c3',
+  `<circle cx="32" cy="32" r="14" fill="#facc15"/>
+   <g stroke="#fbbf24" stroke-width="3" stroke-linecap="round">
+     <line x1="32" y1="6" x2="32" y2="14"/><line x1="32" y1="50" x2="32" y2="58"/>
+     <line x1="6" y1="32" x2="14" y2="32"/><line x1="50" y1="32" x2="58" y2="32"/>
+     <line x1="12" y1="12" x2="18" y2="18"/><line x1="46" y1="46" x2="52" y2="52"/>
+     <line x1="52" y1="12" x2="46" y2="18"/><line x1="12" y1="52" x2="18" y2="46"/>
+   </g>`,
+)
 
-const MOUSE = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="34" cy="38" rx="16" ry="12" fill="#a8a29e"/>
-  <circle cx="48" cy="32" r="9" fill="#a8a29e"/>
-  <circle cx="18" cy="28" r="7" fill="#d6d3d1"/>
-  <circle cx="52" cy="30" r="2" fill="#1e293b"/>
-  <ellipse cx="54" cy="36" rx="3" ry="2" fill="#fda4af"/>
-  <path d="M18 44 Q8 50 6 58" stroke="#78716c" stroke-width="2" fill="none"/>
-</svg>`)
+const COW = pfp(
+  '#f1f5f9',
+  `<circle cx="32" cy="36" r="18" fill="#f8fafc" stroke="#64748b" stroke-width="1.5"/>
+   <ellipse cx="22" cy="32" rx="5" ry="4" fill="#1e293b"/><ellipse cx="40" cy="40" rx="6" ry="5" fill="#1e293b"/>
+   <circle cx="26" cy="34" r="2.2" fill="#1e293b"/><circle cx="38" cy="34" r="2.2" fill="#1e293b"/>
+   <ellipse cx="32" cy="44" rx="5" ry="3" fill="#fda4af"/>`,
+)
 
-const BIRD = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="34" cy="36" rx="12" ry="9" fill="#38bdf8"/>
-  <path d="M10 36 Q32 18 54 36 Q32 30 10 36" fill="#0ea5e9"/>
-  <circle cx="42" cy="34" r="2" fill="#1e293b"/>
-  <path d="M44 38 L52 40" stroke="#f59e0b" stroke-width="2"/>
-</svg>`)
+const MOUSE = pfp(
+  '#f5f5f4',
+  `<circle cx="18" cy="22" r="8" fill="#d6d3d1"/><circle cx="46" cy="22" r="8" fill="#d6d3d1"/>
+   <circle cx="32" cy="36" r="18" fill="#a8a29e"/>
+   <circle cx="26" cy="34" r="2.5" fill="#1e293b"/><circle cx="38" cy="34" r="2.5" fill="#1e293b"/>
+   <ellipse cx="32" cy="44" rx="4" ry="2.5" fill="#fda4af"/>`,
+)
 
-const BUSH = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <circle cx="24" cy="36" r="14" fill="#15803d"/>
-  <circle cx="40" cy="34" r="16" fill="#16a34a"/>
-  <circle cx="32" cy="42" r="12" fill="#22c55e"/>
-  <circle cx="28" cy="30" r="3" fill="#f472b6"/>
-  <circle cx="40" cy="28" r="2.5" fill="#facc15"/>
-</svg>`)
+const BIRD = pfp(
+  '#e0f2fe',
+  `<path d="M8 38 Q32 14 56 38 Q32 30 8 38" fill="#0ea5e9"/>
+   <circle cx="34" cy="36" r="14" fill="#38bdf8"/>
+   <circle cx="40" cy="34" r="2.5" fill="#1e293b"/>
+   <path d="M42 38 L52 42" stroke="#f59e0b" stroke-width="3"/>`,
+)
 
-const ALGAE = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="32" cy="48" rx="24" ry="8" fill="#0ea5e9" opacity="0.5"/>
-  <path d="M20 48 Q18 28 24 16" stroke="#4ade80" stroke-width="4" fill="none"/>
-  <path d="M32 48 Q34 24 30 12" stroke="#22c55e" stroke-width="5" fill="none"/>
-  <path d="M44 48 Q46 30 42 18" stroke="#86efac" stroke-width="4" fill="none"/>
-</svg>`)
+const BUSH = pfp(
+  '#dcfce7',
+  `<circle cx="22" cy="36" r="16" fill="#15803d"/><circle cx="42" cy="34" r="18" fill="#16a34a"/>
+   <circle cx="32" cy="42" r="14" fill="#22c55e"/>
+   <circle cx="26" cy="28" r="3.5" fill="#f472b6"/><circle cx="42" cy="26" r="3" fill="#facc15"/>`,
+)
 
-const BEETLE = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="32" cy="36" rx="16" ry="12" fill="#1e293b"/>
-  <ellipse cx="32" cy="36" rx="14" ry="10" fill="#334155"/>
-  <line x1="32" y1="26" x2="32" y2="46" stroke="#64748b" stroke-width="2"/>
-  <circle cx="24" cy="28" r="2" fill="#f8fafc"/>
-  <circle cx="40" cy="28" r="2" fill="#f8fafc"/>
-</svg>`)
+const ALGAE = pfp(
+  '#ecfeff',
+  `<ellipse cx="32" cy="48" rx="24" ry="10" fill="#7dd3fc"/>
+   <path d="M18 48 Q16 24 22 10" stroke="#4ade80" stroke-width="5" fill="none"/>
+   <path d="M32 48 Q34 18 30 6" stroke="#22c55e" stroke-width="6" fill="none"/>
+   <path d="M46 48 Q48 26 44 12" stroke="#86efac" stroke-width="5" fill="none"/>`,
+)
 
-const WORM = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <path d="M12 40 C20 28, 28 48, 36 32 C44 18, 52 42, 58 36" stroke="#f472b6" stroke-width="7" fill="none" stroke-linecap="round"/>
-</svg>`)
+const BEETLE = pfp(
+  '#f1f5f9',
+  `<ellipse cx="32" cy="36" rx="18" ry="14" fill="#1e293b"/>
+   <ellipse cx="32" cy="36" rx="15" ry="11" fill="#334155"/>
+   <line x1="32" y1="24" x2="32" y2="48" stroke="#64748b" stroke-width="2"/>
+   <circle cx="24" cy="28" r="2.5" fill="#f8fafc"/><circle cx="40" cy="28" r="2.5" fill="#f8fafc"/>`,
+)
 
-const BACTERIA = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="32" cy="32" rx="18" ry="10" fill="#a3e635" stroke="#65a30d" stroke-width="2"/>
-  <circle cx="24" cy="30" r="2" fill="#365314"/>
-  <circle cx="34" cy="34" r="2" fill="#365314"/>
-  <circle cx="42" cy="30" r="1.5" fill="#365314"/>
-</svg>`)
+const WORM = pfp(
+  '#fce7f3',
+  `<path d="M10 40 C20 22, 28 50, 38 28 C46 12, 52 44, 58 36" stroke="#f472b6" stroke-width="8" fill="none" stroke-linecap="round"/>`,
+)
 
-const GOAT = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="32" cy="40" rx="16" ry="12" fill="#e7e5e4"/>
-  <ellipse cx="46" cy="30" rx="8" ry="7" fill="#e7e5e4"/>
-  <path d="M42 24 L38 12 M48 24 L52 12" stroke="#78716c" stroke-width="2"/>
-  <circle cx="50" cy="28" r="1.8" fill="#1e293b"/>
-  <rect x="22" y="48" width="4" height="10" fill="#a8a29e"/>
-  <rect x="38" y="48" width="4" height="10" fill="#a8a29e"/>
-</svg>`)
+const BACTERIA = pfp(
+  '#ecfccb',
+  `<ellipse cx="32" cy="32" rx="20" ry="12" fill="#a3e635" stroke="#65a30d" stroke-width="2"/>
+   <circle cx="22" cy="30" r="2.5" fill="#365314"/><circle cx="34" cy="34" r="2.5" fill="#365314"/>
+   <circle cx="44" cy="30" r="2" fill="#365314"/>`,
+)
 
-const GRASSHOPPER = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="34" cy="36" rx="16" ry="8" fill="#84cc16"/>
-  <circle cx="48" cy="32" r="6" fill="#65a30d"/>
-  <circle cx="50" cy="30" r="1.5" fill="#1e293b"/>
-  <path d="M20 40 Q10 20 16 12" stroke="#4d7c0f" stroke-width="3" fill="none"/>
-  <path d="M28 42 L18 52" stroke="#365314" stroke-width="2"/>
-</svg>`)
+const GOAT = pfp(
+  '#f5f5f4',
+  `<path d="M22 20 L18 6 M42 20 L46 6" stroke="#78716c" stroke-width="2.5"/>
+   <circle cx="32" cy="36" r="18" fill="#e7e5e4"/>
+   <circle cx="25" cy="34" r="2.4" fill="#1e293b"/><circle cx="39" cy="34" r="2.4" fill="#1e293b"/>
+   <ellipse cx="32" cy="44" rx="4" ry="2.5" fill="#a8a29e"/>`,
+)
 
-const EAGLE = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="32" cy="34" rx="11" ry="9" fill="#78716c"/>
-  <path d="M4 38 Q32 8 60 38 Q32 26 4 38" fill="#a8a29e"/>
-  <circle cx="38" cy="32" r="2.2" fill="#1e293b"/>
-  <path d="M40 36 L50 42" stroke="#f59e0b" stroke-width="2.5"/>
-  <path d="M26 28 L22 18 L30 22" fill="#e7e5e4"/>
-</svg>`)
+const GRASSHOPPER = pfp(
+  '#ecfccb',
+  `<ellipse cx="34" cy="36" rx="18" ry="10" fill="#84cc16"/>
+   <circle cx="48" cy="30" r="8" fill="#65a30d"/><circle cx="50" cy="28" r="2" fill="#1e293b"/>
+   <path d="M18 40 Q8 18 14 8" stroke="#4d7c0f" stroke-width="3.5" fill="none"/>`,
+)
 
-const PHYTO = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <circle cx="24" cy="28" r="8" fill="#4ade80"/>
-  <circle cx="38" cy="36" r="10" fill="#22c55e"/>
-  <circle cx="30" cy="44" r="7" fill="#86efac"/>
-  <circle cx="44" cy="24" r="6" fill="#16a34a"/>
-</svg>`)
+const EAGLE = pfp(
+  '#fee2e2',
+  `<path d="M4 40 Q32 8 60 40 Q32 26 4 40" fill="#a8a29e"/>
+   <circle cx="32" cy="36" r="14" fill="#78716c"/>
+   <path d="M24 26 L20 14 L30 20" fill="#e7e5e4"/>
+   <circle cx="38" cy="34" r="2.5" fill="#1e293b"/>
+   <path d="M40 38 L52 46" stroke="#f59e0b" stroke-width="3"/>`,
+)
+
+const PHYTO = pfp(
+  '#ecfccb',
+  `<circle cx="22" cy="28" r="10" fill="#4ade80"/><circle cx="40" cy="36" r="12" fill="#22c55e"/>
+   <circle cx="30" cy="44" r="8" fill="#86efac"/><circle cx="44" cy="22" r="7" fill="#16a34a"/>`,
+)
 
 const ICONS: Record<string, string> = {
   rabbit: RABBIT,

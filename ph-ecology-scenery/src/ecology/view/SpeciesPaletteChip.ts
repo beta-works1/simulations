@@ -41,8 +41,8 @@ export class SpeciesPaletteChip extends Node {
       stroke: 'rgba(255,255,255,0.35)',
       lineWidth: 1,
     })
-    const icon = createEcologyIcon(LEVEL_ICON[level], 26)
-    icon.left = 6
+    const icon = createEcologyIcon(LEVEL_ICON[level], 30)
+    icon.left = 4
     icon.centerY = 20
     const text = new Text(label, {
       font: new PhetFont({ size: 11, weight: 'bold' }),
