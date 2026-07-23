@@ -373,7 +373,11 @@ export class BrainMappingScreenView extends ScreenView {
     }
 
     // Invisible spacer so the last tip line can scroll fully into view.
-    const bottomPad = new Rectangle(0, 0, 1, 48, { fill: null, pickable: false })
+    // Must use a real fill — `fill: null` nodes often have empty bounds in Scenery.
+    const bottomPad = new Rectangle(0, 0, tipWidth, 56, {
+      fill: 'rgba(255,255,255,0)',
+      pickable: false,
+    })
     panelContent.addChild(bottomPad)
 
     fillDetail(BRAIN_REGIONS[0])
