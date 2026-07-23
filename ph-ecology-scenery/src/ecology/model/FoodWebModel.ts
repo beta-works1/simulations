@@ -59,6 +59,56 @@ export function snapYToBand(level: TrophicLevel, y: number): number {
   return Math.max(min, Math.min(max, y))
 }
 
+/** Minimum spacing so circular avatars (+ labels) do not stack on each other. */
+const MIN_NODE_SEP = 0.14
+
+function nodesTooClose(a: { x: number; y: number }, b: { x: number; y: number }, minSep = MIN_NODE_SEP): boolean {
+  return Math.hypot(a.x - b.x, a.y - b.y) < minSep
+}
+
+/**
+ * Pick a free slot in the trophic band near a preferred point.
+ * Spreads left/right (and a little up/down inside the band) so new avatars do not overlap.
+ */
+export function findOpenPosition(
+  nodes: FoodNode[],
+  level: TrophicLevel,
+  preferredX: number,
+  preferredY: number,
+): { x: number; y: number } {
+  const band = TROPHIC_BANDS[level]
+  const baseY = snapYToBand(level, preferredY)
+  const yOffsets = [0, -0.04, 0.04, -0.07, 0.07]
+  const xCandidates: number[] = [preferredX]
+  for (let step = 1; step <= 10; step++) {
+    const d = step * MIN_NODE_SEP
+    xCandidates.push(preferredX + d, preferredX - d)
+  }
+  // Evenly spaced fallbacks across the scene
+  for (let i = 0; i < 9; i++) {
+    xCandidates.push(0.12 + (i / 8) * 0.76)
+  }
+
+  for (const yOff of yOffsets) {
+    const y = snapYToBand(level, baseY + yOff)
+    // Keep y inside this band only
+    if (y < band.y + 0.06 || y > band.y + band.h - 0.08) continue
+    for (const rawX of xCandidates) {
+      const x = Math.max(0.1, Math.min(0.9, rawX))
+      if (!nodes.some((n) => nodesTooClose(n, { x, y }))) {
+        return { x, y }
+      }
+    }
+  }
+
+  // Last resort: park at the right edge of the band with a unique jitter
+  const n = nodes.filter((node) => node.level === level).length
+  return {
+    x: Math.min(0.9, 0.15 + (n % 7) * 0.12),
+    y: snapYToBand(level, band.y + band.h * (0.35 + (n % 3) * 0.15)),
+  }
+}
+
 export function canLink(from: FoodNode, to: FoodNode): boolean {
   if (from.id === to.id) return false
   if (to.level === 'producer') return false
@@ -367,19 +417,22 @@ export class FoodWebModel implements TModel {
   }
 
   public addSpecies(level: TrophicLevel, name?: string): void {
-    this.addSpeciesAt(level, 0.3 + Math.random() * 0.4, defaultYForLevel(level) + (Math.random() - 0.5) * 0.08, name)
+    const snap = this.webProperty.value
+    const slot = findOpenPosition(snap.nodes, level, 0.5, defaultYForLevel(level))
+    this.addSpeciesAt(level, slot.x, slot.y, name)
   }
 
   /** Drop a palette species onto the scene at normalized coords. */
   public addSpeciesAt(level: TrophicLevel, x: number, y: number, name?: string): void {
     const snap = this.webProperty.value
+    const slot = findOpenPosition(snap.nodes, level, x, y)
     const id = `${level}-${Date.now()}`
     const node: FoodNode = {
       id,
       name: name ?? pickName(level, snap.nodes),
       level,
-      x: Math.max(0.08, Math.min(0.92, x)),
-      y: snapYToBand(level, y),
+      x: slot.x,
+      y: slot.y,
     }
     const prey = snap.nodes.find((n) => {
       if (level === 'herbivore') return n.level === 'producer'
