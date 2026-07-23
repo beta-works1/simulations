@@ -1,40 +1,50 @@
 import { EmptySelfOptions } from 'scenerystack/phet-core'
 import { ScreenView, ScreenViewOptions } from 'scenerystack/sim'
-import { Circle, Node, Path, Rectangle, Text } from 'scenerystack/scenery'
+import { Circle, DragListener, Node, Path, Rectangle, Text } from 'scenerystack/scenery'
 import { Shape } from 'scenerystack/kite'
 import { PhetFont } from 'scenerystack/scenery-phet'
+import { PyramidConstants } from '../../common/PyramidColors.js'
 import {
   DECOMPOSER_LABEL,
   EcologicalPyramidModel,
   formatTierValue,
   PYRAMID_COLORS,
-  PYRAMID_LABELS,
+  PYRAMID_SHORT,
   tierDetail,
   tierDotCount,
 } from '../model/EcologicalPyramidModel.js'
 import { PyramidControlPanel } from './PyramidControlPanel.js'
+import { PyramidSounds } from './PyramidSounds.js'
 
 type Options = EmptySelfOptions & ScreenViewOptions
 
-type TierGeom = { x: number; y: number; w: number; h: number; cx: number; cy: number }
+type TierGeom = { x: number; y: number; w: number; h: number; cx: number; cy: number; wTop: number }
 
 export class EcologicalPyramidScreenView extends ScreenView {
   private readonly model: EcologicalPyramidModel
+  private readonly sounds: PyramidSounds
+  private readonly sceneryLayer: Node
   private readonly pyramidLayer: Node
   private readonly particleLayer: Node
+  private readonly tipCard: Node
+  private readonly tipText: Text
   private readonly sun: Circle
   private readonly sunGlow: Circle
   private readonly sceneBounds: { left: number; top: number; width: number; height: number }
   private tierGeoms: TierGeom[] = []
-  private heatPill: Node | null = null
+  private baseHandle: Circle | null = null
+  private lastHeatSound = 0
+  private heatParticles: { x: number; y: number; vx: number; vy: number; life: number; r: number }[] = []
 
   public constructor(model: EcologicalPyramidModel, providedOptions?: Options) {
     super(providedOptions)
     this.model = model
+    this.sounds = new PyramidSounds()
+    this.sounds.warm()
 
-    const margin = 12
-    const panelW = 260
-    const statusH = 40
+    const margin = 10
+    const panelW = 268
+    const statusH = 36
     const b = this.layoutBounds
 
     const sceneLeft = b.left + margin
@@ -43,9 +53,11 @@ export class EcologicalPyramidScreenView extends ScreenView {
     const sceneH = b.height - statusH - margin * 2
     this.sceneBounds = { left: sceneLeft, top: sceneTop, width: sceneW, height: sceneH }
 
-    const statusBg = new Rectangle(b.left + margin, b.top + 6, b.width - margin * 2, statusH, {
+    const statusBg = new Rectangle(b.left + margin, b.top + 4, b.width - margin * 2, statusH, {
       cornerRadius: 10,
-      fill: 'rgba(15, 23, 42, 0.92)',
+      fill: 'rgba(15, 23, 42, 0.94)',
+      stroke: 'rgba(168, 212, 160, 0.35)',
+      lineWidth: 1,
     })
     this.addChild(statusBg)
     this.addChild(
@@ -58,82 +70,200 @@ export class EcologicalPyramidScreenView extends ScreenView {
       }),
     )
 
-    const sceneBg = new Rectangle(sceneLeft, sceneTop, sceneW, sceneH, {
-      fill: '#143028',
-      cornerRadius: 12,
-      stroke: 'rgba(255,255,255,0.12)',
+    // Scene backdrop
+    const sceneClip = new Rectangle(sceneLeft, sceneTop, sceneW, sceneH, {
+      fill: '#0e2a22',
+      cornerRadius: 14,
+      stroke: 'rgba(255,255,255,0.14)',
       lineWidth: 1,
     })
-    this.addChild(sceneBg)
+    this.addChild(sceneClip)
 
-    this.sunGlow = new Circle(40, {
-      fill: 'rgba(255,220,80,0.25)',
+    this.sceneryLayer = new Node({ pickable: false })
+    this.buildScenery(sceneLeft, sceneTop, sceneW, sceneH)
+    this.addChild(this.sceneryLayer)
+
+    this.sunGlow = new Circle(48, {
+      fill: 'rgba(255,220,80,0.28)',
       centerX: sceneLeft + sceneW / 2,
-      centerY: sceneTop + 36,
+      centerY: sceneTop + 40,
+      cursor: 'pointer',
     })
-    this.sun = new Circle(18, {
+    this.sun = new Circle(20, {
       fill: '#f4d03f',
       centerX: this.sunGlow.centerX,
       centerY: this.sunGlow.centerY,
+      cursor: 'pointer',
     })
+    const sunHit = () => {
+      model.pulseSunBurst()
+      this.sounds.button()
+      this.spawnHeatBurst(this.sun.centerX, this.sun.centerY + 30, 8)
+    }
+    this.sun.addInputListener({ up: sunHit })
+    this.sunGlow.addInputListener({ up: sunHit })
     this.addChild(this.sunGlow)
     this.addChild(this.sun)
     this.addChild(
-      new Text('Sun', {
+      new Text('☀ Sun — tap', {
         font: new PhetFont(10),
         fill: '#f4d03f',
         centerX: this.sun.centerX,
         top: this.sun.bottom + 2,
+        pickable: false,
       }),
     )
 
     this.pyramidLayer = new Node()
-    this.particleLayer = new Node()
+    this.particleLayer = new Node({ pickable: false })
     this.addChild(this.pyramidLayer)
     this.addChild(this.particleLayer)
 
+    this.tipText = new Text('', {
+      font: new PhetFont(10),
+      fill: '#ecfeff',
+      maxWidth: sceneW * 0.55,
+    })
+    const tipBg = new Rectangle(0, 0, 20, 20, {
+      fill: 'rgba(8, 18, 32, 0.88)',
+      cornerRadius: 8,
+      stroke: 'rgba(125, 211, 252, 0.45)',
+      lineWidth: 1,
+    })
+    this.tipCard = new Node({ children: [tipBg, this.tipText], pickable: false })
+    this.addChild(this.tipCard)
+
+    const refreshTip = () => {
+      this.tipText.string = model.tipProperty.value
+      tipBg.rectWidth = this.tipText.width + 16
+      tipBg.rectHeight = this.tipText.height + 12
+      this.tipText.center = tipBg.center
+      this.tipCard.left = sceneLeft + 10
+      this.tipCard.bottom = sceneTop + sceneH - 10
+      this.tipCard.visible = model.showTipsProperty.value
+    }
+    model.tipProperty.link(refreshTip)
+    model.showTipsProperty.link(refreshTip)
+
     this.addChild(
-      new PyramidControlPanel(model, {
+      new PyramidControlPanel(model, this.sounds, {
         right: b.right - margin,
         top: sceneTop,
         maxWidth: panelW,
+        panelMaxHeight: sceneH,
       }),
     )
 
     model.baseEnergyProperty.link(() => this.rebuildPyramid())
+    model.transferProperty.link(() => this.rebuildPyramid())
     model.modeProperty.link(() => this.rebuildPyramid())
     model.selectedTierProperty.link(() => this.rebuildPyramid())
+    model.decomposerFocusProperty.link(() => this.rebuildPyramid())
+    model.hoverTierProperty.link(() => this.rebuildPyramid())
+    model.soundEnabledProperty.link(on => this.sounds.setEnabled(on))
+
+    let lastBase = model.baseEnergyProperty.value
+    model.baseEnergyProperty.lazyLink(v => {
+      if (Math.abs(v - lastBase) > 80) this.sounds.sliderTick()
+      lastBase = v
+    })
 
     this.rebuildPyramid()
   }
 
+  private buildScenery(left: number, top: number, w: number, h: number): void {
+    // Sky gradient bands
+    const skyH = h * 0.42
+    this.sceneryLayer.addChild(
+      new Rectangle(left, top, w, skyH, {
+        fill: '#1a4a5c',
+        cornerRadius: 14,
+      }),
+    )
+    this.sceneryLayer.addChild(
+      new Rectangle(left, top + skyH * 0.55, w, skyH * 0.55, {
+        fill: 'rgba(56, 120, 110, 0.55)',
+      }),
+    )
+    // Soft clouds
+    for (let i = 0; i < 4; i++) {
+      const cx = left + w * (0.12 + i * 0.22)
+      const cy = top + 18 + (i % 2) * 14
+      this.sceneryLayer.addChild(
+        new Circle(14 + (i % 3) * 4, {
+          fill: 'rgba(255,255,255,0.12)',
+          centerX: cx,
+          centerY: cy,
+        }),
+      )
+      this.sceneryLayer.addChild(
+        new Circle(10, {
+          fill: 'rgba(255,255,255,0.1)',
+          centerX: cx + 12,
+          centerY: cy + 2,
+        }),
+      )
+    }
+    // Hills
+    const hill = new Shape()
+    hill.moveTo(left, top + h * 0.72)
+    hill.quadraticCurveTo(left + w * 0.25, top + h * 0.55, left + w * 0.5, top + h * 0.68)
+    hill.quadraticCurveTo(left + w * 0.75, top + h * 0.82, left + w, top + h * 0.62)
+    hill.lineTo(left + w, top + h)
+    hill.lineTo(left, top + h)
+    hill.close()
+    this.sceneryLayer.addChild(new Path(hill, { fill: '#1e4d38' }))
+
+    const hill2 = new Shape()
+    hill2.moveTo(left, top + h * 0.82)
+    hill2.quadraticCurveTo(left + w * 0.35, top + h * 0.7, left + w * 0.7, top + h * 0.8)
+    hill2.lineTo(left + w, top + h * 0.78)
+    hill2.lineTo(left + w, top + h)
+    hill2.lineTo(left, top + h)
+    hill2.close()
+    this.sceneryLayer.addChild(new Path(hill2, { fill: '#163828' }))
+
+    // Ground strip
+    this.sceneryLayer.addChild(
+      new Rectangle(left, top + h - 28, w, 28, {
+        fill: '#2c1810',
+      }),
+    )
+  }
+
   private rebuildPyramid(): void {
     this.pyramidLayer.removeAllChildren()
-    this.heatPill = null
+    this.baseHandle = null
 
     const s = this.sceneBounds
     const base = this.model.baseEnergyProperty.value
+    const transfer = this.model.transferProperty.value
     const mode = this.model.modeProperty.value
     const selected = this.model.selectedTierProperty.value
+    const hover = this.model.hoverTierProperty.value
+    const decFocus = this.model.decomposerFocusProperty.value
 
-    const pyramidTop = s.top + 70
-    const pyramidBottom = s.top + s.height - 56
+    const pyramidTop = s.top + 78
+    const pyramidBottom = s.top + s.height - 62
     const availableH = pyramidBottom - pyramidTop
-    const tierH = availableH / 4.4
+    const tierH = availableH / 4.35
     const cx = s.left + s.width / 2
-    const maxW = s.width * 0.82
-    const minW = s.width * 0.28
+    const maxW = s.width * 0.8
+    const minW = s.width * 0.26
 
     this.tierGeoms = []
 
-    // Draw from tertiary (top, narrow) to producers (bottom, wide) — visual top is tier 3
+    // Soft ground shadow under pyramid
+    this.pyramidLayer.addChild(
+      new EllipseShadow(cx, pyramidBottom + 8, maxW * 0.55, 14),
+    )
+
     for (let visual = 0; visual < 4; visual++) {
       const tier = 3 - visual
       const wTop = minW + (maxW - minW) * (visual / 4)
       const wBot = minW + (maxW - minW) * ((visual + 1) / 4)
       const y = pyramidTop + visual * tierH
-      const h = tierH - 4
-      const x = cx - wBot / 2
+      const h = tierH - 5
 
       const shape = new Shape()
       shape.moveTo(cx - wTop / 2, y)
@@ -143,100 +273,252 @@ export class EcologicalPyramidScreenView extends ScreenView {
       shape.close()
 
       const selectedTier = selected === tier
+      const hovered = hover === tier
       const band = new Path(shape, {
         fill: PYRAMID_COLORS[tier],
-        stroke: selectedTier ? '#ffffff' : 'rgba(0,0,0,0.35)',
-        lineWidth: selectedTier ? 3 : 1,
+        stroke: selectedTier ? '#ffffff' : hovered ? '#7dd3fc' : 'rgba(0,0,0,0.4)',
+        lineWidth: selectedTier ? 3.5 : hovered ? 2.5 : 1,
         cursor: 'pointer',
-        opacity: selectedTier ? 1 : 0.88,
+        opacity: selectedTier || decFocus === false ? (selectedTier ? 1 : hovered ? 0.95 : 0.86) : 0.7,
       })
       band.addInputListener({
-        up: () => this.model.selectTier(tier),
+        enter: () => {
+          this.model.hoverTierProperty.value = tier
+        },
+        exit: () => {
+          if (this.model.hoverTierProperty.value === tier) this.model.hoverTierProperty.value = -1
+        },
+        up: () => {
+          this.model.selectTier(tier)
+          this.sounds.tierSelect()
+          this.spawnHeatBurst(cx, y + h / 2, 5)
+        },
       })
       this.pyramidLayer.addChild(band)
 
-      const geom: TierGeom = { x, y, w: wBot, h, cx, cy: y + h / 2 }
+      // Inner highlight for depth
+      const gloss = new Shape()
+      gloss.moveTo(cx - wTop / 2 + 4, y + 3)
+      gloss.lineTo(cx + wTop / 2 - 4, y + 3)
+      gloss.lineTo(cx + wBot / 2 - 10, y + h * 0.35)
+      gloss.lineTo(cx - wBot / 2 + 10, y + h * 0.35)
+      gloss.close()
+      this.pyramidLayer.addChild(
+        new Path(gloss, {
+          fill: 'rgba(255,255,255,0.14)',
+          pickable: false,
+        }),
+      )
+
+      const geom: TierGeom = { x: cx - wBot / 2, y, w: wBot, h, cx, cy: y + h / 2, wTop }
       this.tierGeoms[tier] = geom
 
-      const label = new Text(PYRAMID_LABELS[tier], {
-        font: new PhetFont({ size: 11, weight: 'bold' }),
+      const label = new Text(PYRAMID_SHORT[tier], {
+        font: new PhetFont({ size: 12, weight: 'bold' }),
         fill: 'white',
         centerX: cx,
-        centerY: y + h * 0.38,
-        maxWidth: wBot * 0.9,
+        centerY: y + h * 0.32,
+        maxWidth: wBot * 0.85,
+        pickable: false,
       })
-      label.pickable = false
       this.pyramidLayer.addChild(label)
 
-      const d = tierDetail(base, tier, mode)
+      const d = tierDetail(base, tier, mode, transfer)
       const valueChip = new Text(formatTierValue(d.energy, mode), {
-        font: new PhetFont(10),
+        font: new PhetFont({ size: 11, weight: 'bold' }),
         fill: '#0b1628',
-        centerX: cx,
-        centerY: y + h * 0.68,
+        pickable: false,
       })
-      const chipBg = new Rectangle(0, 0, valueChip.width + 12, 16, {
-        fill: 'rgba(255,255,255,0.85)',
-        cornerRadius: 8,
-        center: valueChip.center,
+      const chipBg = new Rectangle(0, 0, valueChip.width + 14, 18, {
+        fill: 'rgba(255,255,255,0.9)',
+        cornerRadius: 9,
+        pickable: false,
       })
-      chipBg.pickable = false
-      valueChip.pickable = false
+      chipBg.centerX = cx
+      chipBg.centerY = y + h * 0.62
+      valueChip.center = chipBg.center
       this.pyramidLayer.addChild(chipBg)
       this.pyramidLayer.addChild(valueChip)
 
-      // Relative dots
-      const dots = tierDotCount(base, tier, mode)
+      // Organism / mass dots
+      const dots = tierDotCount(base, tier, mode, transfer)
+      const cols = Math.max(1, Math.ceil(Math.sqrt(dots)))
       for (let i = 0; i < dots; i++) {
-        const col = i % Math.max(1, Math.ceil(Math.sqrt(dots)))
-        const row = Math.floor(i / Math.max(1, Math.ceil(Math.sqrt(dots))))
-        const dx = (col - 2) * 7
-        const dy = row * 6 - 4
+        const col = i % cols
+        const row = Math.floor(i / cols)
+        const dx = (col - (cols - 1) / 2) * 6.5
+        const dy = row * 5.5 - 2
+        const side = tier % 2 === 0 ? -1 : 1
         this.pyramidLayer.addChild(
-          new Circle(2, {
-            fill: 'rgba(255,255,255,0.45)',
-            centerX: cx + dx + (tier % 2 === 0 ? -18 : 18),
+          new Circle(mode === 'biomass' ? 2.4 : 1.9, {
+            fill: mode === 'numbers' ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.4)',
+            centerX: cx + side * (wBot * 0.28) + dx,
             centerY: y + h * 0.55 + dy,
             pickable: false,
           }),
         )
       }
+
+      // Transfer label between this tier and the one below (visual)
+      if (visual < 3) {
+        const keepPct = (transfer * 100).toFixed(0)
+        const midY = y + h + 1
+        const badge = new Text(`${keepPct}% ↑`, {
+          font: new PhetFont({ size: 9, weight: 'bold' }),
+          fill: '#fecaca',
+          pickable: false,
+        })
+        const badgeBg = new Rectangle(0, 0, badge.width + 10, 14, {
+          fill: 'rgba(127, 29, 29, 0.85)',
+          cornerRadius: 7,
+          pickable: false,
+        })
+        badgeBg.centerX = cx + wBot * 0.38
+        badgeBg.centerY = midY
+        badge.center = badgeBg.center
+        this.pyramidLayer.addChild(badgeBg)
+        this.pyramidLayer.addChild(badge)
+      }
+    }
+
+    // Draggable base-energy handle on producers
+    const prod = this.tierGeoms[0]
+    if (prod) {
+      const handle = new Circle(13, {
+        fill: '#7dd3fc',
+        stroke: '#ffffff',
+        lineWidth: 2,
+        centerX: prod.cx + prod.w * 0.42,
+        centerY: prod.cy + prod.h * 0.15,
+        cursor: 'ew-resize',
+      })
+      const handleLabel = new Text('⟷ energy', {
+        font: new PhetFont(8),
+        fill: '#e0f2fe',
+        centerX: handle.centerX,
+        top: handle.bottom + 1,
+        pickable: false,
+      })
+      let dragStartX = 0
+      let startBase = base
+      handle.addInputListener(
+        new DragListener({
+          allowTouchSnag: true,
+          start: event => {
+            dragStartX = event.pointer.point.x
+            startBase = this.model.baseEnergyProperty.value
+            this.sounds.grabHandle()
+          },
+          drag: event => {
+            const dx = event.pointer.point.x - dragStartX
+            const span = PyramidConstants.BASE_MAX - PyramidConstants.BASE_MIN
+            const delta = (dx / (s.width * 0.35)) * span
+            this.model.setBaseEnergy(startBase + delta)
+          },
+          end: () => this.sounds.releaseHandle(),
+        }),
+      )
+      this.pyramidLayer.addChild(handle)
+      this.pyramidLayer.addChild(handleLabel)
+      this.baseHandle = handle
     }
 
     // Decomposer band
     const decY = pyramidBottom + 4
-    const dec = new Rectangle(s.left + s.width * 0.08, decY, s.width * 0.84, 36, {
-      fill: 'rgba(121, 85, 72, 0.85)',
-      cornerRadius: 8,
-      stroke: 'rgba(255,255,255,0.25)',
-      lineWidth: 1,
+    const dec = new Rectangle(s.left + s.width * 0.08, decY, s.width * 0.84, 38, {
+      fill: decFocus ? 'rgba(161, 98, 64, 0.95)' : 'rgba(121, 85, 72, 0.88)',
+      cornerRadius: 10,
+      stroke: decFocus ? '#fde68a' : 'rgba(255,255,255,0.28)',
+      lineWidth: decFocus ? 2.5 : 1,
+      cursor: 'pointer',
+    })
+    dec.addInputListener({
+      up: () => {
+        this.model.selectDecomposers()
+        this.sounds.decomposer()
+        this.spawnHeatBurst(cx, decY + 18, 6)
+      },
     })
     this.pyramidLayer.addChild(dec)
     this.pyramidLayer.addChild(
-      new Text(`${DECOMPOSER_LABEL} — recycle nutrients → producers`, {
-        font: new PhetFont(10),
+      new Text(`${DECOMPOSER_LABEL}  ·  recycle → nutrients → producers`, {
+        font: new PhetFont({ size: 11, weight: 'bold' }),
         fill: 'white',
         center: dec.center,
-        maxWidth: dec.width - 12,
+        maxWidth: dec.width - 14,
+        pickable: false,
       }),
     )
 
+    // Mode badge
+    const modeBadge = new Text(
+      mode === 'energy' ? 'Energy pyramid' : mode === 'biomass' ? 'Biomass pyramid' : 'Numbers pyramid',
+      {
+        font: new PhetFont({ size: 10, weight: 'bold' }),
+        fill: '#ecfeff',
+        pickable: false,
+      },
+    )
+    const modeBg = new Rectangle(0, 0, modeBadge.width + 14, 20, {
+      fill: 'rgba(15, 23, 42, 0.75)',
+      cornerRadius: 10,
+      pickable: false,
+    })
+    modeBg.left = s.left + 10
+    modeBg.top = s.top + 10
+    modeBadge.center = modeBg.center
+    this.pyramidLayer.addChild(modeBg)
+    this.pyramidLayer.addChild(modeBadge)
+
     if (mode === 'energy') {
-      this.heatPill = new Node()
-      const pillBg = new Rectangle(0, 0, 150, 22, {
-        fill: 'rgba(192, 57, 43, 0.9)',
-        cornerRadius: 11,
-      })
-      const pillText = new Text('~90% lost as heat', {
+      const pillText = new Text(`~${((1 - transfer) * 100).toFixed(0)}% lost as heat`, {
         font: new PhetFont({ size: 10, weight: 'bold' }),
         fill: 'white',
-        center: pillBg.center,
+        pickable: false,
       })
-      this.heatPill.addChild(pillBg)
-      this.heatPill.addChild(pillText)
-      this.heatPill.right = s.left + s.width - 12
-      this.heatPill.top = s.top + 12
-      this.pyramidLayer.addChild(this.heatPill)
+      const pillBg = new Rectangle(0, 0, pillText.width + 14, 22, {
+        fill: 'rgba(192, 57, 43, 0.92)',
+        cornerRadius: 11,
+        pickable: false,
+      })
+      pillBg.right = s.left + s.width - 12
+      pillBg.top = s.top + 10
+      pillText.center = pillBg.center
+      this.pyramidLayer.addChild(pillBg)
+      this.pyramidLayer.addChild(pillText)
+    }
+
+    // Level index chips on the left
+    for (let tier = 0; tier < 4; tier++) {
+      const g = this.tierGeoms[tier]
+      if (!g) continue
+      const n = new Text(String(tier + 1), {
+        font: new PhetFont({ size: 10, weight: 'bold' }),
+        fill: '#0b1628',
+        pickable: false,
+      })
+      const chip = new Circle(9, {
+        fill: selected === tier ? '#f4d03f' : 'rgba(255,255,255,0.75)',
+        centerX: g.x - 14,
+        centerY: g.cy,
+        pickable: false,
+      })
+      n.center = chip.center
+      this.pyramidLayer.addChild(chip)
+      this.pyramidLayer.addChild(n)
+    }
+  }
+
+  private spawnHeatBurst(x: number, y: number, n: number): void {
+    for (let i = 0; i < n; i++) {
+      this.heatParticles.push({
+        x: x + (Math.random() - 0.5) * 20,
+        y: y + (Math.random() - 0.5) * 10,
+        vx: (Math.random() - 0.5) * 40,
+        vy: -30 - Math.random() * 50,
+        life: 0.6 + Math.random() * 0.5,
+        r: 2 + Math.random() * 3,
+      })
     }
   }
 
@@ -245,29 +527,95 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.model.step(capped)
 
     const pulse = this.model.pulseProperty.value
-    const r = 18 + Math.sin(pulse * 2) * 2
+    const r = 20 + Math.sin(pulse * 2) * 2.5
     this.sun.radius = r
-    this.sunGlow.radius = 32 + Math.sin(pulse * 2) * 4
-    this.sunGlow.opacity = 0.35 + Math.sin(pulse * 2) * 0.1
+    this.sunGlow.radius = 36 + Math.sin(pulse * 2) * 6
+    this.sunGlow.opacity = 0.32 + Math.sin(pulse * 2.2) * 0.12
 
-    // Energy-loss particles between tiers (energy mode only)
     this.particleLayer.removeAllChildren()
-    if (this.model.modeProperty.value !== 'energy' || !this.model.runningProperty.value) return
 
-    for (let tier = 1; tier < 4; tier++) {
-      const above = this.tierGeoms[tier]
-      const below = this.tierGeoms[tier - 1]
-      if (!above || !below) continue
-      const t = (pulse * 0.6 + tier * 0.25) % 1
-      const x = above.cx + Math.sin(pulse * 3 + tier) * 12
-      const y = below.cy + (above.cy - below.cy) * t
+    // Rising heat + transfer particles
+    if (this.model.runningProperty.value) {
+      for (let tier = 1; tier < 4; tier++) {
+        const above = this.tierGeoms[tier]
+        const below = this.tierGeoms[tier - 1]
+        if (!above || !below) continue
+        for (let p = 0; p < 2; p++) {
+          const t = (pulse * (0.45 + p * 0.12) + tier * 0.22 + p * 0.4) % 1
+          const x = above.cx + Math.sin(pulse * 2.5 + tier + p) * (14 + p * 6)
+          const y = below.cy + (above.cy - below.cy) * t
+          const heat = this.model.modeProperty.value === 'energy'
+          this.particleLayer.addChild(
+            new Circle(2.2 + (1 - t) * 1.5, {
+              fill: heat
+                ? `rgba(248, 113, 113, ${0.25 + (1 - t) * 0.55})`
+                : `rgba(125, 211, 252, ${0.2 + (1 - t) * 0.45})`,
+              centerX: x,
+              centerY: y,
+            }),
+          )
+        }
+      }
+
+      // Occasional whoosh when highlight is active
+      if (
+        this.model.highlightTransferProperty.value > 1.1 &&
+        Date.now() - this.lastHeatSound > 900
+      ) {
+        this.lastHeatSound = Date.now()
+        if (this.model.modeProperty.value === 'energy') this.sounds.heatWhoosh()
+      }
+    }
+
+    // Burst particles
+    for (let i = this.heatParticles.length - 1; i >= 0; i--) {
+      const p = this.heatParticles[i]!
+      p.life -= capped
+      p.x += p.vx * capped
+      p.y += p.vy * capped
+      p.vy += 20 * capped
+      if (p.life <= 0) {
+        this.heatParticles.splice(i, 1)
+        continue
+      }
       this.particleLayer.addChild(
-        new Circle(3, {
-          fill: `rgba(231, 76, 60, ${0.35 + (1 - t) * 0.45})`,
-          centerX: x,
-          centerY: y,
+        new Circle(p.r * Math.max(0.2, p.life), {
+          fill: `rgba(251, 146, 60, ${Math.min(0.9, p.life)})`,
+          centerX: p.x,
+          centerY: p.y,
         }),
       )
     }
+
+    // Nutrient recycle dots when decomposers focused
+    if (this.model.decomposerFocusProperty.value && this.model.runningProperty.value) {
+      const prod = this.tierGeoms[0]
+      const s = this.sceneBounds
+      if (prod) {
+        const t = (pulse * 0.5) % 1
+        const x = prod.cx + Math.sin(pulse * 3) * 30
+        const y = s.top + s.height - 40 + (prod.cy - (s.top + s.height - 40)) * t
+        this.particleLayer.addChild(
+          new Circle(3.5, {
+            fill: `rgba(167, 243, 208, ${0.3 + t * 0.5})`,
+            centerX: x,
+            centerY: y,
+          }),
+        )
+      }
+    }
+
+    // Pulse selected band via sun-driven handle nudge
+    if (this.baseHandle) {
+      this.baseHandle.opacity = 0.75 + Math.sin(pulse * 3) * 0.2
+    }
+  }
+}
+
+/** Soft elliptical ground shadow under the pyramid */
+class EllipseShadow extends Node {
+  public constructor(cx: number, cy: number, rx: number, ry: number) {
+    super({ pickable: false })
+    this.addChild(new Path(Shape.ellipse(cx, cy, rx, ry, 0), { fill: 'rgba(0,0,0,0.35)' }))
   }
 }

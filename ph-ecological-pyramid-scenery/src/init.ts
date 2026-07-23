@@ -2,10 +2,11 @@ import { init, madeWithSceneryStackSplashDataURI } from 'scenerystack/init'
 
 init({
   name: 'ecological-pyramid',
-  version: '1.0.0',
+  version: '1.1.0',
   brand: 'made-with-scenerystack',
   locale: 'en',
   availableLocales: ['en'],
   splashDataURI: madeWithSceneryStackSplashDataURI,
   allowLocaleSwitching: false,
+  supportsSound: true,
 })
