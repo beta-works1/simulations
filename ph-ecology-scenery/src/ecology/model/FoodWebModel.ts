@@ -36,6 +36,29 @@ export const SPECIES_PALETTE: { level: TrophicLevel; label: string; names: strin
   { level: 'decomposer', label: 'Decomposer', names: ['Fungi', 'Bacteria', 'Earthworm', 'Beetle'] },
 ]
 
+/**
+ * Vertical layout of trophic bands (normalized 0–1 inside the scene).
+ * Centers must match the painted bands in FoodWebScreenView.
+ */
+export const TROPHIC_BANDS: Record<TrophicLevel, { y: number; h: number; label: string; fill: string }> = {
+  carnivore: { y: 0.06, h: 0.22, label: 'Top consumers', fill: 'rgba(231,76,60,0.1)' },
+  herbivore: { y: 0.30, h: 0.22, label: 'Primary consumers', fill: 'rgba(241,196,15,0.1)' },
+  producer: { y: 0.54, h: 0.24, label: 'Producers', fill: 'rgba(39,174,96,0.12)' },
+  decomposer: { y: 0.80, h: 0.16, label: 'Decomposers', fill: 'rgba(142,68,173,0.12)' },
+}
+
+export function bandCenterY(level: TrophicLevel): number {
+  const b = TROPHIC_BANDS[level]
+  return b.y + b.h * 0.45
+}
+
+export function snapYToBand(level: TrophicLevel, y: number): number {
+  const b = TROPHIC_BANDS[level]
+  const min = b.y + 0.08
+  const max = b.y + b.h - 0.1
+  return Math.max(min, Math.min(max, y))
+}
+
 export function canLink(from: FoodNode, to: FoodNode): boolean {
   if (from.id === to.id) return false
   if (to.level === 'producer') return false
@@ -50,10 +73,10 @@ export function canLink(from: FoodNode, to: FoodNode): boolean {
 function starterWeb(): FoodWebSnapshot {
   return {
     nodes: [
-      { id: 'grass', name: 'Grass', level: 'producer', x: 0.18, y: 0.72 },
-      { id: 'rabbit', name: 'Rabbit', level: 'herbivore', x: 0.42, y: 0.52 },
-      { id: 'fox', name: 'Fox', level: 'carnivore', x: 0.68, y: 0.32 },
-      { id: 'fungi', name: 'Fungi', level: 'decomposer', x: 0.78, y: 0.78 },
+      { id: 'grass', name: 'Grass', level: 'producer', x: 0.22, y: bandCenterY('producer') },
+      { id: 'rabbit', name: 'Rabbit', level: 'herbivore', x: 0.48, y: bandCenterY('herbivore') },
+      { id: 'fox', name: 'Fox', level: 'carnivore', x: 0.72, y: bandCenterY('carnivore') },
+      { id: 'fungi', name: 'Fungi', level: 'decomposer', x: 0.78, y: bandCenterY('decomposer') },
     ],
     links: [
       { from: 'grass', to: 'rabbit' },
@@ -67,11 +90,11 @@ function starterWeb(): FoodWebSnapshot {
 export function grasslandChain(): FoodWebSnapshot {
   return {
     nodes: [
-      { id: 'grass', name: 'Grass', level: 'producer', x: 0.12, y: 0.78 },
-      { id: 'grasshopper', name: 'Grasshopper', level: 'herbivore', x: 0.3, y: 0.62 },
-      { id: 'frog', name: 'Frog', level: 'carnivore', x: 0.48, y: 0.46 },
-      { id: 'snake', name: 'Snake', level: 'carnivore', x: 0.66, y: 0.3 },
-      { id: 'eagle', name: 'Eagle', level: 'carnivore', x: 0.84, y: 0.16 },
+      { id: 'grass', name: 'Grass', level: 'producer', x: 0.14, y: bandCenterY('producer') },
+      { id: 'grasshopper', name: 'Grasshopper', level: 'herbivore', x: 0.32, y: bandCenterY('herbivore') },
+      { id: 'frog', name: 'Frog', level: 'carnivore', x: 0.5, y: bandCenterY('carnivore') - 0.02 },
+      { id: 'snake', name: 'Snake', level: 'carnivore', x: 0.68, y: bandCenterY('carnivore') + 0.02 },
+      { id: 'eagle', name: 'Eagle', level: 'carnivore', x: 0.86, y: bandCenterY('carnivore') - 0.04 },
     ],
     links: [
       { from: 'grass', to: 'grasshopper' },
@@ -85,15 +108,15 @@ export function grasslandChain(): FoodWebSnapshot {
 export function grasslandWeb(): FoodWebSnapshot {
   return {
     nodes: [
-      { id: 'grass', name: 'Grass', level: 'producer', x: 0.14, y: 0.8 },
-      { id: 'grasshopper', name: 'Grasshopper', level: 'herbivore', x: 0.32, y: 0.62 },
-      { id: 'rabbit', name: 'Rabbit', level: 'herbivore', x: 0.28, y: 0.42 },
-      { id: 'mouse', name: 'Mouse', level: 'herbivore', x: 0.22, y: 0.22 },
-      { id: 'frog', name: 'Frog', level: 'carnivore', x: 0.5, y: 0.55 },
-      { id: 'bird', name: 'Bird', level: 'carnivore', x: 0.52, y: 0.28 },
-      { id: 'snake', name: 'Snake', level: 'carnivore', x: 0.72, y: 0.42 },
-      { id: 'eagle', name: 'Eagle', level: 'carnivore', x: 0.88, y: 0.18 },
-      { id: 'fungi', name: 'Fungi', level: 'decomposer', x: 0.86, y: 0.82 },
+      { id: 'grass', name: 'Grass', level: 'producer', x: 0.18, y: bandCenterY('producer') },
+      { id: 'grasshopper', name: 'Grasshopper', level: 'herbivore', x: 0.34, y: bandCenterY('herbivore') + 0.03 },
+      { id: 'rabbit', name: 'Rabbit', level: 'herbivore', x: 0.5, y: bandCenterY('herbivore') - 0.02 },
+      { id: 'mouse', name: 'Mouse', level: 'herbivore', x: 0.66, y: bandCenterY('herbivore') + 0.02 },
+      { id: 'frog', name: 'Frog', level: 'carnivore', x: 0.36, y: bandCenterY('carnivore') + 0.03 },
+      { id: 'bird', name: 'Bird', level: 'carnivore', x: 0.54, y: bandCenterY('carnivore') - 0.03 },
+      { id: 'snake', name: 'Snake', level: 'carnivore', x: 0.7, y: bandCenterY('carnivore') + 0.02 },
+      { id: 'eagle', name: 'Eagle', level: 'carnivore', x: 0.86, y: bandCenterY('carnivore') - 0.02 },
+      { id: 'fungi', name: 'Fungi', level: 'decomposer', x: 0.8, y: bandCenterY('decomposer') },
     ],
     links: [
       { from: 'grass', to: 'grasshopper' },
@@ -200,10 +223,7 @@ function pickName(level: TrophicLevel, existing: FoodNode[]): string {
 }
 
 function defaultYForLevel(level: TrophicLevel): number {
-  if (level === 'producer') return 0.78
-  if (level === 'herbivore') return 0.52
-  if (level === 'carnivore') return 0.28
-  return 0.88
+  return bandCenterY(level)
 }
 
 export class FoodWebModel implements TModel {
@@ -274,7 +294,13 @@ export class FoodWebModel implements TModel {
     this.webProperty.value = {
       ...snap,
       nodes: snap.nodes.map((n) =>
-        n.id === id ? { ...n, x: Math.max(0.06, Math.min(0.94, x)), y: Math.max(0.06, Math.min(0.94, y)) } : n,
+        n.id === id
+          ? {
+              ...n,
+              x: Math.max(0.08, Math.min(0.92, x)),
+              y: snapYToBand(n.level, y),
+            }
+          : n,
       ),
     }
   }
@@ -352,8 +378,8 @@ export class FoodWebModel implements TModel {
       id,
       name: name ?? pickName(level, snap.nodes),
       level,
-      x: Math.max(0.06, Math.min(0.94, x)),
-      y: Math.max(0.06, Math.min(0.94, y)),
+      x: Math.max(0.08, Math.min(0.92, x)),
+      y: snapYToBand(level, y),
     }
     const prey = snap.nodes.find((n) => {
       if (level === 'herbivore') return n.level === 'producer'

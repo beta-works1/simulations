@@ -8,8 +8,10 @@ import {
   computeNodeEnergy,
   FoodWebModel,
   formatEnergy,
+  TROPHIC_BANDS,
   webStability,
   type FoodNode,
+  type TrophicLevel,
 } from '../model/FoodWebModel.js'
 import { EcologyControlPanel } from './EcologyControlPanel.js'
 import { EcologySounds } from './EcologySounds.js'
@@ -17,6 +19,8 @@ import { SpeciesNode } from './SpeciesNode.js'
 import { createEcologyIcon } from '../../common/EcologyArt.js'
 
 type Options = EmptySelfOptions & ScreenViewOptions
+
+const BAND_ORDER: TrophicLevel[] = ['carnivore', 'herbivore', 'producer', 'decomposer']
 
 export class FoodWebScreenView extends ScreenView {
   private readonly model: FoodWebModel
@@ -28,8 +32,7 @@ export class FoodWebScreenView extends ScreenView {
   private readonly speciesNodes = new Map<string, SpeciesNode>()
   private readonly areaBounds: Rectangle
   private readonly dropHighlight: Rectangle
-  private readonly sun: Circle
-  private readonly sunGlow: Circle
+  private readonly sunNode: Node
   private pulseLine = 0
 
   public constructor(model: FoodWebModel, providedOptions?: Options) {
@@ -47,62 +50,43 @@ export class FoodWebScreenView extends ScreenView {
     const areaWidth = bounds.width - panelW - margin * 3
     const areaHeight = bounds.height - statusH - margin * 2
 
-    // Layered landscape background
     this.areaBounds = new Rectangle(areaLeft, areaTop, areaWidth, areaHeight, {
-      fill: '#0f2a22',
-      stroke: 'rgba(255,255,255,0.14)',
+      fill: '#0d1f28',
+      stroke: 'rgba(255,255,255,0.12)',
       lineWidth: 1,
       cornerRadius: 14,
     })
     this.addChild(this.areaBounds)
 
-    // Sky band
+    // Quiet sky strip (no busy hills)
     this.addChild(
-      new Rectangle(areaLeft, areaTop, areaWidth, areaHeight * 0.28, {
-        fill: '#1a3a4a',
+      new Rectangle(areaLeft, areaTop, areaWidth, areaHeight * TROPHIC_BANDS.carnivore.h + areaHeight * 0.04, {
+        fill: '#152a38',
         cornerRadius: 14,
       }),
     )
 
-    // Distant hills
-    const hills = new Path(
-      new Shape()
-        .moveTo(areaLeft, areaTop + areaHeight * 0.42)
-        .quadraticCurveTo(areaLeft + areaWidth * 0.25, areaTop + areaHeight * 0.28, areaLeft + areaWidth * 0.5, areaTop + areaHeight * 0.4)
-        .quadraticCurveTo(areaLeft + areaWidth * 0.75, areaTop + areaHeight * 0.52, areaLeft + areaWidth, areaTop + areaHeight * 0.38)
-        .lineTo(areaLeft + areaWidth, areaTop + areaHeight * 0.55)
-        .lineTo(areaLeft, areaTop + areaHeight * 0.55)
-        .close(),
-      { fill: 'rgba(46, 125, 80, 0.35)' },
-    )
-    this.addChild(hills)
-
-    // Trophic bands with labels
-    const bands: { fill: string; label: string; yFrac: number; hFrac: number }[] = [
-      { fill: 'rgba(231,76,60,0.1)', label: 'Top consumers', yFrac: 0.12, hFrac: 0.2 },
-      { fill: 'rgba(241,196,15,0.1)', label: 'Primary consumers', yFrac: 0.34, hFrac: 0.22 },
-      { fill: 'rgba(39,174,96,0.12)', label: 'Producers', yFrac: 0.58, hFrac: 0.24 },
-      { fill: 'rgba(142,68,173,0.12)', label: 'Decomposers', yFrac: 0.84, hFrac: 0.14 },
-    ]
-    for (const band of bands) {
+    // Trophic bands — same geometry as model snap targets
+    for (const level of BAND_ORDER) {
+      const band = TROPHIC_BANDS[level]
       this.addChild(
-        new Rectangle(areaLeft + 2, areaTop + areaHeight * band.yFrac, areaWidth - 4, areaHeight * band.hFrac, {
+        new Rectangle(areaLeft + 2, areaTop + areaHeight * band.y, areaWidth - 4, areaHeight * band.h, {
           fill: band.fill,
         }),
       )
       this.addChild(
         new Text(band.label, {
-          font: new PhetFont(9),
-          fill: 'rgba(255,255,255,0.35)',
-          left: areaLeft + 10,
-          top: areaTop + areaHeight * band.yFrac + 4,
+          font: new PhetFont({ size: 11, weight: 'bold' }),
+          fill: 'rgba(255,255,255,0.4)',
+          left: areaLeft + 12,
+          centerY: areaTop + areaHeight * (band.y + band.h * 0.45),
         }),
       )
     }
 
     this.dropHighlight = new Rectangle(areaLeft, areaTop, areaWidth, areaHeight, {
-      fill: 'rgba(125, 211, 252, 0.12)',
-      stroke: 'rgba(125, 211, 252, 0.7)',
+      fill: 'rgba(125, 211, 252, 0.1)',
+      stroke: 'rgba(125, 211, 252, 0.55)',
       lineWidth: 2,
       cornerRadius: 14,
       visible: false,
@@ -110,26 +94,23 @@ export class FoodWebScreenView extends ScreenView {
     })
     this.addChild(this.dropHighlight)
 
-    this.sunGlow = new Circle(36, {
-      fill: 'rgba(255,220,80,0.22)',
-      centerX: areaLeft + 40,
-      centerY: areaTop + 40,
-    })
-    this.sun = new Circle(20, {
-      fill: '#f4d03f',
-      centerX: this.sunGlow.centerX,
-      centerY: this.sunGlow.centerY,
-    })
-    this.addChild(this.sunGlow)
-    this.addChild(this.sun)
-    this.addChild(
+    // Illustrated sun (pfp-style)
+    this.sunNode = new Node({ pickable: false })
+    const sunIcon = createEcologyIcon('sun', 52)
+    sunIcon.centerX = 0
+    sunIcon.centerY = 0
+    this.sunNode.addChild(sunIcon)
+    this.sunNode.addChild(
       new Text('Sun', {
-        font: new PhetFont(10),
-        fill: '#f4d03f',
-        centerX: this.sun.centerX,
-        top: this.sun.bottom + 2,
+        font: new PhetFont({ size: 11, weight: 'bold' }),
+        fill: '#fde68a',
+        centerX: 0,
+        top: 28,
       }),
     )
+    this.sunNode.centerX = areaLeft + 48
+    this.sunNode.centerY = areaTop + 44
+    this.addChild(this.sunNode)
 
     const statusBg = new Rectangle(bounds.left + margin, bounds.top + 6, bounds.width - margin * 2, statusH, {
       cornerRadius: 10,
@@ -155,37 +136,13 @@ export class FoodWebScreenView extends ScreenView {
     this.webLayer.addChild(this.speciesLayer)
 
     this.addChild(
-      new Text('Energy flows along arrows  ·  ~10% per trophic step', {
+      new Text('Energy flows ↑ along arrows  ·  about 10% kept each step', {
         font: new PhetFont(11),
-        fill: '#f4d03f',
-        centerX: areaLeft + areaWidth / 2,
-        top: areaTop + 8,
+        fill: '#fde68a',
+        right: areaLeft + areaWidth - 14,
+        top: areaTop + 10,
       }),
     )
-
-    // Legend with pictures
-    const legendY = areaTop + areaHeight - 26
-    const legendItems = [
-      { key: 'grass', t: 'Plant' },
-      { key: 'rabbit', t: 'Plant-eater' },
-      { key: 'fox', t: 'Meat-eater' },
-      { key: 'fungi', t: 'Decomposer' },
-    ]
-    legendItems.forEach((item, i) => {
-      const x = areaLeft + 18 + i * 100
-      const pic = createEcologyIcon(item.key, 22)
-      pic.centerX = x
-      pic.centerY = legendY
-      this.addChild(pic)
-      this.addChild(
-        new Text(item.t, {
-          font: new PhetFont(9),
-          fill: 'rgba(255,255,255,0.85)',
-          left: x + 14,
-          centerY: legendY,
-        }),
-      )
-    })
 
     const dropTarget = {
       containsGlobalPoint: (gx: number, gy: number) => {
@@ -234,7 +191,6 @@ export class FoodWebScreenView extends ScreenView {
       ),
     )
 
-    // Ghost layer on top of everything so drag chips float above UI
     this.addChild(this.ghostLayer)
 
     model.webProperty.link(() => this.syncSpeciesNodes())
@@ -264,7 +220,7 @@ export class FoodWebScreenView extends ScreenView {
     }
 
     const b = this.areaBounds
-    const r = Math.min(34, b.width * 0.048)
+    const r = Math.min(30, b.width * 0.042)
 
     for (const n of snap.nodes) {
       let view = this.speciesNodes.get(n.id)
@@ -285,7 +241,10 @@ export class FoodWebScreenView extends ScreenView {
             const nx = (lx - b.left) / b.width
             const ny = (ly - b.top) / b.height
             this.model.moveNode(id, nx, ny)
-            view!.setPositionNorm(nx, ny, b.width, b.height, b.left, b.top)
+            const updated = this.model.webProperty.value.nodes.find((nn) => nn.id === id)
+            if (updated) {
+              view!.setPositionNorm(updated.x, updated.y, b.width, b.height, b.left, b.top)
+            }
             this.drawLinks()
           },
           this.sounds,
@@ -305,7 +264,7 @@ export class FoodWebScreenView extends ScreenView {
     const energies = computeNodeEnergy(snap, this.model.baseEnergyProperty.value)
     for (const [id, node] of this.speciesNodes) {
       const e = energies.get(id)
-      node.setEnergy(e !== undefined && e > 0 ? formatEnergy(e) : '—')
+      node.setEnergy(e !== undefined && e > 0 ? formatEnergy(e) : '')
     }
   }
 
@@ -324,7 +283,7 @@ export class FoodWebScreenView extends ScreenView {
     const b = this.areaBounds
     const energies = computeNodeEnergy(snap, this.model.baseEnergyProperty.value)
     const maxE = this.model.baseEnergyProperty.value
-    const p = (this.pulseLine % 1.6) / 1.6
+    const p = (this.pulseLine % 2.2) / 2.2
 
     for (const link of snap.links) {
       const a = snap.nodes.find((n) => n.id === link.from)
@@ -338,45 +297,44 @@ export class FoodWebScreenView extends ScreenView {
 
       this.linkLayer.addChild(
         new Line(x1, y1, x2, y2, {
-          stroke: `rgba(244,208,63,${0.22 + flow * 0.55})`,
-          lineWidth: 1.5 + flow * 3.5,
+          stroke: `rgba(250, 204, 21, ${0.28 + flow * 0.4})`,
+          lineWidth: 2 + flow * 2,
           lineCap: 'round',
         }),
       )
 
-      // Arrow head
       const angle = Math.atan2(y2 - y1, x2 - x1)
-      const ax = x2 - Math.cos(angle) * 18
-      const ay = y2 - Math.sin(angle) * 18
-      const arrow = new Path(
-        new Shape()
-          .moveTo(ax, ay)
-          .lineTo(ax - Math.cos(angle - 0.4) * 10, ay - Math.sin(angle - 0.4) * 10)
-          .lineTo(ax - Math.cos(angle + 0.4) * 10, ay - Math.sin(angle + 0.4) * 10)
-          .close(),
-        { fill: `rgba(244,208,63,${0.35 + flow * 0.5})` },
-      )
-      this.linkLayer.addChild(arrow)
-
-      const px = x1 + (x2 - x1) * p
-      const py = y1 + (y2 - y1) * p
+      const ax = x2 - Math.cos(angle) * 22
+      const ay = y2 - Math.sin(angle) * 22
       this.linkLayer.addChild(
-        new Circle(3.5 + flow * 3, {
-          fill: '#f4d03f',
-          centerX: px,
-          centerY: py,
+        new Path(
+          new Shape()
+            .moveTo(ax, ay)
+            .lineTo(ax - Math.cos(angle - 0.45) * 9, ay - Math.sin(angle - 0.45) * 9)
+            .lineTo(ax - Math.cos(angle + 0.45) * 9, ay - Math.sin(angle + 0.45) * 9)
+            .close(),
+          { fill: `rgba(250, 204, 21, ${0.45 + flow * 0.4})` },
+        ),
+      )
+
+      // One soft energy bead (less clutter)
+      this.linkLayer.addChild(
+        new Circle(3 + flow * 1.5, {
+          fill: 'rgba(253, 224, 71, 0.85)',
+          centerX: x1 + (x2 - x1) * p,
+          centerY: y1 + (y2 - y1) * p,
         }),
       )
     }
 
-    const sx = b.left + 40
-    const sy = b.top + 40
+    const sx = this.sunNode.centerX
+    const sy = this.sunNode.centerY
     for (const n of snap.nodes.filter((x: FoodNode) => x.level === 'producer')) {
       this.linkLayer.addChild(
-        new Line(sx, sy, b.left + n.x * b.width, b.top + n.y * b.height, {
-          stroke: 'rgba(244,208,63,0.18)',
+        new Line(sx, sy + 10, b.left + n.x * b.width, b.top + n.y * b.height, {
+          stroke: 'rgba(253, 224, 71, 0.22)',
           lineWidth: 1.5,
-          lineDash: [4, 4],
+          lineDash: [5, 5],
         }),
       )
     }
@@ -385,10 +343,7 @@ export class FoodWebScreenView extends ScreenView {
   public override step(dt: number): void {
     this.model.step(dt)
     const pulse = this.model.energyPulseProperty.value
-    this.sun.radius = 18 + Math.sin(pulse * 2) * 2
-    this.sunGlow.radius = 32 + Math.sin(pulse * 2) * 4
-    this.sunGlow.opacity = 0.3 + Math.sin(pulse * 2) * 0.1
-    // Clear drop highlight when not dragging (palette chip sets it during drag)
+    this.sunNode.opacity = 0.88 + Math.sin(pulse * 1.5) * 0.08
     if (!this.ghostLayer.hasChildren()) {
       this.dropHighlight.visible = false
     }

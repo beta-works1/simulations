@@ -6,16 +6,15 @@ import type { FoodNode } from '../model/FoodWebModel.js'
 import type { EcologySounds } from './EcologySounds.js'
 
 /**
- * Species as a circular illustrated avatar (pfp), not a solid color disk.
- * The picture fills the circle; name + energy sit under it.
+ * Clean circular avatar: picture + thin ring + name/energy under it.
  */
 export class SpeciesNode extends Node {
   public readonly nodeId: string
   private readonly ring: Circle
-  private readonly glow: Circle
   private readonly label: Text
   private readonly energyLabel: Text
   private readonly avatarRadius: number
+  private readonly levelColor: string
 
   public constructor(
     node: FoodNode,
@@ -26,22 +25,8 @@ export class SpeciesNode extends Node {
   ) {
     super({ cursor: 'pointer' })
     this.nodeId = node.id
-    this.avatarRadius = Math.max(26, radius)
-
-    const color = LEVEL_COLORS[node.level]
-
-    this.glow = new Circle(this.avatarRadius + 8, {
-      fill: 'rgba(255,255,255,0.14)',
-      visible: false,
-      pickable: false,
-    })
-
-    // Soft outer halo using level color (not a solid filled disk)
-    const halo = new Circle(this.avatarRadius + 3, {
-      fill: color,
-      opacity: 0.28,
-      pickable: false,
-    })
+    this.avatarRadius = Math.max(24, radius)
+    this.levelColor = LEVEL_COLORS[node.level]
 
     const avatar = createEcologyIcon(node.name, this.avatarRadius * 2)
     avatar.centerX = 0
@@ -49,41 +34,28 @@ export class SpeciesNode extends Node {
 
     this.ring = new Circle(this.avatarRadius, {
       fill: null,
-      stroke: 'rgba(255,255,255,0.95)',
-      lineWidth: 3,
+      stroke: 'rgba(255,255,255,0.7)',
+      lineWidth: 2,
       pickable: false,
     })
 
     this.label = new Text(node.name, {
-      font: new PhetFont({ size: 12, weight: 'bold' }),
-      fill: '#ffffff',
-      maxWidth: this.avatarRadius * 2.8,
+      font: new PhetFont({ size: 11, weight: 'bold' }),
+      fill: '#f8fafc',
+      maxWidth: this.avatarRadius * 2.6,
       centerX: 0,
-      top: this.avatarRadius + 6,
-    })
-
-    // Tiny color pip so trophic role stays readable without a big disk
-    const pip = new Circle(4, {
-      fill: color,
-      stroke: 'white',
-      lineWidth: 1,
-      centerX: this.avatarRadius * 0.72,
-      centerY: this.avatarRadius * 0.72,
-      pickable: false,
+      top: this.avatarRadius + 5,
     })
 
     this.energyLabel = new Text('', {
-      font: new PhetFont({ size: 10, weight: 'bold' }),
+      font: new PhetFont(10),
       fill: '#fde68a',
       centerX: 0,
-      top: this.label.bottom + 1,
+      top: this.label.bottom,
     })
 
-    this.addChild(this.glow)
-    this.addChild(halo)
     this.addChild(avatar)
     this.addChild(this.ring)
-    this.addChild(pip)
     this.addChild(this.label)
     this.addChild(this.energyLabel)
 
@@ -127,10 +99,14 @@ export class SpeciesNode extends Node {
   }
 
   public setSelected(selected: boolean, atRisk: boolean): void {
-    this.ring.lineWidth = selected ? 4.5 : 3
-    this.ring.stroke = selected ? '#ffffff' : atRisk ? '#f87171' : 'rgba(255,255,255,0.95)'
-    this.ring.lineDash = atRisk && !selected ? [5, 4] : []
-    this.glow.visible = selected
+    this.ring.lineWidth = selected ? 3.5 : 2
+    this.ring.stroke = selected
+      ? '#ffffff'
+      : atRisk
+        ? this.levelColor
+        : 'rgba(255,255,255,0.7)'
+    this.ring.lineDash = []
+    this.label.fill = atRisk && !selected ? '#fecaca' : '#f8fafc'
   }
 
   public setEnergy(label: string): void {
@@ -140,7 +116,6 @@ export class SpeciesNode extends Node {
 
   public setPositionNorm(x: number, y: number, areaWidth: number, areaHeight: number, ox: number, oy: number): void {
     this.centerX = ox + x * areaWidth
-    // Keep avatar center on the trophic band; labels hang below
     this.centerY = oy + y * areaHeight
   }
 }
