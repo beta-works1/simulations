@@ -41,72 +41,82 @@ export const SPECIES_PALETTE: { level: TrophicLevel; label: string; names: strin
  * Centers must match the painted bands in FoodWebScreenView.
  */
 export const TROPHIC_BANDS: Record<TrophicLevel, { y: number; h: number; label: string; fill: string }> = {
-  carnivore: { y: 0.06, h: 0.22, label: 'Top consumers', fill: 'rgba(231,76,60,0.1)' },
-  herbivore: { y: 0.30, h: 0.22, label: 'Primary consumers', fill: 'rgba(241,196,15,0.1)' },
-  producer: { y: 0.54, h: 0.24, label: 'Producers', fill: 'rgba(39,174,96,0.12)' },
-  decomposer: { y: 0.80, h: 0.16, label: 'Decomposers', fill: 'rgba(142,68,173,0.12)' },
+  carnivore: { y: 0.05, h: 0.22, label: 'Top consumers', fill: 'rgba(231,76,60,0.1)' },
+  herbivore: { y: 0.29, h: 0.22, label: 'Primary consumers', fill: 'rgba(241,196,15,0.1)' },
+  producer: { y: 0.53, h: 0.22, label: 'Producers', fill: 'rgba(39,174,96,0.12)' },
+  decomposer: { y: 0.77, h: 0.2, label: 'Decomposers', fill: 'rgba(142,68,173,0.12)' },
 }
 
 export function bandCenterY(level: TrophicLevel): number {
   const b = TROPHIC_BANDS[level]
-  return b.y + b.h * 0.45
+  return b.y + b.h * 0.42
 }
 
 export function snapYToBand(level: TrophicLevel, y: number): number {
   const b = TROPHIC_BANDS[level]
-  const min = b.y + 0.08
-  const max = b.y + b.h - 0.1
+  // Keep a usable range (min must stay below max — short bands broke this before).
+  const pad = Math.min(0.06, b.h * 0.25)
+  const min = b.y + pad
+  const max = b.y + b.h - pad
+  if (max <= min) return b.y + b.h * 0.42
   return Math.max(min, Math.min(max, y))
 }
 
-/** Minimum spacing so circular avatars (+ labels) do not stack on each other. */
-const MIN_NODE_SEP = 0.14
+/** How far apart avatar centers must be (normalized scene width). Labels need room too. */
+const MIN_X_SEP = 0.16
+const SLOT_COUNT = 8
 
-function nodesTooClose(a: { x: number; y: number }, b: { x: number; y: number }, minSep = MIN_NODE_SEP): boolean {
-  return Math.hypot(a.x - b.x, a.y - b.y) < minSep
+function bandSlots(): number[] {
+  const slots: number[] = []
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    slots.push(0.12 + (i / (SLOT_COUNT - 1)) * 0.76)
+  }
+  return slots
 }
 
 /**
- * Pick a free slot in the trophic band near a preferred point.
- * Spreads left/right (and a little up/down inside the band) so new avatars do not overlap.
+ * Place a new organism in a free column of its trophic band.
+ * Ignores drop Y crowding — always parks on the band midline, spaced by X slots.
  */
 export function findOpenPosition(
   nodes: FoodNode[],
   level: TrophicLevel,
   preferredX: number,
-  preferredY: number,
+  _preferredY: number,
 ): { x: number; y: number } {
-  const band = TROPHIC_BANDS[level]
-  const baseY = snapYToBand(level, preferredY)
-  const yOffsets = [0, -0.04, 0.04, -0.07, 0.07]
-  const xCandidates: number[] = [preferredX]
-  for (let step = 1; step <= 10; step++) {
-    const d = step * MIN_NODE_SEP
-    xCandidates.push(preferredX + d, preferredX - d)
-  }
-  // Evenly spaced fallbacks across the scene
-  for (let i = 0; i < 9; i++) {
-    xCandidates.push(0.12 + (i / 8) * 0.76)
+  const y = bandCenterY(level)
+  const peers = nodes.filter((n) => n.level === level)
+  const slots = bandSlots()
+
+  const slotTaken = (sx: number) =>
+    peers.some((n) => Math.abs(n.x - sx) < MIN_X_SEP * 0.85) ||
+    nodes.some((n) => n.level !== level && Math.hypot(n.x - sx, n.y - y) < 0.12)
+
+  // Prefer the free slot closest to where the student dropped
+  const ranked = [...slots].sort(
+    (a, b) => Math.abs(a - preferredX) - Math.abs(b - preferredX),
+  )
+  for (const sx of ranked) {
+    if (!slotTaken(sx)) return { x: sx, y }
   }
 
-  for (const yOff of yOffsets) {
-    const y = snapYToBand(level, baseY + yOff)
-    // Keep y inside this band only
-    if (y < band.y + 0.06 || y > band.y + band.h - 0.08) continue
-    for (const rawX of xCandidates) {
-      const x = Math.max(0.1, Math.min(0.9, rawX))
-      if (!nodes.some((n) => nodesTooClose(n, { x, y }))) {
-        return { x, y }
+  // Overflow: pack further right with guaranteed spacing from peers only
+  let x = 0.12
+  if (peers.length) {
+    const rightmost = Math.max(...peers.map((n) => n.x))
+    x = Math.min(0.92, rightmost + MIN_X_SEP)
+    // If past the edge, wrap to the leftmost gap
+    if (x > 0.9) {
+      const sorted = [...peers].sort((a, b) => a.x - b.x)
+      x = 0.12
+      for (const p of sorted) {
+        if (p.x - x >= MIN_X_SEP) break
+        x = p.x + MIN_X_SEP
       }
+      x = Math.min(0.92, x)
     }
   }
-
-  // Last resort: park at the right edge of the band with a unique jitter
-  const n = nodes.filter((node) => node.level === level).length
-  return {
-    x: Math.min(0.9, 0.15 + (n % 7) * 0.12),
-    y: snapYToBand(level, band.y + band.h * (0.35 + (n % 3) * 0.15)),
-  }
+  return { x, y }
 }
 
 export function canLink(from: FoodNode, to: FoodNode): boolean {
@@ -341,17 +351,23 @@ export class FoodWebModel implements TModel {
 
   public moveNode(id: string, x: number, y: number): void {
     const snap = this.webProperty.value
+    const moving = snap.nodes.find((n) => n.id === id)
+    if (!moving) return
+    let nx = Math.max(0.1, Math.min(0.9, x))
+    const ny = snapYToBand(moving.level, y)
+    // Keep same-band avatars from covering each other while dragging
+    const peers = snap.nodes.filter((n) => n.id !== id && n.level === moving.level)
+    for (let pass = 0; pass < 4; pass++) {
+      for (const p of peers) {
+        if (Math.abs(p.x - nx) < MIN_X_SEP) {
+          nx = p.x + (nx >= p.x ? MIN_X_SEP : -MIN_X_SEP)
+          nx = Math.max(0.1, Math.min(0.9, nx))
+        }
+      }
+    }
     this.webProperty.value = {
       ...snap,
-      nodes: snap.nodes.map((n) =>
-        n.id === id
-          ? {
-              ...n,
-              x: Math.max(0.08, Math.min(0.92, x)),
-              y: snapYToBand(n.level, y),
-            }
-          : n,
-      ),
+      nodes: snap.nodes.map((n) => (n.id === id ? { ...n, x: nx, y: ny } : n)),
     }
   }
 
@@ -417,16 +433,14 @@ export class FoodWebModel implements TModel {
   }
 
   public addSpecies(level: TrophicLevel, name?: string): void {
-    const snap = this.webProperty.value
-    const slot = findOpenPosition(snap.nodes, level, 0.5, defaultYForLevel(level))
-    this.addSpeciesAt(level, slot.x, slot.y, name)
+    this.addSpeciesAt(level, 0.5, defaultYForLevel(level), name)
   }
 
   /** Drop a palette species onto the scene at normalized coords. */
   public addSpeciesAt(level: TrophicLevel, x: number, y: number, name?: string): void {
     const snap = this.webProperty.value
     const slot = findOpenPosition(snap.nodes, level, x, y)
-    const id = `${level}-${Date.now()}`
+    const id = `${level}-${Date.now()}-${Math.floor(Math.random() * 1e5)}`
     const node: FoodNode = {
       id,
       name: name ?? pickName(level, snap.nodes),
