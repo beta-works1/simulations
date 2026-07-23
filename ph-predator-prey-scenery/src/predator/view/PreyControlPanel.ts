@@ -8,6 +8,7 @@ import { PreyColors, PreyConstants } from '../../common/PreyColors.js'
 import { PreyStrings } from '../../PreyStrings.js'
 import {
   ADVANCED_SCENARIOS,
+  CYCLE_STEPS,
   InteractionMode,
   PredatorPreyModel,
   QUIZ_BANK,
@@ -58,19 +59,29 @@ export class PreyControlPanel extends Panel {
 
     const preyReadout = new Text('', { font: new PhetFont({ size: 14, weight: 'bold' }), fill: '#2ecc71', maxWidth: w })
     const predReadout = new Text('', { font: new PhetFont({ size: 14, weight: 'bold' }), fill: '#e74c3c', maxWidth: w })
-    const phaseReadout = new Text(model.phaseLabelProperty, {
+    const nowReadout = new Text(model.phaseLabelProperty, {
       font: new PhetFont({ size: 12, weight: 'bold' }),
       fill: '#fde68a',
       maxWidth: w,
     })
-    const guideReadout = new Text(model.guideProperty, {
+    const whyReadout = new Text(model.whyProperty, {
+      font: new PhetFont(11),
+      fill: '#a7f3d0',
+      maxWidth: w,
+    })
+    const nextReadout = new Text(model.nextHintProperty, {
       font: new PhetFont(11),
       fill: '#e2e8f0',
       maxWidth: w,
     })
     const tipReadout = new Text(model.tipProperty, {
       font: new PhetFont(11),
-      fill: '#a7f3d0',
+      fill: '#bae6fd',
+      maxWidth: w,
+    })
+    const stepMap = new Text('', {
+      font: new PhetFont(10),
+      fill: '#cbd5e1',
       maxWidth: w,
     })
 
@@ -81,11 +92,18 @@ export class PreyControlPanel extends Panel {
     const advancedBox = new VBox({ align: 'left', spacing: 5 })
 
     const refresh = () => {
-      preyReadout.string = `Prey (rabbits): ${Math.round(model.preyProperty.value)}`
-      predReadout.string = `Predators (foxes): ${Math.round(model.predatorsProperty.value)}`
+      preyReadout.string = `Rabbits (green): ${Math.round(model.preyProperty.value)}`
+      predReadout.string = `Foxes (red): ${Math.round(model.predatorsProperty.value)}`
+      const step = model.storyStepProperty.value
+      if (step >= 1 && step <= 4) {
+        stepMap.string = CYCLE_STEPS.map(s => (s.n === step ? `【${s.n}】` : `${s.n}`)).join(' → ') + ' → …'
+      } else {
+        stepMap.string = 'Not in the 4-step hunt cycle right now'
+      }
     }
     model.preyProperty.link(refresh)
     model.predatorsProperty.link(refresh)
+    model.storyStepProperty.link(refresh)
 
     const refreshQuiz = () => {
       const q = QUIZ_BANK[model.quizIndexProperty.value % QUIZ_BANK.length]!
@@ -179,20 +197,20 @@ export class PreyControlPanel extends Panel {
     const buildAdvanced = () => {
       if (!model.showAdvancedProperty.value) {
         advancedBox.children = [
-          help('Extra tools stay hidden so the main lesson stays clear.'),
+          help('Extra tools stay hidden. Learn the 4 steps first.'),
         ]
         return
       }
       advancedBox.children = [
-        help('Use these after you understand the basic cycle.'),
-        sliderRow('How often prey are eaten', model.predationRateProperty, new Range(0.01, 0.05), 3),
-        sliderRow('Predator birth rate', model.predatorGrowthProperty, new Range(0.01, 0.04), 3),
-        sliderRow('Predator death rate', model.deathProperty, new Range(0.35, 1.0)),
-        sliderRow('Space / food limit', model.carryingCapacityProperty, new Range(50, 120), 0),
+        help('Use these after you can explain the 4 steps.'),
+        sliderRow('How often foxes catch rabbits', model.predationRateProperty, new Range(0.01, 0.05), 3),
+        sliderRow('How fast foxes have babies', model.predatorGrowthProperty, new Range(0.01, 0.04), 3),
+        sliderRow('How fast foxes die', model.deathProperty, new Range(0.35, 1.0)),
+        sliderRow('Food / space limit', model.carryingCapacityProperty, new Range(50, 120), 0),
         new HBox({
           spacing: 8,
           children: [
-            new Text('Hide in bush', { font: new PhetFont(11), fill: '#bdc3c7', maxWidth: 110 }),
+            new Text('Rabbits hide in bush', { font: new PhetFont(11), fill: '#bdc3c7', maxWidth: 110 }),
             new ToggleSwitch(model.refugeEnabledProperty, false, true, { scale: 0.55 }),
           ],
         }),
@@ -211,15 +229,15 @@ export class PreyControlPanel extends Panel {
           ],
         }),
         section('What if…?'),
-        mkBtn('Drought (slower prey growth)', () => {
+        mkBtn('Drought (rabbits grow slower)', () => {
           model.triggerEvent('drought')
           sounds.scenario()
         }, PreyColors.dangerProperty),
-        mkBtn('Predator disease', () => {
+        mkBtn('Fox disease', () => {
           model.triggerEvent('disease')
           sounds.scenario()
         }, PreyColors.predatorProperty),
-        mkBtn('Plant bloom (+ prey)', () => {
+        mkBtn('Plant bloom (+ rabbits)', () => {
           model.triggerEvent('bloom')
           sounds.spawnPrey()
         }, PreyColors.preyProperty),
@@ -276,18 +294,21 @@ export class PreyControlPanel extends Panel {
           fill: 'white',
           maxWidth: w,
         }),
-        help('Grade 8 tip: watch one full cycle before changing settings.'),
-        section('What to notice'),
+        help('How to learn: press Play, watch the graph, read NOW / WHY.'),
+        section('The 4 steps (remember these)'),
         tipReadout,
-        guideReadout,
-        section('Populations now'),
+        stepMap,
+        section('NOW happening'),
+        nowReadout,
+        whyReadout,
+        nextReadout,
+        section('How many animals?'),
         preyReadout,
         predReadout,
-        phaseReadout,
-        section('Lesson modes'),
-        mkBtn('Predator–prey cycle', setMode('predation')),
-        mkBtn('Competition', setMode('competition')),
-        mkBtn('Mutualism (help)', setMode('mutualism')),
+        section('Choose a lesson'),
+        mkBtn('Foxes eat rabbits (main lesson)', setMode('predation')),
+        mkBtn('Both fight for same food', setMode('competition')),
+        mkBtn('Both help each other', setMode('mutualism')),
         section('Try a starting story'),
         ...SCENARIOS.map(s =>
           mkBtn(s.name, () => {
@@ -296,12 +317,12 @@ export class PreyControlPanel extends Panel {
           }),
         ),
         section('Add animals'),
-        help('Or tap the meadow: left = prey, right = predators.'),
+        help('Or tap the meadow: left = rabbits, right = foxes.'),
         new HBox({
           spacing: 6,
           children: [
             new RectangularPushButton({
-              content: new Text('+ Prey', { font: new PhetFont(11), fill: 'white' }),
+              content: new Text('+ Rabbits', { font: new PhetFont(11), fill: 'white' }),
               baseColor: PreyColors.preyProperty,
               xMargin: 10,
               yMargin: 5,
@@ -312,7 +333,7 @@ export class PreyControlPanel extends Panel {
               minWidth: (w - 22) / 2,
             }),
             new RectangularPushButton({
-              content: new Text('+ Predators', { font: new PhetFont(11), fill: 'white' }),
+              content: new Text('+ Foxes', { font: new PhetFont(11), fill: 'white' }),
               baseColor: PreyColors.predatorProperty,
               xMargin: 10,
               yMargin: 5,
@@ -325,7 +346,7 @@ export class PreyControlPanel extends Panel {
           ],
         }),
         section('Simple controls'),
-        sliderRow('Prey growth (how fast rabbits increase)', model.growthProperty, new Range(PreyConstants.GROWTH_MIN, PreyConstants.GROWTH_MAX)),
+        sliderRow('Rabbit growth (babies)', model.growthProperty, new Range(PreyConstants.GROWTH_MIN, PreyConstants.GROWTH_MAX)),
         sliderRow('Watching speed (slower = easier)', model.simSpeedProperty, new Range(PreyConstants.SPEED_MIN, PreyConstants.SPEED_MAX)),
         playPauseBtn,
         mkBtn(

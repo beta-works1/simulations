@@ -292,11 +292,11 @@ export const simulations: Simulation[] = [
     grade: 8,
     chapter: 'Ch 1 – Ecology',
     description:
-      'Explore population oscillations for predation, and compare competition and mutualism.',
+      'Follow a simple 4-step story: rabbits go up, foxes follow, then both fall — and compare competition and mutualism.',
     learningGoals: [
-      'Describe predator–prey cycles',
-      'Compare predation, competition, mutualism',
-      'Read a simple population graph',
+      'Explain the 4 steps of a rabbit–fox cycle',
+      'Say why foxes rise after rabbits',
+      'Compare predation, competition, and mutualism on a graph',
     ],
     keywords: ['predator', 'prey', 'population', 'mutualism', 'competition'],
     color: '#0e6655',

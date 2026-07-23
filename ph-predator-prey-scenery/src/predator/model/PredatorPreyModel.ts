@@ -38,11 +38,43 @@ export interface QuizQuestion {
   explain: string
 }
 
+/** The 4-step predator–prey story students should learn to spot. */
+export const CYCLE_STEPS = [
+  {
+    n: 1,
+    short: 'Rabbits go UP',
+    what: 'Step 1 of 4 — Rabbits (green) go UP',
+    why: 'Why: few foxes → rabbits can eat and have babies safely',
+    next: 'Next: more rabbits means more food for foxes',
+  },
+  {
+    n: 2,
+    short: 'Foxes catch up',
+    what: 'Step 2 of 4 — Foxes (red) go UP after rabbits',
+    why: 'Why: lots of rabbits = lots of food → foxes have more babies',
+    next: 'Next: many foxes will eat many rabbits',
+  },
+  {
+    n: 3,
+    short: 'Rabbits go DOWN',
+    what: 'Step 3 of 4 — Rabbits (green) go DOWN',
+    why: 'Why: many foxes are eating rabbits → rabbit numbers fall',
+    next: 'Next: foxes will run out of food',
+  },
+  {
+    n: 4,
+    short: 'Foxes go DOWN',
+    what: 'Step 4 of 4 — Foxes (red) go DOWN too',
+    why: 'Why: fewer rabbits = less food → fox numbers fall',
+    next: 'Then Step 1 starts again — that is the cycle!',
+  },
+] as const
+
 /** Keep the starter list short for Grade 8 — advanced scenarios stay available by id. */
 export const SCENARIOS: ScenarioDef[] = [
   {
     id: 'classic',
-    name: '1. Predator–prey cycle',
+    name: '1. Start here: rabbit ↔ fox cycle',
     mode: 'predation',
     prey: 40,
     predators: 12,
@@ -50,11 +82,11 @@ export const SCENARIOS: ScenarioDef[] = [
     predation: 0.024,
     predatorGrowth: 0.022,
     death: 0.65,
-    blurb: 'Start here: rabbits rise first, foxes follow, then both fall — then it repeats.',
+    blurb: 'Watch the 4 steps: rabbits up → foxes up → rabbits down → foxes down → repeat.',
   },
   {
     id: 'compete',
-    name: '2. Competition',
+    name: '2. Both fight for the same food',
     mode: 'competition',
     prey: 45,
     predators: 28,
@@ -62,11 +94,11 @@ export const SCENARIOS: ScenarioDef[] = [
     predation: 0.028,
     predatorGrowth: 0.025,
     death: 0.7,
-    blurb: 'Both species need the same limited food. When crowded, both grow more slowly.',
+    blurb: 'Both need the same food. When the meadow is crowded, both grow more slowly.',
   },
   {
     id: 'mutual',
-    name: '3. Mutualism (help each other)',
+    name: '3. Both help each other',
     mode: 'mutualism',
     prey: 35,
     predators: 20,
@@ -74,14 +106,14 @@ export const SCENARIOS: ScenarioDef[] = [
     predation: 0.028,
     predatorGrowth: 0.025,
     death: 0.7,
-    blurb: 'Each species helps the other. Numbers climb together — no boom–bust chase.',
+    blurb: 'Each group helps the other. Both lines go up together — no chase cycle.',
   },
 ]
 
 export const ADVANCED_SCENARIOS: ScenarioDef[] = [
   {
     id: 'prey-boom',
-    name: 'Prey boom',
+    name: 'Many rabbits, few foxes',
     mode: 'predation',
     prey: 65,
     predators: 6,
@@ -89,11 +121,11 @@ export const ADVANCED_SCENARIOS: ScenarioDef[] = [
     predation: 0.02,
     predatorGrowth: 0.02,
     death: 0.8,
-    blurb: 'Many prey and few predators — watch prey climb, then predators catch up.',
+    blurb: 'Extra rabbits first. Then foxes catch up. Watch Step 1 → Step 2 carefully.',
   },
   {
     id: 'overhunt',
-    name: 'Too many predators',
+    name: 'Too many foxes',
     mode: 'predation',
     prey: 28,
     predators: 24,
@@ -101,28 +133,28 @@ export const ADVANCED_SCENARIOS: ScenarioDef[] = [
     predation: 0.04,
     predatorGrowth: 0.028,
     death: 0.5,
-    blurb: 'Lots of predators can eat prey down low — then predators also struggle.',
+    blurb: 'Lots of foxes eat rabbits down. Then foxes also struggle — Step 3 → Step 4.',
   },
 ]
 
 export const QUIZ_BANK: QuizQuestion[] = [
   {
-    prompt: 'In a predator–prey cycle, which usually goes up first?',
-    choices: ['Predators (foxes)', 'Prey (rabbits)', 'Both at the same time'],
+    prompt: 'In the rabbit–fox cycle, which number goes UP first?',
+    choices: ['Foxes (red)', 'Rabbits (green)', 'Both at the same time'],
     correct: 1,
-    explain: 'Prey increase first. Predators increase later because they need prey for food.',
+    explain: 'Rabbits go up first (Step 1). Foxes go up later because they need rabbits for food (Step 2).',
   },
   {
-    prompt: 'After prey numbers fall, predators usually…',
-    choices: ['Keep rising forever', 'Also fall (less food)', 'Turn into prey'],
+    prompt: 'After rabbit numbers fall, foxes usually…',
+    choices: ['Keep rising forever', 'Also fall (less food)', 'Turn into rabbits'],
     correct: 1,
-    explain: 'With fewer prey, predators have less food, so their numbers drop too.',
+    explain: 'Fewer rabbits means less food, so foxes fall too (Step 4). Then the cycle can start again.',
   },
   {
-    prompt: 'Competition means…',
-    choices: ['One animal eats the other', 'Both struggle for the same limited resources', 'Both always help each other'],
+    prompt: '“Competition” means…',
+    choices: ['One animal eats the other', 'Both struggle for the same limited food', 'Both always help each other'],
     correct: 1,
-    explain: 'In competition, both species use similar resources, so crowded places slow both down.',
+    explain: 'In competition, both use similar food, so a crowded meadow slows both of them down.',
   },
 ]
 
@@ -166,6 +198,12 @@ export class PredatorPreyModel implements TModel {
   public readonly tipProperty: StringProperty
   public readonly phaseLabelProperty: StringProperty
   public readonly guideProperty: StringProperty
+  /** Plain cause → effect line for Class 8. */
+  public readonly whyProperty: StringProperty
+  /** What to look at next. */
+  public readonly nextHintProperty: StringProperty
+  /** Current cycle step 1–4 (0 = not in predation cycle). */
+  public readonly storyStepProperty: NumberProperty
   public readonly eventLabelProperty: StringProperty
   public readonly historyProperty: Property<PopulationSample[]>
   public readonly huntFlashProperty: NumberProperty
@@ -209,22 +247,23 @@ export class PredatorPreyModel implements TModel {
     this.cycleCountProperty = new NumberProperty(0)
     this.ratioProperty = new NumberProperty(40 / 12)
     this.statusProperty = new StringProperty(
-      'Watch the meadow slowly. Green = prey (rabbits). Red = predators (foxes).',
+      'Green dots = rabbits. Red dots = foxes. Watch the graph: green goes up first.',
     )
     this.tipProperty = new StringProperty(
-      'Step 1: Watch prey (green) go up. Step 2: Predators (red) follow. Step 3: Both fall — then repeat.',
+      'Big idea: rabbits ↑ → foxes ↑ → rabbits ↓ → foxes ↓ → repeat.',
     )
-    this.phaseLabelProperty = new StringProperty('Prey are increasing')
-    this.guideProperty = new StringProperty(
-      'Look at the graph below: green line = prey, red line = predators.',
-    )
+    this.phaseLabelProperty = new StringProperty(CYCLE_STEPS[0]!.what)
+    this.guideProperty = new StringProperty(CYCLE_STEPS[0]!.next)
+    this.whyProperty = new StringProperty(CYCLE_STEPS[0]!.why)
+    this.nextHintProperty = new StringProperty(CYCLE_STEPS[0]!.next)
+    this.storyStepProperty = new NumberProperty(1)
     this.eventLabelProperty = new StringProperty('')
     this.historyProperty = new Property<PopulationSample[]>([{ prey: 40, predators: 12 }])
     this.huntFlashProperty = new NumberProperty(0)
     this.eventTimerProperty = new NumberProperty(0)
     this.quizIndexProperty = new NumberProperty(0)
     this.quizScoreProperty = new NumberProperty(0)
-    this.quizFeedbackProperty = new StringProperty('Check what you learned — take your time.')
+    this.quizFeedbackProperty = new StringProperty('Try the quiz after you watch one full cycle.')
     this.rebuildAgents()
   }
 
@@ -256,15 +295,17 @@ export class PredatorPreyModel implements TModel {
     this.eventKind = 'none'
     this.eventLabelProperty.value = ''
     this.statusProperty.value =
-      'Watch the meadow slowly. Green = prey (rabbits). Red = predators (foxes).'
+      'Green dots = rabbits. Red dots = foxes. Watch the graph: green goes up first.'
     this.tipProperty.value =
-      'Step 1: Watch prey (green) go up. Step 2: Predators (red) follow. Step 3: Both fall — then repeat.'
-    this.phaseLabelProperty.value = 'Prey are increasing'
-    this.guideProperty.value =
-      'Look at the graph below: green line = prey, red line = predators.'
+      'Big idea: rabbits ↑ → foxes ↑ → rabbits ↓ → foxes ↓ → repeat.'
+    this.phaseLabelProperty.value = CYCLE_STEPS[0]!.what
+    this.guideProperty.value = CYCLE_STEPS[0]!.next
+    this.whyProperty.value = CYCLE_STEPS[0]!.why
+    this.nextHintProperty.value = CYCLE_STEPS[0]!.next
+    this.storyStepProperty.value = 1
     this.quizIndexProperty.value = 0
     this.quizScoreProperty.value = 0
-    this.quizFeedbackProperty.value = 'Check what you learned — take your time.'
+    this.quizFeedbackProperty.value = 'Try the quiz after you watch one full cycle.'
     this.lastPhase = ''
     this.sawPreyPeak = false
     this.chaseLinks = []
@@ -276,60 +317,64 @@ export class PredatorPreyModel implements TModel {
     this.historyProperty.value = [
       { prey: this.preyProperty.value, predators: this.predatorsProperty.value },
     ]
-    this.statusProperty.value = 'Chart cleared — new trajectory starts now.'
+    this.statusProperty.value = 'Graph cleared — watch the new lines from the start.'
   }
 
   public setMode(mode: InteractionMode): void {
     this.modeProperty.value = mode
-    const tips: Record<InteractionMode, string> = {
-      predation:
-        'Step 1: Prey (green) go up. Step 2: Predators (red) follow. Step 3: Both fall — then the cycle repeats.',
-      competition:
-        'Both need similar food. When there are many of them, both grow more slowly.',
-      mutualism:
-        'Each species helps the other. Watch both lines climb together — not chase each other.',
+    if (mode === 'predation') {
+      this.tipProperty.value = 'Big idea: rabbits ↑ → foxes ↑ → rabbits ↓ → foxes ↓ → repeat.'
+      this.phaseLabelProperty.value = CYCLE_STEPS[0]!.what
+      this.whyProperty.value = CYCLE_STEPS[0]!.why
+      this.nextHintProperty.value = CYCLE_STEPS[0]!.next
+      this.guideProperty.value = CYCLE_STEPS[0]!.next
+      this.storyStepProperty.value = 1
+      this.statusProperty.value = 'Foxes eat rabbits. Watch all 4 steps on the graph.'
+    } else if (mode === 'competition') {
+      this.tipProperty.value = 'Both animals need the same food — they compete.'
+      this.phaseLabelProperty.value = 'Both fighting for the same food'
+      this.whyProperty.value = 'Why: when crowded, food runs short for both'
+      this.nextHintProperty.value = 'Compare: do you still see the 4-step chase? Usually no.'
+      this.guideProperty.value = 'Look: both lines grow more slowly when crowded.'
+      this.storyStepProperty.value = 0
+      this.statusProperty.value = 'Competition mode — both struggle for the same limited food.'
+    } else {
+      this.tipProperty.value = 'Both help each other — numbers can rise together.'
+      this.phaseLabelProperty.value = 'Both helping each other'
+      this.whyProperty.value = 'Why: each group makes life easier for the other'
+      this.nextHintProperty.value = 'Compare: lines rise together, not chase each other.'
+      this.guideProperty.value = 'Look: green and red climb together — no boom–bust chase.'
+      this.storyStepProperty.value = 0
+      this.statusProperty.value = 'Mutualism mode — both help each other grow.'
     }
-    const guides: Record<InteractionMode, string> = {
-      predation: 'Focus on the graph: green peaks first, then red peaks a little later.',
-      competition: 'Compare with predation: do you still see a clear chase cycle?',
-      mutualism: 'Compare with predation: do the lines rise together instead of oscillating?',
-    }
-    this.tipProperty.value = tips[mode]
-    this.guideProperty.value = guides[mode]
-    this.statusProperty.value =
-      mode === 'predation'
-        ? 'Mode: predator–prey. Take your time and watch one full cycle.'
-        : mode === 'competition'
-          ? 'Mode: competition. Notice how both populations affect each other.'
-          : 'Mode: mutualism. Notice how both populations can rise together.'
   }
 
   public addPrey(amount = 8): void {
     this.preyProperty.value = Math.min(PreyConstants.PREY_MAX, this.preyProperty.value + amount)
     this.spawnAgents('prey', Math.min(6, Math.round(amount / 2)))
     this.updateRatio()
-    this.statusProperty.value = `Added prey → ${this.preyProperty.value.toFixed(0)}`
+    this.statusProperty.value = `Added rabbits → now ${this.preyProperty.value.toFixed(0)}. Watch the green line.`
   }
 
   public addPredators(amount = 4): void {
     this.predatorsProperty.value = Math.min(PreyConstants.PRED_MAX, this.predatorsProperty.value + amount)
     this.spawnAgents('predator', Math.min(4, Math.round(amount / 2)))
     this.updateRatio()
-    this.statusProperty.value = `Added predators → ${this.predatorsProperty.value.toFixed(0)}`
+    this.statusProperty.value = `Added foxes → now ${this.predatorsProperty.value.toFixed(0)}. Watch the red line.`
   }
 
   public cullPrey(amount = 8): void {
     this.preyProperty.value = Math.max(PreyConstants.PREY_MIN, this.preyProperty.value - amount)
     this.trimAgents('prey')
     this.updateRatio()
-    this.statusProperty.value = `Removed prey → ${this.preyProperty.value.toFixed(0)}`
+    this.statusProperty.value = `Removed rabbits → now ${this.preyProperty.value.toFixed(0)}`
   }
 
   public cullPredators(amount = 4): void {
     this.predatorsProperty.value = Math.max(PreyConstants.PRED_MIN, this.predatorsProperty.value - amount)
     this.trimAgents('predator')
     this.updateRatio()
-    this.statusProperty.value = `Removed predators → ${this.predatorsProperty.value.toFixed(0)}`
+    this.statusProperty.value = `Removed foxes → now ${this.predatorsProperty.value.toFixed(0)}`
   }
 
   public moveAgent(id: number, nx: number, ny: number): void {
@@ -371,17 +416,23 @@ export class PredatorPreyModel implements TModel {
     this.eventKind = kind
     this.eventTimerProperty.value = 8
     if (kind === 'drought') {
-      this.eventLabelProperty.value = 'Drought — prey growth cut'
-      this.statusProperty.value = 'Drought: plants wither, prey grow slower for a while.'
-      this.tipProperty.value = 'Environmental stress can shift the whole cycle — watch the graph bend.'
+      this.eventLabelProperty.value = 'Drought — less food for rabbits'
+      this.statusProperty.value = 'Drought: plants dry up → rabbits grow slower.'
+      this.tipProperty.value = 'Less plant food → rabbit growth slows → the cycle can bend.'
+      this.whyProperty.value = 'Why: dry plants mean rabbits have less to eat'
+      this.nextHintProperty.value = 'Watch the green line rise more slowly.'
     } else if (kind === 'disease') {
-      this.eventLabelProperty.value = 'Predator disease — deaths up'
-      this.statusProperty.value = 'Disease hits predators — their death rate spikes temporarily.'
-      this.tipProperty.value = 'When predators drop, prey often rebound — then predators may recover.'
+      this.eventLabelProperty.value = 'Fox disease — foxes die faster'
+      this.statusProperty.value = 'Disease hits foxes → fox numbers fall for a while.'
+      this.tipProperty.value = 'When foxes fall, rabbits often bounce back (back toward Step 1).'
+      this.whyProperty.value = 'Why: sick foxes die faster → fewer hunters'
+      this.nextHintProperty.value = 'Watch red fall, then green often rises.'
     } else {
-      this.eventLabelProperty.value = 'Plant bloom — prey surge'
-      this.statusProperty.value = 'Bloom: extra food fuels a prey surge.'
-      this.tipProperty.value = 'A sudden resource boom can kick off a new boom–bust wave.'
+      this.eventLabelProperty.value = 'Plant bloom — extra rabbit food'
+      this.statusProperty.value = 'Bloom: extra plants → rabbits surge (strong Step 1).'
+      this.tipProperty.value = 'Extra food can start a bigger rabbit boom — then foxes follow.'
+      this.whyProperty.value = 'Why: more plants → rabbits can increase faster'
+      this.nextHintProperty.value = 'Watch green jump, then red catch up.'
       this.addPrey(12)
     }
   }
@@ -504,41 +555,58 @@ export class PredatorPreyModel implements TModel {
 
   private updatePhase(prevPrey: number, prevPred: number, prey: number, predators: number): void {
     if (this.modeProperty.value !== 'predation') {
-      this.phaseLabelProperty.value =
-        this.modeProperty.value === 'competition' ? 'Both competing for resources' : 'Both helping each other'
+      this.storyStepProperty.value = 0
+      if (this.modeProperty.value === 'competition') {
+        this.phaseLabelProperty.value = 'Both fighting for the same food'
+        this.whyProperty.value = 'Why: when crowded, food runs short for both'
+        this.nextHintProperty.value = 'Compare with the rabbit–fox cycle: no clear 4-step chase.'
+        this.guideProperty.value = this.nextHintProperty.value
+      } else {
+        this.phaseLabelProperty.value = 'Both helping each other'
+        this.whyProperty.value = 'Why: each group makes life easier for the other'
+        this.nextHintProperty.value = 'Compare: both lines rise together, not chase.'
+        this.guideProperty.value = this.nextHintProperty.value
+      }
       return
     }
+
     const dPrey = prey - prevPrey
     const dPred = predators - prevPred
-    let phase = 'Populations steady'
-    let guide = this.guideProperty.value
-    if (dPrey > 0.04 && dPred <= 0.04) {
-      phase = 'Prey are increasing'
-      guide = 'Notice: green prey rising. Predators will catch up next.'
-    } else if (dPrey > 0 && dPred > 0) {
-      phase = 'Predators catching up'
-      guide = 'Notice: red predators rising after prey. This lag is the key idea.'
-    } else if (dPrey <= 0 && dPred > 0.015) {
-      phase = 'Predator numbers high'
-      guide = 'Many predators eat a lot of prey — prey will start to fall.'
-    } else if (dPrey < 0 && dPred < 0) {
-      phase = 'Both falling (recovery soon)'
-      guide = 'Both drop. When predators are low, prey can grow again.'
-    } else if (dPrey < 0 && dPred <= 0) {
-      phase = 'Prey are falling'
-      guide = 'Prey falling means less food for predators soon.'
-    }
+    let step = this.storyStepProperty.value || 1
 
-    if (phase === 'Prey are increasing' || phase === 'Predators catching up') this.sawPreyPeak = true
-    if (phase === 'Predator numbers high' && this.sawPreyPeak && this.lastPhase !== phase) {
+    // Map population change to the 4-step story students can follow.
+    if (dPrey > 0.04 && dPred <= 0.02) step = 1
+    else if (dPrey > 0 && dPred > 0) step = 2
+    else if (dPrey <= 0 && dPred > 0.01) step = 3
+    else if (dPrey < 0 && dPred < 0) step = 4
+    else if (dPrey < 0 && dPred <= 0.01) step = 3
+    else if (dPrey >= 0 && dPred < 0) step = 1
+
+    const story = CYCLE_STEPS[step - 1]!
+    let why: string = story.why
+    let next: string = story.next
+    let phase: string = story.what
+
+    if (step === 1 || step === 2) this.sawPreyPeak = true
+    if (step === 3 && this.sawPreyPeak && this.lastPhase !== phase) {
       this.cycleCountProperty.value += 1
       this.sawPreyPeak = false
       this.huntFlashProperty.value = 0.7
-      guide = `Cycle ${this.cycleCountProperty.value} complete — watch it start again slowly.`
+      next = `Cycle ${this.cycleCountProperty.value} turning — foxes high, rabbits falling.`
+      this.statusProperty.value = `You spotted a turn in the cycle (cycle #${this.cycleCountProperty.value}).`
+    }
+    if (step === 4 && this.lastPhase !== phase) {
+      next = 'Almost done — when foxes are low, rabbits can rise again (back to Step 1).'
+    }
+    if (step === 1 && this.lastPhase.includes('Step 4')) {
+      this.statusProperty.value = 'Back to Step 1 — the cycle is repeating. Great noticing!'
     }
 
+    this.storyStepProperty.value = step
     this.phaseLabelProperty.value = phase
-    this.guideProperty.value = guide
+    this.whyProperty.value = why
+    this.nextHintProperty.value = next
+    this.guideProperty.value = next
     this.lastPhase = phase
   }
 
