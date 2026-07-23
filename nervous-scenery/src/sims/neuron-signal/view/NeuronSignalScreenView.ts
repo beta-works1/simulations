@@ -349,8 +349,8 @@ export class NeuronSignalScreenView extends ScreenView {
 
     card.content.addChild(
       new Text(NeuronSignalStrings.tapNodeStringProperty.value, {
-        font: new PhetFont(13),
-        fill: NervousColors.muted,
+        font: new PhetFont(16),
+        fill: NervousColors.ink,
         left: 16,
         top: 208,
         maxWidth: rightW - 32,
@@ -358,10 +358,10 @@ export class NeuronSignalScreenView extends ScreenView {
     )
     card.content.addChild(
       new Text(NeuronSignalStrings.learnMoreStringProperty.value, {
-        font: new PhetFont(13),
-        fill: NervousColors.muted,
+        font: new PhetFont(17),
+        fill: NervousColors.ink,
         left: 16,
-        top: 260,
+        top: 270,
         maxWidth: rightW - 32,
       }),
     )

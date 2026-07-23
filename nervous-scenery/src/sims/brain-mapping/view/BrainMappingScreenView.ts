@@ -268,17 +268,17 @@ export class BrainMappingScreenView extends ScreenView {
       maxWidth: rightW - 48,
     })
     this.detailBody = new Text('', {
-      font: new PhetFont(13),
+      font: new PhetFont(16),
       fill: NervousColors.ink,
       left: 4,
       top: 194,
       maxWidth: rightW - 48,
     })
     this.detailExamples = new Text('', {
-      font: new PhetFont(13),
-      fill: NervousColors.muted,
+      font: new PhetFont(16),
+      fill: NervousColors.ink,
       left: 4,
-      top: 270,
+      top: 280,
       maxWidth: rightW - 48,
     })
     panelContent.addChild(this.detailTitle)
@@ -312,8 +312,8 @@ export class BrainMappingScreenView extends ScreenView {
 
     panelContent.addChild(
       new Text(BrainMappingStrings.learnMoreStringProperty.value, {
-        font: new PhetFont(13),
-        fill: NervousColors.muted,
+        font: new PhetFont(17),
+        fill: NervousColors.ink,
         left: 4,
         top: yBtn + 8,
         maxWidth: rightW - 48,

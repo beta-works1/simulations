@@ -245,7 +245,7 @@ export class ReflexArcScreenView extends ScreenView {
     )
     this.addChild(
       new Text('tap to fire', {
-        font: new PhetFont(12),
+        font: new PhetFont(14),
         fill: NervousColors.muted,
         centerX: receptor.x,
         top: receptor.y + 26,
@@ -376,8 +376,8 @@ export class ReflexArcScreenView extends ScreenView {
 
     card.content.addChild(
       new Text(ReflexArcStrings.learnMoreStringProperty.value, {
-        font: new PhetFont(13),
-        fill: NervousColors.muted,
+        font: new PhetFont(17),
+        fill: NervousColors.ink,
         left: 16,
         top: 156,
         maxWidth: rightW - 32,

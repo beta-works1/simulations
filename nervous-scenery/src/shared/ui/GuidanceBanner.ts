@@ -40,17 +40,17 @@ export class GuidanceBanner extends Node {
     )
 
     this.titleText = new Text(options.title ?? 'Try this', {
-      font: new PhetFont({ size: 14, weight: 'bold' }),
+      font: new PhetFont({ size: 16, weight: 'bold' }),
       fill: NervousColors.accent,
       left: 18,
       top: 10,
       maxWidth: width - 32,
     })
     this.bodyText = new Text(options.body ?? '', {
-      font: new PhetFont(13),
+      font: new PhetFont(16),
       fill: NervousColors.ink,
       left: 18,
-      top: 32,
+      top: 34,
       maxWidth: width - 32,
     })
     this.addChild(this.titleText)
