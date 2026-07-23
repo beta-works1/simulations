@@ -6,23 +6,23 @@ import { PhetFont } from 'scenerystack/scenery-phet'
 
 /**
  * Clips tall panel content and scrolls with mouse wheel / trackpad / scrollbar drag.
- * Reserves a bottom band for the scroll hint so it never covers controls.
+ * Uses content maxY for the scroll range so the last line can fully enter the viewport.
  */
 export class ScrollableNode extends Node {
   private readonly contentNode: Node
+  private readonly content: Node
   private readonly viewportHeight: number
   private scrollY = 0
   private readonly thumb: Rectangle
   private readonly track: Rectangle
   private readonly hint: Text
-  private readonly hintBand: Rectangle
   private maxScroll = 0
 
   public constructor(content: Node, width: number, maxHeight: number) {
     super({ pickable: true })
 
-    const hintBandH = 22
-    this.viewportHeight = Math.max(40, maxHeight - hintBandH)
+    this.viewportHeight = Math.max(40, maxHeight)
+    this.content = content
     this.contentNode = new Node({ children: [content] })
 
     const clip = new Node({
@@ -41,40 +41,35 @@ export class ScrollableNode extends Node {
       cursor: 'grab',
     })
 
-    this.hintBand = new Rectangle(0, this.viewportHeight, width, hintBandH, {
-      fill: 'rgba(255,255,255,0.92)',
-      pickable: false,
-    })
     this.hint = new Text('Scroll for more ↓', {
-      font: new PhetFont({ size: 12, weight: 'bold' }),
+      font: new PhetFont({ size: 11, weight: 'bold' }),
       fill: '#64748b',
-      centerX: width / 2,
-      centerY: this.viewportHeight + hintBandH / 2,
+      right: width - 14,
+      bottom: this.viewportHeight - 4,
       pickable: false,
     })
 
     this.addChild(clip)
     this.addChild(this.track)
     this.addChild(this.thumb)
-    this.addChild(this.hintBand)
     this.addChild(this.hint)
 
     this.localBounds = new Bounds2(0, 0, width, maxHeight)
 
     const applyScroll = () => {
-      const contentH = Math.max(this.contentNode.bounds.height, this.viewportHeight)
-      this.maxScroll = Math.max(0, contentH - this.viewportHeight)
+      // localBounds is independent of scroll translation
+      const bottom = Math.max(this.content.localBounds.maxY, this.viewportHeight)
+      this.maxScroll = Math.max(0, bottom - this.viewportHeight)
       this.scrollY = Math.max(-this.maxScroll, Math.min(0, this.scrollY))
       this.contentNode.y = this.scrollY
 
       const needsScroll = this.maxScroll > 2
       this.track.visible = needsScroll
       this.thumb.visible = needsScroll
-      this.hint.visible = needsScroll && this.scrollY > -8
-      this.hintBand.visible = this.hint.visible
+      this.hint.visible = needsScroll && this.scrollY > -12
 
       if (needsScroll) {
-        const thumbH = Math.max(28, (this.viewportHeight / contentH) * (this.viewportHeight - 8))
+        const thumbH = Math.max(28, (this.viewportHeight / bottom) * (this.viewportHeight - 8))
         this.thumb.rectHeight = thumbH
         const t = this.maxScroll === 0 ? 0 : -this.scrollY / this.maxScroll
         this.thumb.y = 4 + t * (this.viewportHeight - 8 - thumbH)

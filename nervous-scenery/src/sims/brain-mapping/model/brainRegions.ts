@@ -51,7 +51,7 @@ export const BRAIN_REGIONS: BrainRegion[] = [
     part: 'cerebrum',
     action: 'Thinking, planning, and voluntary movement',
     detail:
-      'Part of the cerebrum. Controls reasoning, decision-making, and voluntary muscle movements.',
+      'Controls reasoning, decision-making, and voluntary muscle movements.',
     examples: ['Planning homework', 'Speaking', 'Kicking a ball'],
     accent: '#e74c3c',
     fill: 'rgba(231,76,60,0.38)',
@@ -66,7 +66,7 @@ export const BRAIN_REGIONS: BrainRegion[] = [
     part: 'cerebrum',
     action: 'Touch, pain, temperature, and body position',
     detail:
-      'Part of the cerebrum. Receives and processes sensory information from the skin and body.',
+      'Receives and processes sensory information from the skin and body.',
     examples: ['Feeling heat from a cup', 'Touching a textured surface', 'Knowing where your hand is'],
     accent: '#3498db',
     fill: 'rgba(52,152,219,0.38)',
@@ -81,7 +81,7 @@ export const BRAIN_REGIONS: BrainRegion[] = [
     part: 'cerebrum',
     action: 'Hearing, memory, and language',
     detail:
-      'Part of the cerebrum. Interprets sounds and helps store and recall memories and language.',
+      'Interprets sounds and helps store and recall memories and language.',
     examples: ['Listening to music', 'Remembering a lesson', 'Understanding speech'],
     accent: '#e67e22',
     fill: 'rgba(230,126,34,0.38)',
@@ -96,7 +96,7 @@ export const BRAIN_REGIONS: BrainRegion[] = [
     part: 'cerebrum',
     action: 'Vision — processing what the eyes see',
     detail:
-      'Part of the cerebrum. Visual centre at the back of the brain; interprets images from the eyes.',
+      'Visual centre at the back of the brain; interprets images from the eyes.',
     examples: ['Reading words on a page', 'Recognising colours', 'Catching a moving ball'],
     accent: '#27ae60',
     fill: 'rgba(39,174,96,0.38)',

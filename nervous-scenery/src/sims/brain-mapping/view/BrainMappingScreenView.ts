@@ -6,7 +6,6 @@ import { Matrix3 } from 'scenerystack/dot'
 import { PhetFont, ResetAllButton } from 'scenerystack/scenery-phet'
 import { BrainMappingModel } from '../model/BrainMappingModel.js'
 import {
-  BRAIN_PARTS,
   BRAIN_REGIONS,
   CEREBRUM_OUTLINE,
   SVG_H,
@@ -35,6 +34,7 @@ export class BrainMappingScreenView extends ScreenView {
   private readonly quizPrompt: Text
   private readonly promptBg: Rectangle
   private readonly detailTitle: Text
+  private readonly detailPart: Text
   private readonly detailBody: RichText
   private readonly detailExamples: RichText
   private readonly exploredText: Text
@@ -224,8 +224,10 @@ export class BrainMappingScreenView extends ScreenView {
     })
     this.addChild(this.statusText)
 
-    // Controls with scroll
-    const card = new DepthCard(rightW, stageH - 58, { title: BrainMappingStrings.modeStringProperty.value })
+    // Full panel height; Reset sits under the card so it never covers tip text.
+    const resetGap = 52
+    const cardH = stageH - resetGap
+    const card = new DepthCard(rightW, cardH, { title: BrainMappingStrings.modeStringProperty.value })
     card.left = stageLeft + stageW + gap
     card.top = stageTop
     this.addChild(card)
@@ -264,6 +266,12 @@ export class BrainMappingScreenView extends ScreenView {
       left: 4,
       maxWidth: tipWidth,
     })
+    this.detailPart = new Text('', {
+      font: new PhetFont({ size: 13, weight: 'bold' }),
+      fill: NervousColors.muted,
+      left: 4,
+      maxWidth: tipWidth,
+    })
     this.detailBody = createPanelTip('', {
       width: tipWidth,
       fontSize: 17,
@@ -275,6 +283,7 @@ export class BrainMappingScreenView extends ScreenView {
     })
     this.detailExamples.left = 4
     panelContent.addChild(this.detailTitle)
+    panelContent.addChild(this.detailPart)
     panelContent.addChild(this.detailBody)
     panelContent.addChild(this.detailExamples)
 
@@ -317,7 +326,16 @@ export class BrainMappingScreenView extends ScreenView {
       this.scoreText.top = y
       y = this.scoreText.bottom + 14
 
-      // Keep region buttons above the description so wrapped text never covers them.
+      // Detail first so the region explanation is visible without scrolling.
+      this.detailTitle.top = y
+      y = this.detailTitle.bottom + 4
+      this.detailPart.top = y
+      y = this.detailPart.bottom + 6
+      this.detailBody.top = y
+      y = this.detailBody.bottom + 8
+      this.detailExamples.top = y
+      y = this.detailExamples.bottom + 16
+
       regionsHeader.top = y
       y = regionsHeader.bottom + 8
       const cols = 2
@@ -331,29 +349,37 @@ export class BrainMappingScreenView extends ScreenView {
         btn.top = y + row * (34 + rowGap)
       })
       const rows = Math.ceil(BRAIN_REGIONS.length / cols)
-      y += rows * 34 + (rows - 1) * rowGap + 16
-
-      this.detailTitle.top = y
-      y = this.detailTitle.bottom + 6
-      this.detailBody.top = y
-      y = this.detailBody.bottom + 8
-      this.detailExamples.top = y
-      y = this.detailExamples.bottom + 12
+      y += rows * 34 + (rows - 1) * rowGap + 14
 
       learnTip.top = y
+      bottomPad.top = learnTip.bottom + 4
     }
 
-    // Seed initial copy before first layout
-    {
-      const region = BRAIN_REGIONS[0]
-      const part = BRAIN_PARTS.find((p) => p.id === region.part)
+    const partLabelFor = (region: (typeof BRAIN_REGIONS)[number]): string => {
+      if (region.part === 'cerebrum') {
+        return 'Brain part: Cerebrum (one of four lobes)'
+      }
+      if (region.part === 'cerebellum') {
+        return 'Brain part: Cerebellum (not a cerebrum lobe)'
+      }
+      return 'Brain part: Brain stem (not a cerebrum lobe)'
+    }
+
+    const fillDetail = (region: (typeof BRAIN_REGIONS)[number]) => {
       this.detailTitle.string = region.name
-      this.detailBody.string = `${part?.label ?? ''}: ${region.detail}`
+      this.detailPart.string = partLabelFor(region)
+      this.detailBody.string = region.detail
       this.detailExamples.string = `Examples: ${region.examples.join(' · ')}`
     }
+
+    // Invisible spacer so the last tip line can scroll fully into view.
+    const bottomPad = new Rectangle(0, 0, 1, 48, { fill: null, pickable: false })
+    panelContent.addChild(bottomPad)
+
+    fillDetail(BRAIN_REGIONS[0])
     relayoutPanel()
 
-    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 52 - 58)
+    const scroller = new ScrollableNode(panelContent, rightW - 24, cardH - 48)
     scroller.left = 12
     scroller.top = 40
     card.content.addChild(scroller)
@@ -361,8 +387,8 @@ export class BrainMappingScreenView extends ScreenView {
     this.addChild(
       new ResetAllButton({
         listener: () => model.reset(),
-        right: lb.right - m,
-        bottom: lb.bottom - my,
+        centerX: card.centerX,
+        top: card.bottom + 2,
       }),
     )
 
@@ -392,10 +418,7 @@ export class BrainMappingScreenView extends ScreenView {
       this.labelBadge.centerX = region.label.x
       this.labelBadge.centerY = region.label.y
 
-      const part = BRAIN_PARTS.find((p) => p.id === region.part)
-      this.detailTitle.string = region.name
-      this.detailBody.string = `${part?.label ?? ''}: ${region.detail}`
-      this.detailExamples.string = `Examples: ${region.examples.join(' · ')}`
+      fillDetail(region)
       relayoutPanel()
     }
 
