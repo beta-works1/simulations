@@ -11,11 +11,10 @@ import {
   PYRAMID_COLORS,
   PYRAMID_SHORT,
   tierDetail,
-  tierDotCount,
 } from '../model/EcologicalPyramidModel.js'
 import { PyramidControlPanel } from './PyramidControlPanel.js'
 import { PyramidSounds } from './PyramidSounds.js'
-import { createEcologyIcon } from '../../common/EcologyArt.js'
+import { createEcologyAvatar } from '../../common/EcologyArt.js'
 
 type Options = EmptySelfOptions & ScreenViewOptions
 
@@ -29,8 +28,11 @@ export class EcologicalPyramidScreenView extends ScreenView {
   private readonly particleLayer: Node
   private readonly tipCard: Node
   private readonly tipText: Text
-  private readonly sun: Circle
-  private readonly sunGlow: Circle
+  private readonly whyCard: Node
+  private readonly whyText: Text
+  private readonly nextCard: Node
+  private readonly nextText: Text
+  private readonly sunNode: Node
   private readonly sunRays: Node
   private readonly birdLayer: Node
   private readonly sceneBounds: { left: number; top: number; width: number; height: number }
@@ -88,48 +90,40 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.buildScenery(sceneLeft, sceneTop, sceneW, sceneH)
     this.addChild(this.sceneryLayer)
 
-    this.sunGlow = new Circle(48, {
-      fill: 'rgba(255,220,80,0.28)',
-      centerX: sceneLeft + sceneW / 2,
-      centerY: sceneTop + 40,
-      cursor: 'pointer',
-    })
-    this.sun = new Circle(20, {
-      fill: '#f4d03f',
-      centerX: this.sunGlow.centerX,
-      centerY: this.sunGlow.centerY,
-      cursor: 'pointer',
-    })
+    // Illustrated sun (pfp) — tap to send energy burst
+    this.sunNode = new Node({ cursor: 'pointer' })
+    const { root: sunAvatar } = createEcologyAvatar('sun', 28, 'rgba(250, 204, 21, 0.9)')
+    this.sunNode.addChild(sunAvatar)
+    this.sunNode.addChild(
+      new Text('Sun — tap', {
+        font: new PhetFont({ size: 11, weight: 'bold' }),
+        fill: '#fde68a',
+        centerX: 0,
+        top: 32,
+        pickable: false,
+      }),
+    )
+    this.sunNode.centerX = sceneLeft + sceneW / 2
+    this.sunNode.centerY = sceneTop + 42
     const sunHit = () => {
       model.pulseSunBurst()
       this.sounds.button()
-      this.spawnHeatBurst(this.sun.centerX, this.sun.centerY + 30, 8)
+      this.spawnHeatBurst(this.sunNode.centerX, this.sunNode.centerY + 30, 8)
     }
-    this.sun.addInputListener({ up: sunHit })
-    this.sunGlow.addInputListener({ up: sunHit })
-    this.addChild(this.sunGlow)
-    this.addChild(this.sun)
+    this.sunNode.addInputListener({ up: sunHit })
+    this.addChild(this.sunNode)
     this.sunRays = new Node({ pickable: false })
     this.addChild(this.sunRays)
     this.birdLayer = new Node({ pickable: false })
     this.addChild(this.birdLayer)
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 2; i++) {
       this.birds.push({
-        x: sceneLeft + 20 + i * (sceneW / 5),
-        y: sceneTop + 24 + (i % 3) * 10,
-        speed: 18 + i * 6,
+        x: sceneLeft + 40 + i * (sceneW / 3),
+        y: sceneTop + 28 + i * 8,
+        speed: 14 + i * 4,
         phase: i * 1.3,
       })
     }
-    this.addChild(
-      new Text('☀ Sun — tap', {
-        font: new PhetFont(10),
-        fill: '#f4d03f',
-        centerX: this.sun.centerX,
-        top: this.sun.bottom + 2,
-        pickable: false,
-      }),
-    )
 
     this.pyramidLayer = new Node()
     this.particleLayer = new Node({ pickable: false })
@@ -137,29 +131,76 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.addChild(this.particleLayer)
 
     this.tipText = new Text('', {
-      font: new PhetFont(10),
-      fill: '#ecfeff',
-      maxWidth: sceneW * 0.55,
+      font: new PhetFont({ size: 12, weight: 'bold' }),
+      fill: '#fde68a',
+      maxWidth: sceneW * 0.72,
     })
     const tipBg = new Rectangle(0, 0, 20, 20, {
-      fill: 'rgba(8, 18, 32, 0.88)',
+      fill: 'rgba(8, 18, 32, 0.92)',
       cornerRadius: 8,
-      stroke: 'rgba(125, 211, 252, 0.45)',
-      lineWidth: 1,
+      stroke: 'rgba(250, 204, 21, 0.5)',
+      lineWidth: 1.5,
     })
     this.tipCard = new Node({ children: [tipBg, this.tipText], pickable: false })
     this.addChild(this.tipCard)
 
+    this.whyText = new Text('', {
+      font: new PhetFont(11),
+      fill: '#a7f3d0',
+      maxWidth: sceneW * 0.72,
+    })
+    const whyBg = new Rectangle(0, 0, 20, 20, {
+      fill: 'rgba(6, 40, 28, 0.92)',
+      cornerRadius: 8,
+      stroke: 'rgba(134, 239, 172, 0.4)',
+      lineWidth: 1,
+    })
+    this.whyCard = new Node({ children: [whyBg, this.whyText], pickable: false })
+    this.addChild(this.whyCard)
+
+    this.nextText = new Text('', {
+      font: new PhetFont(11),
+      fill: '#e2e8f0',
+      maxWidth: sceneW * 0.72,
+    })
+    const nextBg = new Rectangle(0, 0, 20, 20, {
+      fill: 'rgba(15, 23, 42, 0.9)',
+      cornerRadius: 8,
+      stroke: 'rgba(148, 163, 184, 0.45)',
+      lineWidth: 1,
+    })
+    this.nextCard = new Node({ children: [nextBg, this.nextText], pickable: false })
+    this.addChild(this.nextCard)
+
     const refreshTip = () => {
+      const show = model.showTipsProperty.value
       this.tipText.string = model.tipProperty.value
-      tipBg.rectWidth = this.tipText.width + 16
+      tipBg.rectWidth = this.tipText.width + 18
       tipBg.rectHeight = this.tipText.height + 12
       this.tipText.center = tipBg.center
       this.tipCard.left = sceneLeft + 10
-      this.tipCard.bottom = sceneTop + sceneH - 10
-      this.tipCard.visible = model.showTipsProperty.value
+      this.tipCard.bottom = sceneTop + sceneH - 52
+      this.tipCard.visible = show
+
+      this.whyText.string = model.whyProperty.value
+      whyBg.rectWidth = this.whyText.width + 18
+      whyBg.rectHeight = this.whyText.height + 12
+      this.whyText.center = whyBg.center
+      this.whyCard.left = sceneLeft + 10
+      this.whyCard.bottom = this.tipCard.top - 5
+      this.whyCard.visible = show
+
+      this.nextText.string = model.nextHintProperty.value
+      nextBg.rectWidth = this.nextText.width + 18
+      nextBg.rectHeight = this.nextText.height + 12
+      this.nextText.center = nextBg.center
+      this.nextCard.left = sceneLeft + 10
+      this.nextCard.bottom = this.whyCard.top - 5
+      this.nextCard.visible = show
     }
     model.tipProperty.link(refreshTip)
+    model.whyProperty.link(refreshTip)
+    model.nextHintProperty.link(refreshTip)
     model.showTipsProperty.link(refreshTip)
 
     this.addChild(
@@ -278,7 +319,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
     const cascading = this.model.cascadeProgressProperty.value > 0
 
     const pyramidTop = s.top + 78
-    const pyramidBottom = s.top + s.height - 62
+    const pyramidBottom = s.top + s.height - 118
     const availableH = pyramidBottom - pyramidTop
     const tierH = availableH / 4.35
     const cx = s.left + s.width / 2
@@ -355,11 +396,11 @@ export class EcologicalPyramidScreenView extends ScreenView {
       this.tierGeoms[tier] = geom
 
       const label = new Text(PYRAMID_SHORT[tier], {
-        font: new PhetFont({ size: 12, weight: 'bold' }),
+        font: new PhetFont({ size: 13, weight: 'bold' }),
         fill: 'white',
-        centerX: cx,
-        centerY: y + h * 0.32,
-        maxWidth: wBot * 0.85,
+        centerX: cx + 8,
+        centerY: y + h * 0.28,
+        maxWidth: wBot * 0.55,
         pickable: false,
       })
       this.pyramidLayer.addChild(label)
@@ -371,53 +412,35 @@ export class EcologicalPyramidScreenView extends ScreenView {
         pickable: false,
       })
       const chipBg = new Rectangle(0, 0, valueChip.width + 14, 18, {
-        fill: 'rgba(255,255,255,0.9)',
+        fill: 'rgba(255,255,255,0.92)',
         cornerRadius: 9,
         pickable: false,
       })
-      chipBg.centerX = cx
-      chipBg.centerY = y + h * 0.62
+      chipBg.centerX = cx + 8
+      chipBg.centerY = y + h * 0.55
       valueChip.center = chipBg.center
       this.pyramidLayer.addChild(chipBg)
       this.pyramidLayer.addChild(valueChip)
 
-      // Simple organism silhouette markers (depth cue per trophic role)
-      this.pyramidLayer.addChild(makeTierSilhouette(tier, cx - wBot * 0.32, y + h * 0.55))
-
-      // Organism / mass dots
-      const dots = tierDotCount(base, tier, mode, transfer)
-      const cols = Math.max(1, Math.ceil(Math.sqrt(dots)))
-      for (let i = 0; i < dots; i++) {
-        const col = i % cols
-        const row = Math.floor(i / cols)
-        const dx = (col - (cols - 1) / 2) * 6.5
-        const dy = row * 5.5 - 2
-        const side = tier % 2 === 0 ? -1 : 1
-        this.pyramidLayer.addChild(
-          new Circle(mode === 'biomass' ? 2.4 : 1.9, {
-            fill: mode === 'numbers' ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.4)',
-            centerX: cx + side * (wBot * 0.28) + dx,
-            centerY: y + h * 0.55 + dy,
-            pickable: false,
-          }),
-        )
-      }
+      // Large pfp avatar locked to the tier (same style as food web)
+      const avatarSize = Math.min(36, h * 0.55)
+      this.pyramidLayer.addChild(makeTierAvatar(tier, cx - wBot * 0.28, y + h * 0.48, avatarSize))
 
       // Transfer label between this tier and the one below (visual)
       if (visual < 3) {
         const keepPct = (transfer * 100).toFixed(0)
         const midY = y + h + 1
-        const badge = new Text(`${keepPct}% ↑`, {
-          font: new PhetFont({ size: 9, weight: 'bold' }),
+        const badge = new Text(`only ${keepPct}% ↑`, {
+          font: new PhetFont({ size: 10, weight: 'bold' }),
           fill: '#fecaca',
           pickable: false,
         })
-        const badgeBg = new Rectangle(0, 0, badge.width + 10, 14, {
-          fill: 'rgba(127, 29, 29, 0.85)',
-          cornerRadius: 7,
+        const badgeBg = new Rectangle(0, 0, badge.width + 12, 16, {
+          fill: 'rgba(127, 29, 29, 0.88)',
+          cornerRadius: 8,
           pickable: false,
         })
-        badgeBg.centerX = cx + wBot * 0.38
+        badgeBg.centerX = cx + wBot * 0.36
         badgeBg.centerY = midY
         badge.center = badgeBg.center
         this.pyramidLayer.addChild(badgeBg)
@@ -484,12 +507,17 @@ export class EcologicalPyramidScreenView extends ScreenView {
       },
     })
     this.pyramidLayer.addChild(dec)
+    const { root: decAvatar } = createEcologyAvatar('decomposer', 16, 'rgba(253, 230, 138, 0.85)')
+    decAvatar.left = dec.left + 10
+    decAvatar.centerY = dec.centerY
+    this.pyramidLayer.addChild(decAvatar)
     this.pyramidLayer.addChild(
-      new Text(`${DECOMPOSER_LABEL}  ·  recycle → nutrients → producers`, {
+      new Text(`${DECOMPOSER_LABEL}  ·  recycle → nutrients → plants`, {
         font: new PhetFont({ size: 11, weight: 'bold' }),
         fill: 'white',
-        center: dec.center,
-        maxWidth: dec.width - 14,
+        left: decAvatar.right + 8,
+        centerY: dec.centerY,
+        maxWidth: dec.width - 48,
         pickable: false,
       }),
     )
@@ -571,24 +599,21 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.model.step(capped)
 
     const pulse = this.model.pulseProperty.value
-    const r = 20 + Math.sin(pulse * 2) * 2.5
-    this.sun.radius = r
-    this.sunGlow.radius = 36 + Math.sin(pulse * 2) * 6
-    this.sunGlow.opacity = 0.32 + Math.sin(pulse * 2.2) * 0.12
+    this.sunNode.opacity = 0.88 + Math.sin(pulse * 2) * 0.1
 
-    // Animated sun rays
+    // Soft rays from illustrated sun
     this.sunRays.removeAllChildren()
-    const sx = this.sun.centerX
-    const sy = this.sun.centerY
+    const sx = this.sunNode.centerX
+    const sy = this.sunNode.centerY
     for (let i = 0; i < 8; i++) {
       const ang = (i / 8) * Math.PI * 2 + pulse * 0.4
-      const len = 28 + Math.sin(pulse * 3 + i) * 6
+      const len = 34 + Math.sin(pulse * 3 + i) * 5
       const ray = new Shape()
-      ray.moveTo(sx + Math.cos(ang) * 22, sy + Math.sin(ang) * 22)
+      ray.moveTo(sx + Math.cos(ang) * 30, sy + Math.sin(ang) * 30)
       ray.lineTo(sx + Math.cos(ang) * len, sy + Math.sin(ang) * len)
       this.sunRays.addChild(
         new Path(ray, {
-          stroke: `rgba(251, 191, 36, ${0.25 + Math.sin(pulse * 2 + i) * 0.12})`,
+          stroke: `rgba(251, 191, 36, ${0.22 + Math.sin(pulse * 2 + i) * 0.1})`,
           lineWidth: 2,
         }),
       )
@@ -712,14 +737,13 @@ export class EcologicalPyramidScreenView extends ScreenView {
   }
 }
 
-function makeTierSilhouette(tier: number, x: number, y: number): Node {
+function makeTierAvatar(tier: number, x: number, y: number, radius: number): Node {
   const names = ['grass', 'rabbit', 'fox', 'eagle'] as const
   const n = new Node({ pickable: false })
-  const icon = createEcologyIcon(names[tier] ?? 'grass', tier === 0 ? 34 : 30)
-  icon.centerX = x
-  icon.centerY = y
-  icon.opacity = 0.95
-  n.addChild(icon)
+  const { root } = createEcologyAvatar(names[tier] ?? 'grass', radius, 'rgba(255,255,255,0.85)')
+  root.centerX = x
+  root.centerY = y
+  n.addChild(root)
   return n
 }
 
