@@ -225,38 +225,35 @@ export class BrainMappingScreenView extends ScreenView {
     this.addChild(this.statusText)
 
     // Controls with scroll
-    const card = new DepthCard(rightW, stageH, { title: BrainMappingStrings.modeStringProperty.value })
+    const card = new DepthCard(rightW, stageH - 58, { title: BrainMappingStrings.modeStringProperty.value })
     card.left = stageLeft + stageW + gap
     card.top = stageTop
     this.addChild(card)
 
     const panelContent = new Node()
+    const tipWidth = rightW - 48
 
     this.studyBtn = new SoftButton(BrainMappingStrings.studyStringProperty.value, () => {
       model.setMode('study')
     }, { width: rightW - 40, height: 40, fill: NervousColors.accent, selected: true })
     this.studyBtn.left = 4
-    this.studyBtn.top = 8
     panelContent.addChild(this.studyBtn)
 
     this.quizBtn = new SoftButton(BrainMappingStrings.quizStringProperty.value, () => {
       model.setMode('quiz')
     }, { width: rightW - 40, height: 40, fill: '#0ea5e9', selected: false })
     this.quizBtn.left = 4
-    this.quizBtn.top = 56
     panelContent.addChild(this.quizBtn)
 
     this.exploredText = new Text('Explored 1 / 6', {
       font: new PhetFont({ size: 14, weight: 'bold' }),
       fill: NervousColors.ink,
       left: 4,
-      top: 110,
     })
     this.scoreText = new Text('Score —', {
       font: new PhetFont({ size: 14, weight: 'bold' }),
       fill: NervousColors.muted,
       left: 4,
-      top: 132,
     })
     panelContent.addChild(this.exploredText)
     panelContent.addChild(this.scoreText)
@@ -265,59 +262,98 @@ export class BrainMappingScreenView extends ScreenView {
       font: new PhetFont({ size: 16, weight: 'bold' }),
       fill: NervousColors.accent,
       left: 4,
-      top: 168,
-      maxWidth: rightW - 48,
+      maxWidth: tipWidth,
     })
     this.detailBody = createPanelTip('', {
-      width: rightW - 48,
+      width: tipWidth,
       fontSize: 17,
     })
     this.detailBody.left = 4
-    this.detailBody.top = 194
     this.detailExamples = createPanelTip('', {
-      width: rightW - 48,
+      width: tipWidth,
       fontSize: 16,
     })
     this.detailExamples.left = 4
-    this.detailExamples.top = 290
     panelContent.addChild(this.detailTitle)
     panelContent.addChild(this.detailBody)
     panelContent.addChild(this.detailExamples)
 
-    panelContent.addChild(
-      new Text(BrainMappingStrings.regionsStringProperty.value, {
-        font: new PhetFont({ size: 14, weight: 'bold' }),
-        fill: NervousColors.ink,
-        left: 4,
-        top: 330,
-      }),
-    )
+    const regionsHeader = new Text(BrainMappingStrings.regionsStringProperty.value, {
+      font: new PhetFont({ size: 14, weight: 'bold' }),
+      fill: NervousColors.ink,
+      left: 4,
+    })
+    panelContent.addChild(regionsHeader)
 
-    let yBtn = 356
+    const regionBtnW = Math.floor((rightW - 40 - 8) / 2)
     for (const region of BRAIN_REGIONS) {
       const btn = new SoftButton(region.name, () => model.selectRegion(region.id), {
-        width: rightW - 40,
-        height: 36,
+        width: regionBtnW,
+        height: 34,
         fill: region.accent,
         selected: region.id === 'frontal',
-        fontSize: 13,
+        fontSize: 12,
       })
-      btn.left = 4
-      btn.top = yBtn
-      yBtn += 44
       panelContent.addChild(btn)
       this.regionButtons.set(region.id, btn)
     }
 
     const learnTip = createPanelTip(BrainMappingStrings.learnMoreStringProperty.value, {
-      width: rightW - 48,
+      width: tipWidth,
       fontSize: 17,
     })
     learnTip.left = 4
-    learnTip.top = yBtn + 8
     panelContent.addChild(learnTip)
 
-    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 52)
+    const relayoutPanel = () => {
+      let y = 8
+      this.studyBtn.top = y
+      y = this.studyBtn.bottom + 10
+      this.quizBtn.top = y
+      y = this.quizBtn.bottom + 14
+
+      this.exploredText.top = y
+      y = this.exploredText.bottom + 4
+      this.scoreText.top = y
+      y = this.scoreText.bottom + 14
+
+      // Keep region buttons above the description so wrapped text never covers them.
+      regionsHeader.top = y
+      y = regionsHeader.bottom + 8
+      const cols = 2
+      const colGap = 8
+      const rowGap = 8
+      BRAIN_REGIONS.forEach((region, i) => {
+        const btn = this.regionButtons.get(region.id)!
+        const col = i % cols
+        const row = Math.floor(i / cols)
+        btn.left = 4 + col * (regionBtnW + colGap)
+        btn.top = y + row * (34 + rowGap)
+      })
+      const rows = Math.ceil(BRAIN_REGIONS.length / cols)
+      y += rows * 34 + (rows - 1) * rowGap + 16
+
+      this.detailTitle.top = y
+      y = this.detailTitle.bottom + 6
+      this.detailBody.top = y
+      y = this.detailBody.bottom + 8
+      this.detailExamples.top = y
+      y = this.detailExamples.bottom + 12
+
+      learnTip.top = y
+    }
+
+    // Seed initial copy before first layout
+    {
+      const region = BRAIN_REGIONS[0]
+      const part = BRAIN_PARTS.find((p) => p.id === region.part)
+      this.detailTitle.string = region.name
+      this.detailBody.string = `${part?.label ?? ''}: ${region.detail}`
+      this.detailExamples.string = `Examples: ${region.examples.join(' · ')}`
+    }
+    relayoutPanel()
+
+    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 52 - 58)
     scroller.left = 12
     scroller.top = 40
     card.content.addChild(scroller)
@@ -360,7 +396,7 @@ export class BrainMappingScreenView extends ScreenView {
       this.detailTitle.string = region.name
       this.detailBody.string = `${part?.label ?? ''}: ${region.detail}`
       this.detailExamples.string = `Examples: ${region.examples.join(' · ')}`
-      this.detailExamples.top = this.detailBody.bottom + 10
+      relayoutPanel()
     }
 
     const syncMode = () => {

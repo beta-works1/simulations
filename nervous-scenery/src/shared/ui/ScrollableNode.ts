@@ -6,7 +6,7 @@ import { PhetFont } from 'scenerystack/scenery-phet'
 
 /**
  * Clips tall panel content and scrolls with mouse wheel / trackpad / scrollbar drag.
- * Does not cover controls with a hit layer — buttons and sliders stay interactive.
+ * Reserves a bottom band for the scroll hint so it never covers controls.
  */
 export class ScrollableNode extends Node {
   private readonly contentNode: Node
@@ -15,40 +15,48 @@ export class ScrollableNode extends Node {
   private readonly thumb: Rectangle
   private readonly track: Rectangle
   private readonly hint: Text
+  private readonly hintBand: Rectangle
   private maxScroll = 0
 
   public constructor(content: Node, width: number, maxHeight: number) {
     super({ pickable: true })
 
-    this.viewportHeight = maxHeight
+    const hintBandH = 22
+    this.viewportHeight = Math.max(40, maxHeight - hintBandH)
     this.contentNode = new Node({ children: [content] })
 
     const clip = new Node({
-      clipArea: Shape.bounds(new Bounds2(0, 0, width, maxHeight)),
+      clipArea: Shape.bounds(new Bounds2(0, 0, width - 10, this.viewportHeight)),
       children: [this.contentNode],
     })
 
-    this.track = new Rectangle(width - 8, 4, 6, maxHeight - 8, {
-      fill: 'rgba(255,255,255,0.14)',
+    this.track = new Rectangle(width - 8, 4, 6, this.viewportHeight - 8, {
+      fill: 'rgba(148,163,184,0.35)',
       cornerRadius: 3,
       cursor: 'pointer',
     })
     this.thumb = new Rectangle(width - 8, 4, 6, 40, {
-      fill: 'rgba(125, 211, 252, 0.85)',
+      fill: 'rgba(124, 58, 237, 0.75)',
       cornerRadius: 3,
       cursor: 'grab',
     })
+
+    this.hintBand = new Rectangle(0, this.viewportHeight, width, hintBandH, {
+      fill: 'rgba(255,255,255,0.92)',
+      pickable: false,
+    })
     this.hint = new Text('Scroll for more ↓', {
-      font: new PhetFont(12),
-      fill: 'rgba(189, 199, 220, 0.9)',
+      font: new PhetFont({ size: 12, weight: 'bold' }),
+      fill: '#64748b',
       centerX: width / 2,
-      bottom: maxHeight - 4,
+      centerY: this.viewportHeight + hintBandH / 2,
       pickable: false,
     })
 
     this.addChild(clip)
     this.addChild(this.track)
     this.addChild(this.thumb)
+    this.addChild(this.hintBand)
     this.addChild(this.hint)
 
     this.localBounds = new Bounds2(0, 0, width, maxHeight)
@@ -63,6 +71,7 @@ export class ScrollableNode extends Node {
       this.track.visible = needsScroll
       this.thumb.visible = needsScroll
       this.hint.visible = needsScroll && this.scrollY > -8
+      this.hintBand.visible = this.hint.visible
 
       if (needsScroll) {
         const thumbH = Math.max(28, (this.viewportHeight / contentH) * (this.viewportHeight - 8))
