@@ -7,7 +7,7 @@ alwaysApply: true
 
 When changing Grade 8 **Ch 1 – Ecology** simulations (carbon–oxygen, food web, ecological pyramid, predator–prey, global warming):
 
-1. **Open in a new tab, full page** — Catalog cards link to `/run/:id` with `target="_blank"`. Keep `/run/:id` chrome-free (no site header/footer). Do not send students into a cramped in-page iframe as the primary open path.
+1. **Open like PhET Color Vision** — Catalog cards open SceneryStack HTML (`sceneryHtml`) in a new tab so the sim fills the window with a dark canvas and its own bottom nav (title / home / sound). Do not letterbox in a site header/footer. React-only sims use full-bleed `/run/:id`.
 
 2. **Relatable images, not abstract shapes** — Organisms and key scene objects use the ecology icon art (`EcologyArt.ts` / friendly SVGs: rabbit, fox, plant, tree, factory, Earth, etc.). Prefer pictures students recognize over plain circles or diamonds.
 

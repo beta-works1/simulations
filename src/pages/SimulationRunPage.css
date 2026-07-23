@@ -1,10 +1,28 @@
+/* PhET-style full-window simulation shell */
+
+html.sim-run-active,
+body.sim-run-active {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
 .sim-run-page {
-  min-height: 100vh;
-  min-height: 100dvh;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: #0b1220;
+  background: #000;
   color: #e2e8f0;
+  overflow: hidden;
+}
+
+.sim-run-phet {
+  /* No site chrome — sim owns the whole window like PhET */
 }
 
 .sim-run-missing {
@@ -13,71 +31,76 @@
   gap: 1rem;
   padding: 2rem;
   text-align: center;
+  overflow: auto;
 }
 
-.sim-run-bar {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.55rem 1rem;
-  padding-top: max(0.55rem, env(safe-area-inset-top));
-  background: rgba(15, 23, 42, 0.96);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-}
-
-.sim-run-title {
-  margin: 0;
+.sim-run-loading {
+  margin: auto;
   font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: #94a3b8;
 }
 
-.sim-run-actions {
-  display: flex;
-  gap: 0.75rem;
-  flex-shrink: 0;
-}
-
-.sim-run-link {
-  color: #7dd3fc;
+.sim-run-exit {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  z-index: 20;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.82);
+  color: #e2e8f0;
   text-decoration: none;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 600;
+  border: 1px solid rgba(148, 163, 184, 0.35);
 }
 
-.sim-run-link:hover {
-  text-decoration: underline;
+.sim-run-exit:hover {
+  background: rgba(30, 41, 59, 0.95);
 }
 
-.sim-run-link:focus-visible {
+.sim-run-exit:focus-visible {
   outline: 3px solid #38bdf8;
   outline-offset: 2px;
-  border-radius: 4px;
 }
 
 .sim-run-stage {
   flex: 1 1 auto;
   min-height: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.sim-run-stage .simulation-viewer-stage,
-.sim-run-stage .scenery-embed {
+/* Kill letterboxing / aspect boxes — fill the window like PhET */
+.sim-run-page .simulation-viewer-stage,
+.sim-run-page .simulation-viewer-live,
+.sim-run-page .simulation-viewer-scenery {
   flex: 1 1 auto;
-  width: 100%;
-  height: 100%;
-  min-height: calc(100vh - 48px);
-  min-height: calc(100dvh - 48px);
-  border: 0;
-  border-radius: 0;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: hidden;
+  background: #000;
 }
 
-.sim-run-stage .simulation-viewer-scenery {
-  background: #0b1220;
+.sim-run-page .scenery-embed {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  border: 0;
+  background: #000;
+}
+
+.sim-run-page .simulation-viewer-live > * {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
 }

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { PageMeta } from '../components/PageMeta'
 import { ViewerSkeleton } from '../components/Skeleton'
@@ -9,10 +9,31 @@ const SimulationViewer = lazy(() =>
   import('../components/SimulationViewer').then((m) => ({ default: m.SimulationViewer })),
 )
 
-/** Full-viewport simulation page — opened in a new tab from the catalog. */
+/**
+ * PhET-style full-viewport launcher.
+ * SceneryStack sims fill the window with their own bottom nav bar;
+ * React sims get the same edge-to-edge black stage.
+ */
 export function SimulationRunPage() {
   const { id } = useParams<{ id: string }>()
   const sim = id ? getSimulationById(id) : undefined
+
+  useEffect(() => {
+    document.documentElement.classList.add('sim-run-active')
+    document.body.classList.add('sim-run-active')
+    return () => {
+      document.documentElement.classList.remove('sim-run-active')
+      document.body.classList.remove('sim-run-active')
+    }
+  }, [])
+
+  // Prefer the standalone SceneryStack HTML — same look as PhET Color Vision.
+  useEffect(() => {
+    if (!sim?.sceneryHtml) return
+    const target = sim.sceneryHtml
+    // Replace this shell with the real PhET-style sim document.
+    window.location.replace(target)
+  }, [sim])
 
   if (!sim) {
     return (
@@ -26,20 +47,24 @@ export function SimulationRunPage() {
     )
   }
 
-  return (
-    <div className="sim-run-page">
-      <PageMeta title={sim.title} description={sim.description} path={`/run/${sim.id}`} />
-      <header className="sim-run-bar">
-        <h1 className="sim-run-title">{sim.title}</h1>
-        <div className="sim-run-actions">
-          <Link to={`/play/${sim.id}`} className="sim-run-link">
-            About
-          </Link>
-          <Link to="/simulations" className="sim-run-link">
-            Catalog
-          </Link>
+  // Scenery sims redirect above; show a brief loading frame meanwhile.
+  if (sim.sceneryHtml) {
+    return (
+      <div className="sim-run-page sim-run-phet">
+        <PageMeta title={sim.title} description={sim.description} path={`/run/${sim.id}`} />
+        <div className="sim-run-loading" role="status">
+          Opening {sim.title}…
         </div>
-      </header>
+      </div>
+    )
+  }
+
+  return (
+    <div className="sim-run-page sim-run-phet">
+      <PageMeta title={sim.title} description={sim.description} path={`/run/${sim.id}`} />
+      <a className="sim-run-exit" href="/simulations">
+        ← Catalog
+      </a>
       <div className="sim-run-stage">
         <Suspense fallback={<ViewerSkeleton />}>
           <SimulationViewer sim={sim} />
