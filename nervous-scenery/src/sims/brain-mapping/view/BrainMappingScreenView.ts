@@ -326,16 +326,7 @@ export class BrainMappingScreenView extends ScreenView {
       this.scoreText.top = y
       y = this.scoreText.bottom + 14
 
-      // Detail first so the region explanation is visible without scrolling.
-      this.detailTitle.top = y
-      y = this.detailTitle.bottom + 4
-      this.detailPart.top = y
-      y = this.detailPart.bottom + 6
-      this.detailBody.top = y
-      y = this.detailBody.bottom + 8
-      this.detailExamples.top = y
-      y = this.detailExamples.bottom + 16
-
+      // Region buttons first so they stay fully visible; detail scrolls below.
       regionsHeader.top = y
       y = regionsHeader.bottom + 8
       const cols = 2
@@ -350,6 +341,15 @@ export class BrainMappingScreenView extends ScreenView {
       })
       const rows = Math.ceil(BRAIN_REGIONS.length / cols)
       y += rows * 34 + (rows - 1) * rowGap + 14
+
+      this.detailTitle.top = y
+      y = this.detailTitle.bottom + 4
+      this.detailPart.top = y
+      y = this.detailPart.bottom + 6
+      this.detailBody.top = y
+      y = this.detailBody.bottom + 8
+      this.detailExamples.top = y
+      y = this.detailExamples.bottom + 12
 
       learnTip.top = y
       bottomPad.top = learnTip.bottom + 4
@@ -379,9 +379,9 @@ export class BrainMappingScreenView extends ScreenView {
     fillDetail(BRAIN_REGIONS[0])
     relayoutPanel()
 
-    const scroller = new ScrollableNode(panelContent, rightW - 24, cardH - 48)
+    const scroller = new ScrollableNode(panelContent, rightW - 24, cardH - 56)
     scroller.left = 12
-    scroller.top = 40
+    scroller.top = 38
     card.content.addChild(scroller)
 
     this.addChild(

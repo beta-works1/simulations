@@ -1,8 +1,7 @@
 import { Bounds2 } from 'scenerystack/dot'
 import { Shape } from 'scenerystack/kite'
-import { DragListener, Node, Rectangle, Text } from 'scenerystack/scenery'
+import { DragListener, Node, Rectangle } from 'scenerystack/scenery'
 import type { SceneryEvent } from 'scenerystack/scenery'
-import { PhetFont } from 'scenerystack/scenery-phet'
 
 /**
  * Clips tall panel content and scrolls with mouse wheel / trackpad / scrollbar drag.
@@ -15,7 +14,6 @@ export class ScrollableNode extends Node {
   private scrollY = 0
   private readonly thumb: Rectangle
   private readonly track: Rectangle
-  private readonly hint: Text
   private maxScroll = 0
 
   public constructor(content: Node, width: number, maxHeight: number) {
@@ -41,18 +39,9 @@ export class ScrollableNode extends Node {
       cursor: 'grab',
     })
 
-    this.hint = new Text('Scroll for more ↓', {
-      font: new PhetFont({ size: 11, weight: 'bold' }),
-      fill: '#64748b',
-      right: width - 14,
-      bottom: this.viewportHeight - 4,
-      pickable: false,
-    })
-
     this.addChild(clip)
     this.addChild(this.track)
     this.addChild(this.thumb)
-    this.addChild(this.hint)
 
     this.localBounds = new Bounds2(0, 0, width, maxHeight)
 
@@ -66,7 +55,6 @@ export class ScrollableNode extends Node {
       const needsScroll = this.maxScroll > 2
       this.track.visible = needsScroll
       this.thumb.visible = needsScroll
-      this.hint.visible = needsScroll && this.scrollY > -12
 
       if (needsScroll) {
         const thumbH = Math.max(28, (this.viewportHeight / bottom) * (this.viewportHeight - 8))
