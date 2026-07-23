@@ -3,6 +3,7 @@ import { Circle, DragListener, Node, Rectangle, Text } from 'scenerystack/scener
 import { PhetFont } from 'scenerystack/scenery-phet'
 import { LEVEL_COLORS } from '../../common/EcologyColors.js'
 import type { TrophicLevel } from '../model/FoodWebModel.js'
+import type { EcologySounds } from './EcologySounds.js'
 
 export type DropTarget = {
   containsGlobalPoint: (x: number, y: number) => boolean
@@ -21,6 +22,7 @@ export class SpeciesPaletteChip extends Node {
     dropTarget: DropTarget,
     onDrop: (level: TrophicLevel, nx: number, ny: number) => void,
     ghostLayer: Node,
+    sounds?: EcologySounds,
   ) {
     super({ cursor: 'grab' })
 
@@ -67,6 +69,7 @@ export class SpeciesPaletteChip extends Node {
         allowTouchSnag: true,
         start: (event) => {
           this.opacity = 0.45
+          sounds?.grabStart()
           ghost = new Node({ pickable: false })
           ghost.addChild(new Circle(22, { fill: color, stroke: 'white', lineWidth: 2, opacity: 0.85 }))
           ghost.addChild(
@@ -96,6 +99,8 @@ export class SpeciesPaletteChip extends Node {
           if (dropTarget.containsGlobalPoint(point.x, point.y)) {
             const norm = dropTarget.globalToNormalized(point.x, point.y)
             if (norm) onDrop(level, norm.x, norm.y)
+          } else {
+            sounds?.dropMiss()
           }
         },
       }),

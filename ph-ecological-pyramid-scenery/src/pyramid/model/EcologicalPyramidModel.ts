@@ -87,6 +87,18 @@ export const QUIZ_BANK: QuizQuestion[] = [
     correct: 1,
     explain: 'Each step up keeps only ~10% of the energy below, so top levels support far fewer organisms.',
   },
+  {
+    prompt: 'A biomass pyramid usually looks…',
+    choices: ['Wider at the top', 'Wider at the producer base', 'A perfect rectangle', 'Only one level'],
+    correct: 1,
+    explain: 'Producers make up most of the living mass; each consumer level is typically smaller.',
+  },
+  {
+    prompt: 'If transfer efficiency rises from 10% to 20%, the top of the pyramid…',
+    choices: ['Gets even tinier', 'Holds more energy than before', 'Disappears', 'Stops losing heat'],
+    correct: 1,
+    explain: 'Higher transfer means more energy (and often more organisms) can be supported higher up.',
+  },
 ]
 
 export function tierEnergies(base: number, transfer = PyramidConstants.ENERGY_TRANSFER): number[] {
@@ -198,6 +210,9 @@ export class EcologicalPyramidModel implements TModel {
   public readonly quizFeedbackProperty: StringProperty
   public readonly scenarioIdProperty: StringProperty
   public readonly highlightTransferProperty: NumberProperty
+  /** 0 = idle; 0→4 animates energy cascade from producers to tertiary. */
+  public readonly cascadeProgressProperty: NumberProperty
+  public readonly compareTierProperty: NumberProperty
 
   public constructor() {
     this.baseEnergyProperty = new NumberProperty(PyramidConstants.BASE_DEFAULT)
@@ -221,6 +236,8 @@ export class EcologicalPyramidModel implements TModel {
     this.quizFeedbackProperty = new StringProperty('Answer to check your understanding of the 10% rule.')
     this.scenarioIdProperty = new StringProperty('forest')
     this.highlightTransferProperty = new NumberProperty(0)
+    this.cascadeProgressProperty = new NumberProperty(0)
+    this.compareTierProperty = new NumberProperty(-1)
   }
 
   public reset(): void {
@@ -242,10 +259,38 @@ export class EcologicalPyramidModel implements TModel {
     this.quizFeedbackProperty.value = 'Answer to check your understanding of the 10% rule.'
     this.scenarioIdProperty.value = 'forest'
     this.highlightTransferProperty.value = 0
+    this.cascadeProgressProperty.value = 0
+    this.compareTierProperty.value = -1
   }
 
   public step(dt: number): void {
-    if (!this.runningProperty.value || dt <= 0) return
+    if (dt <= 0) return
+    if (this.cascadeProgressProperty.value > 0 && this.cascadeProgressProperty.value < 4) {
+      this.cascadeProgressProperty.value = Math.min(4, this.cascadeProgressProperty.value + dt * 0.85)
+      const tier = Math.min(3, Math.floor(this.cascadeProgressProperty.value))
+      if (this.selectedTierProperty.value !== tier) {
+        this.selectedTierProperty.value = tier
+        this.decomposerFocusProperty.value = false
+        this.updateTipForSelection()
+        const d = tierDetail(
+          this.baseEnergyProperty.value,
+          tier,
+          this.modeProperty.value,
+          this.transferProperty.value,
+        )
+        const keep = (this.transferProperty.value * 100).toFixed(0)
+        this.statusProperty.value =
+          tier === 0
+            ? `Cascade: sunlight → ${d.label} (${formatTierValue(d.energy, this.modeProperty.value)})`
+            : `Cascade: ~${keep}% kept → ${d.label} (${formatTierValue(d.energy, this.modeProperty.value)})`
+      }
+      if (this.cascadeProgressProperty.value >= 4) {
+        this.cascadeProgressProperty.value = 0
+        this.statusProperty.value = 'Cascade complete — most energy was lost as heat along the way.'
+      }
+      return
+    }
+    if (!this.runningProperty.value) return
     this.pulseProperty.value += dt
     if (this.highlightTransferProperty.value > 0) {
       this.highlightTransferProperty.value = Math.max(0, this.highlightTransferProperty.value - dt)
@@ -330,6 +375,35 @@ export class EcologicalPyramidModel implements TModel {
     this.pulseProperty.value += 0.8
     this.statusProperty.value = 'Sunlight fuels producers — the pyramid’s energy base.'
     this.tipProperty.value = 'Photosynthesis locks light energy into chemical energy in plants/algae.'
+  }
+
+  public startCascadeDemo(): void {
+    this.modeProperty.value = 'energy'
+    this.decomposerFocusProperty.value = false
+    this.compareTierProperty.value = -1
+    this.selectedTierProperty.value = 0
+    this.cascadeProgressProperty.value = 0.01
+    this.runningProperty.value = true
+    this.statusProperty.value = 'Watch energy climb the pyramid — only ~10% survives each step.'
+    this.tipProperty.value = 'The cascade demo highlights how quickly usable energy shrinks.'
+    this.highlightTransferProperty.value = 2
+  }
+
+  public toggleCompareNext(): void {
+    const cur = this.selectedTierProperty.value < 0 ? 0 : this.selectedTierProperty.value
+    const next = cur < 3 ? cur + 1 : -1
+    this.compareTierProperty.value = next
+    if (next < 0) {
+      this.statusProperty.value = 'Compare cleared.'
+      return
+    }
+    const transfer = this.transferProperty.value
+    const base = this.baseEnergyProperty.value
+    const mode = this.modeProperty.value
+    const a = tierDetail(base, cur, mode, transfer)
+    const b = tierDetail(base, next, mode, transfer)
+    this.statusProperty.value = `Compare: ${a.label} (${formatTierValue(a.energy, mode)}) vs ${b.label} (${formatTierValue(b.energy, mode)})`
+    this.tipProperty.value = `${b.label} keeps ~${(transfer * 100).toFixed(0)}% of ${a.label} — the rest is heat / life processes.`
   }
 
   private updateTipForSelection(): void {

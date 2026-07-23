@@ -293,6 +293,14 @@ export class PyramidControlPanel extends Panel {
             }),
           ],
         }),
+        mkBtn('Play 10% cascade', () => {
+          model.startCascadeDemo()
+          sounds.scenario()
+        }, PyramidColors.accentProperty),
+        mkBtn('Compare with next level', () => {
+          model.toggleCompareNext()
+          sounds.button()
+        }, PyramidColors.playbackButtonProperty),
         section('Selected level'),
         detailBox,
         section('Producer energy'),

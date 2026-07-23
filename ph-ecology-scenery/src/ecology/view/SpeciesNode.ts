@@ -2,6 +2,7 @@ import { Circle, Node, Text } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
 import { LEVEL_COLORS } from '../../common/EcologyColors.js'
 import type { FoodNode } from '../model/FoodWebModel.js'
+import type { EcologySounds } from './EcologySounds.js'
 
 export class SpeciesNode extends Node {
   public readonly nodeId: string
@@ -15,6 +16,7 @@ export class SpeciesNode extends Node {
     radius: number,
     onPress: (id: string) => void,
     onDrag: (id: string, x: number, y: number) => void,
+    sounds?: EcologySounds,
   ) {
     super({ cursor: 'pointer' })
     this.nodeId = node.id
@@ -52,17 +54,25 @@ export class SpeciesNode extends Node {
 
     let dragging = false
     let start = { x: 0, y: 0 }
+    let grabSounded = false
 
     this.addInputListener({
       down: (event) => {
         dragging = false
+        grabSounded = false
         start = { x: event.pointer.point.x, y: event.pointer.point.y }
       },
       move: (event) => {
         if (!event.pointer.isDown) return
         const dx = event.pointer.point.x - start.x
         const dy = event.pointer.point.y - start.y
-        if (!dragging && Math.hypot(dx, dy) > 6) dragging = true
+        if (!dragging && Math.hypot(dx, dy) > 6) {
+          dragging = true
+          if (!grabSounded) {
+            sounds?.grabStart()
+            grabSounded = true
+          }
+        }
         if (dragging) {
           const parent = this.parent
           if (parent) {
@@ -72,7 +82,11 @@ export class SpeciesNode extends Node {
         }
       },
       up: () => {
-        if (!dragging) onPress(node.id)
+        if (dragging) sounds?.dropOk()
+        else {
+          onPress(node.id)
+          sounds?.select()
+        }
       },
     })
   }

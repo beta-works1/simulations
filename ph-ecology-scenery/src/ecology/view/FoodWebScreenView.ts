@@ -12,12 +12,14 @@ import {
   type FoodNode,
 } from '../model/FoodWebModel.js'
 import { EcologyControlPanel } from './EcologyControlPanel.js'
+import { EcologySounds } from './EcologySounds.js'
 import { SpeciesNode } from './SpeciesNode.js'
 
 type Options = EmptySelfOptions & ScreenViewOptions
 
 export class FoodWebScreenView extends ScreenView {
   private readonly model: FoodWebModel
+  private readonly sounds: EcologySounds
   private readonly webLayer: Node
   private readonly linkLayer: Node
   private readonly speciesLayer: Node
@@ -32,6 +34,7 @@ export class FoodWebScreenView extends ScreenView {
   public constructor(model: FoodWebModel, providedOptions?: Options) {
     super(providedOptions)
     this.model = model
+    this.sounds = new EcologySounds()
 
     const margin = 14
     const panelW = 248
@@ -222,6 +225,7 @@ export class FoodWebScreenView extends ScreenView {
           dropTarget,
           ghostLayer: this.ghostLayer,
           panelMaxHeight: bounds.bottom - areaTop - margin,
+          sounds: this.sounds,
         },
       ),
     )
@@ -264,7 +268,15 @@ export class FoodWebScreenView extends ScreenView {
         view = new SpeciesNode(
           n,
           r,
-          (id) => this.model.handleNodePress(id),
+          (id) => {
+            const before = this.model.webProperty.value.links.length
+            this.model.handleNodePress(id)
+            if (this.model.linkModeProperty.value) {
+              const after = this.model.webProperty.value.links.length
+              if (after > before) this.sounds.linkMade()
+              else if (after < before) this.sounds.remove()
+            }
+          },
           (id, lx, ly) => {
             const nx = (lx - b.left) / b.width
             const ny = (ly - b.top) / b.height
@@ -272,6 +284,7 @@ export class FoodWebScreenView extends ScreenView {
             view!.setPositionNorm(nx, ny, b.width, b.height, b.left, b.top)
             this.drawLinks()
           },
+          this.sounds,
         )
         this.speciesNodes.set(n.id, view)
         this.speciesLayer.addChild(view)

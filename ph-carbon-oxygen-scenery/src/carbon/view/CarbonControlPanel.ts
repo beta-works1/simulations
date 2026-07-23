@@ -7,6 +7,7 @@ import { NumberProperty } from 'scenerystack/axon'
 import { CarbonColors, CarbonConstants } from '../../common/CarbonColors.js'
 import { CarbonStrings } from '../../CarbonStrings.js'
 import { CarbonOxygenModel } from '../model/CarbonOxygenModel.js'
+import { CarbonSounds } from './CarbonSounds.js'
 import { ScrollableNode } from './ScrollableNode.js'
 
 type SelfOptions = {
@@ -16,7 +17,7 @@ type SelfOptions = {
 type Options = SelfOptions & PanelOptions
 
 export class CarbonControlPanel extends Panel {
-  public constructor(model: CarbonOxygenModel, providedOptions: Options) {
+  public constructor(model: CarbonOxygenModel, sounds: CarbonSounds, providedOptions: Options) {
     const w = (providedOptions.maxWidth as number | undefined) ?? 260
     const panelMaxHeight = providedOptions.panelMaxHeight ?? 420
     const options = optionize<Options, SelfOptions, PanelOptions>()(
@@ -65,8 +66,17 @@ export class CarbonControlPanel extends Panel {
         s === 'Balanced' ? '#a7f3d0' : s === 'CO₂ rising' ? '#fca5a5' : '#86efac'
     })
 
+    const tickSlider = (property: NumberProperty) => {
+      let last = property.value
+      property.lazyLink((v) => {
+        if (Math.abs(v - last) > 0.05) sounds.sliderTick()
+        last = v
+      })
+    }
+
     /** Same look as the old rate bars, but interactive — linked to Environment. */
     const rateSlider = (label: string, property: NumberProperty, range: Range, color: string) => {
+      tickSlider(property)
       const readout = new Text('', { font: new PhetFont(9), fill: '#ecf0f1', maxWidth: 40 })
       property.link((v) => {
         readout.string = v.toFixed(1)
@@ -96,6 +106,7 @@ export class CarbonControlPanel extends Panel {
     }
 
     const sliderRow = (label: string, property: NumberProperty, range: Range) => {
+      tickSlider(property)
       const readout = new Text('', { font: new PhetFont(10), fill: '#ecf0f1', maxWidth: 36 })
       property.link((v) => {
         readout.string = String(Math.round(v * (range.max <= 3 ? 10 : 1)) / (range.max <= 3 ? 10 : 1))
@@ -133,12 +144,36 @@ export class CarbonControlPanel extends Panel {
       yMargin: 4,
       listener: () => {
         model.runningProperty.value = !model.runningProperty.value
+        sounds.playPause(model.runningProperty.value)
       },
       minWidth: w - 8,
     })
     model.runningProperty.link((running) => {
       playPauseLabel.string = running ? 'Pause' : 'Play'
     })
+
+    let soundOn = true
+    const soundLabel = new Text('Sound: On', {
+      font: new PhetFont(10),
+      fill: 'white',
+      maxWidth: w - 24,
+    })
+    const soundBtn = new RectangularPushButton({
+      content: soundLabel,
+      baseColor: CarbonColors.buttonProperty,
+      xMargin: 6,
+      yMargin: 4,
+      listener: () => {
+        soundOn = !soundOn
+        sounds.setEnabled(soundOn)
+        soundLabel.string = soundOn ? 'Sound: On' : 'Sound: Off'
+        if (soundOn) sounds.button()
+      },
+      minWidth: w - 8,
+    })
+
+    model.isDayProperty.lazyLink((isDay) => sounds.dayNight(isDay))
+    model.autoDayNightProperty.lazyLink((on) => sounds.toggle(on))
 
     const content = new VBox({
       align: 'left',
@@ -202,12 +237,41 @@ export class CarbonControlPanel extends Panel {
         sliderRow('Factories', model.factoryCountProperty, new Range(0, 20)),
         sliderRow('Speed ×', model.simSpeedProperty, new Range(0.25, 3)),
         section('Simulation Controls'),
+        soundBtn,
         playPauseBtn,
-        mkBtn('Step once', () => model.stepOnce(), CarbonColors.playbackButtonProperty),
-        mkBtn('Reset', () => model.reset(), CarbonColors.playbackButtonProperty),
+        mkBtn(
+          'Step once',
+          () => {
+            model.stepOnce()
+            sounds.button()
+          },
+          CarbonColors.playbackButtonProperty,
+        ),
+        mkBtn(
+          'Reset',
+          () => {
+            model.reset()
+            sounds.resetAll()
+          },
+          CarbonColors.playbackButtonProperty,
+        ),
         section('Scenarios'),
-        mkBtn('Deforestation + industry', () => model.startDeforestationScenario(), CarbonColors.buttonProperty),
-        mkBtn('Reforestation recovery', () => model.startReforestationScenario(), CarbonColors.buttonProperty),
+        mkBtn(
+          'Deforestation + industry',
+          () => {
+            model.startDeforestationScenario()
+            sounds.scenario()
+          },
+          CarbonColors.buttonProperty,
+        ),
+        mkBtn(
+          'Reforestation recovery',
+          () => {
+            model.startReforestationScenario()
+            sounds.scenario()
+          },
+          CarbonColors.buttonProperty,
+        ),
       ],
     })
 

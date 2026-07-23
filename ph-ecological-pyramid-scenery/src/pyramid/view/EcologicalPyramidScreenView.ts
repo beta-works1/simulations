@@ -30,11 +30,15 @@ export class EcologicalPyramidScreenView extends ScreenView {
   private readonly tipText: Text
   private readonly sun: Circle
   private readonly sunGlow: Circle
+  private readonly sunRays: Node
+  private readonly birdLayer: Node
   private readonly sceneBounds: { left: number; top: number; width: number; height: number }
   private tierGeoms: TierGeom[] = []
   private baseHandle: Circle | null = null
   private lastHeatSound = 0
+  private lastCascadeTier = -1
   private heatParticles: { x: number; y: number; vx: number; vy: number; life: number; r: number }[] = []
+  private birds: { x: number; y: number; speed: number; phase: number }[] = []
 
   public constructor(model: EcologicalPyramidModel, providedOptions?: Options) {
     super(providedOptions)
@@ -104,6 +108,18 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.sunGlow.addInputListener({ up: sunHit })
     this.addChild(this.sunGlow)
     this.addChild(this.sun)
+    this.sunRays = new Node({ pickable: false })
+    this.addChild(this.sunRays)
+    this.birdLayer = new Node({ pickable: false })
+    this.addChild(this.birdLayer)
+    for (let i = 0; i < 5; i++) {
+      this.birds.push({
+        x: sceneLeft + 20 + i * (sceneW / 5),
+        y: sceneTop + 24 + (i % 3) * 10,
+        speed: 18 + i * 6,
+        phase: i * 1.3,
+      })
+    }
     this.addChild(
       new Text('☀ Sun — tap', {
         font: new PhetFont(10),
@@ -160,6 +176,12 @@ export class EcologicalPyramidScreenView extends ScreenView {
     model.selectedTierProperty.link(() => this.rebuildPyramid())
     model.decomposerFocusProperty.link(() => this.rebuildPyramid())
     model.hoverTierProperty.link(() => this.rebuildPyramid())
+    model.compareTierProperty.link(() => this.rebuildPyramid())
+    model.cascadeProgressProperty.link((v, oldV) => {
+      if ((v === 0) !== (oldV === 0) || Math.floor(v) !== Math.floor(oldV ?? 0)) {
+        this.rebuildPyramid()
+      }
+    })
     model.soundEnabledProperty.link(on => this.sounds.setEnabled(on))
 
     let lastBase = model.baseEnergyProperty.value
@@ -204,6 +226,15 @@ export class EcologicalPyramidScreenView extends ScreenView {
         }),
       )
     }
+    // Distant tree silhouettes on hills
+    for (let i = 0; i < 7; i++) {
+      const tx = left + w * (0.08 + i * 0.13)
+      const ty = top + h * (0.62 + (i % 3) * 0.03)
+      const trunk = new Rectangle(-1.5, 0, 3, 10, { fill: '#0f2418', centerX: tx, top: ty })
+      const canopy = new Circle(7 + (i % 3), { fill: '#143022', centerX: tx, centerY: ty - 2 })
+      this.sceneryLayer.addChild(trunk)
+      this.sceneryLayer.addChild(canopy)
+    }
     // Hills
     const hill = new Shape()
     hill.moveTo(left, top + h * 0.72)
@@ -241,7 +272,9 @@ export class EcologicalPyramidScreenView extends ScreenView {
     const mode = this.model.modeProperty.value
     const selected = this.model.selectedTierProperty.value
     const hover = this.model.hoverTierProperty.value
+    const compare = this.model.compareTierProperty.value
     const decFocus = this.model.decomposerFocusProperty.value
+    const cascading = this.model.cascadeProgressProperty.value > 0
 
     const pyramidTop = s.top + 78
     const pyramidBottom = s.top + s.height - 62
@@ -273,13 +306,20 @@ export class EcologicalPyramidScreenView extends ScreenView {
       shape.close()
 
       const selectedTier = selected === tier
+      const compared = compare === tier
       const hovered = hover === tier
       const band = new Path(shape, {
         fill: PYRAMID_COLORS[tier],
-        stroke: selectedTier ? '#ffffff' : hovered ? '#7dd3fc' : 'rgba(0,0,0,0.4)',
-        lineWidth: selectedTier ? 3.5 : hovered ? 2.5 : 1,
+        stroke: selectedTier
+          ? '#ffffff'
+          : compared
+            ? '#fde68a'
+            : hovered
+              ? '#7dd3fc'
+              : 'rgba(0,0,0,0.4)',
+        lineWidth: selectedTier || compared ? 3.5 : hovered ? 2.5 : 1,
         cursor: 'pointer',
-        opacity: selectedTier || decFocus === false ? (selectedTier ? 1 : hovered ? 0.95 : 0.86) : 0.7,
+        opacity: cascading && !selectedTier ? 0.55 : selectedTier || !decFocus ? (selectedTier ? 1 : hovered ? 0.95 : 0.86) : 0.7,
       })
       band.addInputListener({
         enter: () => {
@@ -339,6 +379,9 @@ export class EcologicalPyramidScreenView extends ScreenView {
       valueChip.center = chipBg.center
       this.pyramidLayer.addChild(chipBg)
       this.pyramidLayer.addChild(valueChip)
+
+      // Simple organism silhouette markers (depth cue per trophic role)
+      this.pyramidLayer.addChild(makeTierSilhouette(tier, cx - wBot * 0.32, y + h * 0.55))
 
       // Organism / mass dots
       const dots = tierDotCount(base, tier, mode, transfer)
@@ -532,7 +575,64 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.sunGlow.radius = 36 + Math.sin(pulse * 2) * 6
     this.sunGlow.opacity = 0.32 + Math.sin(pulse * 2.2) * 0.12
 
+    // Animated sun rays
+    this.sunRays.removeAllChildren()
+    const sx = this.sun.centerX
+    const sy = this.sun.centerY
+    for (let i = 0; i < 8; i++) {
+      const ang = (i / 8) * Math.PI * 2 + pulse * 0.4
+      const len = 28 + Math.sin(pulse * 3 + i) * 6
+      const ray = new Shape()
+      ray.moveTo(sx + Math.cos(ang) * 22, sy + Math.sin(ang) * 22)
+      ray.lineTo(sx + Math.cos(ang) * len, sy + Math.sin(ang) * len)
+      this.sunRays.addChild(
+        new Path(ray, {
+          stroke: `rgba(251, 191, 36, ${0.25 + Math.sin(pulse * 2 + i) * 0.12})`,
+          lineWidth: 2,
+        }),
+      )
+    }
+
+    // Birds drifting across sky
+    this.birdLayer.removeAllChildren()
+    const s = this.sceneBounds
+    for (const bird of this.birds) {
+      bird.x += bird.speed * capped
+      if (bird.x > s.left + s.width + 20) bird.x = s.left - 20
+      const wing = Math.sin(pulse * 8 + bird.phase) * 4
+      const body = new Shape()
+      body.moveTo(bird.x - 6, bird.y)
+      body.quadraticCurveTo(bird.x, bird.y - 3 - wing, bird.x + 6, bird.y)
+      body.quadraticCurveTo(bird.x, bird.y + 2, bird.x - 6, bird.y)
+      this.birdLayer.addChild(new Path(body, { fill: 'rgba(15, 23, 42, 0.45)' }))
+    }
+
     this.particleLayer.removeAllChildren()
+
+    // Cascade spotlight particle wave
+    const cascade = this.model.cascadeProgressProperty.value
+    if (cascade > 0) {
+      const tier = Math.min(3, Math.floor(cascade))
+      if (tier !== this.lastCascadeTier) {
+        this.lastCascadeTier = tier
+        this.sounds.tierSelect()
+        const g = this.tierGeoms[tier]
+        if (g) this.spawnHeatBurst(g.cx, g.cy, 10)
+      }
+      const g = this.tierGeoms[tier]
+      if (g) {
+        const frac = cascade - tier
+        this.particleLayer.addChild(
+          new Circle(12 + frac * 18, {
+            fill: `rgba(253, 224, 71, ${0.15 + (1 - frac) * 0.25})`,
+            centerX: g.cx,
+            centerY: g.cy,
+          }),
+        )
+      }
+    } else {
+      this.lastCascadeTier = -1
+    }
 
     // Rising heat + transfer particles
     if (this.model.runningProperty.value) {
@@ -590,7 +690,6 @@ export class EcologicalPyramidScreenView extends ScreenView {
     // Nutrient recycle dots when decomposers focused
     if (this.model.decomposerFocusProperty.value && this.model.runningProperty.value) {
       const prod = this.tierGeoms[0]
-      const s = this.sceneBounds
       if (prod) {
         const t = (pulse * 0.5) % 1
         const x = prod.cx + Math.sin(pulse * 3) * 30
@@ -610,6 +709,36 @@ export class EcologicalPyramidScreenView extends ScreenView {
       this.baseHandle.opacity = 0.75 + Math.sin(pulse * 3) * 0.2
     }
   }
+}
+
+function makeTierSilhouette(tier: number, x: number, y: number): Node {
+  const n = new Node({ pickable: false, opacity: 0.55 })
+  if (tier === 0) {
+    // plant
+    n.addChild(new Rectangle(-1, 0, 2, 10, { fill: 'rgba(255,255,255,0.85)', centerX: x, top: y }))
+    n.addChild(new Circle(5, { fill: 'rgba(255,255,255,0.75)', centerX: x, centerY: y - 2 }))
+  } else if (tier === 1) {
+    // herbivore blob
+    n.addChild(new Circle(5, { fill: 'rgba(255,255,255,0.8)', centerX: x, centerY: y }))
+    n.addChild(new Circle(3, { fill: 'rgba(255,255,255,0.8)', centerX: x + 5, centerY: y - 2 }))
+  } else if (tier === 2) {
+    // carnivore diamond-ish
+    const sh = new Shape()
+    sh.moveTo(x, y - 6)
+    sh.lineTo(x + 5, y)
+    sh.lineTo(x, y + 5)
+    sh.lineTo(x - 5, y)
+    sh.close()
+    n.addChild(new Path(sh, { fill: 'rgba(255,255,255,0.8)' }))
+  } else {
+    // bird / top predator
+    const wing = new Shape()
+    wing.moveTo(x - 7, y)
+    wing.quadraticCurveTo(x, y - 5, x + 7, y)
+    wing.quadraticCurveTo(x, y + 2, x - 7, y)
+    n.addChild(new Path(wing, { fill: 'rgba(255,255,255,0.85)' }))
+  }
+  return n
 }
 
 /** Soft elliptical ground shadow under the pyramid */

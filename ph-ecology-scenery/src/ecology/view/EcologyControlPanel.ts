@@ -12,6 +12,7 @@ import {
   grasslandWeb,
   SPECIES_PALETTE,
 } from '../model/FoodWebModel.js'
+import { EcologySounds } from './EcologySounds.js'
 import { SpeciesPaletteChip, type DropTarget } from './SpeciesPaletteChip.js'
 
 type Options = EmptySelfOptions & PanelOptions
@@ -20,6 +21,7 @@ export type EcologyControlPanelExtras = {
   dropTarget: DropTarget
   ghostLayer: Node
   panelMaxHeight: number
+  sounds: EcologySounds
 }
 
 export class EcologyControlPanel extends Panel {
@@ -29,7 +31,7 @@ export class EcologyControlPanel extends Panel {
     extras: EcologyControlPanelExtras,
   ) {
     const contentWidth = (providedOptions.maxWidth as number | undefined) ?? 220
-    const { dropTarget, ghostLayer, panelMaxHeight } = extras
+    const { dropTarget, ghostLayer, panelMaxHeight, sounds } = extras
 
     const options = optionize<Options, EmptySelfOptions, PanelOptions>()(
       {
@@ -90,11 +92,35 @@ export class EcologyControlPanel extends Panel {
       baseColor: EcologyColors.controlPanelButtonColorProperty,
       xMargin: 8,
       yMargin: 5,
-      listener: () => model.toggleLinkMode(!model.linkModeProperty.value),
+      listener: () => {
+        const next = !model.linkModeProperty.value
+        model.toggleLinkMode(next)
+        sounds.linkToggle(next)
+      },
       minWidth: contentWidth - 8,
     })
     model.linkModeProperty.link((on) => {
       linkLabel.string = on ? 'Link mode: On' : 'Link mode: Off'
+    })
+
+    let soundOn = true
+    const soundLabel = new Text('Sound: On', {
+      font: new PhetFont(11),
+      fill: 'white',
+      maxWidth: contentWidth - 24,
+    })
+    const soundBtn = new RectangularPushButton({
+      content: soundLabel,
+      baseColor: EcologyColors.controlPanelButtonColorProperty,
+      xMargin: 8,
+      yMargin: 5,
+      listener: () => {
+        soundOn = !soundOn
+        sounds.setEnabled(soundOn)
+        soundLabel.string = soundOn ? 'Sound: On' : 'Sound: Off'
+        if (soundOn) sounds.button()
+      },
+      minWidth: contentWidth - 8,
     })
 
     const paletteChips = SPECIES_PALETTE.map(
@@ -104,8 +130,12 @@ export class EcologyControlPanel extends Panel {
           item.label,
           contentWidth - 8,
           dropTarget,
-          (level, nx, ny) => model.addSpeciesAt(level, nx, ny),
+          (level, nx, ny) => {
+            model.addSpeciesAt(level, nx, ny)
+            sounds.dropOk()
+          },
           ghostLayer,
+          sounds,
         ),
     )
 
@@ -122,8 +152,16 @@ export class EcologyControlPanel extends Panel {
         stabilityText,
         takeawayText,
         section('Build'),
+        soundBtn,
         linkBtn,
-        mkBtn('Remove selected', () => model.removeSelected()),
+        mkBtn('Remove selected', () => {
+          if (model.selectedIdProperty.value) {
+            model.removeSelected()
+            sounds.remove()
+          } else {
+            sounds.softClick()
+          }
+        }),
         section('Drag onto scene'),
         new Text('Drag a chip and drop it on the ecosystem', {
           font: new PhetFont(9),
@@ -132,9 +170,18 @@ export class EcologyControlPanel extends Panel {
         }),
         ...paletteChips,
         section('Examples'),
-        mkBtn('Food chain', () => model.load(grasslandChain())),
-        mkBtn('Grassland web', () => model.load(grasslandWeb())),
-        mkBtn('Reset', () => model.reset()),
+        mkBtn('Food chain', () => {
+          model.load(grasslandChain())
+          sounds.loadExample()
+        }),
+        mkBtn('Grassland web', () => {
+          model.load(grasslandWeb())
+          sounds.loadExample()
+        }),
+        mkBtn('Reset', () => {
+          model.reset()
+          sounds.resetAll()
+        }),
       ],
     })
 

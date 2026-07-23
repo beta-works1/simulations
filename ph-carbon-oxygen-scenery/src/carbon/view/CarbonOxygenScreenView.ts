@@ -7,6 +7,7 @@ import { PhetFont } from 'scenerystack/scenery-phet'
 import { RectangularPushButton } from 'scenerystack/sun'
 import { CarbonOxygenModel } from '../model/CarbonOxygenModel.js'
 import { CarbonControlPanel } from './CarbonControlPanel.js'
+import { CarbonSounds } from './CarbonSounds.js'
 import {
   CarbonCloudLayer,
   CarbonParticleLayer,
@@ -42,6 +43,7 @@ function tipBody(status: string): string {
 
 export class CarbonOxygenScreenView extends ScreenView {
   private readonly model: CarbonOxygenModel
+  private readonly sounds: CarbonSounds
   private readonly treesLayer: Node
   private readonly animalsLayer: Node
   private readonly factoryLayer: Node
@@ -72,6 +74,7 @@ export class CarbonOxygenScreenView extends ScreenView {
   public constructor(model: CarbonOxygenModel, providedOptions?: Options) {
     super(providedOptions)
     this.model = model
+    this.sounds = new CarbonSounds()
 
     const margin = 12
     const panelW = 268
@@ -151,6 +154,7 @@ export class CarbonOxygenScreenView extends ScreenView {
       yMargin: 2,
       listener: () => {
         model.statusProperty.value = DEFAULT_STATUS
+        this.sounds.tipClose()
       },
     })
     closeBtn.right = tipW - 8
@@ -164,9 +168,11 @@ export class CarbonOxygenScreenView extends ScreenView {
 
     model.statusProperty.link((t) => {
       if (isProcessTip(t)) {
+        const wasHidden = !this.tipCard.visible
         this.tipTitleText.string = tipTitle(t)
         this.tipBodyText.string = tipBody(t)
         this.tipCard.visible = true
+        if (wasHidden) this.sounds.tipOpen()
         statusText.string = 'Tap ✕ to close the tip, or tap another part of the scene.'
       } else {
         this.tipCard.visible = false
@@ -267,7 +273,10 @@ export class CarbonOxygenScreenView extends ScreenView {
       cursor: 'pointer',
     })
     this.soilHit.addInputListener({
-      up: () => model.setSceneTip('soil'),
+      up: () => {
+        model.setSceneTip('soil')
+        this.sounds.processTap('soil')
+      },
       enter: () => {
         this.hoverZone = 'soil'
         this.soilHit.fill = 'rgba(92, 64, 51, 0.35)'
@@ -305,7 +314,7 @@ export class CarbonOxygenScreenView extends ScreenView {
     )
 
     this.addChild(
-      new CarbonControlPanel(model, {
+      new CarbonControlPanel(model, this.sounds, {
         right: b.right - margin,
         top: sceneTop,
         maxWidth: panelW,
@@ -404,7 +413,10 @@ export class CarbonOxygenScreenView extends ScreenView {
       const tree = this.makeTree(x, y, scale, glowing)
       tree.cursor = 'pointer'
       tree.addInputListener({
-        up: () => this.model.setSceneTip('trees'),
+        up: () => {
+          this.model.setSceneTip('trees')
+          this.sounds.processTap('trees')
+        },
         enter: () => {
           this.hoverZone = 'trees'
         },
@@ -453,7 +465,10 @@ export class CarbonOxygenScreenView extends ScreenView {
         }),
       )
       animal.addInputListener({
-        up: () => this.model.setSceneTip('animals'),
+        up: () => {
+          this.model.setSceneTip('animals')
+          this.sounds.processTap('animals')
+        },
         enter: () => {
           this.hoverZone = 'animals'
         },
@@ -490,7 +505,10 @@ export class CarbonOxygenScreenView extends ScreenView {
         }
       }
       g.addInputListener({
-        up: () => this.model.setSceneTip('factory'),
+        up: () => {
+          this.model.setSceneTip('factory')
+          this.sounds.processTap('factory')
+        },
         enter: () => {
           this.hoverZone = 'factory'
         },
