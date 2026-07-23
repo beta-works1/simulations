@@ -13,33 +13,33 @@ export class DepthCard extends Node {
     options: { title?: string; cornerRadius?: number; fill?: string } = {},
   ) {
     super()
-    const r = options.cornerRadius ?? 14
+    const r = options.cornerRadius ?? 16
     const fill = options.fill ?? NervousColors.panelFill
 
     this.addChild(
-      new Rectangle(4, 6, width, height, {
+      new Rectangle(5, 8, width, height, {
         cornerRadius: r,
-        fill: 'rgba(15, 23, 42, 0.12)',
+        fill: 'rgba(15, 23, 42, 0.16)',
       }),
     )
     this.addChild(
       new Rectangle(2, 3, width, height, {
         cornerRadius: r,
-        fill: 'rgba(15, 23, 42, 0.06)',
+        fill: 'rgba(15, 23, 42, 0.07)',
       }),
     )
     this.bg = new Rectangle(0, 0, width, height, {
       cornerRadius: r,
       fill,
       stroke: NervousColors.panelStroke,
-      lineWidth: 1,
+      lineWidth: 1.25,
     })
     this.addChild(this.bg)
 
     this.addChild(
-      new Rectangle(10, 4, width - 20, 3, {
+      new Rectangle(12, 5, width - 24, 4, {
         cornerRadius: 2,
-        fill: 'rgba(255,255,255,0.55)',
+        fill: 'rgba(255,255,255,0.65)',
       }),
     )
 
@@ -49,13 +49,17 @@ export class DepthCard extends Node {
     if (options.title) {
       this.content.addChild(
         new Text(options.title, {
-          font: new PhetFont({ size: 13, weight: 'bold' }),
+          font: new PhetFont({ size: 15, weight: 'bold' }),
           fill: NervousColors.ink,
-          left: 14,
-          top: 12,
-          maxWidth: width - 28,
+          left: 16,
+          top: 14,
+          maxWidth: width - 32,
         }),
       )
     }
+  }
+
+  public setCardSize(width: number, height: number): void {
+    this.bg.setRect(0, 0, width, height)
   }
 }

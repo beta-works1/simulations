@@ -18,6 +18,12 @@ export class NeuronSignalModel implements TModel {
     this.runningProperty.value = true
   }
 
+  /** Restart the impulse from a fractional axon position (0–1). */
+  public fireAt(t: number): void {
+    this.tProperty.value = Math.max(0, Math.min(0.98, t))
+    this.runningProperty.value = true
+  }
+
   public setMyelin(value: boolean): void {
     this.myelinProperty.value = value
     this.tProperty.value = 0

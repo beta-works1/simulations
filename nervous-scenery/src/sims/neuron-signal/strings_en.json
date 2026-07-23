@@ -3,14 +3,23 @@
   "screen": {
     "lab": "Neuron Signal"
   },
-  "axon": "Axon",
-  "myelin": "Myelin sheath",
+  "axon": "Axon controls",
+  "myelin": "Myelin sheath ON",
+  "myelinOff": "Myelin sheath OFF",
   "fire": "Fire signal",
-  "soma": "soma (cell body)",
-  "terminal": "synaptic terminal",
+  "soma": "Soma (cell body)",
+  "terminal": "Synaptic terminal",
   "saltatory": "Saltatory — jumps node to node (fast)",
   "continuous": "Continuous — slower propagation",
-  "hint": "Tap soma or Fire · toggle myelin",
-  "nodes": "myelin · nodes of Ranvier",
-  "unmyelinated": "unmyelinated — continuous conduction"
+  "hint": "Tap the soma or Fire signal to send an action potential",
+  "guideTitle": "How to explore",
+  "guideIdle": "1) Fire a signal · 2) Toggle myelin on/off · 3) Compare how fast the gold pulse travels",
+  "guideFired": "Watch the action potential race along the axon toward the terminal",
+  "guideMyelin": "Myelin lets the signal jump between nodes of Ranvier — much faster!",
+  "guideNoMyelin": "Without myelin the signal crawls continuously — much slower.",
+  "nodes": "Myelin · nodes of Ranvier",
+  "unmyelinated": "Unmyelinated — continuous conduction",
+  "speed": "Relative speed",
+  "tapNode": "Tap a blue node to restart from here",
+  "learnMore": "Myelin is fatty insulation. Gaps (nodes of Ranvier) let the impulse “jump.”"
 }

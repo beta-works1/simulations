@@ -3,12 +3,19 @@
   "screen": {
     "lab": "Brain Mapping"
   },
-  "mode": "Mode",
-  "study": "Study — explore regions",
+  "mode": "Mode & guidance",
+  "study": "Study — explore",
   "quiz": "Quiz — test yourself",
   "explored": "Explored",
   "score": "Score",
   "hint": "Click a colored region on the brain",
+  "guideTitle": "How to explore",
+  "guideStudy": "Click any lobe on the brain (or a button) to learn its job. Try all 6 regions!",
+  "guideQuiz": "Read the question, then click the matching brain region. Wrong answers show the right one.",
+  "guideCorrect": "Nice! Keep going — next question is ready.",
+  "guideWrong": "Not that one — the hint names the correct region. Try again!",
   "correct": "Correct!",
-  "wrong": "Not quite"
+  "wrong": "Not quite",
+  "regions": "Regions",
+  "learnMore": "Cerebrum = thinking & senses · Cerebellum = balance · Brain stem = automatic life functions"
 }
