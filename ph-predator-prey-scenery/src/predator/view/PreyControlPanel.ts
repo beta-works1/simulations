@@ -1,6 +1,6 @@
 import { Range, Dimension2 } from 'scenerystack/dot'
 import { EmptySelfOptions, optionize } from 'scenerystack/phet-core'
-import { HSlider, Panel, PanelOptions, RectangularPushButton } from 'scenerystack/sun'
+import { HSlider, Panel, PanelOptions, RectangularPushButton, ToggleSwitch } from 'scenerystack/sun'
 import { HBox, Text, VBox } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
 import { NumberProperty } from 'scenerystack/axon'
@@ -9,6 +9,7 @@ import { PreyStrings } from '../../PreyStrings.js'
 import {
   InteractionMode,
   PredatorPreyModel,
+  QUIZ_BANK,
   SCENARIOS,
 } from '../model/PredatorPreyModel.js'
 import { PreySounds } from './PreySounds.js'
@@ -53,21 +54,53 @@ export class PreyControlPanel extends Panel {
 
     const preyReadout = new Text('', { font: new PhetFont({ size: 13, weight: 'bold' }), fill: '#2ecc71', maxWidth: w })
     const predReadout = new Text('', { font: new PhetFont({ size: 13, weight: 'bold' }), fill: '#e74c3c', maxWidth: w })
+    const ratioReadout = new Text('', { font: new PhetFont(11), fill: '#a5b4fc', maxWidth: w })
+    const cycleReadout = new Text('', { font: new PhetFont(11), fill: '#f4d03f', maxWidth: w })
     const phaseReadout = new Text(model.phaseLabelProperty, {
       font: new PhetFont(11),
-      fill: '#f4d03f',
+      fill: '#fde68a',
       maxWidth: w,
     })
     const modeReadout = new Text('', { font: new PhetFont(11), fill: '#ecf0f1', maxWidth: w })
+    const quizPrompt = new Text('', { font: new PhetFont(10), fill: '#e2e8f0', maxWidth: w - 8 })
+    const quizFeedback = new Text('', { font: new PhetFont(9), fill: '#a8d4a0', maxWidth: w - 8 })
+    const quizScore = new Text('', { font: new PhetFont(10), fill: '#f4d03f', maxWidth: w })
+    const quizChoices = new VBox({ align: 'left', spacing: 3 })
 
     const refresh = () => {
       preyReadout.string = `Prey: ${model.preyProperty.value.toFixed(1)}`
       predReadout.string = `Predators: ${model.predatorsProperty.value.toFixed(1)}`
+      ratioReadout.string = `Ratio prey∶pred = ${model.ratioProperty.value.toFixed(2)}`
+      cycleReadout.string = `Completed cycles: ${model.cycleCountProperty.value}`
       modeReadout.string = `Mode: ${model.modeProperty.value}`
     }
     model.preyProperty.link(refresh)
     model.predatorsProperty.link(refresh)
+    model.ratioProperty.link(refresh)
+    model.cycleCountProperty.link(refresh)
     model.modeProperty.link(refresh)
+
+    const refreshQuiz = () => {
+      const q = QUIZ_BANK[model.quizIndexProperty.value % QUIZ_BANK.length]!
+      quizPrompt.string = q.prompt
+      quizScore.string = `Score: ${model.quizScoreProperty.value}`
+      quizFeedback.string = model.quizFeedbackProperty.value
+      quizChoices.children = q.choices.map((c, i) =>
+        mkBtn(
+          c,
+          () => {
+            model.answerQuiz(i)
+            if (i === q.correct) sounds.cyclePeak()
+            else sounds.hunt()
+          },
+          PreyColors.playbackButtonProperty,
+        ),
+      )
+    }
+    model.quizIndexProperty.link(refreshQuiz)
+    model.quizScoreProperty.link(refreshQuiz)
+    model.quizFeedbackProperty.link(refreshQuiz)
+    refreshQuiz()
 
     const tick = (property: NumberProperty, thresh = 0.01) => {
       let last = property.value
@@ -81,6 +114,7 @@ export class PreyControlPanel extends Panel {
     tick(model.predatorGrowthProperty, 0.001)
     tick(model.deathProperty, 0.02)
     tick(model.simSpeedProperty, 0.05)
+    tick(model.carryingCapacityProperty, 1)
 
     const sliderRow = (label: string, property: NumberProperty, range: Range, digits = 2) => {
       const readout = new Text('', { font: new PhetFont(10), fill: '#ecf0f1', maxWidth: 48 })
@@ -174,6 +208,8 @@ export class PreyControlPanel extends Panel {
       tipsLabel.string = on ? 'Tips: On' : 'Tips: Off'
     })
 
+    model.isDayProperty.lazyLink(() => sounds.softClick())
+
     const content = new VBox({
       align: 'left',
       spacing: 5,
@@ -186,6 +222,8 @@ export class PreyControlPanel extends Panel {
         section('Live populations'),
         preyReadout,
         predReadout,
+        ratioReadout,
+        cycleReadout,
         phaseReadout,
         section('Interaction mode'),
         modeReadout,
@@ -247,12 +285,62 @@ export class PreyControlPanel extends Panel {
             }),
           ],
         }),
+        section('Environment'),
+        new HBox({
+          spacing: 8,
+          children: [
+            new Text('Day', { font: new PhetFont(10), fill: '#bdc3c7' }),
+            new ToggleSwitch(model.isDayProperty, false, true, { scale: 0.55 }),
+          ],
+        }),
+        new HBox({
+          spacing: 8,
+          children: [
+            new Text('Auto day/night', { font: new PhetFont(10), fill: '#bdc3c7', maxWidth: 100 }),
+            new ToggleSwitch(model.autoDayNightProperty, false, true, { scale: 0.55 }),
+          ],
+        }),
+        new HBox({
+          spacing: 8,
+          children: [
+            new Text('Refuge bush', { font: new PhetFont(10), fill: '#bdc3c7', maxWidth: 100 }),
+            new ToggleSwitch(model.refugeEnabledProperty, false, true, { scale: 0.55 }),
+          ],
+        }),
+        new HBox({
+          spacing: 8,
+          children: [
+            new Text('Chase lines', { font: new PhetFont(10), fill: '#bdc3c7', maxWidth: 100 }),
+            new ToggleSwitch(model.showChaseLinesProperty, false, true, { scale: 0.55 }),
+          ],
+        }),
+        new HBox({
+          spacing: 8,
+          children: [
+            new Text('Phase plot', { font: new PhetFont(10), fill: '#bdc3c7', maxWidth: 100 }),
+            new ToggleSwitch(model.showPhasePlotProperty, false, true, { scale: 0.55 }),
+          ],
+        }),
         section('Rates'),
         sliderRow('Prey growth', model.growthProperty, new Range(PreyConstants.GROWTH_MIN, PreyConstants.GROWTH_MAX)),
         sliderRow('Kill / predation', model.predationRateProperty, new Range(0.01, 0.06), 3),
         sliderRow('Predator birth', model.predatorGrowthProperty, new Range(0.01, 0.05), 3),
         sliderRow('Predator death', model.deathProperty, new Range(0.3, 1.2)),
+        sliderRow('Carrying capacity', model.carryingCapacityProperty, new Range(40, 120), 0),
         sliderRow('Speed ×', model.simSpeedProperty, new Range(0.25, 3), 2),
+        section('Disturbance events'),
+        mkBtn('Drought', () => {
+          model.triggerEvent('drought')
+          sounds.scenario()
+        }, PreyColors.dangerProperty),
+        mkBtn('Predator disease', () => {
+          model.triggerEvent('disease')
+          sounds.scenario()
+        }, PreyColors.predatorProperty),
+        mkBtn('Plant bloom', () => {
+          model.triggerEvent('bloom')
+          sounds.spawnPrey()
+        }, PreyColors.preyProperty),
         section('Scenarios'),
         ...SCENARIOS.map(s =>
           mkBtn(s.name, () => {
@@ -260,10 +348,23 @@ export class PreyControlPanel extends Panel {
             sounds.scenario()
           }),
         ),
+        section('Quiz'),
+        quizScore,
+        quizPrompt,
+        quizChoices,
+        quizFeedback,
+        mkBtn('Next question', () => {
+          model.nextQuiz()
+          sounds.button()
+        }, PreyColors.playbackButtonProperty),
         section('Simulation'),
         soundBtn,
         tipsBtn,
         playPauseBtn,
+        mkBtn('Clear chart', () => {
+          model.clearHistory()
+          sounds.softClick()
+        }, PreyColors.playbackButtonProperty),
         mkBtn(
           'Reset',
           () => {
