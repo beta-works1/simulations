@@ -202,7 +202,17 @@ export class PreyControlPanel extends Panel {
         return
       }
       advancedBox.children = [
-        help('Use these after you can explain the 4 steps.'),
+        help('Use these after you can explain the 4 hunt steps.'),
+        section('Other lessons (compare)'),
+        mkBtn('Both fight for same food', setMode('competition')),
+        mkBtn('Both help each other', setMode('mutualism')),
+        section('Other starting stories'),
+        ...SCENARIOS.filter(s => s.id !== 'classic').map(s =>
+          mkBtn(s.name, () => {
+            model.applyScenario(s.id)
+            sounds.scenario()
+          }),
+        ),
         sliderRow('How often foxes catch rabbits', model.predationRateProperty, new Range(0.01, 0.05), 3),
         sliderRow('How fast foxes have babies', model.predatorGrowthProperty, new Range(0.01, 0.04), 3),
         sliderRow('How fast foxes die', model.deathProperty, new Range(0.35, 1.0)),
@@ -294,8 +304,8 @@ export class PreyControlPanel extends Panel {
           fill: 'white',
           maxWidth: w,
         }),
-        help('How to learn: press Play, watch the graph, read NOW / WHY.'),
-        section('The 4 steps (remember these)'),
+        help('How to learn: Play → watch the graph → say which colour rose first.'),
+        section('The 4 steps (main lesson)'),
         tipReadout,
         stepMap,
         section('NOW happening'),
@@ -305,24 +315,19 @@ export class PreyControlPanel extends Panel {
         section('How many animals?'),
         preyReadout,
         predReadout,
-        section('Choose a lesson'),
-        mkBtn('Foxes eat rabbits (main lesson)', setMode('predation')),
-        mkBtn('Both fight for same food', setMode('competition')),
-        mkBtn('Both help each other', setMode('mutualism')),
-        section('Try a starting story'),
-        ...SCENARIOS.map(s =>
-          mkBtn(s.name, () => {
-            model.applyScenario(s.id)
-            sounds.scenario()
-          }),
-        ),
+        section('Main lesson'),
+        mkBtn('Foxes eat rabbits (start here)', setMode('predation'), PreyColors.accentProperty),
+        mkBtn('Restart classic cycle', () => {
+          model.applyScenario('classic')
+          sounds.scenario()
+        }),
         section('Add animals'),
         help('Or tap the meadow: left = rabbits, right = foxes.'),
         new HBox({
           spacing: 6,
           children: [
             new RectangularPushButton({
-              content: new Text('+ Rabbits', { font: new PhetFont(11), fill: 'white' }),
+              content: new Text('+ Rabbits', { font: new PhetFont(12), fill: 'white' }),
               baseColor: PreyColors.preyProperty,
               xMargin: 10,
               yMargin: 5,
@@ -333,7 +338,7 @@ export class PreyControlPanel extends Panel {
               minWidth: (w - 22) / 2,
             }),
             new RectangularPushButton({
-              content: new Text('+ Foxes', { font: new PhetFont(11), fill: 'white' }),
+              content: new Text('+ Foxes', { font: new PhetFont(12), fill: 'white' }),
               baseColor: PreyColors.predatorProperty,
               xMargin: 10,
               yMargin: 5,
@@ -346,7 +351,6 @@ export class PreyControlPanel extends Panel {
           ],
         }),
         section('Simple controls'),
-        sliderRow('Rabbit growth (babies)', model.growthProperty, new Range(PreyConstants.GROWTH_MIN, PreyConstants.GROWTH_MAX)),
         sliderRow('Watching speed (slower = easier)', model.simSpeedProperty, new Range(PreyConstants.SPEED_MIN, PreyConstants.SPEED_MAX)),
         playPauseBtn,
         mkBtn(

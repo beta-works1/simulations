@@ -76,13 +76,13 @@ export const SCENARIOS: ScenarioDef[] = [
     id: 'classic',
     name: '1. Start here: rabbit ↔ fox cycle',
     mode: 'predation',
-    prey: 40,
-    predators: 12,
-    growth: 1.0,
+    prey: 52,
+    predators: 8,
+    growth: 1.05,
     predation: 0.024,
     predatorGrowth: 0.022,
     death: 0.65,
-    blurb: 'Watch the 4 steps: rabbits up → foxes up → rabbits down → foxes down → repeat.',
+    blurb: 'Watch the graph: green (rabbits) goes up first, then red (foxes).',
   },
   {
     id: 'compete',
@@ -94,7 +94,7 @@ export const SCENARIOS: ScenarioDef[] = [
     predation: 0.028,
     predatorGrowth: 0.025,
     death: 0.7,
-    blurb: 'Both need the same food. When the meadow is crowded, both grow more slowly.',
+    blurb: 'Compare: do you still see the 4-step chase? Usually no.',
   },
   {
     id: 'mutual',
@@ -106,7 +106,7 @@ export const SCENARIOS: ScenarioDef[] = [
     predation: 0.028,
     predatorGrowth: 0.025,
     death: 0.7,
-    blurb: 'Each group helps the other. Both lines go up together — no chase cycle.',
+    blurb: 'Compare: both lines rise together — not a chase.',
   },
 ]
 
@@ -224,9 +224,9 @@ export class PredatorPreyModel implements TModel {
   private historyAcc = 0
 
   public constructor() {
-    this.preyProperty = new NumberProperty(40)
-    this.predatorsProperty = new NumberProperty(12)
-    this.growthProperty = new NumberProperty(1.0)
+    this.preyProperty = new NumberProperty(52)
+    this.predatorsProperty = new NumberProperty(8)
+    this.growthProperty = new NumberProperty(1.05)
     this.predationRateProperty = new NumberProperty(0.024)
     this.predatorGrowthProperty = new NumberProperty(0.022)
     this.deathProperty = new NumberProperty(0.65)
@@ -245,12 +245,12 @@ export class PredatorPreyModel implements TModel {
     this.timeProperty = new NumberProperty(0)
     this.dayPhaseProperty = new NumberProperty(0.25)
     this.cycleCountProperty = new NumberProperty(0)
-    this.ratioProperty = new NumberProperty(40 / 12)
+    this.ratioProperty = new NumberProperty(52 / 8)
     this.statusProperty = new StringProperty(
-      'Green dots = rabbits. Red dots = foxes. Watch the graph: green goes up first.',
+      'Main lesson: foxes eat rabbits. Watch the graph — green goes up first.',
     )
     this.tipProperty = new StringProperty(
-      'Big idea: rabbits ↑ → foxes ↑ → rabbits ↓ → foxes ↓ → repeat.',
+      'Remember: rabbits ↑ → foxes ↑ → rabbits ↓ → foxes ↓ → repeat.',
     )
     this.phaseLabelProperty = new StringProperty(CYCLE_STEPS[0]!.what)
     this.guideProperty = new StringProperty(CYCLE_STEPS[0]!.next)
@@ -258,7 +258,7 @@ export class PredatorPreyModel implements TModel {
     this.nextHintProperty = new StringProperty(CYCLE_STEPS[0]!.next)
     this.storyStepProperty = new NumberProperty(1)
     this.eventLabelProperty = new StringProperty('')
-    this.historyProperty = new Property<PopulationSample[]>([{ prey: 40, predators: 12 }])
+    this.historyProperty = new Property<PopulationSample[]>([{ prey: 52, predators: 8 }])
     this.huntFlashProperty = new NumberProperty(0)
     this.eventTimerProperty = new NumberProperty(0)
     this.quizIndexProperty = new NumberProperty(0)
@@ -268,9 +268,9 @@ export class PredatorPreyModel implements TModel {
   }
 
   public reset(): void {
-    this.preyProperty.value = 40
-    this.predatorsProperty.value = 12
-    this.growthProperty.value = 1.0
+    this.preyProperty.value = 52
+    this.predatorsProperty.value = 8
+    this.growthProperty.value = 1.05
     this.predationRateProperty.value = 0.024
     this.predatorGrowthProperty.value = 0.022
     this.deathProperty.value = 0.65
@@ -288,16 +288,16 @@ export class PredatorPreyModel implements TModel {
     this.timeProperty.value = 0
     this.dayPhaseProperty.value = 0.25
     this.cycleCountProperty.value = 0
-    this.ratioProperty.value = 40 / 12
-    this.historyProperty.value = [{ prey: 40, predators: 12 }]
+    this.ratioProperty.value = 52 / 8
+    this.historyProperty.value = [{ prey: 52, predators: 8 }]
     this.huntFlashProperty.value = 0
     this.eventTimerProperty.value = 0
     this.eventKind = 'none'
     this.eventLabelProperty.value = ''
     this.statusProperty.value =
-      'Green dots = rabbits. Red dots = foxes. Watch the graph: green goes up first.'
+      'Main lesson: foxes eat rabbits. Watch the graph — green goes up first.'
     this.tipProperty.value =
-      'Big idea: rabbits ↑ → foxes ↑ → rabbits ↓ → foxes ↓ → repeat.'
+      'Remember: rabbits ↑ → foxes ↑ → rabbits ↓ → foxes ↓ → repeat.'
     this.phaseLabelProperty.value = CYCLE_STEPS[0]!.what
     this.guideProperty.value = CYCLE_STEPS[0]!.next
     this.whyProperty.value = CYCLE_STEPS[0]!.why
@@ -323,29 +323,29 @@ export class PredatorPreyModel implements TModel {
   public setMode(mode: InteractionMode): void {
     this.modeProperty.value = mode
     if (mode === 'predation') {
-      this.tipProperty.value = 'Big idea: rabbits ↑ → foxes ↑ → rabbits ↓ → foxes ↓ → repeat.'
+      this.tipProperty.value = 'Remember: rabbits ↑ → foxes ↑ → rabbits ↓ → foxes ↓ → repeat.'
       this.phaseLabelProperty.value = CYCLE_STEPS[0]!.what
       this.whyProperty.value = CYCLE_STEPS[0]!.why
       this.nextHintProperty.value = CYCLE_STEPS[0]!.next
       this.guideProperty.value = CYCLE_STEPS[0]!.next
       this.storyStepProperty.value = 1
-      this.statusProperty.value = 'Foxes eat rabbits. Watch all 4 steps on the graph.'
+      this.statusProperty.value = 'Main lesson: foxes eat rabbits. Watch all 4 steps on the graph.'
     } else if (mode === 'competition') {
-      this.tipProperty.value = 'Both animals need the same food — they compete.'
+      this.tipProperty.value = 'Extra lesson: both need the same food.'
       this.phaseLabelProperty.value = 'Both fighting for the same food'
       this.whyProperty.value = 'Why: when crowded, food runs short for both'
-      this.nextHintProperty.value = 'Compare: do you still see the 4-step chase? Usually no.'
+      this.nextHintProperty.value = 'Compare: do you still see the 4-step chase?'
       this.guideProperty.value = 'Look: both lines grow more slowly when crowded.'
       this.storyStepProperty.value = 0
-      this.statusProperty.value = 'Competition mode — both struggle for the same limited food.'
+      this.statusProperty.value = 'Extra lesson: competition — both struggle for limited food.'
     } else {
-      this.tipProperty.value = 'Both help each other — numbers can rise together.'
+      this.tipProperty.value = 'Extra lesson: both help each other.'
       this.phaseLabelProperty.value = 'Both helping each other'
       this.whyProperty.value = 'Why: each group makes life easier for the other'
-      this.nextHintProperty.value = 'Compare: lines rise together, not chase each other.'
+      this.nextHintProperty.value = 'Compare: lines rise together, not chase.'
       this.guideProperty.value = 'Look: green and red climb together — no boom–bust chase.'
       this.storyStepProperty.value = 0
-      this.statusProperty.value = 'Mutualism mode — both help each other grow.'
+      this.statusProperty.value = 'Extra lesson: mutualism — both help each other grow.'
     }
   }
 

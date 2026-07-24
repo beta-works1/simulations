@@ -3,7 +3,7 @@ import { ScreenView, ScreenViewOptions } from 'scenerystack/sim'
 import { Circle, DragListener, Node, Path, Rectangle, Text } from 'scenerystack/scenery'
 import { Shape } from 'scenerystack/kite'
 import { PhetFont } from 'scenerystack/scenery-phet'
-import { PredatorPreyModel, REFUGE } from '../model/PredatorPreyModel.js'
+import { CYCLE_STEPS, PredatorPreyModel, REFUGE } from '../model/PredatorPreyModel.js'
 import { PreyControlPanel } from './PreyControlPanel.js'
 import { PreySounds } from './PreySounds.js'
 import { createEcologyIcon } from '../../common/EcologyArt.js'
@@ -26,10 +26,6 @@ export class PredatorPreyScreenView extends ScreenView {
   private readonly phasePath: Path
   private readonly tipCard: Node
   private readonly tipText: Text
-  private readonly guideCard: Node
-  private readonly guideText: Text
-  private readonly whyCard: Node
-  private readonly whyText: Text
   private readonly phaseBadge: Text
   private readonly modeBadge: Text
   private readonly chartCaption: Text
@@ -76,7 +72,7 @@ export class PredatorPreyScreenView extends ScreenView {
     this.addChild(statusBg)
     this.addChild(
       new Text(model.statusProperty, {
-        font: new PhetFont(11),
+        font: new PhetFont(13),
         fill: '#ecfeff',
         maxWidth: b.width - margin * 4,
         centerX: b.centerX,
@@ -199,14 +195,7 @@ export class PredatorPreyScreenView extends ScreenView {
         speed: 4 + i * 2,
       })
     }
-    for (let i = 0; i < 2; i++) {
-      this.birds.push({
-        x: sceneLeft + 40 + i * 120,
-        y: sceneTop + 20 + (i % 2) * 8,
-        speed: 10 + i * 3,
-        phase: i,
-      })
-    }
+    // No decorative birds — they look like animals and confuse the lesson.
 
     this.fxLayer = new Node({ pickable: false })
     this.addChild(this.fxLayer)
@@ -259,46 +248,46 @@ export class PredatorPreyScreenView extends ScreenView {
     )
     this.addChild(
       new Text('Tap left: + rabbits', {
-        font: new PhetFont({ size: 11, weight: 'bold' }),
-        fill: 'rgba(255,255,255,0.55)',
+        font: new PhetFont(10),
+        fill: 'rgba(255,255,255,0.4)',
         centerX: sceneLeft + sceneW * 0.25,
-        bottom: sceneTop + sceneH - 8,
+        bottom: sceneTop + sceneH - 6,
         pickable: false,
       }),
     )
     this.addChild(
       new Text('Tap right: + foxes', {
-        font: new PhetFont({ size: 11, weight: 'bold' }),
-        fill: 'rgba(255,255,255,0.55)',
+        font: new PhetFont(10),
+        fill: 'rgba(255,255,255,0.4)',
         centerX: sceneLeft + sceneW * 0.75,
-        bottom: sceneTop + sceneH - 8,
+        bottom: sceneTop + sceneH - 6,
         pickable: false,
       }),
     )
 
     // Picture key so students know what they are looking at
-    const keyRabbit = createEcologyIcon('rabbit', 28)
+    const keyRabbit = createEcologyIcon('rabbit', 26)
     keyRabbit.left = sceneLeft + 10
-    keyRabbit.top = sceneTop + 36
+    keyRabbit.top = sceneTop + 40
     keyRabbit.pickable = false
     this.addChild(keyRabbit)
     this.addChild(
-      new Text('= rabbit (prey)', {
-        font: new PhetFont(10),
+      new Text('= rabbits (green)', {
+        font: new PhetFont(11),
         fill: '#ecfeff',
         left: keyRabbit.right + 4,
         centerY: keyRabbit.centerY,
         pickable: false,
       }),
     )
-    const keyFox = createEcologyIcon('fox', 28)
-    keyFox.left = sceneLeft + 130
-    keyFox.top = sceneTop + 36
+    const keyFox = createEcologyIcon('fox', 26)
+    keyFox.left = sceneLeft + 150
+    keyFox.top = sceneTop + 40
     keyFox.pickable = false
     this.addChild(keyFox)
     this.addChild(
-      new Text('= fox (predator)', {
-        font: new PhetFont(10),
+      new Text('= foxes (red)', {
+        font: new PhetFont(11),
         fill: '#ecfeff',
         left: keyFox.right + 4,
         centerY: keyFox.centerY,
@@ -347,17 +336,17 @@ export class PredatorPreyScreenView extends ScreenView {
     this.addChild(leftZone)
     this.addChild(rightZone)
 
-    // Badges — only mode + phase for Grade 8 clarity
-    this.modeBadge = new Text('', { font: new PhetFont({ size: 11, weight: 'bold' }), fill: '#ecfeff', pickable: false })
-    this.phaseBadge = new Text(model.phaseLabelProperty, {
-      font: new PhetFont({ size: 11, weight: 'bold' }),
+    // Badges: lesson + live step map (4-step spine)
+    this.modeBadge = new Text('', { font: new PhetFont({ size: 12, weight: 'bold' }), fill: '#ecfeff', pickable: false })
+    this.phaseBadge = new Text('', {
+      font: new PhetFont({ size: 12, weight: 'bold' }),
       fill: '#fde68a',
       pickable: false,
     })
 
     const placeBadge = (node: Text, x: number, y: number, minW = 70) => {
-      const bg = new Rectangle(0, 0, minW, 22, {
-        fill: 'rgba(15,23,42,0.78)',
+      const bg = new Rectangle(0, 0, minW, 24, {
+        fill: 'rgba(15,23,42,0.82)',
         cornerRadius: 10,
         pickable: false,
       })
@@ -371,21 +360,41 @@ export class PredatorPreyScreenView extends ScreenView {
         node.centerY = bg.centerY
       }
       sync()
-      return sync
+      return { bg, sync }
     }
 
-    const syncMode = placeBadge(this.modeBadge, sceneLeft + 8, sceneTop + 8, 150)
-    const syncPhase = placeBadge(this.phaseBadge, sceneLeft + 170, sceneTop + 8, 200)
+    const modePlace = placeBadge(this.modeBadge, sceneLeft + sceneW - 210, sceneTop + 8, 160)
+    modePlace.bg.right = sceneLeft + sceneW - 10
+    const stepPlace = placeBadge(this.phaseBadge, sceneLeft + 8, sceneTop + 8, 160)
 
-    model.modeProperty.link(mode => {
+    const refreshModeBadge = () => {
+      const mode = model.modeProperty.value
       this.modeBadge.string =
-        mode === 'predation' ? 'Lesson: foxes eat rabbits' : mode === 'competition' ? 'Lesson: same food fight' : 'Lesson: help each other'
-      syncMode()
-    })
-    model.phaseLabelProperty.link(() => syncPhase())
+        mode === 'predation' ? 'Lesson: foxes eat rabbits' : mode === 'competition' ? 'Extra: same food' : 'Extra: help each other'
+      modePlace.sync()
+      modePlace.bg.right = sceneLeft + sceneW - 10
+      this.modeBadge.left = modePlace.bg.left + 8
+    }
+    const refreshStepBadge = () => {
+      const step = model.storyStepProperty.value
+      if (step >= 1 && step <= 4) {
+        this.phaseBadge.string = `Steps: ${[1, 2, 3, 4].map(n => (n === step ? `【${n}】` : `${n}`)).join(' → ')}`
+      } else {
+        this.phaseBadge.string = 'Compare lesson — watch both lines'
+      }
+      stepPlace.sync()
+    }
+    model.modeProperty.link(refreshModeBadge)
+    model.storyStepProperty.link(refreshStepBadge)
+    refreshModeBadge()
+    refreshStepBadge()
 
-    // Teaching cards: NOW / WHY / NEXT — stacked so Class 8 can follow live
-    this.tipText = new Text('', { font: new PhetFont({ size: 12, weight: 'bold' }), fill: '#fde68a', maxWidth: sceneW * 0.78 })
+    // One meadow strip only (Why / Next live in the side panel)
+    this.tipText = new Text('', {
+      font: new PhetFont({ size: 13, weight: 'bold' }),
+      fill: '#fde68a',
+      maxWidth: sceneW * 0.7,
+    })
     const tipBg = new Rectangle(0, 0, 20, 20, {
       fill: 'rgba(8, 18, 32, 0.92)',
       cornerRadius: 8,
@@ -395,56 +404,25 @@ export class PredatorPreyScreenView extends ScreenView {
     this.tipCard = new Node({ children: [tipBg, this.tipText], pickable: false })
     this.addChild(this.tipCard)
 
-    this.whyText = new Text('', { font: new PhetFont(11), fill: '#a7f3d0', maxWidth: sceneW * 0.78 })
-    const whyBg = new Rectangle(0, 0, 20, 20, {
-      fill: 'rgba(6, 40, 28, 0.92)',
-      cornerRadius: 8,
-      stroke: 'rgba(134, 239, 172, 0.45)',
-      lineWidth: 1,
-    })
-    this.whyCard = new Node({ children: [whyBg, this.whyText], pickable: false })
-    this.addChild(this.whyCard)
-
-    this.guideText = new Text('', { font: new PhetFont(11), fill: '#bae6fd', maxWidth: sceneW * 0.78 })
-    const guideBg = new Rectangle(0, 0, 20, 20, {
-      fill: 'rgba(15, 30, 50, 0.9)',
-      cornerRadius: 8,
-      stroke: 'rgba(125, 211, 252, 0.4)',
-      lineWidth: 1,
-    })
-    this.guideCard = new Node({ children: [guideBg, this.guideText], pickable: false })
-    this.addChild(this.guideCard)
-
     const refreshTip = () => {
-      this.tipText.string = `NOW: ${model.phaseLabelProperty.value}`
-      tipBg.rectWidth = this.tipText.width + 18
+      const show = model.showTipsProperty.value
+      const step = model.storyStepProperty.value
+      if (step >= 1 && step <= 4) {
+        const s = CYCLE_STEPS[step - 1]!
+        this.tipText.string = `NOW: ${s.short}  ·  ${s.next.replace(/^Next:\s*/i, 'Next: ')}`
+      } else {
+        this.tipText.string = `NOW: ${model.phaseLabelProperty.value}`
+      }
+      tipBg.rectWidth = Math.min(sceneW * 0.72, this.tipText.width + 18)
       tipBg.rectHeight = this.tipText.height + 12
       this.tipText.center = tipBg.center
       this.tipCard.left = sceneLeft + 10
-      this.tipCard.bottom = sceneTop + sceneH - 36
-      this.tipCard.visible = model.showTipsProperty.value
-
-      this.whyText.string = model.whyProperty.value
-      whyBg.rectWidth = this.whyText.width + 18
-      whyBg.rectHeight = this.whyText.height + 12
-      this.whyText.center = whyBg.center
-      this.whyCard.left = sceneLeft + 10
-      this.whyCard.bottom = this.tipCard.top - 5
-      this.whyCard.visible = model.showTipsProperty.value
-
-      this.guideText.string = `Next: ${model.nextHintProperty.value.replace(/^Next:\s*/i, '')}`
-      guideBg.rectWidth = this.guideText.width + 18
-      guideBg.rectHeight = this.guideText.height + 12
-      this.guideText.center = guideBg.center
-      this.guideCard.left = sceneLeft + 10
-      this.guideCard.bottom = this.whyCard.top - 5
-      this.guideCard.visible = model.showTipsProperty.value
+      this.tipCard.bottom = sceneTop + sceneH - 28
+      this.tipCard.visible = show
     }
     model.phaseLabelProperty.link(refreshTip)
-    model.whyProperty.link(refreshTip)
     model.nextHintProperty.link(refreshTip)
-    model.tipProperty.link(refreshTip)
-    model.guideProperty.link(refreshTip)
+    model.storyStepProperty.link(refreshTip)
     model.showTipsProperty.link(refreshTip)
 
     // Chart card
@@ -456,18 +434,18 @@ export class PredatorPreyScreenView extends ScreenView {
     })
     this.addChild(chartBg)
     this.addChild(
-      new Text('Graph over time — green = rabbits · red = foxes · which colour goes up first?', {
-        font: new PhetFont({ size: 11, weight: 'bold' }),
+      new Text('Graph over time — green = rabbits · red = foxes', {
+        font: new PhetFont({ size: 12, weight: 'bold' }),
         fill: '#e2e8f0',
         left: sceneLeft + 12,
         top: chartTop + 6,
       }),
     )
-    this.addChild(new Text('Rabbits ↑↓', { font: new PhetFont(10), fill: '#2ecc71', right: sceneLeft + sceneW - 100, top: chartTop + 6 }))
-    this.addChild(new Text('Foxes ↑↓', { font: new PhetFont(10), fill: '#e74c3c', right: sceneLeft + sceneW - 14, top: chartTop + 6 }))
+    this.addChild(new Text('Rabbits', { font: new PhetFont(11), fill: '#2ecc71', right: sceneLeft + sceneW - 90, top: chartTop + 6 }))
+    this.addChild(new Text('Foxes', { font: new PhetFont(11), fill: '#e74c3c', right: sceneLeft + sceneW - 14, top: chartTop + 6 }))
 
     this.chartCaption = new Text('', {
-      font: new PhetFont(10),
+      font: new PhetFont({ size: 12, weight: 'bold' }),
       fill: '#fde68a',
       left: sceneLeft + 12,
       bottom: chartTop + chartH - 6,
@@ -476,14 +454,20 @@ export class PredatorPreyScreenView extends ScreenView {
     this.addChild(this.chartCaption)
     const refreshChartCaption = () => {
       const step = model.storyStepProperty.value
+      const lookHere = [
+        'Look here: green rising first — rabbits go up.',
+        'Look here: red catching up — foxes follow the rabbits.',
+        'Look here: green falling — many foxes ate rabbits.',
+        'Look here: red falling — foxes run out of food.',
+      ]
       if (step >= 1 && step <= 4) {
-        this.chartCaption.string = `Look here: Step ${step} — ${model.whyProperty.value}`
+        this.chartCaption.string = lookHere[step - 1]!
       } else {
-        this.chartCaption.string = model.whyProperty.value
+        this.chartCaption.string = 'Look here: do both lines chase, or rise together?'
       }
     }
     model.storyStepProperty.link(refreshChartCaption)
-    model.whyProperty.link(refreshChartCaption)
+    model.modeProperty.link(refreshChartCaption)
 
     this.preyFill = new Path(null, { fill: 'rgba(46, 204, 113, 0.12)', pickable: false })
     this.preyPath = new Path(null, { stroke: '#2ecc71', lineWidth: 2.4, lineJoin: 'round' })
@@ -622,7 +606,7 @@ export class PredatorPreyScreenView extends ScreenView {
       )
     }
 
-    // Birds
+    // Birds removed — empty array stays quiet
     for (const bird of this.birds) {
       bird.x += bird.speed * capped
       if (bird.x > fb.left + fb.width + 20) bird.x = fb.left - 20
