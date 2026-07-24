@@ -37,7 +37,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
   private readonly birdLayer: Node
   private readonly sceneBounds: { left: number; top: number; width: number; height: number }
   private tierGeoms: TierGeom[] = []
-  private baseHandle: Circle | null = null
+  private baseHandle: Node | null = null
   private lastHeatSound = 0
   private lastCascadeTier = -1
   private heatParticles: { x: number; y: number; vx: number; vy: number; life: number; r: number }[] = []
@@ -90,16 +90,16 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.buildScenery(sceneLeft, sceneTop, sceneW, sceneH)
     this.addChild(this.sceneryLayer)
 
-    // Sun sits upper-right so left-side NOW / Why never cover it
-    const sunX = sceneLeft + sceneW * 0.72
-    const sunY = sceneTop + 34
-    this.sunGlow = new Circle(42, {
+    // Sun: scene center, below the top badge row (never under heat/mode pills)
+    const sunX = sceneLeft + sceneW * 0.5
+    const sunY = sceneTop + 58
+    this.sunGlow = new Circle(36, {
       fill: 'rgba(255,220,80,0.28)',
       centerX: sunX,
       centerY: sunY,
       cursor: 'pointer',
     })
-    this.sun = new Circle(18, {
+    this.sun = new Circle(16, {
       fill: '#f4d03f',
       centerX: sunX,
       centerY: sunY,
@@ -118,19 +118,19 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.addChild(this.sunRays)
     this.birdLayer = new Node({ pickable: false })
     this.addChild(this.birdLayer)
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 3; i++) {
       this.birds.push({
-        x: sceneLeft + 20 + i * (sceneW / 5),
-        y: sceneTop + 24 + (i % 3) * 10,
-        speed: 18 + i * 6,
+        x: sceneLeft + 40 + i * (sceneW / 4),
+        y: sceneTop + 22 + (i % 2) * 8,
+        speed: 16 + i * 5,
         phase: i * 1.3,
       })
     }
     this.sunLabel = new Text('Sun — tap', {
-      font: new PhetFont({ size: 13, weight: 'bold' }),
+      font: new PhetFont({ size: 12, weight: 'bold' }),
       fill: '#f4d03f',
       centerX: sunX,
-      top: this.sun.bottom + 2,
+      top: this.sun.bottom + 1,
       pickable: false,
     })
     this.addChild(this.sunLabel)
@@ -306,12 +306,12 @@ export class EcologicalPyramidScreenView extends ScreenView {
     const decFocus = this.model.decomposerFocusProperty.value
     const cascading = this.model.cascadeProgressProperty.value > 0
 
-    const pyramidTop = s.top + 108
+    const pyramidTop = s.top + 118
     const pyramidBottom = s.top + s.height - 58
     const availableH = pyramidBottom - pyramidTop
     const tierH = availableH / 4.35
     const cx = s.left + s.width / 2
-    const maxW = s.width * 0.72
+    const maxW = s.width * 0.7
     const minW = s.width * 0.24
     const seamGap = 12
 
@@ -436,24 +436,67 @@ export class EcologicalPyramidScreenView extends ScreenView {
       }
     }
 
-    // Draggable base-energy handle on producers
+    // Self-explanatory plant-energy bar on producers (drag left/right)
     const prod = this.tierGeoms[0]
     if (prod) {
-      const handle = new Circle(13, {
+      const barW = Math.min(132, Math.max(96, prod.w * 0.38))
+      const barH = 12
+      const handle = new Node({ cursor: 'ew-resize' })
+      const track = new Rectangle(0, 0, barW, barH, {
+        fill: 'rgba(15, 23, 42, 0.72)',
+        stroke: 'rgba(255,255,255,0.85)',
+        lineWidth: 1.5,
+        cornerRadius: 6,
+      })
+      const fillFrac = Math.max(
+        0.12,
+        Math.min(
+          1,
+          (base - PyramidConstants.BASE_MIN) / (PyramidConstants.BASE_MAX - PyramidConstants.BASE_MIN),
+        ),
+      )
+      const fill = new Rectangle(1, 1, Math.max(8, (barW - 2) * fillFrac), barH - 2, {
+        fill: '#38bdf8',
+        cornerRadius: 5,
+        pickable: false,
+      })
+      const thumb = new Circle(9, {
         fill: '#7dd3fc',
         stroke: '#ffffff',
         lineWidth: 2,
-        centerX: prod.cx + prod.w * 0.42,
-        centerY: prod.cy + prod.h * 0.15,
-        cursor: 'ew-resize',
+        centerX: fill.right,
+        centerY: barH / 2,
       })
-      const handleLabel = new Text('drag energy', {
-        font: new PhetFont(11),
+      const leftMark = new Text('◀ less', {
+        font: new PhetFont({ size: 10, weight: 'bold' }),
         fill: '#e0f2fe',
-        centerX: handle.centerX,
-        top: handle.bottom + 1,
         pickable: false,
       })
+      const rightMark = new Text('more ▶', {
+        font: new PhetFont({ size: 10, weight: 'bold' }),
+        fill: '#e0f2fe',
+        pickable: false,
+      })
+      const handleLabel = new Text('Plant energy — drag the bar', {
+        font: new PhetFont({ size: 11, weight: 'bold' }),
+        fill: '#e0f2fe',
+        pickable: false,
+      })
+      leftMark.right = -4
+      leftMark.centerY = barH / 2
+      rightMark.left = barW + 4
+      rightMark.centerY = barH / 2
+      handleLabel.centerX = barW / 2
+      handleLabel.top = barH + 3
+      handle.addChild(track)
+      handle.addChild(fill)
+      handle.addChild(thumb)
+      handle.addChild(leftMark)
+      handle.addChild(rightMark)
+      handle.addChild(handleLabel)
+      handle.centerX = prod.cx + prod.w * 0.18
+      handle.centerY = prod.cy + prod.h * 0.22
+
       let dragStartX = 0
       let startBase = base
       handle.addInputListener(
@@ -467,14 +510,13 @@ export class EcologicalPyramidScreenView extends ScreenView {
           drag: event => {
             const dx = event.pointer.point.x - dragStartX
             const span = PyramidConstants.BASE_MAX - PyramidConstants.BASE_MIN
-            const delta = (dx / (s.width * 0.35)) * span
+            const delta = (dx / Math.max(80, barW)) * span
             this.model.setBaseEnergy(startBase + delta)
           },
           end: () => this.sounds.releaseHandle(),
         }),
       )
       this.pyramidLayer.addChild(handle)
-      this.pyramidLayer.addChild(handleLabel)
       this.baseHandle = handle
     }
 
@@ -505,7 +547,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
       }),
     )
 
-    // Mode badge (right side so it does not cover NOW / Why)
+    // Mode + heat badges stacked on the far right (keeps sun clear in the center)
     const modeBadge = new Text(
       mode === 'energy' ? 'Energy pyramid' : mode === 'biomass' ? 'Biomass pyramid' : 'Numbers pyramid',
       {
@@ -520,7 +562,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
       pickable: false,
     })
     modeBg.right = s.left + s.width - 12
-    modeBg.top = s.top + 10
+    modeBg.top = s.top + 8
     modeBadge.center = modeBg.center
     this.pyramidLayer.addChild(modeBg)
     this.pyramidLayer.addChild(modeBadge)
@@ -536,8 +578,8 @@ export class EcologicalPyramidScreenView extends ScreenView {
         cornerRadius: 12,
         pickable: false,
       })
-      pillBg.right = modeBg.left - 8
-      pillBg.top = s.top + 10
+      pillBg.right = s.left + s.width - 12
+      pillBg.top = modeBg.bottom + 6
       pillText.center = pillBg.center
       this.pyramidLayer.addChild(pillBg)
       this.pyramidLayer.addChild(pillText)
@@ -582,10 +624,12 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.model.step(capped)
 
     const pulse = this.model.pulseProperty.value
-    const r = 20 + Math.sin(pulse * 2) * 2.5
+    const r = 16 + Math.sin(pulse * 2) * 1.5
     this.sun.radius = r
-    this.sunGlow.radius = 36 + Math.sin(pulse * 2) * 6
-    this.sunGlow.opacity = 0.32 + Math.sin(pulse * 2.2) * 0.12
+    this.sunGlow.radius = 30 + Math.sin(pulse * 2) * 4
+    this.sunGlow.opacity = 0.3 + Math.sin(pulse * 2.2) * 0.1
+    this.sunLabel.centerX = this.sun.centerX
+    this.sunLabel.top = this.sun.bottom + 1
 
     // Animated sun rays
     this.sunRays.removeAllChildren()
@@ -593,13 +637,13 @@ export class EcologicalPyramidScreenView extends ScreenView {
     const sy = this.sun.centerY
     for (let i = 0; i < 8; i++) {
       const ang = (i / 8) * Math.PI * 2 + pulse * 0.4
-      const len = 28 + Math.sin(pulse * 3 + i) * 6
+      const len = 24 + Math.sin(pulse * 3 + i) * 4
       const ray = new Shape()
-      ray.moveTo(sx + Math.cos(ang) * 22, sy + Math.sin(ang) * 22)
+      ray.moveTo(sx + Math.cos(ang) * 18, sy + Math.sin(ang) * 18)
       ray.lineTo(sx + Math.cos(ang) * len, sy + Math.sin(ang) * len)
       this.sunRays.addChild(
         new Path(ray, {
-          stroke: `rgba(251, 191, 36, ${0.25 + Math.sin(pulse * 2 + i) * 0.12})`,
+          stroke: `rgba(251, 191, 36, ${0.22 + Math.sin(pulse * 2 + i) * 0.1})`,
           lineWidth: 2,
         }),
       )
