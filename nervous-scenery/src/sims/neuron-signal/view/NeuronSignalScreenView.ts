@@ -28,20 +28,27 @@ import { TeachingTriad } from '../../../shared/ui/TeachingTriad.js'
 import { MiniQuiz } from '../../../shared/ui/MiniQuiz.js'
 import { HistoryChart } from '../../../shared/ui/HistoryChart.js'
 import { NeuronSignalStrings } from '../NeuronSignalStrings.js'
+import { controlHint, controlSection } from '../../../shared/ui/controlPanelBits.js'
 
 type SelfOptions = EmptySelfOptions
 type Options = SelfOptions & ScreenViewOptions
 
-const NODE_COUNT = 7
 const TIP_OVERLAY_DURATION = 7
 
 export class NeuronSignalScreenView extends ScreenView {
   private readonly model: NeuronSignalModel
   private readonly sounds: NervousSounds
   private readonly ax0: number
-  private readonly ax1: number
+  private ax1: number
+  private readonly baseAx1: number
   private readonly terminalX: number
   private readonly axonY: number
+  private readonly stageMinDim: number
+  private readonly axonShadowPath: Path
+  private readonly axonMainPath: Path
+  private readonly somaLabel: Text
+  private readonly axonLabel: Text
+  private readonly terminalLabel: Text
   private readonly myelinLayer: Node
   private readonly membraneShimmer: Path
   private readonly nodeButtons: Circle[] = []
@@ -64,6 +71,9 @@ export class NeuronSignalScreenView extends ScreenView {
   private readonly demyelinationButton: SoftButton
   private readonly showIonsButton: SoftButton
   private readonly soundButton: SoftButton
+  private readonly partsButton: SoftButton
+  private readonly apTraceButton: SoftButton
+  private readonly autoRepeatButton: SoftButton
   private readonly statusText: Text
   private readonly raceTimeText: Text
   private readonly raceLockHint: Text
@@ -77,6 +87,7 @@ export class NeuronSignalScreenView extends ScreenView {
   private readonly somaHalo: Circle
   private readonly tipOverlay: Node
   private readonly relayoutPanel: () => void
+  private readonly syncMyelinVisual: () => void
   private pulse = 0
   private hopFlash = 0
   private hopFlashIndex = -1
@@ -124,8 +135,10 @@ export class NeuronSignalScreenView extends ScreenView {
     const x0 = stageLeft + stageW * 0.12
     const x1 = stageLeft + stageW * 0.9
     this.axonY = y
+    this.stageMinDim = Math.min(stageW, stageH)
     this.ax0 = x0 + 52
-    this.ax1 = x1 - 56
+    this.baseAx1 = x1 - 56
+    this.ax1 = this.baseAx1
     this.terminalX = x1
 
     this.somaHalo = new Circle(Math.min(stageW, stageH) * 0.08, {
@@ -176,43 +189,41 @@ export class NeuronSignalScreenView extends ScreenView {
     }
 
     this.addChild(
-      new Text(NeuronSignalStrings.somaStringProperty.value, {
+      this.somaLabel = new Text(NeuronSignalStrings.somaStringProperty.value, {
         font: new PhetFont({ size: 14, weight: 'bold' }),
         fill: '#dbeafe',
         centerX: x0,
-        bottom: y - Math.min(stageW, stageH) * 0.09,
+        bottom: y - this.stageMinDim * 0.09,
         pickable: false,
       }),
     )
 
-    this.addChild(
-      new Path(new Shape().moveTo(x0 + 28, y + 3).lineTo(x1 - 48, y + 3), {
-        stroke: 'rgba(0,0,0,0.35)',
-        lineWidth: Math.max(14, Math.min(stageW, stageH) * 0.028),
-        lineCap: 'round',
-        pickable: false,
-      }),
-    )
-    this.addChild(
-      new Path(new Shape().moveTo(x0 + 28, y).lineTo(x1 - 48, y), {
-        stroke: NervousColors.axon,
-        lineWidth: Math.max(12, Math.min(stageW, stageH) * 0.024),
-        lineCap: 'round',
-        pickable: false,
-      }),
-    )
+    this.axonShadowPath = new Path(new Shape().moveTo(x0 + 28, y + 3).lineTo(x1 - 48, y + 3), {
+      stroke: 'rgba(0,0,0,0.35)',
+      lineWidth: Math.max(14, this.stageMinDim * 0.028),
+      lineCap: 'round',
+      pickable: false,
+    })
+    this.addChild(this.axonShadowPath)
+    this.axonMainPath = new Path(new Shape().moveTo(x0 + 28, y).lineTo(x1 - 48, y), {
+      stroke: NervousColors.axon,
+      lineWidth: Math.max(12, this.stageMinDim * 0.024),
+      lineCap: 'round',
+      pickable: false,
+    })
+    this.addChild(this.axonMainPath)
     this.membraneShimmer = new Path(
       new Shape().moveTo(x0 + 28, y - 2).lineTo(x1 - 48, y - 2),
       {
         stroke: 'rgba(255,255,255,0.5)',
-        lineWidth: Math.max(4, Math.min(stageW, stageH) * 0.008),
+        lineWidth: Math.max(4, this.stageMinDim * 0.008),
         lineCap: 'round',
         pickable: false,
       },
     )
     this.addChild(this.membraneShimmer)
     this.addChild(
-      new Text('axon', {
+      this.axonLabel = new Text('axon', {
         font: new PhetFont({ size: 14, weight: 'bold' }),
         fill: '#dbeafe',
         centerX: (x0 + x1) / 2,
@@ -224,34 +235,59 @@ export class NeuronSignalScreenView extends ScreenView {
     this.myelinLayer = new Node({ pickable: false })
     this.addChild(this.myelinLayer)
 
-    const segCount = NODE_COUNT
-    const span = this.ax1 - this.ax0
-    for (let i = 1; i < segCount; i++) {
-      const nx = this.ax0 + i * (span / segCount)
-      const node = new Circle(9, {
-        fill: '#1b4f72',
-        stroke: '#7dd3fc',
-        lineWidth: 2,
-        cursor: 'pointer',
-        centerX: nx,
-        centerY: y,
-      })
-      const frac = (nx - this.ax0) / (this.ax1 - this.ax0)
-      node.addInputListener({
-        down: () => model.fireAt(frac),
-        enter: () => {
-          if (this.hopFlashIndex !== i - 1) {
-            node.radius = 12
-          }
-        },
-        exit: () => {
-          if (this.hopFlashIndex !== i - 1) {
-            node.radius = 9
-          }
-        },
-      })
-      this.nodeButtons.push(node)
-      this.addChild(node)
+    const rebuildRanvierNodes = () => {
+      for (const node of this.nodeButtons) {
+        this.removeChild(node)
+      }
+      this.nodeButtons.length = 0
+      const segCount = model.nodeCount()
+      const span = this.ax1 - this.ax0
+      for (let i = 1; i < segCount; i++) {
+        const nx = this.ax0 + i * (span / segCount)
+        const node = new Circle(9, {
+          fill: '#1b4f72',
+          stroke: '#7dd3fc',
+          lineWidth: 2,
+          cursor: 'pointer',
+          centerX: nx,
+          centerY: y,
+        })
+        const frac = (nx - this.ax0) / (this.ax1 - this.ax0)
+        const nodeIndex = i - 1
+        node.addInputListener({
+          down: () => model.fireAt(frac),
+          enter: () => {
+            if (this.hopFlashIndex !== nodeIndex) {
+              node.radius = 12
+            }
+          },
+          exit: () => {
+            if (this.hopFlashIndex !== nodeIndex) {
+              node.radius = 9
+            }
+          },
+        })
+        this.nodeButtons.push(node)
+        this.addChild(node)
+      }
+    }
+
+    const updateAxonGeometry = () => {
+      this.ax1 = this.ax0 + (this.baseAx1 - this.ax0) * model.axonLengthProperty.value
+      const axEnd = this.ax1 + 8
+      const axStart = this.ax0 - 24
+      const diamScale = 0.55 + model.axonDiameterProperty.value * 0.45
+      const mainW = Math.max(12, this.stageMinDim * 0.024) * diamScale
+      const shadowW = Math.max(14, this.stageMinDim * 0.028) * diamScale
+      this.axonShadowPath.shape = new Shape().moveTo(axStart, y + 3).lineTo(axEnd, y + 3)
+      this.axonShadowPath.lineWidth = shadowW
+      this.axonMainPath.shape = new Shape().moveTo(axStart, y).lineTo(axEnd, y)
+      this.axonMainPath.lineWidth = mainW
+      this.membraneShimmer.shape = new Shape().moveTo(axStart, y - 2).lineTo(axEnd, y - 2)
+      this.membraneShimmer.lineWidth = Math.max(4, this.stageMinDim * 0.008) * diamScale
+      this.axonLabel.centerX = (axStart + axEnd) / 2
+      rebuildRanvierNodes()
+      this.syncMyelinVisual()
     }
 
     this.myelinLabel = new Text('', {
@@ -283,7 +319,7 @@ export class NeuronSignalScreenView extends ScreenView {
       )
     }
     this.addChild(
-      new Text(NeuronSignalStrings.terminalStringProperty.value, {
+      this.terminalLabel = new Text(NeuronSignalStrings.terminalStringProperty.value, {
         font: new PhetFont({ size: 13, weight: 'bold' }),
         fill: '#dbeafe',
         centerX: x1 - 16,
@@ -371,6 +407,9 @@ export class NeuronSignalScreenView extends ScreenView {
     const contentW = rightW - 40
     const halfBtnW = Math.floor((contentW - 8) / 2)
 
+    const challengesSection = controlSection(NeuronSignalStrings.sectionChallengesStringProperty.value, contentW)
+    panelContent.addChild(challengesSection)
+
     this.exploreButton = new SoftButton(NeuronSignalStrings.exploreStringProperty.value, () => {
       model.setChallenge('explore')
     }, {
@@ -433,6 +472,98 @@ export class NeuronSignalScreenView extends ScreenView {
     })
     panelContent.addChild(this.starsText)
 
+    const axonSection = controlSection(NeuronSignalStrings.sectionAxonStringProperty.value, contentW)
+    panelContent.addChild(axonSection)
+    const axonHint = controlHint(NeuronSignalStrings.hintAxonGeometryStringProperty.value, contentW)
+    panelContent.addChild(axonHint)
+
+    const axonLengthSlider = new DepthSlider(model.axonLengthProperty, {
+      min: 0.6,
+      max: 1.4,
+      width: contentW,
+      label: NeuronSignalStrings.axonLengthStringProperty.value,
+      format: (n) => `${n.toFixed(1)}×`,
+      fill: '#38bdf8',
+      onTick: () => this.sounds.sliderTick(),
+    })
+    panelContent.addChild(axonLengthSlider)
+
+    const nodeCountSlider = new DepthSlider(model.nodeCountProperty, {
+      min: 3,
+      max: 10,
+      width: contentW,
+      label: NeuronSignalStrings.nodeCountStringProperty.value,
+      format: (n) => `${Math.round(n)}`,
+      fill: '#0ea5e9',
+      onTick: () => this.sounds.sliderTick(),
+    })
+    panelContent.addChild(nodeCountSlider)
+
+    const axonDiameterSlider = new DepthSlider(model.axonDiameterProperty, {
+      min: 0.5,
+      max: 1.8,
+      width: contentW,
+      label: NeuronSignalStrings.axonDiameterStringProperty.value,
+      format: (n) => `${n.toFixed(1)}×`,
+      fill: '#6366f1',
+      onTick: () => this.sounds.sliderTick(),
+    })
+    panelContent.addChild(axonDiameterSlider)
+
+    const signalSection = controlSection(NeuronSignalStrings.sectionSignalStringProperty.value, contentW)
+    panelContent.addChild(signalSection)
+    const signalHint = controlHint(NeuronSignalStrings.hintSignalStringProperty.value, contentW)
+    panelContent.addChild(signalHint)
+
+    const thresholdSlider = new DepthSlider(model.thresholdProperty, {
+      min: 10,
+      max: 90,
+      width: contentW,
+      label: NeuronSignalStrings.thresholdStringProperty.value,
+      format: (n) => `${Math.round(n)}`,
+      fill: '#f97316',
+      onTick: () => this.sounds.sliderTick(),
+    })
+    panelContent.addChild(thresholdSlider)
+
+    const stimulusSlider = new DepthSlider(model.stimulusStrengthProperty, {
+      min: 0,
+      max: 100,
+      width: contentW,
+      label: NeuronSignalStrings.stimulusStrengthStringProperty.value,
+      format: (n) => `${Math.round(n)}`,
+      fill: '#ef4444',
+      onTick: () => this.sounds.sliderTick(),
+    })
+    panelContent.addChild(stimulusSlider)
+
+    const synapseDelaySlider = new DepthSlider(model.synapseDelayProperty, {
+      min: 0,
+      max: 1.5,
+      width: contentW,
+      label: NeuronSignalStrings.synapseDelayStringProperty.value,
+      format: (n) => `${n.toFixed(2)}s`,
+      fill: '#a855f7',
+      onTick: () => this.sounds.sliderTick(),
+    })
+    panelContent.addChild(synapseDelaySlider)
+
+    const temperatureSlider = new DepthSlider(model.temperatureProperty, {
+      min: 20,
+      max: 42,
+      width: contentW,
+      label: NeuronSignalStrings.temperatureStringProperty.value,
+      format: (n) => `${Math.round(n)}°C`,
+      fill: '#dc2626',
+      onTick: () => this.sounds.sliderTick(),
+    })
+    panelContent.addChild(temperatureSlider)
+
+    const playbackSection = controlSection(NeuronSignalStrings.sectionPlaybackStringProperty.value, contentW)
+    panelContent.addChild(playbackSection)
+    const playbackHint = controlHint(NeuronSignalStrings.hintPlaybackStringProperty.value, contentW)
+    panelContent.addChild(playbackHint)
+
     const speedSlider = new DepthSlider(model.speedScaleProperty, {
       min: 0.5,
       max: 1.8,
@@ -444,13 +575,67 @@ export class NeuronSignalScreenView extends ScreenView {
     })
     panelContent.addChild(speedSlider)
 
-    const fireBtn = new SoftButton(NeuronSignalStrings.fireStringProperty.value, () => model.fire(), {
+    const simSpeedSlider = new DepthSlider(model.simSpeedProperty, {
+      min: 0.25,
+      max: 3,
       width: contentW,
-      height: 42,
+      label: NeuronSignalStrings.simSpeedStringProperty.value,
+      format: (n) => `${n.toFixed(1)}×`,
+      fill: NervousColors.signal,
+      onTick: () => this.sounds.sliderTick(),
+    })
+    panelContent.addChild(simSpeedSlider)
+
+    const stepOnceBtn = new SoftButton(NeuronSignalStrings.stepOnceStringProperty.value, () => {
+      model.stepOnce()
+    }, {
+      width: halfBtnW,
+      height: 36,
+      fill: '#64748b',
+      onSound: () => this.sounds.softClick(),
+    })
+    panelContent.addChild(stepOnceBtn)
+
+    const fireBtn = new SoftButton(NeuronSignalStrings.fireStringProperty.value, () => model.fire(), {
+      width: halfBtnW,
+      height: 36,
       fill: '#c0392b',
       onSound: () => this.sounds.softClick(),
     })
     panelContent.addChild(fireBtn)
+
+    this.partsButton = new SoftButton(NeuronSignalStrings.partsOnStringProperty.value, () => {
+      model.showPartsProperty.value = !model.showPartsProperty.value
+    }, {
+      width: halfBtnW,
+      height: 34,
+      fill: '#334155',
+      selected: true,
+      onSound: () => this.sounds.softClick(),
+    })
+    panelContent.addChild(this.partsButton)
+
+    this.apTraceButton = new SoftButton(NeuronSignalStrings.apTraceOnStringProperty.value, () => {
+      model.showAPTraceProperty.value = !model.showAPTraceProperty.value
+    }, {
+      width: halfBtnW,
+      height: 34,
+      fill: '#7c3aed',
+      selected: true,
+      onSound: () => this.sounds.softClick(),
+    })
+    panelContent.addChild(this.apTraceButton)
+
+    this.autoRepeatButton = new SoftButton(NeuronSignalStrings.autoRepeatOnStringProperty.value, () => {
+      model.autoRepeatProperty.value = !model.autoRepeatProperty.value
+    }, {
+      width: contentW,
+      height: 34,
+      fill: '#059669',
+      selected: false,
+      onSound: () => this.sounds.softClick(),
+    })
+    panelContent.addChild(this.autoRepeatButton)
 
     this.myelinButton = new SoftButton(NeuronSignalStrings.myelinStringProperty.value, () => {
       model.setMyelin(!model.myelinProperty.value)
@@ -508,6 +693,9 @@ export class NeuronSignalScreenView extends ScreenView {
     )
     panelContent.addChild(this.soundButton)
 
+    const historySection = controlSection(NeuronSignalStrings.sectionHistoryStringProperty.value, contentW)
+    panelContent.addChild(historySection)
+
     const historyHeader = new Text(NeuronSignalStrings.historyStringProperty.value, {
       font: new PhetFont({ size: 13, weight: 'bold' }),
       fill: NervousColors.panelText,
@@ -556,6 +744,10 @@ export class NeuronSignalScreenView extends ScreenView {
 
     this.relayoutPanel = () => {
       let py = 4
+      challengesSection.left = 0
+      challengesSection.top = py
+      py = challengesSection.bottom + 6
+
       this.exploreButton.left = 0
       this.exploreButton.top = py
       this.raceButton.left = halfBtnW + 8
@@ -586,13 +778,66 @@ export class NeuronSignalScreenView extends ScreenView {
       this.starsText.top = py
       py = this.starsText.bottom + 10
 
+      axonSection.left = 0
+      axonSection.top = py
+      py = axonSection.bottom + 4
+      axonHint.left = 0
+      axonHint.top = py
+      py = axonHint.bottom + 6
+      axonLengthSlider.left = 0
+      axonLengthSlider.top = py
+      py = axonLengthSlider.bottom + 8
+      nodeCountSlider.left = 0
+      nodeCountSlider.top = py
+      py = nodeCountSlider.bottom + 8
+      axonDiameterSlider.left = 0
+      axonDiameterSlider.top = py
+      py = axonDiameterSlider.bottom + 12
+
+      signalSection.left = 0
+      signalSection.top = py
+      py = signalSection.bottom + 4
+      signalHint.left = 0
+      signalHint.top = py
+      py = signalHint.bottom + 6
+      thresholdSlider.left = 0
+      thresholdSlider.top = py
+      py = thresholdSlider.bottom + 8
+      stimulusSlider.left = 0
+      stimulusSlider.top = py
+      py = stimulusSlider.bottom + 8
+      synapseDelaySlider.left = 0
+      synapseDelaySlider.top = py
+      py = synapseDelaySlider.bottom + 8
+      temperatureSlider.left = 0
+      temperatureSlider.top = py
+      py = temperatureSlider.bottom + 12
+
+      playbackSection.left = 0
+      playbackSection.top = py
+      py = playbackSection.bottom + 4
+      playbackHint.left = 0
+      playbackHint.top = py
+      py = playbackHint.bottom + 6
       speedSlider.left = 0
       speedSlider.top = py
-      py = speedSlider.bottom + 16
-
-      fireBtn.left = 0
+      py = speedSlider.bottom + 8
+      simSpeedSlider.left = 0
+      simSpeedSlider.top = py
+      py = simSpeedSlider.bottom + 10
+      stepOnceBtn.left = 0
+      stepOnceBtn.top = py
+      fireBtn.left = halfBtnW + 8
       fireBtn.top = py
-      py = fireBtn.bottom + 10
+      py = stepOnceBtn.bottom + 8
+      this.partsButton.left = 0
+      this.partsButton.top = py
+      this.apTraceButton.left = halfBtnW + 8
+      this.apTraceButton.top = py
+      py = this.partsButton.bottom + 8
+      this.autoRepeatButton.left = 0
+      this.autoRepeatButton.top = py
+      py = this.autoRepeatButton.bottom + 10
 
       this.myelinButton.left = 0
       this.myelinButton.top = py
@@ -610,6 +855,9 @@ export class NeuronSignalScreenView extends ScreenView {
       this.soundButton.top = py
       py = this.soundButton.bottom + 16
 
+      historySection.left = 0
+      historySection.top = py
+      py = historySection.bottom + 6
       historyHeader.left = 0
       historyHeader.top = py
       py = historyHeader.bottom + 4
@@ -622,7 +870,7 @@ export class NeuronSignalScreenView extends ScreenView {
 
       this.historyChart.left = 0
       this.historyChart.top = py
-      py = this.historyChart.bottom + 14
+      py = this.historyChart.visible ? this.historyChart.bottom + 14 : py
 
       this.miniQuiz.left = 0
       this.miniQuiz.top = py
@@ -661,6 +909,8 @@ export class NeuronSignalScreenView extends ScreenView {
           this.signalTrail.clear()
           this.rippleFX.clear()
           this.sounds.resetAll()
+          updateAxonGeometry()
+          syncDisplayToggles()
           this.relayoutPanel()
         },
         right: lb.right - m,
@@ -706,7 +956,7 @@ export class NeuronSignalScreenView extends ScreenView {
     })
     this.addChild(this.tipOverlay)
 
-    const hopX = (hop: number) => this.ax0 + hop * (this.ax1 - this.ax0) / NODE_COUNT
+    const hopX = (hop: number) => this.ax0 + hop * (this.ax1 - this.ax0) / model.nodeCount()
 
     model.hopIndexProperty.link((hop) => {
       if (hop < 0) {
@@ -830,6 +1080,7 @@ export class NeuronSignalScreenView extends ScreenView {
 
     const syncMyelin = () => {
       const on = model.myelinProperty.value
+      const segCount = model.nodeCount()
       this.myelinLayer.removeAllChildren()
       const spanLocal = this.ax1 - this.ax0
       if (on) {
@@ -839,14 +1090,14 @@ export class NeuronSignalScreenView extends ScreenView {
           this.myelinLayer.addChild(
             new Path(new Shape().moveTo(xa, this.axonY + 2).lineTo(xb, this.axonY + 2), {
               stroke: 'rgba(0,0,0,0.25)',
-              lineWidth: Math.max(18, Math.min(stageW, stageH) * 0.04),
+              lineWidth: Math.max(18, this.stageMinDim * 0.04),
               lineCap: 'round',
             }),
           )
           this.myelinLayer.addChild(
             new Path(new Shape().moveTo(xa, this.axonY).lineTo(xb, this.axonY), {
               stroke: NervousColors.myelin,
-              lineWidth: Math.max(16, Math.min(stageW, stageH) * 0.036),
+              lineWidth: Math.max(16, this.stageMinDim * 0.036),
               lineCap: 'round',
             }),
           )
@@ -870,9 +1121,55 @@ export class NeuronSignalScreenView extends ScreenView {
       this.speedFill.fill = on ? NervousColors.myelin : '#64748b'
       syncTriad()
     }
+    this.syncMyelinVisual = syncMyelin
+
+    const syncDisplayToggles = () => {
+      const parts = model.showPartsProperty.value
+      this.somaLabel.visible = parts
+      this.axonLabel.visible = parts
+      this.terminalLabel.visible = parts
+      this.myelinLabel.visible = parts
+
+      const trace = model.showAPTraceProperty.value
+      this.progressText.visible = trace
+      historySection.visible = trace
+      historyHeader.visible = trace
+      legendMyelin.visible = trace
+      legendBare.visible = trace
+      this.historyChart.visible = trace
+
+      const repeat = model.autoRepeatProperty.value
+      this.autoRepeatButton.setLabel(
+        repeat
+          ? NeuronSignalStrings.autoRepeatOnStringProperty.value
+          : NeuronSignalStrings.autoRepeatOffStringProperty.value,
+      )
+      this.autoRepeatButton.setSelected(repeat)
+
+      this.partsButton.setLabel(
+        parts
+          ? NeuronSignalStrings.partsOnStringProperty.value
+          : NeuronSignalStrings.partsOffStringProperty.value,
+      )
+      this.partsButton.setSelected(parts)
+
+      this.apTraceButton.setLabel(
+        trace
+          ? NeuronSignalStrings.apTraceOnStringProperty.value
+          : NeuronSignalStrings.apTraceOffStringProperty.value,
+      )
+      this.apTraceButton.setSelected(trace)
+      this.relayoutPanel()
+    }
     model.myelinProperty.link(syncMyelin)
     model.myelinProperty.lazyLink((on) => this.sounds.toggle(on))
     model.speedScaleProperty.link(() => syncMyelin())
+    model.axonLengthProperty.link(() => updateAxonGeometry())
+    model.nodeCountProperty.link(() => updateAxonGeometry())
+    model.axonDiameterProperty.link(() => updateAxonGeometry())
+    model.showPartsProperty.link(syncDisplayToggles)
+    model.showAPTraceProperty.link(syncDisplayToggles)
+    model.autoRepeatProperty.link(syncDisplayToggles)
 
     model.runningProperty.link((running) => {
       this.playButton.setLabel(
@@ -1016,6 +1313,8 @@ export class NeuronSignalScreenView extends ScreenView {
     syncChallenge()
     syncRaceReadout()
     syncTriad()
+    syncDisplayToggles()
+    updateAxonGeometry()
     this.raceLockHint.visible = !model.raceUnlockedProperty.value
   }
 
@@ -1110,8 +1409,10 @@ export class NeuronSignalScreenView extends ScreenView {
       .moveTo(Math.max(this.ax0, x - 48), this.axonY)
       .lineTo(x, this.axonY)
     this.progressText.string = `AP ${Math.round(vt * 100)}%`
-    this.progressText.centerX = x
-    this.progressText.bottom = this.axonY - 30
+    if (this.model.showAPTraceProperty.value) {
+      this.progressText.centerX = x
+      this.progressText.bottom = this.axonY - 30
+    }
 
     if (this.model.runningProperty.value) {
       this.signalTrail.push(x, this.axonY, 9)

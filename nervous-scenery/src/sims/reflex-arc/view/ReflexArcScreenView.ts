@@ -13,6 +13,8 @@ import { StageBackdrop } from '../../../shared/ui/StageBackdrop.js'
 import { GuidanceBanner } from '../../../shared/ui/GuidanceBanner.js'
 import { ParticleBurst } from '../../../shared/ui/ParticleBurst.js'
 import { createPanelTip } from '../../../shared/ui/createPanelTip.js'
+import { controlHint, controlSection } from '../../../shared/ui/controlPanelBits.js'
+import { ScrollableNode } from '../../../shared/ui/ScrollableNode.js'
 import { TeachingTriad } from '../../../shared/ui/TeachingTriad.js'
 import { MiniQuiz } from '../../../shared/ui/MiniQuiz.js'
 import { HistoryChart } from '../../../shared/ui/HistoryChart.js'
@@ -46,6 +48,7 @@ export class ReflexArcScreenView extends ScreenView {
   private readonly curvesNoBrain: Curve[]
   private readonly curvesViaBrain: Curve[]
   private readonly pathLayer: Node
+  private readonly synapseLayer: Node
   private readonly completedLayer: Node
   private readonly particles: ParticleBurst
   private readonly sounds: NervousSounds
@@ -232,11 +235,13 @@ export class ReflexArcScreenView extends ScreenView {
     this.curvesViaBrain = [afferent, toBrain, fromBrain, efferent]
 
     this.pathLayer = new Node({ pickable: false })
+    this.synapseLayer = new Node({ pickable: false, visible: false })
     this.completedLayer = new Node({ pickable: false })
     this.particles = new ParticleBurst(90)
     this.signalTrail = new SignalTrail({ color: 'rgba(241,196,15,0.5)' })
     this.ripples = new RippleFX()
     this.addChild(this.pathLayer)
+    this.addChild(this.synapseLayer)
     this.addChild(this.completedLayer)
     this.addChild(this.signalTrail)
     this.addChild(this.particles)
@@ -544,143 +549,429 @@ export class ReflexArcScreenView extends ScreenView {
     card.top = stageTop
     this.addChild(card)
 
-    const btnW = rightW - 32
-    const halfW = (btnW - 10) / 2
+    const panelContent = new Node()
+    const contentW = rightW - 32
+    const halfW = (contentW - 8) / 2
+    const gridGap = 6
+    const btnH = 32
+
+    const scenariosHeader = controlSection(ReflexArcStrings.sectionScenariosStringProperty.value, contentW)
+    panelContent.addChild(scenariosHeader)
 
     this.exploreBtn = new SoftButton(ReflexArcStrings.challengeExploreStringProperty.value, () => {
       model.setChallenge('explore')
     }, {
-      width: btnW,
-      height: 36,
+      width: contentW,
+      height: btnH,
       fill: NervousColors.accent,
       selected: true,
       onSound: () => sounds.modeChange(true),
     })
-    this.exploreBtn.left = 16
-    this.exploreBtn.top = 44
-    card.content.addChild(this.exploreBtn)
+    panelContent.addChild(this.exploreBtn)
 
     this.compareBtn = new SoftButton(ReflexArcStrings.challengeCompareStringProperty.value, () => {
       model.setChallenge('compare')
     }, {
-      width: btnW,
-      height: 36,
+      width: contentW,
+      height: btnH,
       fill: '#0ea5e9',
       selected: false,
       onSound: () => sounds.modeChange(true),
     })
-    this.compareBtn.left = 16
-    this.compareBtn.top = 88
-    card.content.addChild(this.compareBtn)
+    panelContent.addChild(this.compareBtn)
 
     this.scenarioBtn = new SoftButton(ReflexArcStrings.challengeScenarioStringProperty.value, () => {
       model.setChallenge('scenario')
     }, {
-      width: btnW,
-      height: 36,
+      width: contentW,
+      height: btnH,
       fill: '#e74c3c',
       selected: false,
       onSound: () => sounds.scenario(),
     })
-    this.scenarioBtn.left = 16
-    this.scenarioBtn.top = 132
-    card.content.addChild(this.scenarioBtn)
+    panelContent.addChild(this.scenarioBtn)
 
     this.kneeBtn = new SoftButton(ReflexArcStrings.challengeKneeStringProperty.value, () => {
       model.setChallenge('knee')
     }, {
-      width: btnW,
-      height: 36,
+      width: contentW,
+      height: btnH,
       fill: '#f39c12',
       selected: false,
       onSound: () => sounds.scenario(),
     })
-    this.kneeBtn.left = 16
-    this.kneeBtn.top = 176
-    card.content.addChild(this.kneeBtn)
+    panelContent.addChild(this.kneeBtn)
+
+    const stimulusHeader = controlSection(ReflexArcStrings.sectionStimulusStringProperty.value, contentW)
+    panelContent.addChild(stimulusHeader)
+
+    const stimulusDefs: { id: 'touch' | 'heat' | 'pinch' | 'stretch'; label: string; fill: string }[] = [
+      { id: 'touch', label: 'Touch', fill: '#64748b' },
+      { id: 'heat', label: 'Heat', fill: '#e74c3c' },
+      { id: 'pinch', label: 'Pinch', fill: '#f39c12' },
+      { id: 'stretch', label: 'Stretch', fill: '#0ea5e9' },
+    ]
+    const stimulusBtns = stimulusDefs.map((def) => {
+      const btn = new SoftButton(def.label, () => {
+        model.stimulusTypeProperty.value = def.id
+      }, {
+        width: halfW,
+        height: btnH,
+        fill: def.fill,
+        selected: def.id === model.stimulusTypeProperty.value,
+        fontSize: 11,
+        onSound: () => sounds.softClick(),
+      })
+      panelContent.addChild(btn)
+      return btn
+    })
+
+    const intensitySlider = new DepthSlider(model.stimulusIntensityProperty, {
+      min: 0,
+      max: 100,
+      width: contentW,
+      label: ReflexArcStrings.stimulusIntensityStringProperty.value,
+      format: (n) => `${Math.round(n)}%`,
+      fill: NervousColors.receptor,
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(intensitySlider)
+
+    const sensitivitySlider = new DepthSlider(model.receptorSensitivityProperty, {
+      min: 0.4,
+      max: 1.6,
+      width: contentW,
+      label: ReflexArcStrings.receptorSensitivityStringProperty.value,
+      format: (n) => `${n.toFixed(1)}×`,
+      fill: '#f59e0b',
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(sensitivitySlider)
+
+    const circuitHeader = controlSection(ReflexArcStrings.sectionCircuitStringProperty.value, contentW)
+    panelContent.addChild(circuitHeader)
+
+    this.viaBrainButton = new SoftButton(ReflexArcStrings.viaBrainStringProperty.value, () => {
+      model.setViaBrain(!model.viaBrainProperty.value)
+    }, {
+      width: contentW,
+      height: btnH + 4,
+      fill: '#2980b9',
+      selected: false,
+      onSound: () => sounds.toggle(!model.viaBrainProperty.value),
+    })
+    panelContent.addChild(this.viaBrainButton)
+
+    const interneuronSlider = new DepthSlider(model.interneuronCountProperty, {
+      min: 0,
+      max: 3,
+      width: contentW,
+      label: ReflexArcStrings.interneuronCountStringProperty.value,
+      format: (n) => String(Math.round(n)),
+      fill: NervousColors.spine,
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(interneuronSlider)
+
+    const interneuronHint = controlHint('0 = monosynaptic (knee-jerk)', contentW)
+    panelContent.addChild(interneuronHint)
+
+    const muscleBtn = new SoftButton('Muscle', () => {
+      model.effectorTypeProperty.value = 'muscle'
+    }, {
+      width: halfW,
+      height: btnH,
+      fill: '#e74c3c',
+      selected: model.effectorTypeProperty.value === 'muscle',
+      fontSize: 11,
+      onSound: () => sounds.softClick(),
+    })
+    panelContent.addChild(muscleBtn)
+
+    const glandBtn = new SoftButton('Gland', () => {
+      model.effectorTypeProperty.value = 'gland'
+    }, {
+      width: halfW,
+      height: btnH,
+      fill: '#9b59b6',
+      selected: model.effectorTypeProperty.value === 'gland',
+      fontSize: 11,
+      onSound: () => sounds.softClick(),
+    })
+    panelContent.addChild(glandBtn)
+
+    const timingHeader = controlSection(ReflexArcStrings.sectionTimingStringProperty.value, contentW)
+    panelContent.addChild(timingHeader)
+
+    const speedSlider = new DepthSlider(model.speedScaleProperty, {
+      min: 0.5,
+      max: 1.8,
+      width: contentW,
+      label: ReflexArcStrings.signalSpeedStringProperty.value,
+      format: (n) => `${n.toFixed(1)}×`,
+      fill: NervousColors.signal,
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(speedSlider)
+
+    const simSpeedSlider = new DepthSlider(model.simSpeedProperty, {
+      min: 0.25,
+      max: 3,
+      width: contentW,
+      label: ReflexArcStrings.simSpeedStringProperty.value,
+      format: (n) => `${n.toFixed(2)}×`,
+      fill: '#7c3aed',
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(simSpeedSlider)
+
+    const awarenessSlider = new DepthSlider(model.awarenessDelayProperty, {
+      min: 0,
+      max: 2,
+      width: contentW,
+      label: ReflexArcStrings.awarenessDelayStringProperty.value,
+      format: (n) => `${n.toFixed(1)} s`,
+      fill: '#2980b9',
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(awarenessSlider)
+
+    const displayHeader = controlSection(ReflexArcStrings.sectionDisplayStringProperty.value, contentW)
+    panelContent.addChild(displayHeader)
+
+    const labelsBtn = new SoftButton(ReflexArcStrings.labelsOnStringProperty.value, () => {
+      model.showLabelsProperty.value = !model.showLabelsProperty.value
+    }, {
+      width: contentW,
+      height: btnH,
+      fill: '#64748b',
+      selected: model.showLabelsProperty.value,
+      fontSize: 11,
+      onSound: () => sounds.softClick(),
+    })
+    panelContent.addChild(labelsBtn)
+
+    const synapsesBtn = new SoftButton(ReflexArcStrings.synapsesOnStringProperty.value, () => {
+      model.showSynapsesProperty.value = !model.showSynapsesProperty.value
+    }, {
+      width: contentW,
+      height: btnH,
+      fill: '#0ea5e9',
+      selected: model.showSynapsesProperty.value,
+      fontSize: 11,
+      onSound: () => sounds.softClick(),
+    })
+    panelContent.addChild(synapsesBtn)
+
+    const pathGlowBtn = new SoftButton(ReflexArcStrings.pathGlowOnStringProperty.value, () => {
+      model.showPathGlowProperty.value = !model.showPathGlowProperty.value
+    }, {
+      width: contentW,
+      height: btnH,
+      fill: NervousColors.signal,
+      selected: model.showPathGlowProperty.value,
+      fontSize: 11,
+      onSound: () => sounds.softClick(),
+    })
+    panelContent.addChild(pathGlowBtn)
+
+    const autoRepeatBtn = new SoftButton(ReflexArcStrings.autoRepeatOnStringProperty.value, () => {
+      model.autoRepeatProperty.value = !model.autoRepeatProperty.value
+    }, {
+      width: contentW,
+      height: btnH,
+      fill: '#10b981',
+      selected: model.autoRepeatProperty.value,
+      fontSize: 11,
+      onSound: () => sounds.softClick(),
+    })
+    panelContent.addChild(autoRepeatBtn)
+
+    const simulationHeader = controlSection(ReflexArcStrings.sectionSimulationStringProperty.value, contentW)
+    panelContent.addChild(simulationHeader)
 
     const stimulateBtn = new SoftButton(ReflexArcStrings.stimulateStringProperty.value, () => model.fire(), {
       width: halfW,
-      height: 42,
+      height: 38,
       fill: NervousColors.receptor,
-      fontSize: 13,
+      fontSize: 12,
       onSound: () => sounds.fireSignal(),
     })
-    stimulateBtn.left = 16
-    stimulateBtn.top = 220
-    card.content.addChild(stimulateBtn)
+    panelContent.addChild(stimulateBtn)
 
     this.playPauseBtn = new SoftButton(ReflexArcStrings.pauseButtonStringProperty.value, () => {
       model.togglePlayPause()
       sounds.playPause(model.runningProperty.value)
     }, {
       width: halfW,
-      height: 42,
+      height: 38,
       fill: '#7c3aed',
-      fontSize: 13,
+      fontSize: 12,
     })
-    this.playPauseBtn.left = 16 + halfW + 10
-    this.playPauseBtn.top = 220
-    card.content.addChild(this.playPauseBtn)
+    panelContent.addChild(this.playPauseBtn)
 
-    this.viaBrainButton = new SoftButton(ReflexArcStrings.viaBrainStringProperty.value, () => {
-      model.setViaBrain(!model.viaBrainProperty.value)
+    const stepOnceBtn = new SoftButton(ReflexArcStrings.stepOnceStringProperty.value, () => {
+      model.stepOnce()
+      sounds.softClick()
     }, {
-      width: btnW,
-      height: 42,
-      fill: '#2980b9',
-      selected: false,
-      onSound: () => sounds.toggle(!model.viaBrainProperty.value),
+      width: contentW,
+      height: btnH,
+      fill: '#475569',
+      fontSize: 11,
+      onSound: () => sounds.softClick(),
     })
-    this.viaBrainButton.left = 16
-    this.viaBrainButton.top = 270
-    card.content.addChild(this.viaBrainButton)
-
-    const speedSlider = new DepthSlider(model.speedScaleProperty, {
-      min: 0.5,
-      max: 1.8,
-      width: btnW,
-      label: ReflexArcStrings.signalSpeedStringProperty.value,
-      format: (n) => `${n.toFixed(1)}×`,
-      fill: NervousColors.signal,
-      onTick: () => sounds.sliderTick(),
-    })
-    speedSlider.left = 16
-    speedSlider.top = 320
-    card.content.addChild(speedSlider)
+    panelContent.addChild(stepOnceBtn)
 
     this.starsText = new Text('', {
       font: new PhetFont({ size: 15, weight: 'bold' }),
       fill: '#d97706',
-      left: 16,
-      top: 376,
     })
-    card.content.addChild(this.starsText)
+    panelContent.addChild(this.starsText)
 
     this.statusText = new Text(model.statusProperty.value, {
       font: new PhetFont({ size: 13, weight: 'bold' }),
       fill: NervousColors.panelText,
-      left: 16,
-      top: 404,
-      maxWidth: btnW,
+      maxWidth: contentW,
     })
-    card.content.addChild(this.statusText)
+    panelContent.addChild(this.statusText)
 
     this.trialText = new Text('', {
       font: new PhetFont({ size: 13, weight: 'bold' }),
       fill: NervousColors.panelMuted,
-      left: 16,
-      top: 434,
     })
-    card.content.addChild(this.trialText)
+    panelContent.addChild(this.trialText)
 
     const learnTip = createPanelTip(ReflexArcStrings.learnMoreStringProperty.value, {
-      width: btnW,
-      fontSize: 13,
+      width: contentW,
+      fontSize: 12,
     })
-    learnTip.left = 16
-    learnTip.top = 464
-    card.content.addChild(learnTip)
+    panelContent.addChild(learnTip)
+
+    const bottomPad = new Rectangle(0, 0, contentW, 20, {
+      fill: 'rgba(255,255,255,0)',
+      pickable: false,
+    })
+    panelContent.addChild(bottomPad)
+
+    const relayoutPanel = () => {
+      let py = 4
+      scenariosHeader.left = 0
+      scenariosHeader.top = py
+      py = scenariosHeader.bottom + 6
+
+      this.exploreBtn.left = 0
+      this.exploreBtn.top = py
+      py = this.exploreBtn.bottom + gridGap
+      this.compareBtn.left = 0
+      this.compareBtn.top = py
+      py = this.compareBtn.bottom + gridGap
+      this.scenarioBtn.left = 0
+      this.scenarioBtn.top = py
+      py = this.scenarioBtn.bottom + gridGap
+      this.kneeBtn.left = 0
+      this.kneeBtn.top = py
+      py = this.kneeBtn.bottom + 12
+
+      stimulusHeader.left = 0
+      stimulusHeader.top = py
+      py = stimulusHeader.bottom + 6
+      stimulusBtns[0].left = 0
+      stimulusBtns[0].top = py
+      stimulusBtns[1].left = halfW + 8
+      stimulusBtns[1].top = py
+      stimulusBtns[2].left = 0
+      stimulusBtns[2].top = py + btnH + gridGap
+      stimulusBtns[3].left = halfW + 8
+      stimulusBtns[3].top = py + btnH + gridGap
+      py = stimulusBtns[2].bottom + 8
+
+      intensitySlider.left = 0
+      intensitySlider.top = py
+      py = intensitySlider.bottom + 8
+      sensitivitySlider.left = 0
+      sensitivitySlider.top = py
+      py = sensitivitySlider.bottom + 12
+
+      circuitHeader.left = 0
+      circuitHeader.top = py
+      py = circuitHeader.bottom + 6
+      this.viaBrainButton.left = 0
+      this.viaBrainButton.top = py
+      py = this.viaBrainButton.bottom + 8
+      interneuronSlider.left = 0
+      interneuronSlider.top = py
+      py = interneuronSlider.bottom + 4
+      interneuronHint.left = 0
+      interneuronHint.top = py
+      py = interneuronHint.bottom + 8
+      muscleBtn.left = 0
+      muscleBtn.top = py
+      glandBtn.left = halfW + 8
+      glandBtn.top = py
+      py = muscleBtn.bottom + 12
+
+      timingHeader.left = 0
+      timingHeader.top = py
+      py = timingHeader.bottom + 6
+      speedSlider.left = 0
+      speedSlider.top = py
+      py = speedSlider.bottom + 8
+      simSpeedSlider.left = 0
+      simSpeedSlider.top = py
+      py = simSpeedSlider.bottom + 8
+      awarenessSlider.left = 0
+      awarenessSlider.top = py
+      py = awarenessSlider.bottom + 12
+
+      displayHeader.left = 0
+      displayHeader.top = py
+      py = displayHeader.bottom + 6
+      labelsBtn.left = 0
+      labelsBtn.top = py
+      py = labelsBtn.bottom + gridGap
+      synapsesBtn.left = 0
+      synapsesBtn.top = py
+      py = synapsesBtn.bottom + gridGap
+      pathGlowBtn.left = 0
+      pathGlowBtn.top = py
+      py = pathGlowBtn.bottom + gridGap
+      autoRepeatBtn.left = 0
+      autoRepeatBtn.top = py
+      py = autoRepeatBtn.bottom + 12
+
+      simulationHeader.left = 0
+      simulationHeader.top = py
+      py = simulationHeader.bottom + 6
+      stimulateBtn.left = 0
+      stimulateBtn.top = py
+      this.playPauseBtn.left = halfW + 8
+      this.playPauseBtn.top = py
+      py = stimulateBtn.bottom + 8
+      stepOnceBtn.left = 0
+      stepOnceBtn.top = py
+      py = stepOnceBtn.bottom + 10
+
+      this.starsText.left = 0
+      this.starsText.top = py
+      py = this.starsText.bottom + 6
+      this.statusText.left = 0
+      this.statusText.top = py
+      py = this.statusText.bottom + 6
+      this.trialText.left = 0
+      this.trialText.top = py
+      py = this.trialText.bottom + 10
+
+      learnTip.left = 0
+      learnTip.top = py
+      py = learnTip.bottom + 4
+      bottomPad.top = py
+    }
+    relayoutPanel()
+
+    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 56)
+    scroller.left = 12
+    scroller.top = 38
+    card.content.addChild(scroller)
 
     this.addChild(
       new ResetAllButton({
@@ -727,6 +1018,48 @@ export class ReflexArcScreenView extends ScreenView {
       this.updateGuidance()
     }
 
+    const syncSynapses = () => {
+      this.synapseLayer.removeAllChildren()
+      if (!model.showSynapsesProperty.value) {
+        this.synapseLayer.visible = false
+        return
+      }
+      this.synapseLayer.visible = true
+      const via = model.viaBrainProperty.value
+      const points: Pt[] = [spine, effector]
+      if (via) {
+        points.push(brain)
+      }
+      for (const pt of points) {
+        this.synapseLayer.addChild(
+          new Circle(5, {
+            fill: '#f1c40f',
+            stroke: '#b7950b',
+            lineWidth: 1.5,
+            centerX: pt.x,
+            centerY: pt.y,
+          }),
+        )
+      }
+    }
+
+    const syncLabelVisibility = () => {
+      const show = model.showLabelsProperty.value
+      this.sensoryLabel.visible = show
+      this.motorLabel.visible = show
+      this.toBrainLabel.visible = show && model.viaBrainProperty.value
+      for (const label of this.stepLabels) {
+        label.visible = show
+      }
+    }
+
+    const syncEffector = () => {
+      const isMuscle = model.effectorTypeProperty.value === 'muscle'
+      this.effectorNode.fill = isMuscle ? '#e74c3c' : '#9b59b6'
+      muscleBtn.setSelected(isMuscle)
+      glandBtn.setSelected(!isMuscle)
+    }
+
     const syncPathway = () => {
       const via = model.viaBrainProperty.value
       this.pathLayer.removeAllChildren()
@@ -756,8 +1089,9 @@ export class ReflexArcScreenView extends ScreenView {
         : ReflexArcStrings.brainOffStringProperty.value
       this.brainLabel.centerX = brain.x
       this.viaBrainButton.setSelected(via)
-      this.toBrainLabel.visible = via
       this.stepLabels[2].opacity = via ? 1 : 0.35
+      syncLabelVisibility()
+      syncSynapses()
       this.completedLayer.removeAllChildren()
       this.signalDot.visible = false
       this.signalGlow.visible = false
@@ -788,6 +1122,40 @@ export class ReflexArcScreenView extends ScreenView {
     model.soundEnabledProperty.link((on) => sounds.setEnabled(on))
     model.viaBrainProperty.link(syncPathway)
     model.challengeProperty.link(syncChallenge)
+    model.showLabelsProperty.link(() => {
+      syncLabelVisibility()
+      labelsBtn.setLabel(
+        model.showLabelsProperty.value
+          ? ReflexArcStrings.labelsOnStringProperty.value
+          : ReflexArcStrings.labelsOffStringProperty.value,
+      )
+      labelsBtn.setSelected(model.showLabelsProperty.value)
+    })
+    model.showSynapsesProperty.link(() => {
+      syncSynapses()
+      synapsesBtn.setLabel(
+        model.showSynapsesProperty.value
+          ? ReflexArcStrings.synapsesOnStringProperty.value
+          : ReflexArcStrings.synapsesOffStringProperty.value,
+      )
+      synapsesBtn.setSelected(model.showSynapsesProperty.value)
+    })
+    model.showPathGlowProperty.link((on) => {
+      pathGlowBtn.setLabel(
+        on ? ReflexArcStrings.pathGlowOnStringProperty.value : ReflexArcStrings.pathGlowOffStringProperty.value,
+      )
+      pathGlowBtn.setSelected(on)
+    })
+    model.autoRepeatProperty.link((on) => {
+      autoRepeatBtn.setLabel(
+        on ? ReflexArcStrings.autoRepeatOnStringProperty.value : ReflexArcStrings.autoRepeatOffStringProperty.value,
+      )
+      autoRepeatBtn.setSelected(on)
+    })
+    model.stimulusTypeProperty.link((type) => {
+      stimulusBtns.forEach((btn, i) => btn.setSelected(stimulusDefs[i].id === type))
+    })
+    model.effectorTypeProperty.link(syncEffector)
     model.statusProperty.link((status) => {
       this.statusText.string = status
     })
@@ -845,6 +1213,9 @@ export class ReflexArcScreenView extends ScreenView {
     syncChallenge()
     syncStars()
     syncPlayPause()
+    syncLabelVisibility()
+    syncSynapses()
+    syncEffector()
   }
 
   private showTipCard(text: string): void {
@@ -1094,13 +1465,19 @@ export class ReflexArcScreenView extends ScreenView {
     )
 
     this.signalDot.visible = true
-    this.signalGlow.visible = true
     this.signalDot.centerX = pos.x
     this.signalDot.centerY = pos.y
     this.signalGlow.centerX = pos.x
     this.signalGlow.centerY = pos.y
-    this.signalGlow.radius = 14 + 4 * Math.sin(this.pulse * 8)
-    this.signalGlow.opacity = 0.7 + 0.3 * Math.sin(this.pulse * 8)
+    if (this.model.showPathGlowProperty.value) {
+      this.signalGlow.visible = true
+      this.signalGlow.radius = 14 + 4 * Math.sin(this.pulse * 8)
+      this.signalGlow.opacity = 0.7 + 0.3 * Math.sin(this.pulse * 8)
+    }
+    else {
+      this.signalGlow.visible = false
+      this.signalGlow.opacity = 0
+    }
     this.signalTrail.push(pos.x, pos.y, 6)
     this.progressText.visible = true
     this.progressText.string = `${Math.round(progress * 100)}%`

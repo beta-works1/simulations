@@ -50,11 +50,21 @@ export class BrainMappingModel implements TModel {
   /** Ecology-style sound toggle, mirrors reflex-arc / neuron-signal. */
   public readonly soundEnabledProperty: BooleanProperty
 
+  public readonly showBordersProperty: BooleanProperty
+  public readonly showCalloutsProperty: BooleanProperty
+  public readonly showHomunculusProperty: BooleanProperty
+  public readonly difficultyProperty: NumberProperty
+  public readonly pulseSpeedProperty: NumberProperty
+  public readonly labelScaleProperty: NumberProperty
+  public readonly autoTourProperty: BooleanProperty
+
   private readonly explored = new Set<BrainRegionId>(['frontal'])
   private readonly quizCorrect = new Set<BrainRegionId>()
   private readonly missionParts = new Set<BrainPart>(['cerebrum'])
   private readonly scenarioFound = new Set<BrainRegionId>()
   private time = 0
+  private autoTourTimer = 0
+  private autoTourIndex = 0
 
   public constructor() {
     this.modeProperty = new Property<BrainMode>('study')
@@ -81,6 +91,14 @@ export class BrainMappingModel implements TModel {
     this.scenarioProgressProperty = new NumberProperty(0)
     this.scenarioCompleteProperty = new BooleanProperty(false)
     this.soundEnabledProperty = new BooleanProperty(true)
+
+    this.showBordersProperty = new BooleanProperty(true)
+    this.showCalloutsProperty = new BooleanProperty(true)
+    this.showHomunculusProperty = new BooleanProperty(false)
+    this.difficultyProperty = new NumberProperty(1)
+    this.pulseSpeedProperty = new NumberProperty(1)
+    this.labelScaleProperty = new NumberProperty(1)
+    this.autoTourProperty = new BooleanProperty(false)
   }
 
   public currentQuestion(): QuizQuestion {
@@ -193,8 +211,14 @@ export class BrainMappingModel implements TModel {
       this.feedbackUntilProperty.value = this.time + 1.6
       const answer = BRAIN_REGIONS.find((r) => r.id === q.answerId)
       this.statusProperty.value = `Not quite — ${answer?.name ?? ''}`
-      this.revealCorrectIdProperty.value = q.answerId
-      this.revealUntilProperty.value = this.time + 1.2
+      if (this.difficultyProperty.value >= 2) {
+        this.revealCorrectIdProperty.value = q.answerId
+        this.revealUntilProperty.value = this.time + 0.45
+      }
+      else {
+        this.revealCorrectIdProperty.value = q.answerId
+        this.revealUntilProperty.value = this.time + 1.2
+      }
     }
     this.recomputeStars()
   }
@@ -247,6 +271,23 @@ export class BrainMappingModel implements TModel {
     if (this.revealCorrectIdProperty.value !== null && this.time >= this.revealUntilProperty.value) {
       this.revealCorrectIdProperty.value = null
     }
+
+    if (this.autoTourProperty.value && this.modeProperty.value === 'study') {
+      this.autoTourTimer += dt
+      const interval = 2.5 / Math.max(0.4, this.pulseSpeedProperty.value)
+      if (this.autoTourTimer >= interval) {
+        this.autoTourTimer = 0
+        this.autoTourIndex = (this.autoTourIndex + 1) % BRAIN_REGIONS.length
+        const next = BRAIN_REGIONS[this.autoTourIndex]
+        this.selectedProperty.value = next.id
+        this.explored.add(next.id)
+        this.exploredCountProperty.value = this.explored.size
+        if (this.explored.size >= 4) {
+          this.quizUnlockedProperty.value = true
+        }
+        this.refreshStatus()
+      }
+    }
   }
 
   public reset(): void {
@@ -276,6 +317,15 @@ export class BrainMappingModel implements TModel {
     this.scenarioProgressProperty.reset()
     this.scenarioCompleteProperty.reset()
     this.soundEnabledProperty.reset()
+    this.showBordersProperty.reset()
+    this.showCalloutsProperty.reset()
+    this.showHomunculusProperty.reset()
+    this.difficultyProperty.reset()
+    this.pulseSpeedProperty.reset()
+    this.labelScaleProperty.reset()
+    this.autoTourProperty.reset()
+    this.autoTourTimer = 0
+    this.autoTourIndex = 0
     this.time = 0
     this.refreshStatus()
   }

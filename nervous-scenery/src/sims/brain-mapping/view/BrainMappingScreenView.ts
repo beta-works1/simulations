@@ -28,6 +28,7 @@ import { RippleFX } from '../../../shared/ui/RippleFX.js'
 import { TeachingTriad } from '../../../shared/ui/TeachingTriad.js'
 import { HistoryChart } from '../../../shared/ui/HistoryChart.js'
 import { BrainMappingStrings } from '../BrainMappingStrings.js'
+import { controlSection } from '../../../shared/ui/controlPanelBits.js'
 
 type SelfOptions = EmptySelfOptions
 type Options = SelfOptions & ScreenViewOptions
@@ -65,6 +66,11 @@ export class BrainMappingScreenView extends ScreenView {
   private readonly scenarioBtn: SoftButton
   private readonly tipsBtn: SoftButton
   private readonly soundBtn: SoftButton
+  private readonly bordersBtn: SoftButton
+  private readonly calloutsBtn: SoftButton
+  private readonly homunculusBtn: SoftButton
+  private readonly autoTourBtn: SoftButton
+  private readonly homunculusTip: Text
   private readonly filterButtons = new Map<PartFilterId, SoftButton>()
   private readonly regionButtons = new Map<BrainRegionId, SoftButton>()
   private readonly checklistRows = new Map<BrainRegionId, Text>()
@@ -233,6 +239,17 @@ export class BrainMappingScreenView extends ScreenView {
     this.labelBadge.addChild(this.labelText)
     brainRoot.addChild(this.labelBadge)
 
+    this.homunculusTip = new Text(BrainMappingStrings.homunculusTipStringProperty.value, {
+      font: new PhetFont({ size: 11, weight: 'bold' }),
+      fill: '#5b21b6',
+      centerX: BRAIN_REGIONS.find((r) => r.id === 'parietal')!.label.x,
+      centerY: BRAIN_REGIONS.find((r) => r.id === 'parietal')!.label.y + 36,
+      maxWidth: 120,
+      visible: false,
+      pickable: false,
+    })
+    brainRoot.addChild(this.homunculusTip)
+
     this.quizPrompt = new Text('', {
       font: new PhetFont({ size: 15, weight: 'bold' }),
       fill: '#fff',
@@ -285,6 +302,9 @@ export class BrainMappingScreenView extends ScreenView {
     const panelContent = new Node()
     const tipWidth = rightW - 48
     const modeBtnW = rightW - 40
+
+    const modesSection = controlSection(BrainMappingStrings.sectionModesStringProperty.value, modeBtnW)
+    panelContent.addChild(modesSection)
 
     this.studyBtn = new SoftButton(BrainMappingStrings.studyStringProperty.value, () => {
       model.setMode('study')
@@ -339,6 +359,24 @@ export class BrainMappingScreenView extends ScreenView {
     this.soundBtn.left = 4
     panelContent.addChild(this.soundBtn)
 
+    const displaySection = controlSection(BrainMappingStrings.sectionDisplayStringProperty.value, modeBtnW)
+    panelContent.addChild(displaySection)
+
+    this.bordersBtn = new SoftButton(BrainMappingStrings.bordersOnStringProperty.value, () => {
+      model.showBordersProperty.value = !model.showBordersProperty.value
+    }, { width: modeBtnW, height: 32, fill: '#475569', selected: true, fontSize: 13, onSound: () => this.sounds.softClick() })
+    panelContent.addChild(this.bordersBtn)
+
+    this.calloutsBtn = new SoftButton(BrainMappingStrings.calloutsOnStringProperty.value, () => {
+      model.showCalloutsProperty.value = !model.showCalloutsProperty.value
+    }, { width: modeBtnW, height: 32, fill: '#6366f1', selected: true, fontSize: 13, onSound: () => this.sounds.softClick() })
+    panelContent.addChild(this.calloutsBtn)
+
+    this.homunculusBtn = new SoftButton(BrainMappingStrings.homunculusOnStringProperty.value, () => {
+      model.showHomunculusProperty.value = !model.showHomunculusProperty.value
+    }, { width: modeBtnW, height: 32, fill: '#8b5cf6', selected: false, fontSize: 13, onSound: () => this.sounds.softClick() })
+    panelContent.addChild(this.homunculusBtn)
+
     const glowSlider = new DepthSlider(model.glowIntensityProperty, {
       min: 0.4,
       max: 1.2,
@@ -350,6 +388,73 @@ export class BrainMappingScreenView extends ScreenView {
     })
     glowSlider.left = 4
     panelContent.addChild(glowSlider)
+
+    const pulseSpeedSlider = new DepthSlider(model.pulseSpeedProperty, {
+      min: 0.4,
+      max: 2,
+      width: modeBtnW,
+      label: BrainMappingStrings.pulseSpeedStringProperty.value,
+      format: (n) => `${n.toFixed(1)}×`,
+      fill: '#ec4899',
+      onTick: () => this.sounds.sliderTick(),
+    })
+    pulseSpeedSlider.left = 4
+    panelContent.addChild(pulseSpeedSlider)
+
+    const labelScaleSlider = new DepthSlider(model.labelScaleProperty, {
+      min: 0.8,
+      max: 1.4,
+      width: modeBtnW,
+      label: BrainMappingStrings.labelScaleStringProperty.value,
+      format: (n) => `${n.toFixed(1)}×`,
+      fill: '#14b8a6',
+      onTick: () => this.sounds.sliderTick(),
+    })
+    labelScaleSlider.left = 4
+    panelContent.addChild(labelScaleSlider)
+
+    const scenarioSection = controlSection(BrainMappingStrings.sectionScenariosStringProperty.value, modeBtnW)
+    panelContent.addChild(scenarioSection)
+
+    const scenarioHalfW = Math.floor((modeBtnW - 8) / 2)
+    const scenarioBikeBtn = new SoftButton(BrainMappingStrings.scenarioBikeStringProperty.value, () => {
+      model.setMode('scenario')
+    }, { width: modeBtnW, height: 32, fill: '#f59e0b', fontSize: 12, onSound: () => this.sounds.button() })
+    panelContent.addChild(scenarioBikeBtn)
+
+    const scenarioHearingBtn = new SoftButton(BrainMappingStrings.scenarioHearingStringProperty.value, () => {
+      model.setMode('study')
+      model.selectRegion('temporal')
+      model.statusProperty.value = BrainMappingStrings.statusHearingStringProperty.value
+    }, { width: scenarioHalfW, height: 32, fill: '#a855f7', fontSize: 11, onSound: () => this.sounds.button() })
+    panelContent.addChild(scenarioHearingBtn)
+
+    const scenarioCatchBtn = new SoftButton(BrainMappingStrings.scenarioCatchStringProperty.value, () => {
+      model.setMode('study')
+      model.selectRegion('cerebellum')
+      model.statusProperty.value = BrainMappingStrings.statusCatchStringProperty.value
+    }, { width: scenarioHalfW, height: 32, fill: '#0ea5e9', fontSize: 11, onSound: () => this.sounds.button() })
+    panelContent.addChild(scenarioCatchBtn)
+
+    const quizSettingsSection = controlSection(BrainMappingStrings.sectionQuizSettingsStringProperty.value, modeBtnW)
+    panelContent.addChild(quizSettingsSection)
+
+    const difficultySlider = new DepthSlider(model.difficultyProperty, {
+      min: 1,
+      max: 2,
+      width: modeBtnW,
+      label: BrainMappingStrings.difficultyStringProperty.value,
+      format: (n) => (n >= 1.5 ? 'Hard' : 'Easy'),
+      fill: '#ef4444',
+      onTick: () => this.sounds.sliderTick(),
+    })
+    difficultySlider.left = 4
+    panelContent.addChild(difficultySlider)
+
+    this.autoTourBtn = new SoftButton(BrainMappingStrings.autoTourOnStringProperty.value, () => {
+      model.autoTourProperty.value = !model.autoTourProperty.value
+    }, { width: modeBtnW, height: 32, fill: '#059669', selected: false, fontSize: 13, onSound: () => this.sounds.softClick() })
+    panelContent.addChild(this.autoTourBtn)
 
     const filterLabel = new Text(BrainMappingStrings.filterLabelStringProperty.value, {
       font: new PhetFont({ size: 13, weight: 'bold' }),
@@ -475,6 +580,9 @@ export class BrainMappingScreenView extends ScreenView {
 
     const relayoutPanel = () => {
       let y = 8
+      modesSection.left = 4
+      modesSection.top = y
+      y = modesSection.bottom + 6
       this.studyBtn.top = y
       y = this.studyBtn.bottom + 6
       this.quizBtn.top = y
@@ -492,8 +600,46 @@ export class BrainMappingScreenView extends ScreenView {
       y = this.tipsBtn.bottom + 6
       this.soundBtn.top = y
       y = this.soundBtn.bottom + 10
+
+      displaySection.left = 4
+      displaySection.top = y
+      y = displaySection.bottom + 6
+      this.bordersBtn.left = 4
+      this.bordersBtn.top = y
+      y = this.bordersBtn.bottom + 6
+      this.calloutsBtn.left = 4
+      this.calloutsBtn.top = y
+      y = this.calloutsBtn.bottom + 6
+      this.homunculusBtn.left = 4
+      this.homunculusBtn.top = y
+      y = this.homunculusBtn.bottom + 8
       glowSlider.top = y
-      y = glowSlider.bottom + 12
+      y = glowSlider.bottom + 10
+      pulseSpeedSlider.top = y
+      y = pulseSpeedSlider.bottom + 10
+      labelScaleSlider.top = y
+      y = labelScaleSlider.bottom + 12
+
+      scenarioSection.left = 4
+      scenarioSection.top = y
+      y = scenarioSection.bottom + 6
+      scenarioBikeBtn.left = 4
+      scenarioBikeBtn.top = y
+      y = scenarioBikeBtn.bottom + 6
+      scenarioHearingBtn.left = 4
+      scenarioHearingBtn.top = y
+      scenarioCatchBtn.left = 4 + scenarioHalfW + 8
+      scenarioCatchBtn.top = y
+      y = scenarioHearingBtn.bottom + 12
+
+      quizSettingsSection.left = 4
+      quizSettingsSection.top = y
+      y = quizSettingsSection.bottom + 6
+      difficultySlider.top = y
+      y = difficultySlider.bottom + 8
+      this.autoTourBtn.left = 4
+      this.autoTourBtn.top = y
+      y = this.autoTourBtn.bottom + 12
 
       filterLabel.top = y
       y = filterLabel.bottom + 6
@@ -554,7 +700,7 @@ export class BrainMappingScreenView extends ScreenView {
       this.detailBody.top = y
       y = this.detailBody.bottom + 8
       this.detailExamples.top = y
-      y = this.detailExamples.bottom + 12
+      y = this.detailExamples.visible ? this.detailExamples.bottom + 12 : this.detailBody.bottom + 12
 
       learnTip.top = y
       bottomPad.top = learnTip.bottom + 4
@@ -607,12 +753,21 @@ export class BrainMappingScreenView extends ScreenView {
     const syncSelection = () => {
       const selected = model.selectedProperty.value
       const glow = model.glowIntensityProperty.value
+      const showBorders = model.showBordersProperty.value
       for (const region of BRAIN_REGIONS) {
         const path = this.regionPaths.get(region.id)!
         const halo = this.regionHalos.get(region.id)!
         const active = region.id === selected
         path.fill = active ? region.fillActive : region.fill
-        path.stroke = active ? region.accent : 'rgba(255,255,255,0.65)'
+        if (active) {
+          path.stroke = region.accent
+        }
+        else if (showBorders) {
+          path.stroke = 'rgba(255,255,255,0.65)'
+        }
+        else {
+          path.stroke = 'transparent'
+        }
         path.lineWidth = active ? 3 : 1.8
         // Only the freshly-selected halo snaps up; deselected halos damp back down in step().
         if (active) {
@@ -637,9 +792,54 @@ export class BrainMappingScreenView extends ScreenView {
 
       this.labelFlash = 0.32
       fillDetail(region)
+      syncCallouts()
       syncPartFilterOpacity()
       updateTriad()
       relayoutPanel()
+    }
+
+    const syncCallouts = () => {
+      const show = model.showCalloutsProperty.value
+      this.detailTitle.visible = show
+      this.detailPart.visible = show
+      this.detailBody.visible = show
+      this.detailExamples.visible = show
+      relayoutPanel()
+    }
+
+    const syncDisplayToggles = () => {
+      const borders = model.showBordersProperty.value
+      this.bordersBtn.setLabel(
+        borders
+          ? BrainMappingStrings.bordersOnStringProperty.value
+          : BrainMappingStrings.bordersOffStringProperty.value,
+      )
+      this.bordersBtn.setSelected(borders)
+
+      const callouts = model.showCalloutsProperty.value
+      this.calloutsBtn.setLabel(
+        callouts
+          ? BrainMappingStrings.calloutsOnStringProperty.value
+          : BrainMappingStrings.calloutsOffStringProperty.value,
+      )
+      this.calloutsBtn.setSelected(callouts)
+
+      const hom = model.showHomunculusProperty.value
+      this.homunculusBtn.setLabel(
+        hom
+          ? BrainMappingStrings.homunculusOnStringProperty.value
+          : BrainMappingStrings.homunculusOffStringProperty.value,
+      )
+      this.homunculusBtn.setSelected(hom)
+      this.homunculusTip.visible = hom
+
+      const tour = model.autoTourProperty.value
+      this.autoTourBtn.setLabel(
+        tour
+          ? BrainMappingStrings.autoTourOnStringProperty.value
+          : BrainMappingStrings.autoTourOffStringProperty.value,
+      )
+      this.autoTourBtn.setSelected(tour)
     }
 
     const syncPartFilterOpacity = () => {
@@ -864,6 +1064,16 @@ export class BrainMappingScreenView extends ScreenView {
     model.tipsVisibleProperty.link(syncTips)
     model.soundEnabledProperty.link(syncSound)
     model.glowIntensityProperty.link(() => syncSelection())
+    model.showBordersProperty.link(() => syncSelection())
+    model.showCalloutsProperty.link(syncCallouts)
+    model.showHomunculusProperty.link(syncDisplayToggles)
+    model.autoTourProperty.link(syncDisplayToggles)
+    model.showBordersProperty.link(syncDisplayToggles)
+    model.showCalloutsProperty.link(syncDisplayToggles)
+    model.labelScaleProperty.link(() => {
+      const base = model.labelScaleProperty.value
+      this.labelBadge.setScaleMagnitude(base)
+    })
     model.revealCorrectIdProperty.link(() => this.applyReveal())
     model.quizUnlockedProperty.link(() => updateTriad())
 
@@ -888,18 +1098,21 @@ export class BrainMappingScreenView extends ScreenView {
     syncPartFilter()
     syncChecklist()
     syncTips()
+    syncDisplayToggles()
+    syncCallouts()
   }
 
   /** Overlays a gold outline on the correct region while a wrong quiz answer's reveal window is active. */
   private applyReveal(): void {
     const revealId = this.model.revealCorrectIdProperty.value
+    const showBorders = this.model.showBordersProperty.value
     for (const [id, path] of this.regionPaths) {
       if (id === revealId) {
         path.stroke = REVEAL_STROKE
         path.lineWidth = 5
       }
       else if (id !== this.model.selectedProperty.value) {
-        path.stroke = 'rgba(255,255,255,0.65)'
+        path.stroke = showBorders ? 'rgba(255,255,255,0.65)' : 'transparent'
         path.lineWidth = 1.8
       }
     }
@@ -924,15 +1137,16 @@ export class BrainMappingScreenView extends ScreenView {
     const filter = this.model.partFilterProperty.value
     const glow = this.model.glowIntensityProperty.value
     const revealId = this.model.revealCorrectIdProperty.value
+    const pulseRate = this.model.pulseSpeedProperty.value
 
     // Region path opacity + a subtle selection scale-pulse (damped back to 1× when deselected).
     for (const [id, p] of this.regionPaths) {
       const center = this.regionCenter.get(id)!
       if (id === selected) {
         if (revealId !== selected) {
-          p.opacity = 0.82 + 0.18 * Math.sin(this.pulse * 3.0)
+          p.opacity = 0.82 + 0.18 * Math.sin(this.pulse * 3.0 * pulseRate)
         }
-        const scale = 1 + 0.018 * Math.sin(this.pulse * 3.0)
+        const scale = 1 + 0.018 * Math.sin(this.pulse * 3.0 * pulseRate)
         p.setScaleMagnitude(scale)
       }
       else {
@@ -948,10 +1162,10 @@ export class BrainMappingScreenView extends ScreenView {
     // Halo opacity: selected/revealed regions pulse; everyone else damps toward its hover target.
     for (const [id, halo] of this.regionHalos) {
       if (id === selected) {
-        halo.opacity = (0.16 + 0.1 * Math.sin(this.pulse * 3.0)) * glow
+        halo.opacity = (0.16 + 0.1 * Math.sin(this.pulse * 3.0 * pulseRate)) * glow
       }
       else if (id === revealId) {
-        halo.opacity = (0.3 + 0.2 * Math.sin(this.pulse * 8.0)) * glow
+        halo.opacity = (0.3 + 0.2 * Math.sin(this.pulse * 8.0 * pulseRate)) * glow
       }
       else {
         const target = (this.haloTarget.get(id) ?? 0) * glow
@@ -963,10 +1177,10 @@ export class BrainMappingScreenView extends ScreenView {
       this.labelFlash = Math.max(0, this.labelFlash - dt)
       const t = this.labelFlash / 0.32
       const scale = 1 + 0.22 * t
-      this.labelBadge.setScaleMagnitude(scale)
+      this.labelBadge.setScaleMagnitude(this.model.labelScaleProperty.value * scale)
     }
     else {
-      this.labelBadge.setScaleMagnitude(1)
+      this.labelBadge.setScaleMagnitude(this.model.labelScaleProperty.value)
     }
   }
 

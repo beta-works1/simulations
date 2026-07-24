@@ -2,11 +2,11 @@ import { BooleanProperty, NumberProperty, Property, StringProperty } from 'scene
 import { TModel } from 'scenerystack/joist'
 
 export type ReflexChallenge = 'explore' | 'compare' | 'scenario' | 'knee'
+export type StimulusType = 'touch' | 'heat' | 'pinch' | 'stretch'
+export type EffectorType = 'muscle' | 'gland'
 
 /**
- * Reflex arc pathway — ecology-depth model with speed scrub, compare challenge,
- * hot-iron scenario, knee-jerk scenario, pause-mid-travel, stars, tips, and
- * trial-duration history (spinal vs brain).
+ * Dense ecology-style control surface for the reflex arc (Ch1 carbon parity).
  */
 export class ReflexArcModel implements TModel {
   public readonly viaBrainProperty: BooleanProperty
@@ -23,26 +23,34 @@ export class ReflexArcModel implements TModel {
   public readonly statusProperty: StringProperty
   public readonly junctionIndexProperty: NumberProperty
   public readonly soundEnabledProperty: BooleanProperty
-
-  /** Earned for: compare complete, correct quiz answer, scenario/knee finish. */
   public readonly starsProperty: NumberProperty
-
-  /** Bumped whenever the view should pop up a timed tip; read tipTextProperty for the copy. */
   public readonly tipsProperty: NumberProperty
   public readonly tipTextProperty: StringProperty
-
-  /** Bumped whenever the view should present the mini quiz. */
   public readonly quizPromptsProperty: NumberProperty
-
-  /** Most recent completed trial — bump trialCountProperty, then read the other two. */
   public readonly trialCountProperty: NumberProperty
   public readonly lastTrialDurationProperty: NumberProperty
   public readonly lastTrialViaBrainProperty: BooleanProperty
+
+  // ── Dense controls (Ch1 carbon-style) ────────────────────────────────────
+  public readonly stimulusTypeProperty: Property<StimulusType>
+  public readonly stimulusIntensityProperty: NumberProperty
+  public readonly receptorSensitivityProperty: NumberProperty
+  public readonly interneuronCountProperty: NumberProperty
+  public readonly awarenessDelayProperty: NumberProperty
+  public readonly simSpeedProperty: NumberProperty
+  public readonly showLabelsProperty: BooleanProperty
+  public readonly showSynapsesProperty: BooleanProperty
+  public readonly showPathGlowProperty: BooleanProperty
+  public readonly effectorTypeProperty: Property<EffectorType>
+  public readonly autoRepeatProperty: BooleanProperty
 
   private prevSegment = -1
   private scenarioTimer = 0
   private trialElapsed = 0
   private firstFireTipShown = false
+  private awarenessTimer = 0
+  private awaitingAwareness = false
+  private autoRepeatCooldown = 0
 
   public constructor() {
     this.viaBrainProperty = new BooleanProperty(false)
@@ -66,26 +74,71 @@ export class ReflexArcModel implements TModel {
     this.trialCountProperty = new NumberProperty(0)
     this.lastTrialDurationProperty = new NumberProperty(0)
     this.lastTrialViaBrainProperty = new BooleanProperty(false)
+
+    this.stimulusTypeProperty = new Property<StimulusType>('touch')
+    this.stimulusIntensityProperty = new NumberProperty(70)
+    this.receptorSensitivityProperty = new NumberProperty(1)
+    this.interneuronCountProperty = new NumberProperty(1)
+    this.awarenessDelayProperty = new NumberProperty(0.6)
+    this.simSpeedProperty = new NumberProperty(1)
+    this.showLabelsProperty = new BooleanProperty(true)
+    this.showSynapsesProperty = new BooleanProperty(true)
+    this.showPathGlowProperty = new BooleanProperty(true)
+    this.effectorTypeProperty = new Property<EffectorType>('muscle')
+    this.autoRepeatProperty = new BooleanProperty(false)
+  }
+
+  /** Effective conduction multiplier from intensity × sensitivity × interneuron lag. */
+  public effectiveSpeed(): number {
+    const intensity = 0.55 + (this.stimulusIntensityProperty.value / 100) * 0.7
+    const sens = Math.max(0.35, this.receptorSensitivityProperty.value)
+    const inter = 1 / (1 + this.interneuronCountProperty.value * 0.22)
+    const mono = this.interneuronCountProperty.value < 0.5 ? 1.25 : 1
+    return intensity * sens * inter * mono
   }
 
   public fire(): void {
+    // Weak stimulus + low sensitivity → refuse to fire (threshold teaching).
+    const drive = (this.stimulusIntensityProperty.value / 100) * this.receptorSensitivityProperty.value
+    if (drive < 0.28) {
+      this.statusProperty.value = 'Too weak — raise intensity or receptor sensitivity.'
+      this.showTip('Receptors need a strong enough stimulus to reach threshold and fire.')
+      return
+    }
+
+    if (this.interneuronCountProperty.value < 0.5) {
+      this.viaBrainProperty.value = false
+    }
+
     this.progressProperty.value = 0
     this.firedProperty.value = true
     this.runningProperty.value = true
     this.prevSegment = -1
     this.trialElapsed = 0
     this.junctionIndexProperty.value = -1
+    this.awaitingAwareness = false
+    this.awarenessTimer = 0
     this.statusProperty.value = this.viaBrainProperty.value
       ? 'Signal climbing toward the brain…'
       : 'Fast spinal reflex in progress…'
 
     if (!this.firstFireTipShown) {
       this.firstFireTipShown = true
-      this.showTip('Watch the gold dot race from receptor → spinal cord → effector (or up to the brain first, if toggled on).')
+      this.showTip('Watch the gold dot: receptor → spinal cord → effector. Toggle brain to compare timing.')
     }
   }
 
-  /** Pauses or resumes a signal that is mid-travel; fires fresh if nothing is running. */
+  public stepOnce(): void {
+    if (!this.firedProperty.value || this.progressProperty.value >= 1) {
+      this.fire()
+      return
+    }
+    this.runningProperty.value = true
+    this.step(0.12)
+    this.runningProperty.value = false
+    this.statusProperty.value = 'Stepped once — press Step again or Play.'
+  }
+
   public togglePlayPause(): void {
     if (!this.firedProperty.value || this.progressProperty.value >= 1) {
       this.fire()
@@ -98,11 +151,18 @@ export class ReflexArcModel implements TModel {
   }
 
   public tapSpinalCord(): void {
-    this.showTip('Interneurons live here! Inside the spinal cord they link the sensory (incoming) neuron straight to the motor (outgoing) neuron.')
-    this.statusProperty.value = 'Interneurons live here — connecting sensory input to motor output.'
+    this.showTip(
+      `Interneurons live here! Current count ≈ ${Math.round(this.interneuronCountProperty.value)}. ` +
+        '0 ≈ monosynaptic (knee-jerk). More interneurons = slightly slower relay.',
+    )
+    this.statusProperty.value = 'Interneurons connect sensory input to motor output.'
   }
 
   public setViaBrain(value: boolean): void {
+    if (value && this.interneuronCountProperty.value < 0.5) {
+      this.statusProperty.value = 'Monosynaptic mode (0 interneurons) stays spinal-only.'
+      return
+    }
     this.viaBrainProperty.value = value
     this.progressProperty.value = 0
     this.firedProperty.value = false
@@ -122,38 +182,63 @@ export class ReflexArcModel implements TModel {
     this.firedProperty.value = false
     this.runningProperty.value = false
     if (mode === 'compare') {
-      this.statusProperty.value = 'Compare challenge: fire once spinal, once via brain.'
+      this.statusProperty.value = 'Compare: fire once spinal, once via brain.'
     }
     else if (mode === 'scenario') {
-      this.statusProperty.value = 'Hot iron! Spinal reflex fires first — watch carefully.'
+      this.stimulusTypeProperty.value = 'heat'
+      this.stimulusIntensityProperty.value = 90
+      this.statusProperty.value = 'Hot iron! Spinal reflex fires first…'
       this.viaBrainProperty.value = false
       this.fire()
       this.scenarioPhaseProperty.value = 1
     }
     else if (mode === 'knee') {
-      this.statusProperty.value = 'Knee-jerk reflex — purely spinal, brain not needed!'
+      this.stimulusTypeProperty.value = 'stretch'
+      this.interneuronCountProperty.value = 0
       this.viaBrainProperty.value = false
-      this.showTip('Doctor\'s knee-tap stretches a muscle — the leg kicks back before your brain ever gets involved.')
+      this.statusProperty.value = 'Knee-jerk — monosynaptic, brain not needed!'
+      this.showTip("Doctor's knee-tap stretches a muscle — the kick returns before the brain gets involved.")
       this.fire()
     }
     else {
-      this.statusProperty.value = 'Explore freely — toggle brain and scrub signal speed.'
+      this.statusProperty.value = 'Explore — scrub every control and compare paths.'
     }
   }
 
   public step(dt: number): void {
-    if (this.challengeProperty.value === 'scenario') {
-      this.stepScenario(dt)
+    const scaledDt = dt * Math.max(0.25, this.simSpeedProperty.value)
+
+    if (this.awaitingAwareness) {
+      this.awarenessTimer += scaledDt
+      if (this.awarenessTimer >= this.awarenessDelayProperty.value) {
+        this.awaitingAwareness = false
+        this.statusProperty.value =
+          this.effectorTypeProperty.value === 'gland'
+            ? 'Gland responded — and now the brain “notices” the stimulus.'
+            : 'Muscle kicked — and now the brain “notices” the stimulus.'
+      }
     }
 
-    if (!this.runningProperty.value || !this.firedProperty.value || dt <= 0) {
+    if (this.challengeProperty.value === 'scenario') {
+      this.stepScenario(scaledDt)
+    }
+
+    if (this.autoRepeatProperty.value && !this.runningProperty.value && this.progressProperty.value >= 1) {
+      this.autoRepeatCooldown += scaledDt
+      if (this.autoRepeatCooldown > 0.85) {
+        this.autoRepeatCooldown = 0
+        this.fire()
+      }
+    }
+
+    if (!this.runningProperty.value || !this.firedProperty.value || scaledDt <= 0) {
       return
     }
 
-    this.trialElapsed += dt
+    this.trialElapsed += scaledDt
     const base = this.viaBrainProperty.value ? 0.34 : 0.68
-    const speed = base * Math.max(0.35, this.speedScaleProperty.value)
-    this.progressProperty.value = Math.min(1, this.progressProperty.value + dt * speed)
+    const speed = base * Math.max(0.35, this.speedScaleProperty.value) * this.effectiveSpeed()
+    this.progressProperty.value = Math.min(1, this.progressProperty.value + scaledDt * speed)
 
     const segments = this.viaBrainProperty.value ? 4 : 2
     const seg = Math.min(segments - 1, Math.floor(this.progressProperty.value * segments))
@@ -188,19 +273,24 @@ export class ReflexArcModel implements TModel {
     this.lastTrialViaBrainProperty.value = this.viaBrainProperty.value
     this.trialCountProperty.value += 1
 
+    const effectorWord = this.effectorTypeProperty.value === 'gland' ? 'Gland secreted' : 'Effector kicked'
     if (this.viaBrainProperty.value) {
       this.brainTrialsProperty.value += 1
-      this.statusProperty.value = 'Arrived via brain — slower, but you “noticed” it.'
+      this.statusProperty.value = `${effectorWord} via brain — slower, but you “noticed” it.`
     }
     else {
       this.spinalTrialsProperty.value += 1
-      this.statusProperty.value = 'Effector kicked! Fast spinal reflex finished.'
+      this.statusProperty.value = `${effectorWord}! Fast spinal reflex finished.`
+      if (this.awarenessDelayProperty.value > 0.05) {
+        this.awaitingAwareness = true
+        this.awarenessTimer = 0
+      }
     }
 
     if (this.challengeProperty.value === 'knee' && !this.kneeCompleteProperty.value) {
       this.kneeCompleteProperty.value = true
       this.starsProperty.value += 1
-      this.showTip('Knee-jerk complete! The spinal cord alone handled it — no brain needed for this one.')
+      this.showTip('Knee-jerk complete! Spinal cord alone — no brain needed.')
     }
 
     if (this.spinalTrialsProperty.value > 0 && this.brainTrialsProperty.value > 0) {
@@ -258,9 +348,23 @@ export class ReflexArcModel implements TModel {
     this.trialCountProperty.reset()
     this.lastTrialDurationProperty.reset()
     this.lastTrialViaBrainProperty.reset()
+    this.stimulusTypeProperty.reset()
+    this.stimulusIntensityProperty.reset()
+    this.receptorSensitivityProperty.reset()
+    this.interneuronCountProperty.reset()
+    this.awarenessDelayProperty.reset()
+    this.simSpeedProperty.reset()
+    this.showLabelsProperty.reset()
+    this.showSynapsesProperty.reset()
+    this.showPathGlowProperty.reset()
+    this.effectorTypeProperty.reset()
+    this.autoRepeatProperty.reset()
     this.prevSegment = -1
     this.scenarioTimer = 0
     this.trialElapsed = 0
     this.firstFireTipShown = false
+    this.awaitingAwareness = false
+    this.awarenessTimer = 0
+    this.autoRepeatCooldown = 0
   }
 }

@@ -8,8 +8,7 @@ export type LapResult = { time: number; myelinOn: boolean }
 const DEMYELINATION_SPEED_CAP = 0.6
 
 /**
- * Action potential along axon — saltatory hops, speed scrub, myelin race challenge,
- * a demyelination disease challenge, and ecology-style stars/quiz progression.
+ * Action potential along axon — dense ecology-style controls (carbon parity).
  */
 export class NeuronSignalModel implements TModel {
   public readonly myelinProperty: BooleanProperty
@@ -32,13 +31,28 @@ export class NeuronSignalModel implements TModel {
   public readonly lastLapResultProperty: Property<LapResult | null>
   public readonly soundEnabledProperty: BooleanProperty
 
+  // Dense controls
+  public readonly axonLengthProperty: NumberProperty
+  public readonly nodeCountProperty: NumberProperty
+  public readonly axonDiameterProperty: NumberProperty
+  public readonly thresholdProperty: NumberProperty
+  public readonly stimulusStrengthProperty: NumberProperty
+  public readonly synapseDelayProperty: NumberProperty
+  public readonly simSpeedProperty: NumberProperty
+  public readonly showPartsProperty: BooleanProperty
+  public readonly showAPTraceProperty: BooleanProperty
+  public readonly autoRepeatProperty: BooleanProperty
+  public readonly temperatureProperty: NumberProperty
+
   private raceClock = 0
   private lastHop = -1
-  private readonly nodeCount = 7
   private lapClock = 0
   private lapMyelinAtFire = true
   private triedMyelinOn = false
   private triedMyelinOff = false
+  private awaitingSynapse = false
+  private synapseTimer = 0
+  private autoRepeatCooldown = 0
 
   public constructor() {
     this.myelinProperty = new BooleanProperty(true)
@@ -51,7 +65,7 @@ export class NeuronSignalModel implements TModel {
     this.racePhaseProperty = new NumberProperty(0)
     this.hopIndexProperty = new NumberProperty(-1)
     this.arrivedProperty = new BooleanProperty(false)
-    this.statusProperty = new StringProperty('Fire a signal — toggle myelin to compare.')
+    this.statusProperty = new StringProperty('Fire a signal — scrub every control to compare.')
     this.showIonsProperty = new BooleanProperty(false)
     this.raceUnlockedProperty = new BooleanProperty(false)
     this.raceCompletedProperty = new BooleanProperty(false)
@@ -60,9 +74,38 @@ export class NeuronSignalModel implements TModel {
     this.fireCountProperty = new NumberProperty(0)
     this.lastLapResultProperty = new Property<LapResult | null>(null)
     this.soundEnabledProperty = new BooleanProperty(true)
+
+    this.axonLengthProperty = new NumberProperty(1)
+    this.nodeCountProperty = new NumberProperty(7)
+    this.axonDiameterProperty = new NumberProperty(1)
+    this.thresholdProperty = new NumberProperty(40)
+    this.stimulusStrengthProperty = new NumberProperty(80)
+    this.synapseDelayProperty = new NumberProperty(0.25)
+    this.simSpeedProperty = new NumberProperty(1)
+    this.showPartsProperty = new BooleanProperty(true)
+    this.showAPTraceProperty = new BooleanProperty(true)
+    this.autoRepeatProperty = new BooleanProperty(false)
+    this.temperatureProperty = new NumberProperty(37)
+  }
+
+  public nodeCount(): number {
+    return Math.max(3, Math.round(this.nodeCountProperty.value))
+  }
+
+  /** Conduction multiplier from diameter × temp × length inverse. */
+  public effectiveSpeed(): number {
+    const diam = 0.55 + this.axonDiameterProperty.value * 0.55
+    const tempFactor = 0.7 + ((this.temperatureProperty.value - 20) / 37) * 0.55
+    const lengthPenalty = 1 / Math.max(0.55, this.axonLengthProperty.value)
+    return diam * tempFactor * lengthPenalty
   }
 
   public fire(): void {
+    if (this.stimulusStrengthProperty.value < this.thresholdProperty.value) {
+      this.statusProperty.value = 'Below threshold — raise stimulus strength or lower threshold.'
+      return
+    }
+
     this.tProperty.value = 0
     this.runningProperty.value = true
     this.arrivedProperty.value = false
@@ -70,6 +113,8 @@ export class NeuronSignalModel implements TModel {
     this.hopIndexProperty.value = -1
     this.lapClock = 0
     this.lapMyelinAtFire = this.myelinProperty.value
+    this.awaitingSynapse = false
+    this.synapseTimer = 0
     this.fireCountProperty.value += 1
     this.registerTried()
     this.statusProperty.value = this.myelinProperty.value
@@ -80,6 +125,10 @@ export class NeuronSignalModel implements TModel {
   }
 
   public fireAt(t: number): void {
+    if (this.stimulusStrengthProperty.value < this.thresholdProperty.value) {
+      this.statusProperty.value = 'Below threshold — raise stimulus strength or lower threshold.'
+      return
+    }
     this.tProperty.value = Math.max(0, Math.min(0.98, t))
     this.runningProperty.value = true
     this.arrivedProperty.value = false
@@ -87,8 +136,24 @@ export class NeuronSignalModel implements TModel {
     this.hopIndexProperty.value = -1
     this.lapClock = 0
     this.lapMyelinAtFire = this.myelinProperty.value
+    this.awaitingSynapse = false
     this.fireCountProperty.value += 1
     this.registerTried()
+  }
+
+  public stepOnce(): void {
+    if (this.tProperty.value % 1 > 0.92 || !this.runningProperty.value) {
+      this.fire()
+      this.runningProperty.value = false
+      this.step(0.1)
+      this.runningProperty.value = false
+      return
+    }
+    const was = this.runningProperty.value
+    this.runningProperty.value = true
+    this.step(0.1)
+    this.runningProperty.value = was && false
+    this.statusProperty.value = 'Stepped once — press Step again or Play.'
   }
 
   private registerTried(): void {
@@ -153,7 +218,7 @@ export class NeuronSignalModel implements TModel {
       this.statusProperty.value = 'Demyelination challenge: disease strips the sheath — myelin locked OFF.'
     }
     else {
-      this.statusProperty.value = 'Explore — scrub speed, tap nodes, toggle myelin.'
+      this.statusProperty.value = 'Explore — scrub every axon control and compare.'
     }
   }
 
@@ -166,33 +231,50 @@ export class NeuronSignalModel implements TModel {
     if (!this.myelinProperty.value) {
       return t
     }
-    const n = this.nodeCount
+    const n = this.nodeCount()
     const scaled = t * n
     const i = Math.min(n - 1, Math.floor(scaled))
     const f = scaled - i
-    // Ease hop: spend time near node, then leap
     const eased = f < 0.22 ? 0 : smoothHop((f - 0.22) / 0.78)
     return (i + eased) / n
   }
 
   public step(dt: number): void {
+    const scaledDt = dt * Math.max(0.25, this.simSpeedProperty.value)
+
     if (this.challengeProperty.value === 'demyelination' && this.speedScaleProperty.value > DEMYELINATION_SPEED_CAP) {
       this.speedScaleProperty.value = DEMYELINATION_SPEED_CAP
     }
 
-    if (!this.runningProperty.value || dt <= 0) {
+    if (this.awaitingSynapse) {
+      this.synapseTimer += scaledDt
+      if (this.synapseTimer >= this.synapseDelayProperty.value) {
+        this.awaitingSynapse = false
+        this.statusProperty.value = 'Neurotransmitters crossed the gap — next neuron can fire!'
+      }
+    }
+
+    if (this.autoRepeatProperty.value && this.arrivedProperty.value && !this.runningProperty.value) {
+      this.autoRepeatCooldown += scaledDt
+      if (this.autoRepeatCooldown > 0.9) {
+        this.autoRepeatCooldown = 0
+        this.fire()
+      }
+    }
+
+    if (!this.runningProperty.value || scaledDt <= 0) {
       return
     }
 
     const demyelinated = this.challengeProperty.value === 'demyelination'
     const base = this.myelinProperty.value ? 1.25 : (demyelinated ? 0.2 : 0.36)
-    const speed = base * Math.max(0.35, this.speedScaleProperty.value)
+    const speed = base * Math.max(0.35, this.speedScaleProperty.value) * this.effectiveSpeed()
     const prev = this.tProperty.value
-    this.tProperty.value += dt * speed
-    this.lapClock += dt
+    this.tProperty.value += scaledDt * speed
+    this.lapClock += scaledDt
 
     if (this.myelinProperty.value) {
-      const hop = Math.floor((this.tProperty.value % 1) * this.nodeCount)
+      const hop = Math.floor((this.tProperty.value % 1) * this.nodeCount())
       if (hop !== this.lastHop && this.tProperty.value % 1 > 0.01) {
         this.hopIndexProperty.value = hop
         this.lastHop = hop
@@ -200,10 +282,9 @@ export class NeuronSignalModel implements TModel {
     }
 
     if (this.challengeProperty.value === 'race' && this.racePhaseProperty.value > 0) {
-      this.raceClock += dt
+      this.raceClock += scaledDt
     }
 
-    // Arrival once per lap
     if (prev % 1 < 0.92 && this.tProperty.value % 1 >= 0.92) {
       this.arrivedProperty.value = true
       this.onArrive()
@@ -215,6 +296,12 @@ export class NeuronSignalModel implements TModel {
 
   private onArrive(): void {
     this.lastLapResultProperty.value = { time: this.lapClock, myelinOn: this.lapMyelinAtFire }
+
+    if (this.synapseDelayProperty.value > 0.05) {
+      this.awaitingSynapse = true
+      this.synapseTimer = 0
+      this.runningProperty.value = this.challengeProperty.value === 'race'
+    }
 
     if (this.challengeProperty.value === 'race') {
       if (this.racePhaseProperty.value === 1) {
@@ -240,9 +327,13 @@ export class NeuronSignalModel implements TModel {
     }
     else if (this.challengeProperty.value === 'demyelination') {
       this.statusProperty.value = 'Signal survived — but slowly. Real MS can also block signals entirely.'
+      this.runningProperty.value = false
     }
     else {
-      this.statusProperty.value = 'Signal reached the synaptic terminal — transmitters release!'
+      this.statusProperty.value = this.awaitingSynapse
+        ? 'Reached terminal — waiting across the synaptic cleft…'
+        : 'Signal reached the synaptic terminal — transmitters release!'
+      this.runningProperty.value = false
     }
   }
 
@@ -283,13 +374,27 @@ export class NeuronSignalModel implements TModel {
     this.fireCountProperty.reset()
     this.lastLapResultProperty.value = null
     this.soundEnabledProperty.reset()
-    this.statusProperty.value = 'Fire a signal — toggle myelin to compare.'
+    this.axonLengthProperty.reset()
+    this.nodeCountProperty.reset()
+    this.axonDiameterProperty.reset()
+    this.thresholdProperty.reset()
+    this.stimulusStrengthProperty.reset()
+    this.synapseDelayProperty.reset()
+    this.simSpeedProperty.reset()
+    this.showPartsProperty.reset()
+    this.showAPTraceProperty.reset()
+    this.autoRepeatProperty.reset()
+    this.temperatureProperty.reset()
+    this.statusProperty.value = 'Fire a signal — scrub every control to compare.'
     this.raceClock = 0
     this.lastHop = -1
     this.lapClock = 0
     this.lapMyelinAtFire = true
     this.triedMyelinOn = false
     this.triedMyelinOff = false
+    this.awaitingSynapse = false
+    this.synapseTimer = 0
+    this.autoRepeatCooldown = 0
   }
 }
 
