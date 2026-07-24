@@ -21,5 +21,14 @@
   "unmyelinated": "Unmyelinated — continuous conduction",
   "speed": "Relative speed",
   "tapNode": "Tap a blue node to restart from here",
-  "learnMore": "Myelin is fatty insulation. Gaps (nodes of Ranvier) let the impulse “jump.”"
+  "learnMore": "Myelin is fatty insulation. Gaps (nodes of Ranvier) let the impulse “jump.”",
+  "explore": "Explore",
+  "race": "Myelin race",
+  "conductionSpeed": "Conduction speed",
+  "status": "Status",
+  "raceHeat1": "Heat 1/2 — myelinated",
+  "raceHeat2": "Heat 2/2 — unmyelinated",
+  "raceTimes": "Myelin {{myelin}}s · Bare {{bare}}s",
+  "play": "Play",
+  "pause": "Pause"
 }
