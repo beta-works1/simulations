@@ -89,10 +89,11 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.buildScenery(sceneLeft, sceneTop, sceneW, sceneH)
     this.addChild(this.sceneryLayer)
 
+    // Illustrated sun — centered above the pyramid (right of captions)
     this.sunGlow = new Circle(48, {
       fill: 'rgba(255,220,80,0.28)',
       centerX: sceneLeft + sceneW / 2,
-      centerY: sceneTop + 40,
+      centerY: sceneTop + 36,
       cursor: 'pointer',
     })
     this.sun = new Circle(20, {
@@ -140,7 +141,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.tipText = new Text('', {
       font: new PhetFont({ size: 14, weight: 'bold' }),
       fill: '#fde68a',
-      maxWidth: sceneW * 0.72,
+      maxWidth: sceneW * 0.58,
     })
     const tipBg = new Rectangle(0, 0, 20, 20, {
       fill: 'rgba(8, 18, 32, 0.92)',
@@ -154,7 +155,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.whyText = new Text('', {
       font: new PhetFont(13),
       fill: '#a7f3d0',
-      maxWidth: sceneW * 0.72,
+      maxWidth: sceneW * 0.58,
     })
     const whyBg = new Rectangle(0, 0, 20, 20, {
       fill: 'rgba(6, 40, 28, 0.92)',
@@ -167,21 +168,22 @@ export class EcologicalPyramidScreenView extends ScreenView {
 
     const refreshTip = () => {
       const show = model.showTipsProperty.value
-      this.tipText.string = model.tipProperty.value
-      tipBg.rectWidth = this.tipText.width + 18
-      tipBg.rectHeight = this.tipText.height + 14
-      this.tipText.center = tipBg.center
-      this.tipCard.left = sceneLeft + 10
-      this.tipCard.bottom = sceneTop + sceneH - 52
-      this.tipCard.visible = show
-
+      // Keep NOW / Why under the sun row, never over the decomposer strip.
       this.whyText.string = model.whyProperty.value
-      whyBg.rectWidth = this.whyText.width + 18
+      whyBg.rectWidth = Math.min(sceneW * 0.62, this.whyText.width + 18)
       whyBg.rectHeight = this.whyText.height + 14
       this.whyText.center = whyBg.center
       this.whyCard.left = sceneLeft + 10
-      this.whyCard.bottom = this.tipCard.top - 6
+      this.whyCard.top = sceneTop + 8
       this.whyCard.visible = show
+
+      this.tipText.string = model.tipProperty.value
+      tipBg.rectWidth = Math.min(sceneW * 0.62, this.tipText.width + 18)
+      tipBg.rectHeight = this.tipText.height + 14
+      this.tipText.center = tipBg.center
+      this.tipCard.left = sceneLeft + 10
+      this.tipCard.top = this.whyCard.bottom + 6
+      this.tipCard.visible = show
     }
     model.tipProperty.link(refreshTip)
     model.whyProperty.link(refreshTip)
@@ -302,8 +304,8 @@ export class EcologicalPyramidScreenView extends ScreenView {
     const decFocus = this.model.decomposerFocusProperty.value
     const cascading = this.model.cascadeProgressProperty.value > 0
 
-    const pyramidTop = s.top + 78
-    const pyramidBottom = s.top + s.height - 110
+    const pyramidTop = s.top + 118
+    const pyramidBottom = s.top + s.height - 58
     const availableH = pyramidBottom - pyramidTop
     const tierH = availableH / 4.35
     const cx = s.left + s.width / 2
@@ -473,8 +475,8 @@ export class EcologicalPyramidScreenView extends ScreenView {
       this.baseHandle = handle
     }
 
-    // Decomposer band
-    const decY = pyramidBottom + 4
+    // Decomposer band — exclusive bottom strip (captions live at the top)
+    const decY = s.top + s.height - 48
     const dec = new Rectangle(s.left + s.width * 0.08, decY, s.width * 0.84, 38, {
       fill: decFocus ? 'rgba(161, 98, 64, 0.95)' : 'rgba(121, 85, 72, 0.88)',
       cornerRadius: 10,
@@ -500,7 +502,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
       }),
     )
 
-    // Mode badge
+    // Mode badge (right side so it does not cover NOW / Why)
     const modeBadge = new Text(
       mode === 'energy' ? 'Energy pyramid' : mode === 'biomass' ? 'Biomass pyramid' : 'Numbers pyramid',
       {
@@ -514,7 +516,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
       cornerRadius: 12,
       pickable: false,
     })
-    modeBg.left = s.left + 10
+    modeBg.right = s.left + s.width - 12
     modeBg.top = s.top + 10
     modeBadge.center = modeBg.center
     this.pyramidLayer.addChild(modeBg)
@@ -531,7 +533,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
         cornerRadius: 12,
         pickable: false,
       })
-      pillBg.right = s.left + s.width - 12
+      pillBg.right = modeBg.left - 8
       pillBg.top = s.top + 10
       pillText.center = pillBg.center
       this.pyramidLayer.addChild(pillBg)
