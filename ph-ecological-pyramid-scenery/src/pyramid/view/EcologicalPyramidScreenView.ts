@@ -11,7 +11,6 @@ import {
   PYRAMID_COLORS,
   PYRAMID_SHORT,
   tierDetail,
-  tierDotCount,
 } from '../model/EcologicalPyramidModel.js'
 import { PyramidControlPanel } from './PyramidControlPanel.js'
 import { PyramidSounds } from './PyramidSounds.js'
@@ -29,6 +28,8 @@ export class EcologicalPyramidScreenView extends ScreenView {
   private readonly particleLayer: Node
   private readonly tipCard: Node
   private readonly tipText: Text
+  private readonly whyCard: Node
+  private readonly whyText: Text
   private readonly sun: Circle
   private readonly sunGlow: Circle
   private readonly sunRays: Node
@@ -49,7 +50,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
 
     const margin = 10
     const panelW = 268
-    const statusH = 36
+    const statusH = 42
     const b = this.layoutBounds
 
     const sceneLeft = b.left + margin
@@ -67,7 +68,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.addChild(statusBg)
     this.addChild(
       new Text(model.statusProperty, {
-        font: new PhetFont(11),
+        font: new PhetFont(14),
         fill: '#ecfeff',
         maxWidth: b.width - margin * 4,
         centerX: b.centerX,
@@ -122,8 +123,8 @@ export class EcologicalPyramidScreenView extends ScreenView {
       })
     }
     this.addChild(
-      new Text('☀ Sun — tap', {
-        font: new PhetFont(10),
+      new Text('Sun — tap', {
+        font: new PhetFont({ size: 13, weight: 'bold' }),
         fill: '#f4d03f',
         centerX: this.sun.centerX,
         top: this.sun.bottom + 2,
@@ -137,29 +138,53 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.addChild(this.particleLayer)
 
     this.tipText = new Text('', {
-      font: new PhetFont(10),
-      fill: '#ecfeff',
-      maxWidth: sceneW * 0.55,
+      font: new PhetFont({ size: 14, weight: 'bold' }),
+      fill: '#fde68a',
+      maxWidth: sceneW * 0.72,
     })
     const tipBg = new Rectangle(0, 0, 20, 20, {
-      fill: 'rgba(8, 18, 32, 0.88)',
+      fill: 'rgba(8, 18, 32, 0.92)',
       cornerRadius: 8,
-      stroke: 'rgba(125, 211, 252, 0.45)',
-      lineWidth: 1,
+      stroke: 'rgba(250, 204, 21, 0.5)',
+      lineWidth: 1.5,
     })
     this.tipCard = new Node({ children: [tipBg, this.tipText], pickable: false })
     this.addChild(this.tipCard)
 
+    this.whyText = new Text('', {
+      font: new PhetFont(13),
+      fill: '#a7f3d0',
+      maxWidth: sceneW * 0.72,
+    })
+    const whyBg = new Rectangle(0, 0, 20, 20, {
+      fill: 'rgba(6, 40, 28, 0.92)',
+      cornerRadius: 8,
+      stroke: 'rgba(134, 239, 172, 0.4)',
+      lineWidth: 1,
+    })
+    this.whyCard = new Node({ children: [whyBg, this.whyText], pickable: false })
+    this.addChild(this.whyCard)
+
     const refreshTip = () => {
+      const show = model.showTipsProperty.value
       this.tipText.string = model.tipProperty.value
-      tipBg.rectWidth = this.tipText.width + 16
-      tipBg.rectHeight = this.tipText.height + 12
+      tipBg.rectWidth = this.tipText.width + 18
+      tipBg.rectHeight = this.tipText.height + 14
       this.tipText.center = tipBg.center
       this.tipCard.left = sceneLeft + 10
-      this.tipCard.bottom = sceneTop + sceneH - 10
-      this.tipCard.visible = model.showTipsProperty.value
+      this.tipCard.bottom = sceneTop + sceneH - 52
+      this.tipCard.visible = show
+
+      this.whyText.string = model.whyProperty.value
+      whyBg.rectWidth = this.whyText.width + 18
+      whyBg.rectHeight = this.whyText.height + 14
+      this.whyText.center = whyBg.center
+      this.whyCard.left = sceneLeft + 10
+      this.whyCard.bottom = this.tipCard.top - 6
+      this.whyCard.visible = show
     }
     model.tipProperty.link(refreshTip)
+    model.whyProperty.link(refreshTip)
     model.showTipsProperty.link(refreshTip)
 
     this.addChild(
@@ -278,7 +303,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
     const cascading = this.model.cascadeProgressProperty.value > 0
 
     const pyramidTop = s.top + 78
-    const pyramidBottom = s.top + s.height - 62
+    const pyramidBottom = s.top + s.height - 110
     const availableH = pyramidBottom - pyramidTop
     const tierH = availableH / 4.35
     const cx = s.left + s.width / 2
@@ -355,69 +380,50 @@ export class EcologicalPyramidScreenView extends ScreenView {
       this.tierGeoms[tier] = geom
 
       const label = new Text(PYRAMID_SHORT[tier], {
-        font: new PhetFont({ size: 12, weight: 'bold' }),
+        font: new PhetFont({ size: 15, weight: 'bold' }),
         fill: 'white',
-        centerX: cx,
-        centerY: y + h * 0.32,
-        maxWidth: wBot * 0.85,
+        centerX: cx + 10,
+        centerY: y + h * 0.3,
+        maxWidth: wBot * 0.55,
         pickable: false,
       })
       this.pyramidLayer.addChild(label)
 
       const d = tierDetail(base, tier, mode, transfer)
       const valueChip = new Text(formatTierValue(d.energy, mode), {
-        font: new PhetFont({ size: 11, weight: 'bold' }),
+        font: new PhetFont({ size: 13, weight: 'bold' }),
         fill: '#0b1628',
         pickable: false,
       })
-      const chipBg = new Rectangle(0, 0, valueChip.width + 14, 18, {
-        fill: 'rgba(255,255,255,0.9)',
-        cornerRadius: 9,
+      const chipBg = new Rectangle(0, 0, valueChip.width + 16, 22, {
+        fill: 'rgba(255,255,255,0.92)',
+        cornerRadius: 11,
         pickable: false,
       })
-      chipBg.centerX = cx
-      chipBg.centerY = y + h * 0.62
+      chipBg.centerX = cx + 10
+      chipBg.centerY = y + h * 0.58
       valueChip.center = chipBg.center
       this.pyramidLayer.addChild(chipBg)
       this.pyramidLayer.addChild(valueChip)
 
-      // Simple organism silhouette markers (depth cue per trophic role)
-      this.pyramidLayer.addChild(makeTierSilhouette(tier, cx - wBot * 0.32, y + h * 0.55))
+      // Organism picture on each band (self-explanatory)
+      this.pyramidLayer.addChild(makeTierSilhouette(tier, cx - wBot * 0.28, y + h * 0.5))
 
-      // Organism / mass dots
-      const dots = tierDotCount(base, tier, mode, transfer)
-      const cols = Math.max(1, Math.ceil(Math.sqrt(dots)))
-      for (let i = 0; i < dots; i++) {
-        const col = i % cols
-        const row = Math.floor(i / cols)
-        const dx = (col - (cols - 1) / 2) * 6.5
-        const dy = row * 5.5 - 2
-        const side = tier % 2 === 0 ? -1 : 1
-        this.pyramidLayer.addChild(
-          new Circle(mode === 'biomass' ? 2.4 : 1.9, {
-            fill: mode === 'numbers' ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.4)',
-            centerX: cx + side * (wBot * 0.28) + dx,
-            centerY: y + h * 0.55 + dy,
-            pickable: false,
-          }),
-        )
-      }
-
-      // Transfer label between this tier and the one below (visual)
+      // Transfer label between this tier and the one below
       if (visual < 3) {
         const keepPct = (transfer * 100).toFixed(0)
         const midY = y + h + 1
-        const badge = new Text(`${keepPct}% ↑`, {
-          font: new PhetFont({ size: 9, weight: 'bold' }),
+        const badge = new Text(`only ${keepPct}% ↑`, {
+          font: new PhetFont({ size: 12, weight: 'bold' }),
           fill: '#fecaca',
           pickable: false,
         })
-        const badgeBg = new Rectangle(0, 0, badge.width + 10, 14, {
-          fill: 'rgba(127, 29, 29, 0.85)',
-          cornerRadius: 7,
+        const badgeBg = new Rectangle(0, 0, badge.width + 14, 18, {
+          fill: 'rgba(127, 29, 29, 0.9)',
+          cornerRadius: 9,
           pickable: false,
         })
-        badgeBg.centerX = cx + wBot * 0.38
+        badgeBg.centerX = cx + wBot * 0.36
         badgeBg.centerY = midY
         badge.center = badgeBg.center
         this.pyramidLayer.addChild(badgeBg)
@@ -436,8 +442,8 @@ export class EcologicalPyramidScreenView extends ScreenView {
         centerY: prod.cy + prod.h * 0.15,
         cursor: 'ew-resize',
       })
-      const handleLabel = new Text('⟷ energy', {
-        font: new PhetFont(8),
+      const handleLabel = new Text('drag energy', {
+        font: new PhetFont(11),
         fill: '#e0f2fe',
         centerX: handle.centerX,
         top: handle.bottom + 1,
@@ -485,8 +491,8 @@ export class EcologicalPyramidScreenView extends ScreenView {
     })
     this.pyramidLayer.addChild(dec)
     this.pyramidLayer.addChild(
-      new Text(`${DECOMPOSER_LABEL}  ·  recycle → nutrients → producers`, {
-        font: new PhetFont({ size: 11, weight: 'bold' }),
+      new Text(`${DECOMPOSER_LABEL}  ·  recycle → nutrients → plants`, {
+        font: new PhetFont({ size: 13, weight: 'bold' }),
         fill: 'white',
         center: dec.center,
         maxWidth: dec.width - 14,
@@ -498,14 +504,14 @@ export class EcologicalPyramidScreenView extends ScreenView {
     const modeBadge = new Text(
       mode === 'energy' ? 'Energy pyramid' : mode === 'biomass' ? 'Biomass pyramid' : 'Numbers pyramid',
       {
-        font: new PhetFont({ size: 10, weight: 'bold' }),
+        font: new PhetFont({ size: 12, weight: 'bold' }),
         fill: '#ecfeff',
         pickable: false,
       },
     )
-    const modeBg = new Rectangle(0, 0, modeBadge.width + 14, 20, {
-      fill: 'rgba(15, 23, 42, 0.75)',
-      cornerRadius: 10,
+    const modeBg = new Rectangle(0, 0, modeBadge.width + 16, 24, {
+      fill: 'rgba(15, 23, 42, 0.8)',
+      cornerRadius: 12,
       pickable: false,
     })
     modeBg.left = s.left + 10
@@ -516,13 +522,13 @@ export class EcologicalPyramidScreenView extends ScreenView {
 
     if (mode === 'energy') {
       const pillText = new Text(`~${((1 - transfer) * 100).toFixed(0)}% lost as heat`, {
-        font: new PhetFont({ size: 10, weight: 'bold' }),
+        font: new PhetFont({ size: 12, weight: 'bold' }),
         fill: 'white',
         pickable: false,
       })
-      const pillBg = new Rectangle(0, 0, pillText.width + 14, 22, {
+      const pillBg = new Rectangle(0, 0, pillText.width + 16, 24, {
         fill: 'rgba(192, 57, 43, 0.92)',
-        cornerRadius: 11,
+        cornerRadius: 12,
         pickable: false,
       })
       pillBg.right = s.left + s.width - 12
@@ -537,13 +543,13 @@ export class EcologicalPyramidScreenView extends ScreenView {
       const g = this.tierGeoms[tier]
       if (!g) continue
       const n = new Text(String(tier + 1), {
-        font: new PhetFont({ size: 10, weight: 'bold' }),
+        font: new PhetFont({ size: 12, weight: 'bold' }),
         fill: '#0b1628',
         pickable: false,
       })
-      const chip = new Circle(9, {
-        fill: selected === tier ? '#f4d03f' : 'rgba(255,255,255,0.75)',
-        centerX: g.x - 14,
+      const chip = new Circle(11, {
+        fill: selected === tier ? '#f4d03f' : 'rgba(255,255,255,0.8)',
+        centerX: g.x - 16,
         centerY: g.cy,
         pickable: false,
       })
@@ -715,7 +721,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
 function makeTierSilhouette(tier: number, x: number, y: number): Node {
   const names = ['grass', 'rabbit', 'fox', 'eagle'] as const
   const n = new Node({ pickable: false })
-  const icon = createEcologyIcon(names[tier] ?? 'grass', tier === 0 ? 34 : 30)
+  const icon = createEcologyIcon(names[tier] ?? 'grass', tier === 0 ? 40 : 36)
   icon.centerX = x
   icon.centerY = y
   icon.opacity = 0.95

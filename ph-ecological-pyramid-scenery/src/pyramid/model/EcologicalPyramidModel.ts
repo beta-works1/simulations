@@ -26,31 +26,31 @@ export interface EcosystemScenario {
 export const SCENARIOS: EcosystemScenario[] = [
   {
     id: 'grassland',
-    name: 'Grassland',
+    name: '1. Grassland',
     base: 4000,
     transfer: 0.1,
-    blurb: 'Sparse producers — energy pyramid stays steep and narrow at the top.',
+    blurb: 'Fewer plants → less energy for eagles at the top.',
   },
   {
     id: 'forest',
-    name: 'Temperate forest',
+    name: '2. Forest (start here)',
     base: 10000,
     transfer: 0.1,
-    blurb: 'Classic classroom pyramid: ~10% kept at each trophic step.',
+    blurb: 'Classic Class-8 pyramid: about 10% moves up each step.',
   },
   {
     id: 'ocean',
-    name: 'Coastal ocean',
+    name: '3. Ocean',
     base: 22000,
     transfer: 0.12,
-    blurb: 'Phytoplankton base is huge; slightly higher transfer in productive waters.',
+    blurb: 'Huge plankton base — a bit more energy can reach the top.',
   },
   {
     id: 'rainforest',
-    name: 'Rainforest',
+    name: '4. Rainforest',
     base: 40000,
     transfer: 0.08,
-    blurb: 'Dense biomass at the base, but lots of heat loss in a warm climate.',
+    blurb: 'Lots of plants, but more heat loss — top can still stay small.',
   },
 ]
 
@@ -208,8 +208,12 @@ export class EcologicalPyramidModel implements TModel {
   public readonly soundEnabledProperty: BooleanProperty
   public readonly decomposerFocusProperty: BooleanProperty
   public readonly showTipsProperty: BooleanProperty
+  /** Extra tools stay tucked away so the first lesson stays simple. */
+  public readonly showAdvancedProperty: BooleanProperty
   public readonly statusProperty: StringProperty
   public readonly tipProperty: StringProperty
+  /** Plain “why it happens” line for Class 8. */
+  public readonly whyProperty: StringProperty
   public readonly quizIndexProperty: NumberProperty
   public readonly quizScoreProperty: NumberProperty
   public readonly quizFeedbackProperty: StringProperty
@@ -230,15 +234,19 @@ export class EcologicalPyramidModel implements TModel {
     this.soundEnabledProperty = new BooleanProperty(true)
     this.decomposerFocusProperty = new BooleanProperty(false)
     this.showTipsProperty = new BooleanProperty(true)
+    this.showAdvancedProperty = new BooleanProperty(false)
     this.statusProperty = new StringProperty(
-      'Tap a trophic level · drag the base handle · try a scenario or quiz.',
+      'Tap Plants → Rabbits → Foxes → Eagles. Watch how little energy is left at the top.',
     )
     this.tipProperty = new StringProperty(
-      'Energy flows sun → producers → consumers. Each step keeps ~10%.',
+      'NOW: Plants make food from sunlight — that wide base holds the most energy.',
+    )
+    this.whyProperty = new StringProperty(
+      'Why: only about 10% moves up each step. The rest is used or lost as heat.',
     )
     this.quizIndexProperty = new NumberProperty(0)
     this.quizScoreProperty = new NumberProperty(0)
-    this.quizFeedbackProperty = new StringProperty('Answer to check your understanding of the 10% rule.')
+    this.quizFeedbackProperty = new StringProperty('Answer to check the 10% rule.')
     this.scenarioIdProperty = new StringProperty('forest')
     this.highlightTransferProperty = new NumberProperty(0)
     this.cascadeProgressProperty = new NumberProperty(0)
@@ -255,13 +263,16 @@ export class EcologicalPyramidModel implements TModel {
     this.runningProperty.value = true
     this.decomposerFocusProperty.value = false
     this.showTipsProperty.value = true
+    this.showAdvancedProperty.value = false
     this.statusProperty.value =
-      'Tap a trophic level · drag the base handle · try a scenario or quiz.'
+      'Tap Plants → Rabbits → Foxes → Eagles. Watch how little energy is left at the top.'
     this.tipProperty.value =
-      'Energy flows sun → producers → consumers. Each step keeps ~10%.'
+      'NOW: Plants make food from sunlight — that wide base holds the most energy.'
+    this.whyProperty.value =
+      'Why: only about 10% moves up each step. The rest is used or lost as heat.'
     this.quizIndexProperty.value = 0
     this.quizScoreProperty.value = 0
-    this.quizFeedbackProperty.value = 'Answer to check your understanding of the 10% rule.'
+    this.quizFeedbackProperty.value = 'Answer to check the 10% rule.'
     this.scenarioIdProperty.value = 'forest'
     this.highlightTransferProperty.value = 0
     this.cascadeProgressProperty.value = 0
@@ -327,10 +338,9 @@ export class EcologicalPyramidModel implements TModel {
   public selectDecomposers(): void {
     this.decomposerFocusProperty.value = true
     this.selectedTierProperty.value = -1
-    this.statusProperty.value =
-      'Decomposers recycle dead matter → nutrients → producers. They close the loop.'
-    this.tipProperty.value =
-      'Without decomposers, nutrients stay locked in dead tissue and plants starve.'
+    this.statusProperty.value = 'Decomposers recycle dead matter back into nutrients for plants.'
+    this.tipProperty.value = 'NOW: Decomposers break down dead plants and animals.'
+    this.whyProperty.value = 'Why: nutrients return to soil so plants can grow again.'
   }
 
   public setBaseEnergy(v: number): void {
@@ -339,8 +349,9 @@ export class EcologicalPyramidModel implements TModel {
 
   public setTransfer(v: number): void {
     this.transferProperty.value = clamp(v, PyramidConstants.TRANSFER_MIN, PyramidConstants.TRANSFER_MAX)
-    this.statusProperty.value = `Transfer efficiency set to ${(this.transferProperty.value * 100).toFixed(0)}% — watch the pyramid reshape.`
+    this.statusProperty.value = `Keep ${(this.transferProperty.value * 100).toFixed(0)}% each step — watch the pyramid reshape.`
     this.highlightTransferProperty.value = 1.2
+    this.updateTipForSelection()
   }
 
   public applyScenario(id: string): void {
@@ -348,10 +359,10 @@ export class EcologicalPyramidModel implements TModel {
     this.scenarioIdProperty.value = s.id
     this.baseEnergyProperty.value = s.base
     this.transferProperty.value = s.transfer
-    this.statusProperty.value = `${s.name}: ${s.blurb}`
-    this.tipProperty.value = s.blurb
     this.highlightTransferProperty.value = 1.6
     this.selectTier(0)
+    this.statusProperty.value = `${s.name}: ${s.blurb}`
+    this.whyProperty.value = `Why: ${s.blurb}`
   }
 
   public answerQuiz(choiceIndex: number): void {
@@ -378,8 +389,9 @@ export class EcologicalPyramidModel implements TModel {
 
   public pulseSunBurst(): void {
     this.pulseProperty.value += 0.8
-    this.statusProperty.value = 'Sunlight fuels producers — the pyramid’s energy base.'
-    this.tipProperty.value = 'Photosynthesis locks light energy into chemical energy in plants/algae.'
+    this.statusProperty.value = 'Sunlight fuels Plants — energy enters the pyramid here.'
+    this.tipProperty.value = 'NOW: Sunlight hits Plants — that is where energy starts.'
+    this.whyProperty.value = 'Why: photosynthesis stores light energy in plant food.'
   }
 
   public startCascadeDemo(): void {
@@ -389,8 +401,9 @@ export class EcologicalPyramidModel implements TModel {
     this.selectedTierProperty.value = 0
     this.cascadeProgressProperty.value = 0.01
     this.runningProperty.value = true
-    this.statusProperty.value = 'Watch energy climb the pyramid — only ~10% survives each step.'
-    this.tipProperty.value = 'The cascade demo highlights how quickly usable energy shrinks.'
+    this.statusProperty.value = 'Watch energy climb — only about 10% survives each step.'
+    this.tipProperty.value = 'NOW: Energy is climbing Plants → Rabbits → Foxes → Eagles.'
+    this.whyProperty.value = 'Why: most energy is used to live or lost as heat along the way.'
     this.highlightTransferProperty.value = 2
   }
 
@@ -400,6 +413,7 @@ export class EcologicalPyramidModel implements TModel {
     this.compareTierProperty.value = next
     if (next < 0) {
       this.statusProperty.value = 'Compare cleared.'
+      this.updateTipForSelection()
       return
     }
     const transfer = this.transferProperty.value
@@ -408,19 +422,27 @@ export class EcologicalPyramidModel implements TModel {
     const a = tierDetail(base, cur, mode, transfer)
     const b = tierDetail(base, next, mode, transfer)
     this.statusProperty.value = `Compare: ${a.label} (${formatTierValue(a.energy, mode)}) vs ${b.label} (${formatTierValue(b.energy, mode)})`
-    this.tipProperty.value = `${b.label} keeps ~${(transfer * 100).toFixed(0)}% of ${a.label} — the rest is heat / life processes.`
+    this.tipProperty.value = `NOW: Comparing ${PYRAMID_SHORT[cur]} with ${PYRAMID_SHORT[next]}.`
+    this.whyProperty.value = `Why: ${PYRAMID_SHORT[next]} keeps only ~${(transfer * 100).toFixed(0)}% of ${PYRAMID_SHORT[cur]}.`
   }
 
   private updateTipForSelection(): void {
     const tier = this.selectedTierProperty.value
     const transferPct = (this.transferProperty.value * 100).toFixed(0)
     if (tier < 0) return
-    const tips = [
-      `Producers convert sunlight into chemical energy — the wide base of every pyramid.`,
-      `Primary consumers (herbivores) get ~${transferPct}% of producer energy.`,
-      `Secondary consumers eat herbivores; another ~${transferPct}% transfer, more heat lost.`,
-      `Tertiary / top predators sit on a tiny energy budget — few individuals can be supported.`,
+    const now = [
+      'NOW: Plants (producers) — wide base that makes food from sunlight.',
+      `NOW: Rabbits (plant-eaters) — get about ${transferPct}% of the plant energy.`,
+      `NOW: Foxes (meat-eaters) — get about ${transferPct}% of the rabbit energy.`,
+      `NOW: Eagles (top hunters) — tiny energy left, so few can live here.`,
     ]
-    this.tipProperty.value = tips[tier] ?? tips[0]!
+    const why = [
+      'Why: photosynthesis stores Sun energy in plants — that is the pyramid base.',
+      `Why: rabbits use most energy to live; only ~${transferPct}% can go up.`,
+      `Why: foxes also burn energy moving and growing — more heat loss.`,
+      'Why: so little energy reaches the top that food chains stay short.',
+    ]
+    this.tipProperty.value = now[tier] ?? now[0]!
+    this.whyProperty.value = why[tier] ?? why[0]!
   }
 }
