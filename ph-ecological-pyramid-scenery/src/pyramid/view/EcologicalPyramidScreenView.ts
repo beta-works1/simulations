@@ -32,6 +32,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
   private readonly whyText: Text
   private readonly sun: Circle
   private readonly sunGlow: Circle
+  private readonly sunLabel: Text
   private readonly sunRays: Node
   private readonly birdLayer: Node
   private readonly sceneBounds: { left: number; top: number; width: number; height: number }
@@ -89,17 +90,19 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.buildScenery(sceneLeft, sceneTop, sceneW, sceneH)
     this.addChild(this.sceneryLayer)
 
-    // Illustrated sun — centered above the pyramid (right of captions)
-    this.sunGlow = new Circle(48, {
+    // Sun sits upper-right so left-side NOW / Why never cover it
+    const sunX = sceneLeft + sceneW * 0.72
+    const sunY = sceneTop + 34
+    this.sunGlow = new Circle(42, {
       fill: 'rgba(255,220,80,0.28)',
-      centerX: sceneLeft + sceneW / 2,
-      centerY: sceneTop + 36,
+      centerX: sunX,
+      centerY: sunY,
       cursor: 'pointer',
     })
-    this.sun = new Circle(20, {
+    this.sun = new Circle(18, {
       fill: '#f4d03f',
-      centerX: this.sunGlow.centerX,
-      centerY: this.sunGlow.centerY,
+      centerX: sunX,
+      centerY: sunY,
       cursor: 'pointer',
     })
     const sunHit = () => {
@@ -123,15 +126,14 @@ export class EcologicalPyramidScreenView extends ScreenView {
         phase: i * 1.3,
       })
     }
-    this.addChild(
-      new Text('Sun — tap', {
-        font: new PhetFont({ size: 13, weight: 'bold' }),
-        fill: '#f4d03f',
-        centerX: this.sun.centerX,
-        top: this.sun.bottom + 2,
-        pickable: false,
-      }),
-    )
+    this.sunLabel = new Text('Sun — tap', {
+      font: new PhetFont({ size: 13, weight: 'bold' }),
+      fill: '#f4d03f',
+      centerX: sunX,
+      top: this.sun.bottom + 2,
+      pickable: false,
+    })
+    this.addChild(this.sunLabel)
 
     this.pyramidLayer = new Node()
     this.particleLayer = new Node({ pickable: false })
@@ -141,7 +143,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.tipText = new Text('', {
       font: new PhetFont({ size: 14, weight: 'bold' }),
       fill: '#fde68a',
-      maxWidth: sceneW * 0.58,
+      maxWidth: sceneW * 0.42,
     })
     const tipBg = new Rectangle(0, 0, 20, 20, {
       fill: 'rgba(8, 18, 32, 0.92)',
@@ -155,7 +157,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.whyText = new Text('', {
       font: new PhetFont(13),
       fill: '#a7f3d0',
-      maxWidth: sceneW * 0.58,
+      maxWidth: sceneW * 0.42,
     })
     const whyBg = new Rectangle(0, 0, 20, 20, {
       fill: 'rgba(6, 40, 28, 0.92)',
@@ -168,9 +170,9 @@ export class EcologicalPyramidScreenView extends ScreenView {
 
     const refreshTip = () => {
       const show = model.showTipsProperty.value
-      // Keep NOW / Why under the sun row, never over the decomposer strip.
+      const captionMax = sceneW * 0.44
       this.whyText.string = model.whyProperty.value
-      whyBg.rectWidth = Math.min(sceneW * 0.62, this.whyText.width + 18)
+      whyBg.rectWidth = Math.min(captionMax, this.whyText.width + 18)
       whyBg.rectHeight = this.whyText.height + 14
       this.whyText.center = whyBg.center
       this.whyCard.left = sceneLeft + 10
@@ -178,7 +180,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
       this.whyCard.visible = show
 
       this.tipText.string = model.tipProperty.value
-      tipBg.rectWidth = Math.min(sceneW * 0.62, this.tipText.width + 18)
+      tipBg.rectWidth = Math.min(captionMax, this.tipText.width + 18)
       tipBg.rectHeight = this.tipText.height + 14
       this.tipText.center = tipBg.center
       this.tipCard.left = sceneLeft + 10
@@ -304,13 +306,14 @@ export class EcologicalPyramidScreenView extends ScreenView {
     const decFocus = this.model.decomposerFocusProperty.value
     const cascading = this.model.cascadeProgressProperty.value > 0
 
-    const pyramidTop = s.top + 118
+    const pyramidTop = s.top + 108
     const pyramidBottom = s.top + s.height - 58
     const availableH = pyramidBottom - pyramidTop
     const tierH = availableH / 4.35
     const cx = s.left + s.width / 2
-    const maxW = s.width * 0.8
-    const minW = s.width * 0.26
+    const maxW = s.width * 0.72
+    const minW = s.width * 0.24
+    const seamGap = 12
 
     this.tierGeoms = []
 
@@ -324,7 +327,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
       const wTop = minW + (maxW - minW) * (visual / 4)
       const wBot = minW + (maxW - minW) * ((visual + 1) / 4)
       const y = pyramidTop + visual * tierH
-      const h = tierH - 5
+      const h = tierH - seamGap
 
       const shape = new Shape()
       shape.moveTo(cx - wTop / 2, y)
@@ -411,22 +414,22 @@ export class EcologicalPyramidScreenView extends ScreenView {
       // Organism picture on each band (self-explanatory)
       this.pyramidLayer.addChild(makeTierSilhouette(tier, cx - wBot * 0.28, y + h * 0.5))
 
-      // Transfer label between this tier and the one below
+      // Transfer badge sits in the seam gutter, outside the band edge
       if (visual < 3) {
         const keepPct = (transfer * 100).toFixed(0)
-        const midY = y + h + 1
         const badge = new Text(`only ${keepPct}% ↑`, {
-          font: new PhetFont({ size: 12, weight: 'bold' }),
+          font: new PhetFont({ size: 11, weight: 'bold' }),
           fill: '#fecaca',
           pickable: false,
         })
-        const badgeBg = new Rectangle(0, 0, badge.width + 14, 18, {
-          fill: 'rgba(127, 29, 29, 0.9)',
-          cornerRadius: 9,
+        const badgeBg = new Rectangle(0, 0, badge.width + 12, 17, {
+          fill: 'rgba(127, 29, 29, 0.92)',
+          cornerRadius: 8,
           pickable: false,
         })
-        badgeBg.centerX = cx + wBot * 0.36
-        badgeBg.centerY = midY
+        const edge = Math.max(wTop, wBot) / 2
+        badgeBg.left = Math.min(cx + edge + 8, s.left + s.width - badgeBg.width - 10)
+        badgeBg.centerY = y + h + seamGap / 2
         badge.center = badgeBg.center
         this.pyramidLayer.addChild(badgeBg)
         this.pyramidLayer.addChild(badge)
