@@ -16,17 +16,28 @@ import {
 import { NervousConstants } from '../../../shared/NervousConstants.js'
 import { NervousColors } from '../../../shared/NervousColors.js'
 import { DepthCard } from '../../../shared/ui/DepthCard.js'
+import { DepthSlider } from '../../../shared/ui/DepthSlider.js'
 import { SoftButton } from '../../../shared/ui/SoftButton.js'
 import { GuidanceBanner } from '../../../shared/ui/GuidanceBanner.js'
 import { ScrollableNode } from '../../../shared/ui/ScrollableNode.js'
 import { createPanelTip } from '../../../shared/ui/createPanelTip.js'
 import { ParticleBurst } from '../../../shared/ui/ParticleBurst.js'
+import { TeachingTriad } from '../../../shared/ui/TeachingTriad.js'
+import { HistoryChart } from '../../../shared/ui/HistoryChart.js'
 import { BrainMappingStrings } from '../BrainMappingStrings.js'
 
 type SelfOptions = EmptySelfOptions
 type Options = SelfOptions & ScreenViewOptions
 
 type PartFilterId = BrainPart | 'all'
+
+const REVEAL_STROKE = '#f1c40f'
+
+/** Trims a detail sentence down to its first clause for the compact WHY card. */
+function shortenDetail(detail: string): string {
+  const idx = detail.indexOf('. ')
+  return idx > 0 ? detail.slice(0, idx + 1) : detail
+}
 
 export class BrainMappingScreenView extends ScreenView {
   private readonly model: BrainMappingModel
@@ -48,16 +59,25 @@ export class BrainMappingScreenView extends ScreenView {
   private readonly studyBtn: SoftButton
   private readonly quizBtn: SoftButton
   private readonly missionBtn: SoftButton
+  private readonly scenarioBtn: SoftButton
+  private readonly tipsBtn: SoftButton
   private readonly filterButtons = new Map<PartFilterId, SoftButton>()
   private readonly regionButtons = new Map<BrainRegionId, SoftButton>()
+  private readonly checklistRows = new Map<BrainRegionId, Text>()
   private readonly guide: GuidanceBanner
   private readonly feedbackFlash: Rectangle
   private readonly confetti: ParticleBurst
+  private readonly teachingTriad: TeachingTriad
+  private readonly streakChart: HistoryChart
+  private readonly streakSeries: number
   private readonly brainCenterX: number
   private readonly brainCenterY: number
+  private readonly promptCenterX: number
+  private readonly promptMaxWidth: number
   private pulse = 0
   private labelFlash = 0
   private wasCelebrating = false
+  private prevLastAnswer: 'correct' | 'wrong' | null = null
 
   public constructor(model: BrainMappingModel, providedOptions?: Options) {
     super(providedOptions)
@@ -66,7 +86,7 @@ export class BrainMappingScreenView extends ScreenView {
     const m = NervousConstants.SCREEN_VIEW_X_MARGIN
     const my = NervousConstants.SCREEN_VIEW_Y_MARGIN
     const lb = this.layoutBounds
-    const rightW = 290
+    const rightW = 300
     const gap = 14
     const stageLeft = m
     const stageTop = my + 78
@@ -110,12 +130,25 @@ export class BrainMappingScreenView extends ScreenView {
     })
     this.addChild(this.feedbackFlash)
 
-    const bw = Math.min(stageW * 0.9, (stageH - 80) * 0.95)
+    // Left dock reserved on-stage for the NOW/WHY/NEXT teaching triad (ecology pattern).
+    const teachDockW = 172
+    const teachGap = 12
+    const brainAreaLeft = stageLeft + teachDockW + teachGap
+    const brainAreaW = stageW - teachDockW - teachGap
+
+    this.teachingTriad = new TeachingTriad(teachDockW - 20)
+    this.teachingTriad.left = stageLeft + 14
+    this.teachingTriad.top = stageTop + 46
+    this.addChild(this.teachingTriad)
+
+    const bw = Math.min(brainAreaW * 0.94, (stageH - 80) * 0.95)
     const bh = bw * (SVG_H / SVG_W)
-    const bx = stageLeft + (stageW - bw) / 2
+    const bx = brainAreaLeft + (brainAreaW - bw) / 2
     const by = stageTop + (stageH - bh) / 2 - 6
     this.brainCenterX = bx + bw / 2
     this.brainCenterY = by + bh / 2
+    this.promptCenterX = brainAreaLeft + brainAreaW / 2
+    this.promptMaxWidth = brainAreaW - 40
 
     const brainRoot = new Node({
       matrix: Matrix3.translation(bx, by).timesMatrix(Matrix3.scaling(bw / SVG_W, bh / SVG_H)),
@@ -167,7 +200,7 @@ export class BrainMappingScreenView extends ScreenView {
         enter: () => {
           if (model.selectedProperty.value !== id) {
             path.fill = region.fillHover
-            halo.opacity = 0.18
+            halo.opacity = 0.18 * model.glowIntensityProperty.value
           }
         },
         exit: () => {
@@ -205,9 +238,9 @@ export class BrainMappingScreenView extends ScreenView {
     this.quizPrompt = new Text('', {
       font: new PhetFont({ size: 15, weight: 'bold' }),
       fill: '#fff',
-      centerX: stageLeft + stageW / 2,
+      centerX: this.promptCenterX,
       top: stageTop + 14,
-      maxWidth: stageW - 48,
+      maxWidth: this.promptMaxWidth,
       visible: false,
       pickable: false,
     })
@@ -254,21 +287,27 @@ export class BrainMappingScreenView extends ScreenView {
 
     this.studyBtn = new SoftButton(BrainMappingStrings.studyStringProperty.value, () => {
       model.setMode('study')
-    }, { width: modeBtnW, height: 38, fill: NervousColors.accent, selected: true })
+    }, { width: modeBtnW, height: 36, fill: NervousColors.accent, selected: true })
     this.studyBtn.left = 4
     panelContent.addChild(this.studyBtn)
 
     this.quizBtn = new SoftButton(BrainMappingStrings.quizStringProperty.value, () => {
       model.setMode('quiz')
-    }, { width: modeBtnW, height: 38, fill: '#64748b', selected: false })
+    }, { width: modeBtnW, height: 36, fill: '#64748b', selected: false })
     this.quizBtn.left = 4
     panelContent.addChild(this.quizBtn)
 
     this.missionBtn = new SoftButton(BrainMappingStrings.missionStringProperty.value, () => {
       model.setMode('mission')
-    }, { width: modeBtnW, height: 38, fill: '#10b981', selected: false })
+    }, { width: modeBtnW, height: 36, fill: '#10b981', selected: false })
     this.missionBtn.left = 4
     panelContent.addChild(this.missionBtn)
+
+    this.scenarioBtn = new SoftButton(BrainMappingStrings.scenarioStringProperty.value, () => {
+      model.setMode('scenario')
+    }, { width: modeBtnW, height: 36, fill: '#f59e0b', selected: false })
+    this.scenarioBtn.left = 4
+    panelContent.addChild(this.scenarioBtn)
 
     this.unlockHint = new Text(BrainMappingStrings.unlockQuizStringProperty.value, {
       font: new PhetFont({ size: 12 }),
@@ -284,6 +323,23 @@ export class BrainMappingScreenView extends ScreenView {
       left: 4,
     })
     panelContent.addChild(this.starsText)
+
+    this.tipsBtn = new SoftButton(BrainMappingStrings.tipsOnStringProperty.value, () => {
+      model.tipsVisibleProperty.value = !model.tipsVisibleProperty.value
+    }, { width: modeBtnW, height: 32, fill: '#0ea5e9', selected: true, fontSize: 13 })
+    this.tipsBtn.left = 4
+    panelContent.addChild(this.tipsBtn)
+
+    const glowSlider = new DepthSlider(model.glowIntensityProperty, {
+      min: 0.4,
+      max: 1.2,
+      width: modeBtnW,
+      label: BrainMappingStrings.glowLabelStringProperty.value,
+      format: (n) => `${n.toFixed(1)}×`,
+      fill: '#a855f7',
+    })
+    glowSlider.left = 4
+    panelContent.addChild(glowSlider)
 
     const filterLabel = new Text(BrainMappingStrings.filterLabelStringProperty.value, {
       font: new PhetFont({ size: 13, weight: 'bold' }),
@@ -323,6 +379,33 @@ export class BrainMappingScreenView extends ScreenView {
     })
     panelContent.addChild(this.exploredText)
     panelContent.addChild(this.scoreText)
+
+    const checklistTitle = new Text(BrainMappingStrings.checklistTitleStringProperty.value, {
+      font: new PhetFont({ size: 13, weight: 'bold' }),
+      fill: NervousColors.ink,
+      left: 4,
+    })
+    panelContent.addChild(checklistTitle)
+
+    const checklistColW = Math.floor((tipWidth - 8) / 2)
+    for (const region of BRAIN_REGIONS) {
+      const row = new Text('', {
+        font: new PhetFont({ size: 12, weight: 'bold' }),
+        fill: NervousColors.muted,
+        left: 4,
+        maxWidth: checklistColW - 4,
+      })
+      this.checklistRows.set(region.id, row)
+      panelContent.addChild(row)
+    }
+
+    this.streakChart = new HistoryChart(tipWidth, 64, {
+      title: BrainMappingStrings.streakChartTitleStringProperty.value,
+      maxPoints: 20,
+    })
+    this.streakChart.left = 4
+    this.streakSeries = this.streakChart.addSeries(NervousColors.accent)
+    panelContent.addChild(this.streakChart)
 
     this.detailTitle = new Text('', {
       font: new PhetFont({ size: 16, weight: 'bold' }),
@@ -381,15 +464,22 @@ export class BrainMappingScreenView extends ScreenView {
     const relayoutPanel = () => {
       let y = 8
       this.studyBtn.top = y
-      y = this.studyBtn.bottom + 8
+      y = this.studyBtn.bottom + 6
       this.quizBtn.top = y
-      y = this.quizBtn.bottom + 8
+      y = this.quizBtn.bottom + 6
       this.missionBtn.top = y
       y = this.missionBtn.bottom + 6
+      this.scenarioBtn.top = y
+      y = this.scenarioBtn.bottom + 6
       this.unlockHint.top = y
       y = this.unlockHint.visible ? this.unlockHint.bottom + 8 : y
       this.starsText.top = y
       y = this.starsText.bottom + 10
+
+      this.tipsBtn.top = y
+      y = this.tipsBtn.bottom + 10
+      glowSlider.top = y
+      y = glowSlider.bottom + 12
 
       filterLabel.top = y
       y = filterLabel.bottom + 6
@@ -409,6 +499,24 @@ export class BrainMappingScreenView extends ScreenView {
       y = this.exploredText.bottom + 4
       this.scoreText.top = y
       y = this.scoreText.bottom + 14
+
+      checklistTitle.top = y
+      y = checklistTitle.bottom + 6
+      const checklistCols = 2
+      const checklistColGap = 8
+      const checklistRowGap = 6
+      BRAIN_REGIONS.forEach((region, i) => {
+        const row = this.checklistRows.get(region.id)!
+        const col = i % checklistCols
+        const rowIdx = Math.floor(i / checklistCols)
+        row.left = 4 + col * (checklistColW + checklistColGap)
+        row.top = y + rowIdx * (18 + checklistRowGap)
+      })
+      const checklistRows = Math.ceil(BRAIN_REGIONS.length / checklistCols)
+      y += checklistRows * 18 + (checklistRows - 1) * checklistRowGap + 14
+
+      this.streakChart.top = y
+      y = this.streakChart.bottom + 14
 
       regionsHeader.top = y
       y = regionsHeader.bottom + 8
@@ -471,7 +579,10 @@ export class BrainMappingScreenView extends ScreenView {
 
     this.addChild(
       new ResetAllButton({
-        listener: () => model.reset(),
+        listener: () => {
+          model.reset()
+          this.streakChart.clear()
+        },
         centerX: card.centerX,
         top: card.bottom + 2,
       }),
@@ -479,6 +590,7 @@ export class BrainMappingScreenView extends ScreenView {
 
     const syncSelection = () => {
       const selected = model.selectedProperty.value
+      const glow = model.glowIntensityProperty.value
       for (const region of BRAIN_REGIONS) {
         const path = this.regionPaths.get(region.id)!
         const halo = this.regionHalos.get(region.id)!
@@ -486,9 +598,10 @@ export class BrainMappingScreenView extends ScreenView {
         path.fill = active ? region.fillActive : region.fill
         path.stroke = active ? region.accent : 'rgba(255,255,255,0.65)'
         path.lineWidth = active ? 3 : 1.8
-        halo.opacity = active ? 0.22 : 0
+        halo.opacity = active ? 0.22 * glow : 0
         this.regionButtons.get(region.id)?.setSelected(active)
       }
+      this.applyReveal()
 
       const region = BRAIN_REGIONS.find((r) => r.id === selected)!
       this.labelText.string = region.name
@@ -506,6 +619,7 @@ export class BrainMappingScreenView extends ScreenView {
       this.labelFlash = 0.32
       fillDetail(region)
       syncPartFilterOpacity()
+      updateTriad()
       relayoutPanel()
     }
 
@@ -529,13 +643,28 @@ export class BrainMappingScreenView extends ScreenView {
       syncPartFilterOpacity()
     }
 
+    const layoutTopPrompt = () => {
+      const mode = model.modeProperty.value
+      this.quizPrompt.string = mode === 'scenario'
+        ? BrainMappingStrings.scenarioPromptStringProperty.value
+        : this.model.currentQuestion().prompt
+      this.quizPrompt.centerX = this.promptCenterX
+      this.quizPrompt.maxWidth = this.promptMaxWidth
+      this.promptBg.setRectWidth(Math.min(this.promptMaxWidth + 12, this.quizPrompt.width + 28))
+      this.promptBg.setRectHeight(34)
+      this.promptBg.centerX = this.quizPrompt.centerX
+      this.promptBg.centerY = this.quizPrompt.centerY
+    }
+
     const syncMode = () => {
       const mode = model.modeProperty.value
       this.studyBtn.setSelected(mode === 'study')
       this.quizBtn.setSelected(mode === 'quiz')
       this.missionBtn.setSelected(mode === 'mission')
-      this.quizPrompt.visible = mode === 'quiz'
-      this.promptBg.visible = mode === 'quiz'
+      this.scenarioBtn.setSelected(mode === 'scenario')
+      const showPrompt = mode === 'quiz' || mode === 'scenario'
+      this.quizPrompt.visible = showPrompt
+      this.promptBg.visible = showPrompt
 
       const title = BrainMappingStrings.guideTitleStringProperty.value
       if (model.celebrateProperty.value) {
@@ -543,14 +672,19 @@ export class BrainMappingScreenView extends ScreenView {
       }
       else if (mode === 'quiz') {
         this.guide.setGuidance(title, BrainMappingStrings.guideQuizStringProperty.value)
-        this.layoutQuizPrompt(stageLeft, stageW)
+        layoutTopPrompt()
       }
       else if (mode === 'mission') {
         this.guide.setGuidance(title, BrainMappingStrings.guideMissionStringProperty.value)
       }
+      else if (mode === 'scenario') {
+        this.guide.setGuidance(title, BrainMappingStrings.guideScenarioStringProperty.value)
+        layoutTopPrompt()
+      }
       else {
         this.guide.setGuidance(title, BrainMappingStrings.guideStudyStringProperty.value)
       }
+      updateTriad()
     }
 
     const syncQuizUnlock = () => {
@@ -567,6 +701,45 @@ export class BrainMappingScreenView extends ScreenView {
       this.starsText.string = `★ ${model.starsProperty.value}`
     }
 
+    const syncChecklist = () => {
+      for (const region of BRAIN_REGIONS) {
+        const row = this.checklistRows.get(region.id)!
+        const done = model.isExplored(region.id)
+        row.string = `${done ? '✓' : '○'} ${region.name}`
+        row.fill = done ? '#16a34a' : NervousColors.muted
+      }
+      updateTriad()
+    }
+
+    const syncTips = () => {
+      const visible = model.tipsVisibleProperty.value
+      this.teachingTriad.visible = visible
+      this.tipsBtn.setLabel(
+        visible
+          ? BrainMappingStrings.tipsOnStringProperty.value
+          : BrainMappingStrings.tipsOffStringProperty.value,
+      )
+      this.tipsBtn.setSelected(visible)
+    }
+
+    const updateTriad = () => {
+      const region = BRAIN_REGIONS.find((r) => r.id === model.selectedProperty.value)!
+      const why = shortenDetail(region.detail)
+      const nextId = model.nextUnexploredId()
+      let next: string
+      if (nextId) {
+        const nextRegion = BRAIN_REGIONS.find((r) => r.id === nextId)!
+        next = BrainMappingStrings.nextTryRegionStringProperty.value.replace('{{name}}', nextRegion.name)
+      }
+      else if (model.quizUnlockedProperty.value && model.modeProperty.value !== 'quiz') {
+        next = BrainMappingStrings.nextTryQuizStringProperty.value
+      }
+      else {
+        next = BrainMappingStrings.nextKeepGoingStringProperty.value
+      }
+      this.teachingTriad.setTriad(region.action, why, next)
+    }
+
     const syncStats = () => {
       this.exploredText.string = `${BrainMappingStrings.exploredStringProperty.value} ${model.exploredCountProperty.value} / ${BRAIN_REGIONS.length}`
       const attempts = model.quizAttemptsProperty.value
@@ -575,8 +748,10 @@ export class BrainMappingScreenView extends ScreenView {
           ? `${BrainMappingStrings.scoreStringProperty.value} ${model.quizScoreProperty.value} / ${attempts}`
           : `${BrainMappingStrings.scoreStringProperty.value} —`
       this.statusText.string = model.statusProperty.value
+      if (model.modeProperty.value === 'quiz' || model.modeProperty.value === 'scenario') {
+        layoutTopPrompt()
+      }
       if (model.modeProperty.value === 'quiz') {
-        this.layoutQuizPrompt(stageLeft, stageW)
         if (model.lastAnswerProperty.value === 'correct') {
           this.guide.setGuidance(
             BrainMappingStrings.guideTitleStringProperty.value,
@@ -598,6 +773,12 @@ export class BrainMappingScreenView extends ScreenView {
       else if (!model.celebrateProperty.value) {
         this.feedbackFlash.fill = 'rgba(39,174,96,0)'
       }
+
+      const lastAnswer = model.lastAnswerProperty.value
+      if (lastAnswer !== null && this.prevLastAnswer === null) {
+        this.streakChart.push(this.streakSeries, lastAnswer === 'correct' ? 1 : 0)
+      }
+      this.prevLastAnswer = lastAnswer
     }
 
     const syncCelebrate = () => {
@@ -624,6 +805,9 @@ export class BrainMappingScreenView extends ScreenView {
         else if (model.missionCompleteProperty.value) {
           this.guide.setGuidance(title, BrainMappingStrings.celebrateMissionStringProperty.value)
         }
+        else if (model.scenarioCompleteProperty.value) {
+          this.guide.setGuidance(title, BrainMappingStrings.celebrateScenarioStringProperty.value)
+        }
       }
       this.wasCelebrating = celebrating
     }
@@ -634,25 +818,40 @@ export class BrainMappingScreenView extends ScreenView {
     model.quizUnlockedProperty.link(syncQuizUnlock)
     model.starsProperty.link(syncStars)
     model.celebrateProperty.link(syncCelebrate)
-    model.exploredCountProperty.link(syncStats)
+    model.exploredCountProperty.link(() => {
+      syncStats()
+      syncChecklist()
+    })
     model.quizScoreProperty.link(syncStats)
     model.quizAttemptsProperty.link(syncStats)
     model.statusProperty.link(syncStats)
     model.quizIndexProperty.link(syncStats)
     model.lastAnswerProperty.link(syncStats)
+    model.tipsVisibleProperty.link(syncTips)
+    model.glowIntensityProperty.link(() => syncSelection())
+    model.revealCorrectIdProperty.link(() => this.applyReveal())
+    model.quizUnlockedProperty.link(() => updateTriad())
 
     syncQuizUnlock()
     syncStars()
     syncPartFilter()
+    syncChecklist()
+    syncTips()
   }
 
-  private layoutQuizPrompt(stageLeft: number, stageW: number): void {
-    this.quizPrompt.string = this.model.currentQuestion().prompt
-    this.quizPrompt.centerX = stageLeft + stageW / 2
-    this.promptBg.setRectWidth(Math.min(stageW - 40, this.quizPrompt.width + 28))
-    this.promptBg.setRectHeight(34)
-    this.promptBg.centerX = this.quizPrompt.centerX
-    this.promptBg.centerY = this.quizPrompt.centerY
+  /** Overlays a gold outline on the correct region while a wrong quiz answer's reveal window is active. */
+  private applyReveal(): void {
+    const revealId = this.model.revealCorrectIdProperty.value
+    for (const [id, path] of this.regionPaths) {
+      if (id === revealId) {
+        path.stroke = REVEAL_STROKE
+        path.lineWidth = 5
+      }
+      else if (id !== this.model.selectedProperty.value) {
+        path.stroke = 'rgba(255,255,255,0.65)'
+        path.lineWidth = 1.8
+      }
+    }
   }
 
   public override step(dt: number): void {
@@ -662,13 +861,21 @@ export class BrainMappingScreenView extends ScreenView {
 
     const selected = this.model.selectedProperty.value
     const filter = this.model.partFilterProperty.value
+    const glow = this.model.glowIntensityProperty.value
     const path = this.regionPaths.get(selected)
     const halo = this.regionHalos.get(selected)
-    if (path) {
+    if (path && this.model.revealCorrectIdProperty.value !== selected) {
       path.opacity = 0.82 + 0.18 * Math.sin(this.pulse * 3.0)
     }
     if (halo) {
-      halo.opacity = 0.16 + 0.1 * Math.sin(this.pulse * 3.0)
+      halo.opacity = (0.16 + 0.1 * Math.sin(this.pulse * 3.0)) * glow
+    }
+    const revealId = this.model.revealCorrectIdProperty.value
+    if (revealId) {
+      const revealHalo = this.regionHalos.get(revealId)
+      if (revealHalo) {
+        revealHalo.opacity = (0.3 + 0.2 * Math.sin(this.pulse * 8.0)) * glow
+      }
     }
     for (const [id, p] of this.regionPaths) {
       if (id !== selected) {
