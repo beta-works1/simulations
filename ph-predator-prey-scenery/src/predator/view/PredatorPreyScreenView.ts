@@ -6,7 +6,7 @@ import { PhetFont } from 'scenerystack/scenery-phet'
 import { CYCLE_STEPS, PredatorPreyModel, REFUGE } from '../model/PredatorPreyModel.js'
 import { PreyControlPanel } from './PreyControlPanel.js'
 import { PreySounds } from './PreySounds.js'
-import { createEcologyIcon } from '../../common/EcologyArt.js'
+import { AnimatedMeadowCreature, createCreatureLegendIcon } from './AnimatedMeadowCreature.js'
 
 type Options = EmptySelfOptions & ScreenViewOptions
 
@@ -42,6 +42,8 @@ export class PredatorPreyScreenView extends ScreenView {
   private clouds: { x: number; y: number; r: number; speed: number }[] = []
   private birds: { x: number; y: number; speed: number; phase: number }[] = []
   private draggingId: number | null = null
+  /** Pooled meadow creatures — update in place (no per-frame recreate). */
+  private readonly creatureById = new Map<number, AnimatedMeadowCreature>()
 
   public constructor(model: PredatorPreyModel, providedOptions?: Options) {
     super(providedOptions)
@@ -266,7 +268,7 @@ export class PredatorPreyScreenView extends ScreenView {
     )
 
     // Picture key so students know what they are looking at
-    const keyRabbit = createEcologyIcon('rabbit', 26)
+    const keyRabbit = createCreatureLegendIcon('prey', 0.85)
     keyRabbit.left = sceneLeft + 10
     keyRabbit.top = sceneTop + 40
     keyRabbit.pickable = false
@@ -280,7 +282,7 @@ export class PredatorPreyScreenView extends ScreenView {
         pickable: false,
       }),
     )
-    const keyFox = createEcologyIcon('fox', 26)
+    const keyFox = createCreatureLegendIcon('predator', 0.85)
     keyFox.left = sceneLeft + 150
     keyFox.top = sceneTop + 40
     keyFox.pickable = false
@@ -656,56 +658,48 @@ export class PredatorPreyScreenView extends ScreenView {
       }
     }
 
-    // Agents (rebuild interactive nodes)
-    this.agentLayer.removeAllChildren()
-    const mode = this.model.modeProperty.value
+    // Agents — pooled animated creatures (hop / prowl), always rabbit & fox
+    const liveIds = new Set<number>()
     for (const a of this.model.agents) {
-      const x = fb.left + a.x * fb.width
-      const y = fb.top + a.y * fb.height
-      const node = new Node({ cursor: 'grab', pickable: true })
-      if (a.kind === 'prey') {
-        const bob = Math.sin(a.phase) * 1.5
-        const icon = createEcologyIcon('rabbit', a.inRefuge ? 28 : 32)
-        icon.centerY = bob
-        icon.opacity = a.inRefuge ? 0.85 : 1
-        node.addChild(icon)
-        if (a.inRefuge) {
-          node.addChild(
-            new Circle(16, {
-              stroke: '#fde68a',
-              lineWidth: 2,
-              fill: null,
-              centerY: bob,
-            }),
-          )
+      liveIds.add(a.id)
+      let creature = this.creatureById.get(a.id)
+      if (!creature || creature.kind !== a.kind) {
+        if (creature) {
+          this.agentLayer.removeChild(creature)
+          this.creatureById.delete(a.id)
         }
-      } else {
-        const icon = createEcologyIcon(mode === 'mutualism' ? 'bird' : 'fox', 34)
-        node.addChild(icon)
+        creature = new AnimatedMeadowCreature(a)
+        const agentId = a.id
+        creature.addInputListener(
+          new DragListener({
+            allowTouchSnag: true,
+            start: () => {
+              this.draggingId = agentId
+              this.sounds.softClick()
+            },
+            drag: event => {
+              const local = this.globalToLocalPoint(event.pointer.point)
+              const nx = (local.x - fb.left) / fb.width
+              const ny = (local.y - fb.top) / fb.height
+              this.model.moveAgent(agentId, nx, ny)
+            },
+            end: () => {
+              this.draggingId = null
+            },
+          }),
+        )
+        this.creatureById.set(a.id, creature)
+        this.agentLayer.addChild(creature)
       }
-      node.centerX = x
-      node.centerY = y
-
-      const agentId = a.id
-      node.addInputListener(
-        new DragListener({
-          allowTouchSnag: true,
-          start: () => {
-            this.draggingId = agentId
-            this.sounds.softClick()
-          },
-          drag: event => {
-            const local = this.globalToLocalPoint(event.pointer.point)
-            const nx = (local.x - fb.left) / fb.width
-            const ny = (local.y - fb.top) / fb.height
-            this.model.moveAgent(agentId, nx, ny)
-          },
-          end: () => {
-            this.draggingId = null
-          },
-        }),
-      )
-      this.agentLayer.addChild(node)
+      creature.centerX = fb.left + a.x * fb.width
+      creature.centerY = fb.top + a.y * fb.height
+      creature.sync(a, this.animTime)
+    }
+    for (const [id, creature] of this.creatureById) {
+      if (!liveIds.has(id)) {
+        this.agentLayer.removeChild(creature)
+        this.creatureById.delete(id)
+      }
     }
 
     if (this.huntPulse.visible) {
@@ -714,7 +708,7 @@ export class PredatorPreyScreenView extends ScreenView {
       if (this.huntPulse.opacity <= 0.05) this.huntPulse.visible = false
     }
 
-    if (this.model.huntFlashProperty.value > 0.2 && mode === 'predation') {
+    if (this.model.huntFlashProperty.value > 0.2 && this.model.modeProperty.value === 'predation') {
       if (Date.now() - this.lastHuntSound > 1200) {
         this.lastHuntSound = Date.now()
         this.sounds.hunt()
