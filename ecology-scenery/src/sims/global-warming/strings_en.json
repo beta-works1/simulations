@@ -3,9 +3,9 @@
   "screen": {
     "lab": "Global Warming"
   },
-  "sun": "Sun",
-  "greenhouseGases": "Greenhouse gases",
-  "infrared": "Infrared",
-  "temperature": "Temperature",
+  "sun": "Sun — sunlight",
+  "greenhouseGases": "Gas blanket",
+  "infrared": "Heat from Earth",
+  "temperature": "Earth temperature",
   "reset": "Reset"
 }

@@ -11,15 +11,12 @@ import {
   Text,
 } from 'scenerystack/scenery'
 import { Shape } from 'scenerystack/kite'
-import { PhetFont, ResetAllButton } from 'scenerystack/scenery-phet'
+import { PhetFont } from 'scenerystack/scenery-phet'
 import { WarmingModel } from '../model/WarmingModel.js'
-import { EcologyConstants, clamp, damp, lerp } from '../../../shared/EcologyConstants.js'
-import { EcologyColors } from '../../../shared/EcologyColors.js'
-import { DepthCard } from '../../../shared/ui/DepthCard.js'
-import { DepthSlider } from '../../../shared/ui/DepthSlider.js'
-import { SoftButton } from '../../../shared/ui/SoftButton.js'
-import { WarmingStrings } from '../WarmingStrings.js'
+import { clamp, damp, lerp } from '../../../shared/EcologyConstants.js'
 import { createEcologyIcon } from '../../../shared/EcologyArt.js'
+import { WarmingControlPanel } from './WarmingControlPanel.js'
+import { WarmingStrings } from '../WarmingStrings.js'
 
 type SelfOptions = EmptySelfOptions
 type Options = SelfOptions & ScreenViewOptions
@@ -39,9 +36,11 @@ export class WarmingScreenView extends ScreenView {
   private readonly irRays: Path[] = []
   private readonly ground: Rectangle
   private readonly shimmer: Rectangle
-  private readonly tempValue: Text
-  private readonly sceneW: number
-  private readonly sceneH: number
+  private readonly tipCard: Node
+  private readonly tipText: Text
+  private readonly whyCard: Node
+  private readonly whyText: Text
+  private readonly sceneBounds: { left: number; top: number; width: number; height: number }
   private readonly sunX: number
   private readonly sunY: number
   private readonly bandLeft: number
@@ -53,36 +52,59 @@ export class WarmingScreenView extends ScreenView {
   private visualHeat = 0.2
   private visualCo2 = 0.4
   private animTime = 0
-
-  /** Sync guard so slider ↔ band drag do not fight. */
   private syncingCo2 = false
 
   public constructor(model: WarmingModel, providedOptions?: Options) {
     super(providedOptions)
     this.model = model
 
-    const m = EcologyConstants.SCREEN_VIEW_X_MARGIN
-    const my = EcologyConstants.SCREEN_VIEW_Y_MARGIN
-    const lb = this.layoutBounds
-    this.sceneW = lb.width
-    this.sceneH = lb.height
+    const margin = 10
+    const panelW = 268
+    const statusH = 42
+    const b = this.layoutBounds
 
-    // Full-bleed sky
-    this.sky = new Rectangle(0, 0, this.sceneW, this.sceneH, {
+    const sceneLeft = b.left + margin
+    const sceneTop = b.top + statusH + margin
+    const sceneW = b.width - panelW - margin * 3
+    const sceneH = b.height - statusH - margin * 2
+    this.sceneBounds = { left: sceneLeft, top: sceneTop, width: sceneW, height: sceneH }
+
+    const statusBg = new Rectangle(b.left + margin, b.top + 4, b.width - margin * 2, statusH, {
+      cornerRadius: 10,
+      fill: 'rgba(15, 23, 42, 0.94)',
+      stroke: 'rgba(125, 211, 252, 0.35)',
+      lineWidth: 1,
+    })
+    this.addChild(statusBg)
+    this.addChild(
+      new Text(model.statusProperty, {
+        font: new PhetFont(13),
+        fill: '#ecfeff',
+        maxWidth: b.width - margin * 4,
+        centerX: b.centerX,
+        centerY: statusBg.centerY,
+      }),
+    )
+
+    // Scene clip / sky
+    this.sky = new Rectangle(sceneLeft, sceneTop, sceneW, sceneH, {
       fill: '#38bdf8',
+      cornerRadius: 14,
+      stroke: 'rgba(255,255,255,0.14)',
+      lineWidth: 1,
     })
     this.addChild(this.sky)
 
-    this.sunX = this.sceneW * 0.16
-    this.sunY = this.sceneH * 0.18
+    this.sunX = sceneLeft + sceneW * 0.18
+    this.sunY = sceneTop + sceneH * 0.2
 
-    this.sunGlow = new Circle(42, {
+    this.sunGlow = new Circle(40, {
       fill: 'rgba(250,204,21,0.28)',
       centerX: this.sunX,
       centerY: this.sunY,
       pickable: false,
     })
-    this.sunCore = new Circle(22, {
+    this.sunCore = new Circle(18, {
       fill: '#facc15',
       stroke: 'rgba(255,255,255,0.55)',
       lineWidth: 2,
@@ -92,7 +114,7 @@ export class WarmingScreenView extends ScreenView {
     })
     this.addChild(this.sunGlow)
     this.addChild(this.sunCore)
-    const sunPic = createEcologyIcon('sun', 48)
+    const sunPic = createEcologyIcon('sun', 44)
     sunPic.centerX = this.sunX
     sunPic.centerY = this.sunY
     sunPic.pickable = false
@@ -105,16 +127,19 @@ export class WarmingScreenView extends ScreenView {
       top: this.sunY + 28,
       pickable: false,
     })
-    // pill behind label
-    const sunPill = new Rectangle(0, 0, 52, 22, {
+    const sunPill = new Rectangle(0, 0, 110, 24, {
       cornerRadius: 8,
-      fill: 'rgba(255,255,255,0.55)',
+      fill: 'rgba(255,255,255,0.7)',
       centerX: this.sunX,
       top: this.sunY + 26,
       pickable: false,
     })
     this.addChild(sunPill)
     this.addChild(sunLabel)
+    sunPill.rectWidth = Math.max(110, sunLabel.width + 16)
+    sunPill.centerX = this.sunX
+    sunLabel.centerX = this.sunX
+    sunLabel.centerY = sunPill.centerY
 
     for (let i = 0; i < SUN_RAY_COUNT; i++) {
       const ray = new Path(null, {
@@ -127,55 +152,50 @@ export class WarmingScreenView extends ScreenView {
       this.addChild(ray)
     }
 
-    this.groundTop = this.sceneH * 0.78
-    this.bandLeft = this.sceneW * 0.28
-    this.bandWidth = this.sceneW * 0.44
-    this.bandMinTop = this.sceneH * 0.22
-    this.bandMaxBottom = this.groundTop - 20
+    this.groundTop = sceneTop + sceneH * 0.78
+    this.bandLeft = sceneLeft + sceneW * 0.3
+    this.bandWidth = sceneW * 0.42
+    this.bandMinTop = sceneTop + sceneH * 0.28
+    this.bandMaxBottom = this.groundTop - 18
 
-    // Greenhouse gas band (vertical thickness ↔ co2)
     this.ghgBand = new Rectangle(this.bandLeft, this.bandMinTop, this.bandWidth, 40, {
       cornerRadius: 10,
       fill: 'rgba(120,113,108,0.42)',
-      stroke: 'rgba(255,255,255,0.28)',
+      stroke: 'rgba(255,255,255,0.35)',
       lineWidth: 1.5,
       cursor: 'ns-resize',
     })
     this.addChild(this.ghgBand)
 
-    const ghgLabel = new Text(WarmingStrings.greenhouseGasesStringProperty, {
-      font: new PhetFont({ size: 12, weight: 'bold' }),
+    const ghgLabel = new Text('Gas blanket — drag thicker', {
+      font: new PhetFont({ size: 13, weight: 'bold' }),
       fill: '#fff',
       pickable: false,
     })
-    const ghgPill = new Rectangle(0, 0, 140, 22, {
+    const ghgPill = new Rectangle(0, 0, 190, 24, {
       cornerRadius: 8,
-      fill: 'rgba(15,23,42,0.45)',
+      fill: 'rgba(15,23,42,0.55)',
       pickable: false,
     })
     this.addChild(ghgPill)
     this.addChild(ghgLabel)
 
-    // Depth handle on bottom edge of band
     this.ghgHandle = new Node({ cursor: 'ns-resize' })
     this.ghgHandle.addChild(
-      new Rectangle(-14, -6, 28, 16, {
-        cornerRadius: 8,
-        fill: 'rgba(15,23,42,0.2)',
-      }),
-    )
-    this.ghgHandle.addChild(
-      new Rectangle(-12, -8, 24, 14, {
-        cornerRadius: 7,
+      new Rectangle(-28, -10, 56, 20, {
+        cornerRadius: 10,
         fill: '#e7e5e4',
         stroke: '#fff',
         lineWidth: 2,
       }),
     )
     this.ghgHandle.addChild(
-      new Rectangle(-6, -2, 12, 2, {
-        cornerRadius: 1,
-        fill: 'rgba(71,85,105,0.55)',
+      new Text('↕ thickness', {
+        font: new PhetFont({ size: 10, weight: 'bold' }),
+        fill: '#334155',
+        centerX: 0,
+        centerY: 0,
+        pickable: false,
       }),
     )
     this.addChild(this.ghgHandle)
@@ -188,8 +208,9 @@ export class WarmingScreenView extends ScreenView {
       this.ghgBand.fill = `rgba(120, 113, 108, ${0.22 + co2 * 0.45})`
       this.ghgHandle.centerX = this.bandLeft + this.bandWidth * 0.5
       this.ghgHandle.centerY = top + thick
+      ghgPill.rectWidth = Math.max(190, ghgLabel.width + 16)
       ghgPill.centerX = this.bandLeft + this.bandWidth * 0.5
-      ghgPill.centerY = top + thick * 0.45
+      ghgPill.centerY = top + Math.min(thick * 0.4, thick - 14)
       ghgLabel.center = ghgPill.center
     }
     applyBandFromCo2(model.co2LevelProperty.value)
@@ -206,7 +227,7 @@ export class WarmingScreenView extends ScreenView {
 
     this.ghgBand.addInputListener(
       new DragListener({
-        drag: (event) => {
+        drag: event => {
           const pt = this.globalToLocalPoint(event.pointer.point)
           dragBand(pt.y)
         },
@@ -214,25 +235,22 @@ export class WarmingScreenView extends ScreenView {
     )
     this.ghgHandle.addInputListener(
       new DragListener({
-        drag: (event) => {
+        drag: event => {
           const pt = this.globalToLocalPoint(event.pointer.point)
           dragBand(pt.y)
         },
       }),
     )
 
-    model.co2LevelProperty.link((co2) => {
-      if (!this.syncingCo2) {
-        applyBandFromCo2(co2)
-      }
+    model.co2LevelProperty.link(co2 => {
+      if (!this.syncingCo2) applyBandFromCo2(co2)
       this.visualCo2 = co2
     })
 
-    // IR bounce rays
     for (let i = 0; i < IR_RAY_MAX; i++) {
       const ray = new Path(null, {
-        stroke: 'rgba(239,68,68,0.7)',
-        lineWidth: 2.2,
+        stroke: 'rgba(239,68,68,0.75)',
+        lineWidth: 2.4,
         lineCap: 'round',
         pickable: false,
       })
@@ -243,127 +261,118 @@ export class WarmingScreenView extends ScreenView {
     const irLabel = new Text(WarmingStrings.infraredStringProperty, {
       font: new PhetFont({ size: 12, weight: 'bold' }),
       fill: '#fff',
-      right: this.sceneW - m - 8,
-      top: this.groundTop - 80,
       pickable: false,
     })
-    const irPill = new Rectangle(0, 0, 72, 22, {
+    const irPill = new Rectangle(0, 0, 120, 24, {
       cornerRadius: 8,
-      fill: 'rgba(185,28,28,0.55)',
-      right: this.sceneW - m,
-      top: this.groundTop - 84,
+      fill: 'rgba(185,28,28,0.6)',
+      right: sceneLeft + sceneW - 10,
+      top: this.groundTop - 90,
       pickable: false,
     })
     this.addChild(irPill)
     this.addChild(irLabel)
+    irPill.rectWidth = Math.max(120, irLabel.width + 16)
+    irPill.right = sceneLeft + sceneW - 10
+    irLabel.center = irPill.center
 
-    // Ground / surface with heat shimmer suggestion
-    this.ground = new Rectangle(0, this.groundTop, this.sceneW, this.sceneH - this.groundTop, {
+    this.ground = new Rectangle(sceneLeft, this.groundTop, sceneW, sceneTop + sceneH - this.groundTop, {
       fill: '#a16207',
     })
-    this.shimmer = new Rectangle(0, this.groundTop - 10, this.sceneW, 18, {
+    this.shimmer = new Rectangle(sceneLeft, this.groundTop - 10, sceneW, 18, {
       fill: 'rgba(251,146,60,0.25)',
       pickable: false,
     })
     this.addChild(this.ground)
     this.addChild(this.shimmer)
 
-    const earth = createEcologyIcon('earth', 56)
-    earth.centerX = this.sceneW * 0.5
-    earth.centerY = this.groundTop + 36
+    const earth = createEcologyIcon('earth', 52)
+    earth.centerX = sceneLeft + sceneW * 0.5
+    earth.centerY = this.groundTop + 34
     earth.pickable = false
     this.addChild(earth)
-    const treeL = createEcologyIcon('tree', 36)
-    treeL.centerX = this.sceneW * 0.22
-    treeL.centerY = this.groundTop + 28
+
+    const treeL = createEcologyIcon('tree', 38)
+    treeL.centerX = sceneLeft + sceneW * 0.2
+    treeL.centerY = this.groundTop + 30
     treeL.pickable = false
     this.addChild(treeL)
-    const treeR = createEcologyIcon('factory', 40)
-    treeR.centerX = this.sceneW * 0.78
-    treeR.centerY = this.groundTop + 28
+
+    const grass = createEcologyIcon('grass', 32)
+    grass.centerX = sceneLeft + sceneW * 0.32
+    grass.centerY = this.groundTop + 32
+    grass.pickable = false
+    this.addChild(grass)
+
+    const factory = createEcologyIcon('factory', 42)
+    factory.centerX = sceneLeft + sceneW * 0.78
+    factory.centerY = this.groundTop + 30
+    factory.pickable = false
+    this.addChild(factory)
+
+    const treeR = createEcologyIcon('tree', 34)
+    treeR.centerX = sceneLeft + sceneW * 0.9
+    treeR.centerY = this.groundTop + 30
     treeR.pickable = false
     this.addChild(treeR)
 
-    const howBg = new Rectangle(0, 0, this.sceneW - m * 2, 44, {
-      cornerRadius: 10,
-      fill: 'rgba(15,23,42,0.82)',
-      stroke: 'rgba(125,211,252,0.35)',
+    // NOW / Why teaching cards (left of scene — never cover the gas band handle)
+    this.tipText = new Text('', {
+      font: new PhetFont({ size: 13, weight: 'bold' }),
+      fill: '#fde68a',
+      maxWidth: sceneW * 0.48,
+    })
+    const tipBg = new Rectangle(0, 0, 20, 20, {
+      fill: 'rgba(8, 18, 32, 0.92)',
+      cornerRadius: 8,
+      stroke: 'rgba(250, 204, 21, 0.5)',
+      lineWidth: 1.5,
+    })
+    this.tipCard = new Node({ children: [tipBg, this.tipText], pickable: false })
+    this.addChild(this.tipCard)
+
+    this.whyText = new Text('', {
+      font: new PhetFont(12),
+      fill: '#a7f3d0',
+      maxWidth: sceneW * 0.48,
+    })
+    const whyBg = new Rectangle(0, 0, 20, 20, {
+      fill: 'rgba(6, 40, 28, 0.92)',
+      cornerRadius: 8,
+      stroke: 'rgba(134, 239, 172, 0.4)',
       lineWidth: 1,
-      left: m,
-      top: my,
-      pickable: false,
     })
-    const howText = new Text(
-      'How it works: sunlight warms Earth → Earth sends heat up → thicker gas layer traps more heat → temperature rises.',
-      {
-        font: new PhetFont(12),
-        fill: '#e2e8f0',
-        maxWidth: this.sceneW - m * 2 - 20,
-        left: m + 10,
-        centerY: howBg.centerY,
-        pickable: false,
-      },
-    )
-    this.addChild(howBg)
-    this.addChild(howText)
+    this.whyCard = new Node({ children: [whyBg, this.whyText], pickable: false })
+    this.addChild(this.whyCard)
 
-    // Temperature chip with depth
-    const tempCard = new DepthCard(200, 72, {
-      title: WarmingStrings.temperatureStringProperty.value,
-    })
-    tempCard.left = m
-    tempCard.bottom = this.groundTop - 12
-    this.addChild(tempCard)
-    this.tempValue = new Text('15.0 °C', {
-      font: new PhetFont({ size: 28, weight: 'bold' }),
-      fill: EcologyColors.ink,
-      left: 14,
-      top: 32,
-    })
-    tempCard.content.addChild(this.tempValue)
+    const refreshTip = () => {
+      const show = model.showTipsProperty.value
+      this.whyText.string = model.whyProperty.value
+      whyBg.rectWidth = Math.min(sceneW * 0.5, this.whyText.width + 18)
+      whyBg.rectHeight = this.whyText.height + 12
+      this.whyText.center = whyBg.center
+      this.whyCard.left = sceneLeft + 10
+      this.whyCard.top = sceneTop + 10
+      this.whyCard.visible = show
 
-    // Controls card bottom-right above ground? Put on ground strip or overlay
-    const controlsW = 240
-    const controlsCard = new DepthCard(controlsW, 100, {})
-    controlsCard.right = this.sceneW - m
-    controlsCard.bottom = this.sceneH - my
-    this.addChild(controlsCard)
-
-    const gasSlider = new DepthSlider(model.co2LevelProperty, {
-      min: 0.05,
-      max: 1,
-      width: controlsW - 28,
-      label: WarmingStrings.greenhouseGasesStringProperty.value,
-      format: (n) => `${Math.round(n * 100)}%`,
-    })
-    gasSlider.left = 14
-    gasSlider.top = 10
-    controlsCard.content.addChild(gasSlider)
-
-    const resetBtn = new SoftButton(WarmingStrings.resetStringProperty.value, () => {
-      model.reset()
-      this.visualHeat = (model.temperatureProperty.value - 10) / 28
-      this.visualCo2 = model.co2LevelProperty.value
-      applyBandFromCo2(model.co2LevelProperty.value)
-    }, {
-      width: controlsW - 28,
-      height: 32,
-      fill: EcologyColors.accent,
-    })
-    resetBtn.left = 14
-    resetBtn.top = 58
-    controlsCard.content.addChild(resetBtn)
+      this.tipText.string = model.tipProperty.value
+      tipBg.rectWidth = Math.min(sceneW * 0.5, this.tipText.width + 18)
+      tipBg.rectHeight = this.tipText.height + 12
+      this.tipText.center = tipBg.center
+      this.tipCard.left = sceneLeft + 10
+      this.tipCard.top = this.whyCard.bottom + 6
+      this.tipCard.visible = show
+    }
+    model.tipProperty.link(refreshTip)
+    model.whyProperty.link(refreshTip)
+    model.showTipsProperty.link(refreshTip)
 
     this.addChild(
-      new ResetAllButton({
-        listener: () => {
-          model.reset()
-          this.visualHeat = (model.temperatureProperty.value - 10) / 28
-          this.visualCo2 = model.co2LevelProperty.value
-          applyBandFromCo2(model.co2LevelProperty.value)
-        },
-        left: m,
-        bottom: this.sceneH - my,
+      new WarmingControlPanel(model, {
+        right: b.right - margin,
+        top: sceneTop,
+        maxWidth: panelW,
+        panelMaxHeight: sceneH,
       }),
     )
 
@@ -384,38 +393,30 @@ export class WarmingScreenView extends ScreenView {
     this.updateIrRays()
     this.updateGround()
 
-    this.tempValue.string = `${this.model.temperatureProperty.value.toFixed(1)} °C`
     this.sunGlow.opacity = 0.55 + 0.35 * Math.sin(this.animTime * 1.6)
-    this.sunGlow.setRadius(38 + 6 * Math.sin(this.animTime * 1.2))
+    this.sunGlow.setRadius(36 + 5 * Math.sin(this.animTime * 1.2))
   }
 
   private updateSky(): void {
     const heat = this.visualHeat
-    const top = Color.interpolateRGBA(
-      new Color(40, 90, 150),
-      new Color(130, 45, 80),
-      heat,
-    )
-    const bottom = Color.interpolateRGBA(
-      new Color(170, 130, 55),
-      new Color(240, 95, 40),
-      heat,
-    )
-    this.sky.fill = new LinearGradient(0, 0, 0, this.sceneH)
+    const top = Color.interpolateRGBA(new Color(40, 90, 150), new Color(130, 45, 80), heat)
+    const bottom = Color.interpolateRGBA(new Color(170, 130, 55), new Color(240, 95, 40), heat)
+    const s = this.sceneBounds
+    this.sky.fill = new LinearGradient(0, s.top, 0, s.top + s.height)
       .addColorStop(0, top)
       .addColorStop(1, bottom)
   }
 
   private updateSunRays(): void {
     const t = this.animTime
+    const s = this.sceneBounds
     for (let i = 0; i < SUN_RAY_COUNT; i++) {
       const phase = (t * 0.35 + i * 0.14) % 1
       const y0 = this.sunY + 18
-      const y1 = lerp(this.sceneH * 0.12, this.groundTop - 8, (i + 0.5) / SUN_RAY_COUNT)
-      const x1 = this.sceneW * 0.52 + Math.sin(phase * Math.PI * 2 + i) * 8
-      const shape = new Shape().moveTo(this.sunX + 24, y0).lineTo(x1, y1)
-      this.sunRays[i].shape = shape
-      this.sunRays[i].opacity = 0.35 + 0.35 * Math.sin(t * 2 + i)
+      const y1 = lerp(s.top + s.height * 0.14, this.groundTop - 8, (i + 0.5) / SUN_RAY_COUNT)
+      const x1 = s.left + s.width * 0.52 + Math.sin(phase * Math.PI * 2 + i) * 8
+      this.sunRays[i]!.shape = new Shape().moveTo(this.sunX + 22, y0).lineTo(x1, y1)
+      this.sunRays[i]!.opacity = 0.35 + 0.35 * Math.sin(t * 2 + i)
     }
   }
 
@@ -424,18 +425,19 @@ export class WarmingScreenView extends ScreenView {
     const bounce = Math.floor(2 + co2 * 7)
     const bandBottom = this.ghgBand.bottom
     const t = this.model.timeProperty.value
+    const s = this.sceneBounds
 
     for (let i = 0; i < IR_RAY_MAX; i++) {
-      const ray = this.irRays[i]
+      const ray = this.irRays[i]!
       if (i >= bounce) {
         ray.visible = false
         continue
       }
       ray.visible = true
       const cycle = (t * 0.45 + i * 0.28) % 1
-      const startX = this.sceneW * 0.72 + (i % 3) * 18
-      const baseY = this.groundTop - 12 - ((i * 41 + t * 50) % Math.max(40, this.groundTop - bandBottom - 30))
-      // Up toward GHG layer then reflect back down
+      const startX = s.left + s.width * 0.68 + (i % 3) * 16
+      const baseY =
+        this.groundTop - 12 - ((i * 41 + t * 50) % Math.max(40, this.groundTop - bandBottom - 30))
       if (cycle < 0.5) {
         const u = cycle / 0.5
         const x = lerp(startX, this.bandLeft + this.bandWidth * 0.55, u)
@@ -446,7 +448,7 @@ export class WarmingScreenView extends ScreenView {
         const u = (cycle - 0.5) / 0.5
         const midX = this.bandLeft + this.bandWidth * 0.55
         const midY = bandBottom + 4
-        const endX = midX + Math.sin(u * Math.PI) * (30 + co2 * 40)
+        const endX = midX + Math.sin(u * Math.PI) * (28 + co2 * 36)
         const endY = lerp(midY, this.groundTop - 8, u)
         ray.shape = new Shape().moveTo(midX, midY).lineTo(endX, endY)
       }
@@ -456,11 +458,7 @@ export class WarmingScreenView extends ScreenView {
 
   private updateGround(): void {
     const heat = this.visualHeat
-    this.ground.fill = Color.interpolateRGBA(
-      new Color(161, 98, 7),
-      new Color(220, 80, 30),
-      heat,
-    )
+    this.ground.fill = Color.interpolateRGBA(new Color(161, 98, 7), new Color(220, 80, 30), heat)
     this.shimmer.opacity = 0.2 + heat * 0.55 + 0.15 * Math.sin(this.animTime * 4)
     this.shimmer.y = Math.sin(this.animTime * 3) * 2
   }
