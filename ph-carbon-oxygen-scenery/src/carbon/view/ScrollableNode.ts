@@ -6,7 +6,7 @@ import { PhetFont } from 'scenerystack/scenery-phet'
 
 /**
  * Clips tall panel content and scrolls with mouse wheel / trackpad / scrollbar drag.
- * Does not cover controls with a hit layer — buttons and sliders stay interactive.
+ * A full-viewport hit pad catches the pointer in empty gaps (not only on buttons).
  */
 export class ScrollableNode extends Node {
   private readonly contentNode: Node
@@ -22,6 +22,12 @@ export class ScrollableNode extends Node {
 
     this.viewportHeight = maxHeight
     this.contentNode = new Node({ children: [content] })
+
+    // Invisible pad so wheel works anywhere in the panel, including gaps between controls.
+    const hitPad = new Rectangle(0, 0, width, maxHeight, {
+      fill: 'rgba(0,0,0,0.001)',
+      pickable: true,
+    })
 
     const clip = new Node({
       clipArea: Shape.bounds(new Bounds2(0, 0, width, maxHeight)),
@@ -39,19 +45,23 @@ export class ScrollableNode extends Node {
       cursor: 'grab',
     })
     this.hint = new Text('Scroll for more ↓', {
-      font: new PhetFont(9),
-      fill: 'rgba(189, 199, 220, 0.9)',
+      font: new PhetFont(11),
+      fill: 'rgba(189, 199, 220, 0.95)',
       centerX: width / 2,
       bottom: maxHeight - 4,
       pickable: false,
     })
 
+    this.addChild(hitPad)
     this.addChild(clip)
     this.addChild(this.track)
     this.addChild(this.thumb)
     this.addChild(this.hint)
 
-    this.localBounds = new Bounds2(0, 0, width, maxHeight)
+    const area = new Bounds2(0, 0, width, maxHeight)
+    this.localBounds = area
+    this.mouseArea = area
+    this.touchArea = area
 
     const applyScroll = () => {
       const contentH = Math.max(this.contentNode.bounds.height, this.viewportHeight)
@@ -76,18 +86,21 @@ export class ScrollableNode extends Node {
     setTimeout(applyScroll, 0)
     applyScroll()
 
-    this.addInputListener({
-      wheel: (event: SceneryEvent<WheelEvent>) => {
-        if (this.maxScroll <= 0) return
-        const dom = event.domEvent
-        if (!dom) return
-        const dy = dom.deltaY * (dom.deltaMode === 1 ? 18 : dom.deltaMode === 2 ? this.viewportHeight : 0.6)
-        if (dy === 0) return
-        this.scrollY -= dy
-        applyScroll()
-        event.handle()
-      },
-    })
+    const onWheel = (event: SceneryEvent<WheelEvent>) => {
+      if (this.maxScroll <= 0) return
+      const dom = event.domEvent
+      if (!dom) return
+      const dy = dom.deltaY * (dom.deltaMode === 1 ? 18 : dom.deltaMode === 2 ? this.viewportHeight : 0.6)
+      if (dy === 0) return
+      this.scrollY -= dy
+      applyScroll()
+      event.handle()
+      dom.preventDefault?.()
+    }
+
+    // Listen on pad + root so empty gaps and buttons both scroll.
+    hitPad.addInputListener({ wheel: onWheel })
+    this.addInputListener({ wheel: onWheel })
 
     let thumbDragStart = 0
     let scrollAtStart = 0
