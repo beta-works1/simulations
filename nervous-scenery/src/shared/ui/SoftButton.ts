@@ -23,6 +23,7 @@ export class SoftButton extends Node {
       textFill?: string
       selected?: boolean
       fontSize?: number
+      onSound?: () => void
     } = {},
   ) {
     super({ cursor: 'pointer' })
@@ -68,6 +69,7 @@ export class SoftButton extends Node {
         this.gloss.y = 6
         this.labelText.centerY = this.h / 2 + 2
         this.shadow.opacity = 0.35
+        options.onSound?.()
         onPress()
       },
       up: () => this.resetPress(),

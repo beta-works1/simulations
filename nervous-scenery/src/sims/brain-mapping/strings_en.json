@@ -40,5 +40,7 @@
   "streakChartTitle": "Quiz streak",
   "nextTryRegion": "Try exploring the {{name}}!",
   "nextTryQuiz": "Ready? Take the Quiz!",
-  "nextKeepGoing": "Great job — keep exploring!"
+  "nextKeepGoing": "Great job — keep exploring!",
+  "soundOn": "Sound: On",
+  "soundOff": "Sound: Off"
 }

@@ -47,6 +47,9 @@ export class BrainMappingModel implements TModel {
   public readonly scenarioProgressProperty: NumberProperty
   public readonly scenarioCompleteProperty: BooleanProperty
 
+  /** Ecology-style sound toggle, mirrors reflex-arc / neuron-signal. */
+  public readonly soundEnabledProperty: BooleanProperty
+
   private readonly explored = new Set<BrainRegionId>(['frontal'])
   private readonly quizCorrect = new Set<BrainRegionId>()
   private readonly missionParts = new Set<BrainPart>(['cerebrum'])
@@ -77,6 +80,7 @@ export class BrainMappingModel implements TModel {
     this.revealUntilProperty = new NumberProperty(0)
     this.scenarioProgressProperty = new NumberProperty(0)
     this.scenarioCompleteProperty = new BooleanProperty(false)
+    this.soundEnabledProperty = new BooleanProperty(true)
   }
 
   public currentQuestion(): QuizQuestion {
@@ -271,6 +275,7 @@ export class BrainMappingModel implements TModel {
     this.scenarioFound.clear()
     this.scenarioProgressProperty.reset()
     this.scenarioCompleteProperty.reset()
+    this.soundEnabledProperty.reset()
     this.time = 0
     this.refreshStatus()
   }

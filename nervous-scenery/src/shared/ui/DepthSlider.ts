@@ -15,6 +15,7 @@ export class DepthSlider extends Node {
       label: string
       format?: (n: number) => string
       fill?: string
+      onTick?: () => void
     },
   ) {
     super()
@@ -22,6 +23,7 @@ export class DepthSlider extends Node {
     const trackY = 28
     const format = options.format ?? ((n: number) => `${Math.round(n)}`)
     const accent = options.fill ?? NervousColors.accent
+    let lastValue = property.value
 
     const label = new Text(options.label, {
       font: new PhetFont({ size: 12, weight: 'bold' }),
@@ -48,7 +50,7 @@ export class DepthSlider extends Node {
       fill: 'rgba(148,163,184,0.45)',
       cursor: 'pointer',
     })
-    const fill = new Rectangle(0, trackY, 40, 8, {
+    const fillBar = new Rectangle(0, trackY, 40, 8, {
       cornerRadius: 4,
       fill: accent,
     })
@@ -73,10 +75,14 @@ export class DepthSlider extends Node {
     const sync = () => {
       const t = (property.value - options.min) / (options.max - options.min)
       const x = clamp(t, 0, 1) * w
-      fill.setRectWidth(Math.max(8, x))
+      fillBar.setRectWidth(Math.max(8, x))
       thumb.x = x
       valueText.string = format(property.value)
       valueText.right = w
+      if (property.value !== lastValue) {
+        lastValue = property.value
+        options.onTick?.()
+      }
     }
     property.link(sync)
 
@@ -104,7 +110,7 @@ export class DepthSlider extends Node {
     this.addChild(label)
     this.addChild(valueText)
     this.addChild(track)
-    this.addChild(fill)
+    this.addChild(fillBar)
     this.addChild(thumb)
   }
 }

@@ -2,7 +2,7 @@ import { EmptySelfOptions } from 'scenerystack/phet-core'
 import { ScreenView, ScreenViewOptions } from 'scenerystack/sim'
 import { Node, Path, Rectangle, RichText, Text } from 'scenerystack/scenery'
 import { Shape } from 'scenerystack/kite'
-import { Matrix3 } from 'scenerystack/dot'
+import { Matrix3, Vector2 } from 'scenerystack/dot'
 import { PhetFont, ResetAllButton } from 'scenerystack/scenery-phet'
 import { BrainMappingModel } from '../model/BrainMappingModel.js'
 import {
@@ -13,8 +13,9 @@ import {
   type BrainPart,
   type BrainRegionId,
 } from '../model/brainRegions.js'
-import { NervousConstants } from '../../../shared/NervousConstants.js'
+import { NervousConstants, damp } from '../../../shared/NervousConstants.js'
 import { NervousColors } from '../../../shared/NervousColors.js'
+import { NervousSounds } from '../../../shared/NervousSounds.js'
 import { DepthCard } from '../../../shared/ui/DepthCard.js'
 import { DepthSlider } from '../../../shared/ui/DepthSlider.js'
 import { SoftButton } from '../../../shared/ui/SoftButton.js'
@@ -22,6 +23,7 @@ import { GuidanceBanner } from '../../../shared/ui/GuidanceBanner.js'
 import { ScrollableNode } from '../../../shared/ui/ScrollableNode.js'
 import { createPanelTip } from '../../../shared/ui/createPanelTip.js'
 import { ParticleBurst } from '../../../shared/ui/ParticleBurst.js'
+import { RippleFX } from '../../../shared/ui/RippleFX.js'
 import { TeachingTriad } from '../../../shared/ui/TeachingTriad.js'
 import { HistoryChart } from '../../../shared/ui/HistoryChart.js'
 import { BrainMappingStrings } from '../BrainMappingStrings.js'
@@ -61,12 +63,15 @@ export class BrainMappingScreenView extends ScreenView {
   private readonly missionBtn: SoftButton
   private readonly scenarioBtn: SoftButton
   private readonly tipsBtn: SoftButton
+  private readonly soundBtn: SoftButton
   private readonly filterButtons = new Map<PartFilterId, SoftButton>()
   private readonly regionButtons = new Map<BrainRegionId, SoftButton>()
   private readonly checklistRows = new Map<BrainRegionId, Text>()
   private readonly guide: GuidanceBanner
   private readonly feedbackFlash: Rectangle
   private readonly confetti: ParticleBurst
+  private readonly ripples: RippleFX
+  private readonly sounds: NervousSounds
   private readonly teachingTriad: TeachingTriad
   private readonly streakChart: HistoryChart
   private readonly streakSeries: number
@@ -74,14 +79,21 @@ export class BrainMappingScreenView extends ScreenView {
   private readonly brainCenterY: number
   private readonly promptCenterX: number
   private readonly promptMaxWidth: number
+  /** Fade target (before ×glowIntensity) for each non-selected halo — damped toward in step(). */
+  private readonly haloTarget = new Map<BrainRegionId, number>()
+  /** Original (unscaled) center of each region path, used to re-center the subtle selection pulse. */
+  private readonly regionCenter = new Map<BrainRegionId, { x: number; y: number }>()
   private pulse = 0
   private labelFlash = 0
   private wasCelebrating = false
   private prevLastAnswer: 'correct' | 'wrong' | null = null
+  private celebrateWavesLeft = 0
+  private celebrateWaveTimer = 0
 
   public constructor(model: BrainMappingModel, providedOptions?: Options) {
     super(providedOptions)
     this.model = model
+    this.sounds = new NervousSounds()
 
     const m = NervousConstants.SCREEN_VIEW_X_MARGIN
     const my = NervousConstants.SCREEN_VIEW_Y_MARGIN
@@ -187,6 +199,7 @@ export class BrainMappingScreenView extends ScreenView {
         pickable: false,
       })
       this.regionHalos.set(id, halo)
+      this.haloTarget.set(id, 0)
       brainRoot.addChild(halo)
 
       const path = new Path(new Shape(region.pathD), {
@@ -195,18 +208,19 @@ export class BrainMappingScreenView extends ScreenView {
         lineWidth: 1.8,
         cursor: 'pointer',
       })
+      this.regionCenter.set(id, { x: path.centerX, y: path.centerY })
       path.addInputListener({
         down: () => model.selectRegion(id),
         enter: () => {
           if (model.selectedProperty.value !== id) {
             path.fill = region.fillHover
-            halo.opacity = 0.18 * model.glowIntensityProperty.value
+            this.haloTarget.set(id, 0.18)
           }
         },
         exit: () => {
           if (model.selectedProperty.value !== id) {
             path.fill = region.fill
-            halo.opacity = 0
+            this.haloTarget.set(id, 0)
           }
         },
       })
@@ -256,6 +270,9 @@ export class BrainMappingScreenView extends ScreenView {
     this.confetti = new ParticleBurst(120)
     this.addChild(this.confetti)
 
+    this.ripples = new RippleFX()
+    this.addChild(this.ripples)
+
     this.addChild(
       new Rectangle(stageLeft + 14, stageTop + stageH - 48, stageW - 28, 36, {
         cornerRadius: 10,
@@ -287,25 +304,25 @@ export class BrainMappingScreenView extends ScreenView {
 
     this.studyBtn = new SoftButton(BrainMappingStrings.studyStringProperty.value, () => {
       model.setMode('study')
-    }, { width: modeBtnW, height: 36, fill: NervousColors.accent, selected: true })
+    }, { width: modeBtnW, height: 36, fill: NervousColors.accent, selected: true, onSound: () => this.sounds.button() })
     this.studyBtn.left = 4
     panelContent.addChild(this.studyBtn)
 
     this.quizBtn = new SoftButton(BrainMappingStrings.quizStringProperty.value, () => {
       model.setMode('quiz')
-    }, { width: modeBtnW, height: 36, fill: '#64748b', selected: false })
+    }, { width: modeBtnW, height: 36, fill: '#64748b', selected: false, onSound: () => this.sounds.button() })
     this.quizBtn.left = 4
     panelContent.addChild(this.quizBtn)
 
     this.missionBtn = new SoftButton(BrainMappingStrings.missionStringProperty.value, () => {
       model.setMode('mission')
-    }, { width: modeBtnW, height: 36, fill: '#10b981', selected: false })
+    }, { width: modeBtnW, height: 36, fill: '#10b981', selected: false, onSound: () => this.sounds.button() })
     this.missionBtn.left = 4
     panelContent.addChild(this.missionBtn)
 
     this.scenarioBtn = new SoftButton(BrainMappingStrings.scenarioStringProperty.value, () => {
       model.setMode('scenario')
-    }, { width: modeBtnW, height: 36, fill: '#f59e0b', selected: false })
+    }, { width: modeBtnW, height: 36, fill: '#f59e0b', selected: false, onSound: () => this.sounds.button() })
     this.scenarioBtn.left = 4
     panelContent.addChild(this.scenarioBtn)
 
@@ -326,9 +343,15 @@ export class BrainMappingScreenView extends ScreenView {
 
     this.tipsBtn = new SoftButton(BrainMappingStrings.tipsOnStringProperty.value, () => {
       model.tipsVisibleProperty.value = !model.tipsVisibleProperty.value
-    }, { width: modeBtnW, height: 32, fill: '#0ea5e9', selected: true, fontSize: 13 })
+    }, { width: modeBtnW, height: 32, fill: '#0ea5e9', selected: true, fontSize: 13, onSound: () => this.sounds.button() })
     this.tipsBtn.left = 4
     panelContent.addChild(this.tipsBtn)
+
+    this.soundBtn = new SoftButton(BrainMappingStrings.soundOnStringProperty.value, () => {
+      model.soundEnabledProperty.value = !model.soundEnabledProperty.value
+    }, { width: modeBtnW, height: 32, fill: '#ef4444', selected: true, fontSize: 13, onSound: () => this.sounds.button() })
+    this.soundBtn.left = 4
+    panelContent.addChild(this.soundBtn)
 
     const glowSlider = new DepthSlider(model.glowIntensityProperty, {
       min: 0.4,
@@ -337,6 +360,7 @@ export class BrainMappingScreenView extends ScreenView {
       label: BrainMappingStrings.glowLabelStringProperty.value,
       format: (n) => `${n.toFixed(1)}×`,
       fill: '#a855f7',
+      onTick: () => this.sounds.sliderTick(),
     })
     glowSlider.left = 4
     panelContent.addChild(glowSlider)
@@ -362,6 +386,7 @@ export class BrainMappingScreenView extends ScreenView {
         fill: def.fill,
         selected: def.id === 'all',
         fontSize: 11,
+        onSound: () => this.sounds.softClick(),
       })
       panelContent.addChild(btn)
       this.filterButtons.set(def.id, btn)
@@ -449,6 +474,7 @@ export class BrainMappingScreenView extends ScreenView {
         fill: region.accent,
         selected: region.id === 'frontal',
         fontSize: 12,
+        onSound: () => this.sounds.button(),
       })
       panelContent.addChild(btn)
       this.regionButtons.set(region.id, btn)
@@ -477,7 +503,9 @@ export class BrainMappingScreenView extends ScreenView {
       y = this.starsText.bottom + 10
 
       this.tipsBtn.top = y
-      y = this.tipsBtn.bottom + 10
+      y = this.tipsBtn.bottom + 6
+      this.soundBtn.top = y
+      y = this.soundBtn.bottom + 10
       glowSlider.top = y
       y = glowSlider.bottom + 12
 
@@ -580,8 +608,10 @@ export class BrainMappingScreenView extends ScreenView {
     this.addChild(
       new ResetAllButton({
         listener: () => {
+          this.sounds.resetAll()
           model.reset()
           this.streakChart.clear()
+          this.ripples.clear()
         },
         centerX: card.centerX,
         top: card.bottom + 2,
@@ -598,7 +628,10 @@ export class BrainMappingScreenView extends ScreenView {
         path.fill = active ? region.fillActive : region.fill
         path.stroke = active ? region.accent : 'rgba(255,255,255,0.65)'
         path.lineWidth = active ? 3 : 1.8
-        halo.opacity = active ? 0.22 * glow : 0
+        // Only the freshly-selected halo snaps up; deselected halos damp back down in step().
+        if (active) {
+          halo.opacity = 0.22 * glow
+        }
         this.regionButtons.get(region.id)?.setSelected(active)
       }
       this.applyReveal()
@@ -722,6 +755,27 @@ export class BrainMappingScreenView extends ScreenView {
       this.tipsBtn.setSelected(visible)
     }
 
+    let soundSyncedOnce = false
+    const syncSound = () => {
+      const on = model.soundEnabledProperty.value
+      if (on) {
+        // Enable first so the confirming chime below is actually audible.
+        this.sounds.setEnabled(true)
+        if (soundSyncedOnce) this.sounds.toggle(true)
+      }
+      else {
+        if (soundSyncedOnce) this.sounds.toggle(false)
+        this.sounds.setEnabled(false)
+      }
+      soundSyncedOnce = true
+      this.soundBtn.setLabel(
+        on
+          ? BrainMappingStrings.soundOnStringProperty.value
+          : BrainMappingStrings.soundOffStringProperty.value,
+      )
+      this.soundBtn.setSelected(on)
+    }
+
     const updateTriad = () => {
       const region = BRAIN_REGIONS.find((r) => r.id === model.selectedProperty.value)!
       const why = shortenDetail(region.detail)
@@ -784,20 +838,11 @@ export class BrainMappingScreenView extends ScreenView {
     const syncCelebrate = () => {
       const celebrating = model.celebrateProperty.value
       if (celebrating && !this.wasCelebrating) {
-        const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c']
-        for (let i = 0; i < 6; i++) {
-          this.confetti.burst(
-            this.brainCenterX + (Math.random() - 0.5) * 60,
-            this.brainCenterY + (Math.random() - 0.5) * 40,
-            {
-              count: 14,
-              color: colors[i % colors.length],
-              speed: 100 + Math.random() * 50,
-              life: 0.65,
-              radius: 3.5,
-            },
-          )
-        }
+        this.sounds.celebrate()
+        this.confettiWave()
+        // Two more staggered waves so the celebration reads as a burst, not one flat pop.
+        this.celebrateWavesLeft = 2
+        this.celebrateWaveTimer = 0.28
         const title = BrainMappingStrings.guideTitleStringProperty.value
         if (model.quizRoundCompleteProperty.value) {
           this.guide.setGuidance(title, BrainMappingStrings.celebrateQuizStringProperty.value)
@@ -808,6 +853,9 @@ export class BrainMappingScreenView extends ScreenView {
         else if (model.scenarioCompleteProperty.value) {
           this.guide.setGuidance(title, BrainMappingStrings.celebrateScenarioStringProperty.value)
         }
+      }
+      else if (!celebrating) {
+        this.celebrateWavesLeft = 0
       }
       this.wasCelebrating = celebrating
     }
@@ -828,9 +876,26 @@ export class BrainMappingScreenView extends ScreenView {
     model.quizIndexProperty.link(syncStats)
     model.lastAnswerProperty.link(syncStats)
     model.tipsVisibleProperty.link(syncTips)
+    model.soundEnabledProperty.link(syncSound)
     model.glowIntensityProperty.link(() => syncSelection())
     model.revealCorrectIdProperty.link(() => this.applyReveal())
     model.quizUnlockedProperty.link(() => updateTriad())
+
+    // ── Sound + ripple cues (ecology pattern) ─────────────────────────────────
+    model.selectedProperty.lazyLink((id) => {
+      this.sounds.select()
+      const region = BRAIN_REGIONS.find((r) => r.id === id)!
+      const pt = brainRoot.localToParentPoint(new Vector2(region.label.x, region.label.y))
+      this.ripples.burst(pt.x, pt.y, { color: region.accent, count: 3, maxR: 44, life: 0.45 })
+    })
+    model.modeProperty.lazyLink(() => this.sounds.modeChange())
+    model.lastAnswerProperty.lazyLink((answer) => {
+      if (answer === 'correct') this.sounds.correct()
+      else if (answer === 'wrong') this.sounds.wrong()
+    })
+    model.revealCorrectIdProperty.lazyLink((id) => {
+      if (id !== null) this.sounds.select()
+    })
 
     syncQuizUnlock()
     syncStars()
@@ -858,30 +923,53 @@ export class BrainMappingScreenView extends ScreenView {
     this.model.step(dt)
     this.pulse += dt
     this.confetti.step(dt, 55)
+    this.ripples.step(dt)
+
+    if (this.celebrateWavesLeft > 0) {
+      this.celebrateWaveTimer -= dt
+      if (this.celebrateWaveTimer <= 0) {
+        this.celebrateWaveTimer = 0.28
+        this.celebrateWavesLeft -= 1
+        this.confettiWave()
+      }
+    }
 
     const selected = this.model.selectedProperty.value
     const filter = this.model.partFilterProperty.value
     const glow = this.model.glowIntensityProperty.value
-    const path = this.regionPaths.get(selected)
-    const halo = this.regionHalos.get(selected)
-    if (path && this.model.revealCorrectIdProperty.value !== selected) {
-      path.opacity = 0.82 + 0.18 * Math.sin(this.pulse * 3.0)
-    }
-    if (halo) {
-      halo.opacity = (0.16 + 0.1 * Math.sin(this.pulse * 3.0)) * glow
-    }
     const revealId = this.model.revealCorrectIdProperty.value
-    if (revealId) {
-      const revealHalo = this.regionHalos.get(revealId)
-      if (revealHalo) {
-        revealHalo.opacity = (0.3 + 0.2 * Math.sin(this.pulse * 8.0)) * glow
-      }
-    }
+
+    // Region path opacity + a subtle selection scale-pulse (damped back to 1× when deselected).
     for (const [id, p] of this.regionPaths) {
-      if (id !== selected) {
+      const center = this.regionCenter.get(id)!
+      if (id === selected) {
+        if (revealId !== selected) {
+          p.opacity = 0.82 + 0.18 * Math.sin(this.pulse * 3.0)
+        }
+        const scale = 1 + 0.018 * Math.sin(this.pulse * 3.0)
+        p.setScaleMagnitude(scale)
+      }
+      else {
         const region = BRAIN_REGIONS.find((r) => r.id === id)!
         const dimmed = filter !== 'all' && region.part !== filter
         p.opacity = dimmed ? 0.3 : 1
+        p.setScaleMagnitude(1)
+      }
+      p.centerX = center.x
+      p.centerY = center.y
+    }
+
+    // Halo opacity: selected/revealed regions pulse; everyone else damps toward its hover target.
+    for (const [id, halo] of this.regionHalos) {
+      if (id === selected) {
+        halo.opacity = (0.16 + 0.1 * Math.sin(this.pulse * 3.0)) * glow
+      }
+      else if (id === revealId) {
+        halo.opacity = (0.3 + 0.2 * Math.sin(this.pulse * 8.0)) * glow
+      }
+      else {
+        const target = (this.haloTarget.get(id) ?? 0) * glow
+        halo.opacity = damp(halo.opacity, target, 10, dt)
       }
     }
 
@@ -894,5 +982,29 @@ export class BrainMappingScreenView extends ScreenView {
     else {
       this.labelBadge.setScaleMagnitude(1)
     }
+  }
+
+  /** One staggered wave of celebration confetti + a ripple ring at brain-center. */
+  private confettiWave(): void {
+    const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c']
+    for (let i = 0; i < 6; i++) {
+      this.confetti.burst(
+        this.brainCenterX + (Math.random() - 0.5) * 60,
+        this.brainCenterY + (Math.random() - 0.5) * 40,
+        {
+          count: 14,
+          color: colors[i % colors.length],
+          speed: 100 + Math.random() * 50,
+          life: 0.65,
+          radius: 3.5,
+        },
+      )
+    }
+    this.ripples.burst(this.brainCenterX, this.brainCenterY, {
+      color: 'rgba(217,119,6,0.75)',
+      count: 3,
+      maxR: 80,
+      life: 0.7,
+    })
   }
 }
