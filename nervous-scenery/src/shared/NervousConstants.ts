@@ -14,3 +14,13 @@ export function lerp(a: number, b: number, t: number): number {
 export function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n))
 }
+
+export function smoothstep(t: number): number {
+  const x = clamp(t, 0, 1)
+  return x * x * (3 - 2 * x)
+}
+
+/** Frame-rate independent ease toward a target. */
+export function damp(current: number, target: number, lambda: number, dt: number): number {
+  return lerp(current, target, 1 - Math.exp(-lambda * dt))
+}

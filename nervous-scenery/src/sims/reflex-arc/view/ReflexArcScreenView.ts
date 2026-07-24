@@ -4,11 +4,13 @@ import { Circle, Node, Path, Rectangle, Text } from 'scenerystack/scenery'
 import { Shape } from 'scenerystack/kite'
 import { PhetFont, ResetAllButton } from 'scenerystack/scenery-phet'
 import { ReflexArcModel } from '../model/ReflexArcModel.js'
-import { NervousConstants } from '../../../shared/NervousConstants.js'
+import { NervousConstants, damp } from '../../../shared/NervousConstants.js'
 import { NervousColors } from '../../../shared/NervousColors.js'
 import { DepthCard } from '../../../shared/ui/DepthCard.js'
+import { DepthSlider } from '../../../shared/ui/DepthSlider.js'
 import { SoftButton } from '../../../shared/ui/SoftButton.js'
 import { GuidanceBanner } from '../../../shared/ui/GuidanceBanner.js'
+import { ParticleBurst } from '../../../shared/ui/ParticleBurst.js'
 import { createPanelTip } from '../../../shared/ui/createPanelTip.js'
 import { ReflexArcStrings } from '../ReflexArcStrings.js'
 
@@ -38,6 +40,7 @@ export class ReflexArcScreenView extends ScreenView {
   private readonly curvesViaBrain: Curve[]
   private readonly pathLayer: Node
   private readonly completedLayer: Node
+  private readonly particles: ParticleBurst
   private readonly signalDot: Circle
   private readonly signalGlow: Circle
   private readonly progressText: Text
@@ -45,13 +48,26 @@ export class ReflexArcScreenView extends ScreenView {
   private readonly brainLabel: Text
   private readonly brainNode: Path
   private readonly viaBrainButton: SoftButton
+  private readonly exploreBtn: SoftButton
+  private readonly compareBtn: SoftButton
+  private readonly scenarioBtn: SoftButton
+  private readonly statusText: Text
+  private readonly trialText: Text
   private readonly guide: GuidanceBanner
   private readonly stepLabels: Text[] = []
   private readonly receptorHalo: Circle
   private readonly effectorHalo: Circle
   private readonly effectorNode: Circle
+  private readonly receptorX: number
+  private readonly receptorY: number
+  private readonly effectorX: number
+  private readonly effectorY: number
+  private readonly stageCenterX: number
+  private readonly stageCenterY: number
   private pulse = 0
   private effectorFlash = 0
+  private effectorKickT = 0
+  private prevProgress = 0
 
   public constructor(model: ReflexArcModel, providedOptions?: Options) {
     super(providedOptions)
@@ -66,6 +82,8 @@ export class ReflexArcScreenView extends ScreenView {
     const stageTop = my + 78
     const stageW = lb.width - m * 2 - rightW - gap
     const stageH = lb.height - my * 2 - 78
+    this.stageCenterX = stageLeft + stageW / 2
+    this.stageCenterY = stageTop + stageH / 2
 
     this.guide = new GuidanceBanner(lb.width - m * 2, {
       title: ReflexArcStrings.guideTitleStringProperty.value,
@@ -101,6 +119,10 @@ export class ReflexArcScreenView extends ScreenView {
     const spine = { x: stageLeft + stageW * 0.48, y: stageTop + stageH * 0.5 }
     const brain = { x: stageLeft + stageW * 0.52, y: stageTop + stageH * 0.22 }
     const effector = { x: stageLeft + stageW * 0.86, y: stageTop + stageH * 0.68 }
+    this.receptorX = receptor.x
+    this.receptorY = receptor.y
+    this.effectorX = effector.x
+    this.effectorY = effector.y
 
     this.addChild(
       new Path(Shape.ellipse(spine.x, stageTop + stageH * 0.52, stageW * 0.09, stageH * 0.28, 0), {
@@ -146,8 +168,10 @@ export class ReflexArcScreenView extends ScreenView {
 
     this.pathLayer = new Node({ pickable: false })
     this.completedLayer = new Node({ pickable: false })
+    this.particles = new ParticleBurst(90)
     this.addChild(this.pathLayer)
     this.addChild(this.completedLayer)
+    this.addChild(this.particles)
 
     this.addChild(
       new Rectangle(spine.x - 10, stageTop + stageH * 0.3, 20, stageH * 0.4, {
@@ -245,7 +269,7 @@ export class ReflexArcScreenView extends ScreenView {
       }),
     )
     this.addChild(
-      new Text('tap to fire', {
+      new Text(ReflexArcStrings.tapToFireStringProperty.value, {
         font: new PhetFont(14),
         fill: NervousColors.muted,
         centerX: receptor.x,
@@ -296,7 +320,6 @@ export class ReflexArcScreenView extends ScreenView {
       }),
     )
 
-    // Step chips
     const stepNames = [
       ReflexArcStrings.stepReceptorStringProperty.value,
       ReflexArcStrings.stepSpineStringProperty.value,
@@ -348,39 +371,106 @@ export class ReflexArcScreenView extends ScreenView {
     })
     this.addChild(this.resultText)
 
-    // Controls
     const card = new DepthCard(rightW, stageH, { title: ReflexArcStrings.pathwayStringProperty.value })
     card.left = stageLeft + stageW + gap
     card.top = stageTop
     this.addChild(card)
 
+    const btnW = rightW - 32
+    const btnH = 36
+
+    this.exploreBtn = new SoftButton(ReflexArcStrings.challengeExploreStringProperty.value, () => {
+      model.setChallenge('explore')
+    }, {
+      width: btnW,
+      height: btnH,
+      fill: NervousColors.accent,
+      selected: true,
+    })
+    this.exploreBtn.left = 16
+    this.exploreBtn.top = 44
+    card.content.addChild(this.exploreBtn)
+
+    this.compareBtn = new SoftButton(ReflexArcStrings.challengeCompareStringProperty.value, () => {
+      model.setChallenge('compare')
+    }, {
+      width: btnW,
+      height: btnH,
+      fill: '#0ea5e9',
+      selected: false,
+    })
+    this.compareBtn.left = 16
+    this.compareBtn.top = 88
+    card.content.addChild(this.compareBtn)
+
+    this.scenarioBtn = new SoftButton(ReflexArcStrings.challengeScenarioStringProperty.value, () => {
+      model.setChallenge('scenario')
+    }, {
+      width: btnW,
+      height: btnH,
+      fill: '#e74c3c',
+      selected: false,
+    })
+    this.scenarioBtn.left = 16
+    this.scenarioBtn.top = 132
+    card.content.addChild(this.scenarioBtn)
+
     const stimulateBtn = new SoftButton(ReflexArcStrings.stimulateStringProperty.value, () => model.fire(), {
-      width: rightW - 32,
+      width: btnW,
       height: 42,
       fill: NervousColors.receptor,
     })
     stimulateBtn.left = 16
-    stimulateBtn.top = 44
+    stimulateBtn.top = 182
     card.content.addChild(stimulateBtn)
 
     this.viaBrainButton = new SoftButton(ReflexArcStrings.viaBrainStringProperty.value, () => {
       model.setViaBrain(!model.viaBrainProperty.value)
     }, {
-      width: rightW - 32,
+      width: btnW,
       height: 42,
       fill: '#2980b9',
       selected: false,
     })
     this.viaBrainButton.left = 16
-    this.viaBrainButton.top = 96
+    this.viaBrainButton.top = 232
     card.content.addChild(this.viaBrainButton)
 
+    const speedSlider = new DepthSlider(model.speedScaleProperty, {
+      min: 0.5,
+      max: 1.8,
+      width: btnW,
+      label: ReflexArcStrings.signalSpeedStringProperty.value,
+      format: (n) => `${n.toFixed(1)}×`,
+      fill: NervousColors.signal,
+    })
+    speedSlider.left = 16
+    speedSlider.top = 288
+    card.content.addChild(speedSlider)
+
+    this.statusText = new Text(model.statusProperty.value, {
+      font: new PhetFont({ size: 13, weight: 'bold' }),
+      fill: NervousColors.ink,
+      left: 16,
+      top: 348,
+      maxWidth: btnW,
+    })
+    card.content.addChild(this.statusText)
+
+    this.trialText = new Text('', {
+      font: new PhetFont({ size: 13, weight: 'bold' }),
+      fill: NervousColors.muted,
+      left: 16,
+      top: 396,
+    })
+    card.content.addChild(this.trialText)
+
     const learnTip = createPanelTip(ReflexArcStrings.learnMoreStringProperty.value, {
-      width: rightW - 32,
+      width: btnW,
       fontSize: 18,
     })
     learnTip.left = 16
-    learnTip.top = 156
+    learnTip.top = 428
     card.content.addChild(learnTip)
 
     this.addChild(
@@ -390,6 +480,21 @@ export class ReflexArcScreenView extends ScreenView {
         bottom: lb.bottom - my,
       }),
     )
+
+    const syncTrials = () => {
+      const s = model.spinalTrialsProperty.value
+      const b = model.brainTrialsProperty.value
+      this.trialText.string =
+        `${ReflexArcStrings.trialSpinalStringProperty.value} ${s} · ${ReflexArcStrings.trialBrainStringProperty.value} ${b}`
+    }
+
+    const syncChallenge = () => {
+      const mode = model.challengeProperty.value
+      this.exploreBtn.setSelected(mode === 'explore')
+      this.compareBtn.setSelected(mode === 'compare')
+      this.scenarioBtn.setSelected(mode === 'scenario')
+      this.updateGuide()
+    }
 
     const syncPathway = () => {
       const via = model.viaBrainProperty.value
@@ -426,22 +531,109 @@ export class ReflexArcScreenView extends ScreenView {
       this.signalGlow.visible = false
       this.progressText.visible = false
       this.resultText.visible = false
+      this.prevProgress = 0
       this.updateGuide()
     }
+
+    const burstAtJunction = (seg: number) => {
+      if (seg < 0) {
+        return
+      }
+      const via = model.viaBrainProperty.value
+      const curves = via ? this.curvesViaBrain : this.curvesNoBrain
+      const c = curves[Math.min(seg, curves.length - 1)]
+      this.particles.burst(c.a.x, c.a.y, {
+        count: 14,
+        color: NervousColors.signal,
+        speed: 85,
+        life: 0.5,
+        radius: 3.4,
+      })
+    }
+
     model.viaBrainProperty.link(syncPathway)
-    model.firedProperty.link(() => this.updateGuide())
+    model.challengeProperty.link(syncChallenge)
+    model.statusProperty.link((status) => {
+      this.statusText.string = status
+    })
+    model.spinalTrialsProperty.link(syncTrials)
+    model.brainTrialsProperty.link(syncTrials)
+    model.firedProperty.link((fired, oldFired) => {
+      if (fired && !oldFired) {
+        this.particles.burst(this.receptorX, this.receptorY, {
+          count: 22,
+          color: NervousColors.receptor,
+          speed: 95,
+          life: 0.55,
+          radius: 3.6,
+        })
+      }
+      this.updateGuide()
+    })
     model.progressProperty.link(() => this.updateGuide())
+    model.junctionIndexProperty.link(burstAtJunction)
+    model.compareCompleteProperty.link((complete, wasComplete) => {
+      if (complete && !wasComplete) {
+        this.guide.setGuidance(
+          ReflexArcStrings.guideTitleStringProperty.value,
+          ReflexArcStrings.guideCompareCompleteStringProperty.value,
+        )
+        this.particles.burst(this.stageCenterX, this.stageCenterY - 20, {
+          count: 28,
+          color: NervousColors.signal,
+          speed: 110,
+          life: 0.75,
+          radius: 4,
+        })
+        this.resultText.visible = true
+        this.resultText.string = ReflexArcStrings.guideCompareCompleteStringProperty.value
+        this.resultText.fill = NervousColors.accent
+      }
+    })
+
+    syncTrials()
+    syncChallenge()
   }
 
   private updateGuide(): void {
+    if (this.model.compareCompleteProperty.value) {
+      this.guide.setGuidance(
+        ReflexArcStrings.guideTitleStringProperty.value,
+        ReflexArcStrings.guideCompareCompleteStringProperty.value,
+      )
+      return
+    }
+
     const fired = this.model.firedProperty.value
     const progress = this.model.progressProperty.value
     const via = this.model.viaBrainProperty.value
+    const challenge = this.model.challengeProperty.value
+
     if (!fired) {
-      this.guide.setGuidance(
-        ReflexArcStrings.guideTitleStringProperty.value,
-        ReflexArcStrings.guideIdleStringProperty.value,
-      )
+      if (challenge === 'compare') {
+        this.guide.setGuidance(
+          ReflexArcStrings.guideTitleStringProperty.value,
+          ReflexArcStrings.guideCompareStringProperty.value,
+        )
+      }
+      else if (challenge === 'scenario') {
+        this.guide.setGuidance(
+          ReflexArcStrings.guideTitleStringProperty.value,
+          ReflexArcStrings.guideScenarioStringProperty.value,
+        )
+      }
+      else if (challenge === 'explore') {
+        this.guide.setGuidance(
+          ReflexArcStrings.guideTitleStringProperty.value,
+          ReflexArcStrings.guideExploreStringProperty.value,
+        )
+      }
+      else {
+        this.guide.setGuidance(
+          ReflexArcStrings.guideTitleStringProperty.value,
+          ReflexArcStrings.guideIdleStringProperty.value,
+        )
+      }
     }
     else if (progress < 1) {
       this.guide.setGuidance(
@@ -459,22 +651,52 @@ export class ReflexArcScreenView extends ScreenView {
     }
   }
 
+  private triggerEffectorKick(): void {
+    this.effectorKickT = 0.55
+    this.effectorFlash = 0.7
+    this.particles.burst(this.effectorX, this.effectorY, {
+      count: 24,
+      color: NervousColors.effector,
+      speed: 100,
+      life: 0.6,
+      radius: 3.8,
+    })
+  }
+
   public override step(dt: number): void {
     this.model.step(dt)
     this.pulse += dt
+    this.particles.step(dt)
     this.receptorHalo.opacity = 0.55 + 0.35 * Math.sin(this.pulse * 2.4)
+
+    if (this.effectorKickT > 0) {
+      this.effectorKickT -= dt
+      const phase = Math.max(0, this.effectorKickT / 0.55)
+      const kick = 16 * Math.sin((1 - phase) * Math.PI)
+      this.effectorNode.centerX = this.effectorX + kick
+      this.effectorNode.centerY = this.effectorY - kick * 0.35
+      this.effectorHalo.centerX = this.effectorNode.centerX
+      this.effectorHalo.centerY = this.effectorNode.centerY
+    }
+    else {
+      this.effectorNode.centerX = damp(this.effectorNode.centerX, this.effectorX, 14, dt)
+      this.effectorNode.centerY = damp(this.effectorNode.centerY, this.effectorY, 14, dt)
+      this.effectorHalo.centerX = this.effectorNode.centerX
+      this.effectorHalo.centerY = this.effectorNode.centerY
+    }
 
     if (this.effectorFlash > 0) {
       this.effectorFlash -= dt
-      this.effectorHalo.radius = 28 + 18 * Math.max(0, this.effectorFlash)
-      this.effectorHalo.opacity = Math.max(0, this.effectorFlash)
+      this.effectorHalo.radius = 28 + 20 * Math.max(0, this.effectorFlash)
+      this.effectorHalo.opacity = 0.45 + 0.55 * Math.max(0, this.effectorFlash)
     }
-    else {
+    else if (this.effectorKickT <= 0) {
       this.effectorHalo.radius = 28
       this.effectorHalo.opacity = 0.5
     }
 
     if (!this.model.firedProperty.value) {
+      this.prevProgress = 0
       return
     }
 
@@ -488,7 +710,11 @@ export class ReflexArcScreenView extends ScreenView {
     const c = curves[i]
     const pos = cubic(c.a, c.c1, c.c2, c.b, f)
 
-    // Highlight step chips
+    if (progress >= 1 && this.prevProgress < 1) {
+      this.triggerEffectorKick()
+    }
+    this.prevProgress = progress
+
     const stepIndex = via
       ? (i === 0 ? 0 : i === 1 || i === 2 ? (i === 1 ? 2 : 1) : 3)
       : (i === 0 ? 0 : 3)
@@ -535,11 +761,12 @@ export class ReflexArcScreenView extends ScreenView {
 
     if (progress >= 1) {
       this.resultText.visible = true
-      this.resultText.string = via
-        ? ReflexArcStrings.slowStringProperty.value
-        : ReflexArcStrings.fastStringProperty.value
-      this.resultText.fill = via ? '#2980b9' : '#27ae60'
-      this.effectorFlash = Math.max(this.effectorFlash, 0.45)
+      if (!this.model.compareCompleteProperty.value) {
+        this.resultText.string = via
+          ? ReflexArcStrings.slowStringProperty.value
+          : ReflexArcStrings.fastStringProperty.value
+        this.resultText.fill = via ? '#2980b9' : '#27ae60'
+      }
     }
     else {
       this.resultText.visible = false

@@ -12,6 +12,10 @@
   "guideFired": "Signal traveling… follow the gold pulse along the pathway",
   "guideDoneFast": "Done! Fast spinal reflex — brain was skipped. Toggle brain and try again.",
   "guideDoneSlow": "Done! Slower path — the signal visited the brain. Toggle brain off to compare.",
+  "guideExplore": "Explore freely — toggle brain path and scrub signal speed.",
+  "guideCompare": "Compare challenge: fire once spinal, once via brain.",
+  "guideScenario": "Hot iron! Spinal reflex fires first — then watch brain awareness.",
+  "guideCompareComplete": "Compare complete! Spinal reflex was clearly faster than the brain path.",
   "fast": "Fast reflex — brain skipped",
   "slow": "Slower — path went through the brain",
   "receptor": "Receptor",
@@ -23,5 +27,12 @@
   "stepSpine": "2. Spinal cord",
   "stepBrain": "3. Brain",
   "stepEffector": "4. Effector",
-  "learnMore": "A reflex can finish in the spinal cord so you pull away before the brain “notices.”"
+  "learnMore": "A reflex can finish in the spinal cord so you pull away before the brain “notices.”",
+  "challengeExplore": "Explore",
+  "challengeCompare": "Compare",
+  "challengeScenario": "Hot iron",
+  "signalSpeed": "Signal speed",
+  "trialSpinal": "Spinal",
+  "trialBrain": "Brain",
+  "tapToFire": "tap to fire"
 }
