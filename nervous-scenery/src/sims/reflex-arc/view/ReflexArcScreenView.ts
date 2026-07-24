@@ -9,6 +9,7 @@ import { NervousColors } from '../../../shared/NervousColors.js'
 import { DepthCard } from '../../../shared/ui/DepthCard.js'
 import { DepthSlider } from '../../../shared/ui/DepthSlider.js'
 import { SoftButton } from '../../../shared/ui/SoftButton.js'
+import { StageBackdrop } from '../../../shared/ui/StageBackdrop.js'
 import { GuidanceBanner } from '../../../shared/ui/GuidanceBanner.js'
 import { ParticleBurst } from '../../../shared/ui/ParticleBurst.js'
 import { createPanelTip } from '../../../shared/ui/createPanelTip.js'
@@ -102,6 +103,7 @@ export class ReflexArcScreenView extends ScreenView {
 
     const sounds = new NervousSounds()
     this.sounds = sounds
+    this.addInputListener({ down: () => sounds.unlock() })
 
     const m = NervousConstants.SCREEN_VIEW_X_MARGIN
     const my = NervousConstants.SCREEN_VIEW_Y_MARGIN
@@ -125,7 +127,7 @@ export class ReflexArcScreenView extends ScreenView {
     this.addChild(this.guide)
 
     // ── Left column: teaching triad + trial-time history ─────────────────────
-    const leftCard = new DepthCard(leftW, stageH, { fill: NervousColors.panelFill })
+    const leftCard = new DepthCard(leftW, stageH)
     leftCard.left = m
     leftCard.top = stageTop
     this.addChild(leftCard)
@@ -148,7 +150,7 @@ export class ReflexArcScreenView extends ScreenView {
     const historyLegend = createPanelTip(ReflexArcStrings.historyChartLegendStringProperty.value, {
       width: leftW - 24,
       fontSize: 10,
-      fill: NervousColors.muted,
+      fill: NervousColors.panelMuted,
     })
     historyLegend.left = 12
     historyLegend.top = this.historyChart.bottom + 6
@@ -159,9 +161,11 @@ export class ReflexArcScreenView extends ScreenView {
         ? ReflexArcStrings.soundOnStringProperty.value
         : ReflexArcStrings.soundOffStringProperty.value,
       () => {
+        sounds.unlock()
         const on = !model.soundEnabledProperty.value
         model.soundEnabledProperty.value = on
         sounds.toggle(on)
+        if (on) sounds.button()
         this.soundBtn.setLabel(
           on ? ReflexArcStrings.soundOnStringProperty.value : ReflexArcStrings.soundOffStringProperty.value,
         )
@@ -173,25 +177,7 @@ export class ReflexArcScreenView extends ScreenView {
     leftCard.content.addChild(this.soundBtn)
 
     this.addChild(
-      new Rectangle(stageLeft + 5, stageTop + 8, stageW, stageH, {
-        cornerRadius: 18,
-        fill: 'rgba(15,23,42,0.14)',
-      }),
-    )
-    this.addChild(
-      new Rectangle(stageLeft, stageTop, stageW, stageH, {
-        cornerRadius: 18,
-        fill: '#f5f7fb',
-        stroke: 'rgba(71,85,105,0.22)',
-        lineWidth: 1.5,
-      }),
-    )
-    this.addChild(
-      new Rectangle(stageLeft + 14, stageTop + 8, stageW - 28, 5, {
-        cornerRadius: 3,
-        fill: 'rgba(255,255,255,0.7)',
-        pickable: false,
-      }),
+      new StageBackdrop(stageLeft, stageTop, stageW, stageH, { top: '#a8c8e8', bottom: '#eef4f8' }),
     )
 
     const receptor = { x: stageLeft + stageW * 0.14, y: stageTop + stageH * 0.68 }
@@ -523,7 +509,7 @@ export class ReflexArcScreenView extends ScreenView {
     this.addChild(this.resultText)
 
     // ── Timed tip card (fades ~4s after appearing) ────────────────────────────
-    this.tipCard = new DepthCard(240, 108, { cornerRadius: 12, fill: 'rgba(255,255,255,0.97)' })
+    this.tipCard = new DepthCard(240, 108, { cornerRadius: 12, variant: 'light' })
     this.tipCard.centerX = this.stageCenterX
     this.tipCard.top = stageTop + 40
     this.tipCard.visible = false
@@ -673,7 +659,7 @@ export class ReflexArcScreenView extends ScreenView {
 
     this.statusText = new Text(model.statusProperty.value, {
       font: new PhetFont({ size: 13, weight: 'bold' }),
-      fill: NervousColors.ink,
+      fill: NervousColors.panelText,
       left: 16,
       top: 404,
       maxWidth: btnW,
@@ -682,7 +668,7 @@ export class ReflexArcScreenView extends ScreenView {
 
     this.trialText = new Text('', {
       font: new PhetFont({ size: 13, weight: 'bold' }),
-      fill: NervousColors.muted,
+      fill: NervousColors.panelMuted,
       left: 16,
       top: 434,
     })

@@ -10,4 +10,6 @@ init({
   availableLocales: ['en'],
   splashDataURI: madeWithSceneryStackSplashDataURI,
   allowLocaleSwitching: false,
+  // Required for SceneryStack/tambo audio (same as ph-ecology Ch1 packages).
+  supportsSound: true,
 })

@@ -1,6 +1,5 @@
 import { RichText } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
-import { NervousColors } from '../NervousColors.js'
 
 /**
  * Panel tip / body copy that wraps instead of shrinking.
@@ -18,7 +17,7 @@ export function createPanelTip(
   const fontSize = options.fontSize ?? 18
   return new RichText(string, {
     font: new PhetFont({ size: fontSize, weight: options.bold ? 'bold' : 'normal' }),
-    fill: options.fill ?? NervousColors.ink,
+    fill: options.fill ?? '#e2e8f0',
     lineWrap: options.width,
     leading: Math.round(fontSize * 0.35),
   })

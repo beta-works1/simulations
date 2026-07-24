@@ -19,6 +19,7 @@ import { NervousSounds } from '../../../shared/NervousSounds.js'
 import { DepthCard } from '../../../shared/ui/DepthCard.js'
 import { DepthSlider } from '../../../shared/ui/DepthSlider.js'
 import { SoftButton } from '../../../shared/ui/SoftButton.js'
+import { StageBackdrop } from '../../../shared/ui/StageBackdrop.js'
 import { GuidanceBanner } from '../../../shared/ui/GuidanceBanner.js'
 import { ScrollableNode } from '../../../shared/ui/ScrollableNode.js'
 import { createPanelTip } from '../../../shared/ui/createPanelTip.js'
@@ -94,6 +95,7 @@ export class BrainMappingScreenView extends ScreenView {
     super(providedOptions)
     this.model = model
     this.sounds = new NervousSounds()
+    this.addInputListener({ down: () => this.sounds.unlock() })
 
     const m = NervousConstants.SCREEN_VIEW_X_MARGIN
     const my = NervousConstants.SCREEN_VIEW_Y_MARGIN
@@ -114,25 +116,7 @@ export class BrainMappingScreenView extends ScreenView {
     this.addChild(this.guide)
 
     this.addChild(
-      new Rectangle(stageLeft + 5, stageTop + 8, stageW, stageH, {
-        cornerRadius: 18,
-        fill: 'rgba(15,23,42,0.12)',
-      }),
-    )
-    this.addChild(
-      new Rectangle(stageLeft, stageTop, stageW, stageH, {
-        cornerRadius: 18,
-        fill: '#f4f6f8',
-        stroke: 'rgba(71,85,105,0.2)',
-        lineWidth: 1.5,
-      }),
-    )
-    this.addChild(
-      new Rectangle(stageLeft + 14, stageTop + 8, stageW - 28, 5, {
-        cornerRadius: 3,
-        fill: 'rgba(255,255,255,0.75)',
-        pickable: false,
-      }),
+      new StageBackdrop(stageLeft, stageTop, stageW, stageH, { top: '#c5d4e8', bottom: '#f0f4f8' }),
     )
 
     this.feedbackFlash = new Rectangle(stageLeft, stageTop, stageW, stageH, {
@@ -328,7 +312,7 @@ export class BrainMappingScreenView extends ScreenView {
 
     this.unlockHint = new Text(BrainMappingStrings.unlockQuizStringProperty.value, {
       font: new PhetFont({ size: 12 }),
-      fill: NervousColors.muted,
+      fill: NervousColors.panelMuted,
       left: 4,
       maxWidth: modeBtnW,
     })
@@ -348,8 +332,10 @@ export class BrainMappingScreenView extends ScreenView {
     panelContent.addChild(this.tipsBtn)
 
     this.soundBtn = new SoftButton(BrainMappingStrings.soundOnStringProperty.value, () => {
+      this.sounds.unlock()
       model.soundEnabledProperty.value = !model.soundEnabledProperty.value
-    }, { width: modeBtnW, height: 32, fill: '#ef4444', selected: true, fontSize: 13, onSound: () => this.sounds.button() })
+      if (model.soundEnabledProperty.value) this.sounds.button()
+    }, { width: modeBtnW, height: 32, fill: '#ef4444', selected: true, fontSize: 13 })
     this.soundBtn.left = 4
     panelContent.addChild(this.soundBtn)
 
@@ -367,7 +353,7 @@ export class BrainMappingScreenView extends ScreenView {
 
     const filterLabel = new Text(BrainMappingStrings.filterLabelStringProperty.value, {
       font: new PhetFont({ size: 13, weight: 'bold' }),
-      fill: NervousColors.ink,
+      fill: NervousColors.panelText,
       left: 4,
     })
     panelContent.addChild(filterLabel)
@@ -394,12 +380,12 @@ export class BrainMappingScreenView extends ScreenView {
 
     this.exploredText = new Text('Explored 1 / 6', {
       font: new PhetFont({ size: 14, weight: 'bold' }),
-      fill: NervousColors.ink,
+      fill: NervousColors.panelText,
       left: 4,
     })
     this.scoreText = new Text('Score —', {
       font: new PhetFont({ size: 14, weight: 'bold' }),
-      fill: NervousColors.muted,
+      fill: NervousColors.panelMuted,
       left: 4,
     })
     panelContent.addChild(this.exploredText)
@@ -407,7 +393,7 @@ export class BrainMappingScreenView extends ScreenView {
 
     const checklistTitle = new Text(BrainMappingStrings.checklistTitleStringProperty.value, {
       font: new PhetFont({ size: 13, weight: 'bold' }),
-      fill: NervousColors.ink,
+      fill: NervousColors.panelText,
       left: 4,
     })
     panelContent.addChild(checklistTitle)
@@ -416,7 +402,7 @@ export class BrainMappingScreenView extends ScreenView {
     for (const region of BRAIN_REGIONS) {
       const row = new Text('', {
         font: new PhetFont({ size: 12, weight: 'bold' }),
-        fill: NervousColors.muted,
+        fill: NervousColors.panelMuted,
         left: 4,
         maxWidth: checklistColW - 4,
       })
@@ -440,7 +426,7 @@ export class BrainMappingScreenView extends ScreenView {
     })
     this.detailPart = new Text('', {
       font: new PhetFont({ size: 13, weight: 'bold' }),
-      fill: NervousColors.muted,
+      fill: NervousColors.panelMuted,
       left: 4,
       maxWidth: tipWidth,
     })
@@ -461,7 +447,7 @@ export class BrainMappingScreenView extends ScreenView {
 
     const regionsHeader = new Text(BrainMappingStrings.regionsStringProperty.value, {
       font: new PhetFont({ size: 14, weight: 'bold' }),
-      fill: NervousColors.ink,
+      fill: NervousColors.panelText,
       left: 4,
     })
     panelContent.addChild(regionsHeader)
@@ -739,7 +725,7 @@ export class BrainMappingScreenView extends ScreenView {
         const row = this.checklistRows.get(region.id)!
         const done = model.isExplored(region.id)
         row.string = `${done ? '✓' : '○'} ${region.name}`
-        row.fill = done ? '#16a34a' : NervousColors.muted
+        row.fill = done ? '#4ade80' : NervousColors.panelMuted
       }
       updateTriad()
     }

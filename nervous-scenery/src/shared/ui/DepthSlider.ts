@@ -27,7 +27,7 @@ export class DepthSlider extends Node {
 
     const label = new Text(options.label, {
       font: new PhetFont({ size: 12, weight: 'bold' }),
-      fill: NervousColors.muted,
+      fill: NervousColors.panelMuted,
       left: 0,
       top: 0,
       maxWidth: w - 56,
@@ -42,12 +42,12 @@ export class DepthSlider extends Node {
     this.addChild(
       new Rectangle(0, trackY + 2, w, 8, {
         cornerRadius: 4,
-        fill: 'rgba(15,23,42,0.12)',
+        fill: 'rgba(0,0,0,0.35)',
       }),
     )
     const track = new Rectangle(0, trackY, w, 8, {
       cornerRadius: 4,
-      fill: 'rgba(148,163,184,0.45)',
+      fill: 'rgba(148,163,184,0.35)',
       cursor: 'pointer',
     })
     const fillBar = new Rectangle(0, trackY, 40, 8, {

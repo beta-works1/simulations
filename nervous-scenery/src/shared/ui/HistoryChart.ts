@@ -27,13 +27,13 @@ export class HistoryChart extends Node {
     this.addChild(
       new Rectangle(0, 0, width, height, {
         cornerRadius: 8,
-        fill: 'rgba(15,23,42,0.06)',
-        stroke: 'rgba(71,85,105,0.2)',
+        fill: 'rgba(255,255,255,0.05)',
+        stroke: 'rgba(148,163,184,0.25)',
       }),
     )
     this.title = new Text(options.title ?? 'History', {
       font: new PhetFont({ size: 11, weight: 'bold' }),
-      fill: NervousColors.muted,
+      fill: NervousColors.panelMuted,
       left: 8,
       top: 4,
     })

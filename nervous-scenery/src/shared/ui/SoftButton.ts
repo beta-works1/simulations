@@ -2,6 +2,7 @@ import { Node, Rectangle, Text } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
 import { NervousColors } from '../NervousColors.js'
 
+/** Compact depth button — ecology carbon-panel density. */
 export class SoftButton extends Node {
   private readonly bg: Rectangle
   private readonly shadow: Rectangle
@@ -28,25 +29,25 @@ export class SoftButton extends Node {
   ) {
     super({ cursor: 'pointer' })
     this.w = options.width ?? 140
-    this.h = options.height ?? 40
+    this.h = options.height ?? 34
     this.activeFill = options.fill ?? NervousColors.accent
-    this.activeTextFill = options.textFill ?? '#f5f3ff'
+    this.activeTextFill = options.textFill ?? '#ecfeff'
     this.selected = options.selected ?? true
-    const fontSize = options.fontSize ?? 14
+    const fontSize = options.fontSize ?? 12
 
-    this.shadow = new Rectangle(3, 5, this.w, this.h, {
-      cornerRadius: 12,
-      fill: 'rgba(15,23,42,0.22)',
+    this.shadow = new Rectangle(2, 3, this.w, this.h, {
+      cornerRadius: 10,
+      fill: 'rgba(0,0,0,0.4)',
     })
     this.bg = new Rectangle(0, 0, this.w, this.h, {
-      cornerRadius: 12,
+      cornerRadius: 10,
       fill: this.activeFill,
-      stroke: 'rgba(255,255,255,0.4)',
-      lineWidth: 1.5,
+      stroke: 'rgba(255,255,255,0.28)',
+      lineWidth: 1,
     })
-    this.gloss = new Rectangle(8, 4, this.w - 16, 5, {
-      cornerRadius: 3,
-      fill: 'rgba(255,255,255,0.35)',
+    this.gloss = new Rectangle(8, 3, this.w - 16, 4, {
+      cornerRadius: 2,
+      fill: 'rgba(255,255,255,0.28)',
       pickable: false,
     })
     this.labelText = new Text(label, {
@@ -54,7 +55,7 @@ export class SoftButton extends Node {
       fill: this.activeTextFill,
       centerX: this.w / 2,
       centerY: this.h / 2,
-      maxWidth: this.w - 16,
+      maxWidth: this.w - 14,
     })
 
     this.addChild(this.shadow)
@@ -65,10 +66,10 @@ export class SoftButton extends Node {
 
     this.addInputListener({
       down: () => {
-        this.bg.y = 2
-        this.gloss.y = 6
-        this.labelText.centerY = this.h / 2 + 2
-        this.shadow.opacity = 0.35
+        this.bg.y = 1
+        this.gloss.y = 4
+        this.labelText.centerY = this.h / 2 + 1
+        this.shadow.opacity = 0.45
         options.onSound?.()
         onPress()
       },
@@ -76,8 +77,8 @@ export class SoftButton extends Node {
       cancel: () => this.resetPress(),
       enter: () => {
         if (this.selected) {
-          this.bg.stroke = 'rgba(255,255,255,0.85)'
-          this.bg.lineWidth = 2
+          this.bg.stroke = 'rgba(255,255,255,0.7)'
+          this.bg.lineWidth = 1.5
         }
       },
       exit: () => this.applySelectedStyle(),
@@ -86,7 +87,7 @@ export class SoftButton extends Node {
 
   private resetPress(): void {
     this.bg.y = 0
-    this.gloss.y = 4
+    this.gloss.y = 3
     this.labelText.centerY = this.h / 2
     this.shadow.opacity = 1
   }
@@ -105,21 +106,22 @@ export class SoftButton extends Node {
   private applySelectedStyle(): void {
     if (this.selected) {
       this.bg.fill = this.activeFill
-      this.bg.stroke = 'rgba(255,255,255,0.55)'
-      this.bg.lineWidth = 1.5
+      this.bg.stroke = 'rgba(255,255,255,0.35)'
+      this.bg.lineWidth = 1
       this.labelText.fill = this.activeTextFill
       this.shadow.opacity = 1
       this.gloss.visible = true
       this.opacity = 1
     }
     else {
-      this.bg.fill = 'rgba(148,163,184,0.28)'
-      this.bg.stroke = 'rgba(71,85,105,0.28)'
+      // Readable on dark ecology-style panels
+      this.bg.fill = 'rgba(148,163,184,0.22)'
+      this.bg.stroke = 'rgba(148,163,184,0.35)'
       this.bg.lineWidth = 1
-      this.labelText.fill = NervousColors.muted
-      this.shadow.opacity = 0.4
+      this.labelText.fill = '#cbd5e1'
+      this.shadow.opacity = 0.35
       this.gloss.visible = false
-      this.opacity = 0.95
+      this.opacity = 1
     }
   }
 }

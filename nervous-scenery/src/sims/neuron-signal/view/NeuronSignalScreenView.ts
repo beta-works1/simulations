@@ -2,7 +2,6 @@ import { EmptySelfOptions } from 'scenerystack/phet-core'
 import { ScreenView, ScreenViewOptions } from 'scenerystack/sim'
 import {
   Circle,
-  LinearGradient,
   Node,
   Path,
   Rectangle,
@@ -18,6 +17,7 @@ import { NervousSounds } from '../../../shared/NervousSounds.js'
 import { DepthCard } from '../../../shared/ui/DepthCard.js'
 import { DepthSlider } from '../../../shared/ui/DepthSlider.js'
 import { SoftButton } from '../../../shared/ui/SoftButton.js'
+import { StageBackdrop } from '../../../shared/ui/StageBackdrop.js'
 import { GuidanceBanner } from '../../../shared/ui/GuidanceBanner.js'
 import { ParticleBurst } from '../../../shared/ui/ParticleBurst.js'
 import { SignalTrail } from '../../../shared/ui/SignalTrail.js'
@@ -92,6 +92,7 @@ export class NeuronSignalScreenView extends ScreenView {
     this.model = model
     this.sounds = new NervousSounds()
     this.sounds.setEnabled(model.soundEnabledProperty.value)
+    this.addInputListener({ down: () => this.sounds.unlock() })
 
     const m = NervousConstants.SCREEN_VIEW_X_MARGIN
     const my = NervousConstants.SCREEN_VIEW_Y_MARGIN
@@ -112,25 +113,10 @@ export class NeuronSignalScreenView extends ScreenView {
     this.addChild(this.guide)
 
     this.addChild(
-      new Rectangle(stageLeft + 5, stageTop + 8, stageW, stageH, {
-        cornerRadius: 18,
-        fill: 'rgba(0,0,0,0.28)',
-      }),
-    )
-    const bg = new Rectangle(stageLeft, stageTop, stageW, stageH, {
-      cornerRadius: 18,
-      fill: new LinearGradient(0, stageTop, 0, stageTop + stageH)
-        .addColorStop(0, '#0b1c2e')
-        .addColorStop(1, '#16324f'),
-      stroke: 'rgba(255,255,255,0.14)',
-      lineWidth: 1.5,
-    })
-    this.addChild(bg)
-    this.addChild(
-      new Rectangle(stageLeft + 14, stageTop + 8, stageW - 28, 5, {
-        cornerRadius: 3,
-        fill: 'rgba(255,255,255,0.18)',
-        pickable: false,
+      new StageBackdrop(stageLeft, stageTop, stageW, stageH, {
+        top: '#0b1c2e',
+        bottom: '#16324f',
+        stroke: 'rgba(255,255,255,0.14)',
       }),
     )
 
@@ -418,14 +404,14 @@ export class NeuronSignalScreenView extends ScreenView {
 
     this.raceLockHint = new Text(NeuronSignalStrings.raceLockedStringProperty.value, {
       font: new PhetFont({ size: 11, weight: 'bold' }),
-      fill: NervousColors.muted,
+      fill: NervousColors.panelMuted,
       maxWidth: contentW,
     })
     panelContent.addChild(this.raceLockHint)
 
     this.statusText = new Text(model.statusProperty.value, {
       font: new PhetFont({ size: 12, weight: 'bold' }),
-      fill: NervousColors.muted,
+      fill: NervousColors.panelMuted,
       maxWidth: contentW,
     })
     panelContent.addChild(this.statusText)
@@ -505,6 +491,7 @@ export class NeuronSignalScreenView extends ScreenView {
         ? NeuronSignalStrings.soundOnStringProperty.value
         : NeuronSignalStrings.soundOffStringProperty.value,
       () => {
+        this.sounds.unlock()
         model.soundEnabledProperty.value = !model.soundEnabledProperty.value
         this.sounds.setEnabled(model.soundEnabledProperty.value)
         if (model.soundEnabledProperty.value) {
@@ -523,7 +510,7 @@ export class NeuronSignalScreenView extends ScreenView {
 
     const historyHeader = new Text(NeuronSignalStrings.historyStringProperty.value, {
       font: new PhetFont({ size: 13, weight: 'bold' }),
-      fill: NervousColors.ink,
+      fill: NervousColors.panelText,
     })
     panelContent.addChild(historyHeader)
 
