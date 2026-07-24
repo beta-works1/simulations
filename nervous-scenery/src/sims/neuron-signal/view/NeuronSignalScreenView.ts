@@ -6,6 +6,7 @@ import {
   Node,
   Path,
   Rectangle,
+  RichText,
   Text,
 } from 'scenerystack/scenery'
 import { Shape } from 'scenerystack/kite'
@@ -19,12 +20,17 @@ import { SoftButton } from '../../../shared/ui/SoftButton.js'
 import { GuidanceBanner } from '../../../shared/ui/GuidanceBanner.js'
 import { ParticleBurst } from '../../../shared/ui/ParticleBurst.js'
 import { createPanelTip } from '../../../shared/ui/createPanelTip.js'
+import { ScrollableNode } from '../../../shared/ui/ScrollableNode.js'
+import { TeachingTriad } from '../../../shared/ui/TeachingTriad.js'
+import { MiniQuiz } from '../../../shared/ui/MiniQuiz.js'
+import { HistoryChart } from '../../../shared/ui/HistoryChart.js'
 import { NeuronSignalStrings } from '../NeuronSignalStrings.js'
 
 type SelfOptions = EmptySelfOptions
 type Options = SelfOptions & ScreenViewOptions
 
 const NODE_COUNT = 7
+const TIP_OVERLAY_DURATION = 7
 
 export class NeuronSignalScreenView extends ScreenView {
   private readonly model: NeuronSignalModel
@@ -38,6 +44,7 @@ export class NeuronSignalScreenView extends ScreenView {
   private readonly impulseGlow: Circle
   private readonly trail: Path
   private readonly particles: ParticleBurst
+  private readonly ionLayer: Node
   private readonly modeText: Text
   private readonly myelinLabel: Text
   private readonly progressText: Text
@@ -47,16 +54,30 @@ export class NeuronSignalScreenView extends ScreenView {
   private readonly playButton: SoftButton
   private readonly exploreButton: SoftButton
   private readonly raceButton: SoftButton
+  private readonly demyelinationButton: SoftButton
+  private readonly showIonsButton: SoftButton
   private readonly statusText: Text
   private readonly raceTimeText: Text
+  private readonly raceLockHint: Text
+  private readonly starsText: Text
+  private readonly teachingTriad: TeachingTriad
+  private readonly miniQuiz: MiniQuiz
+  private readonly historyChart: HistoryChart
+  private readonly historyMyelinSeries: number
+  private readonly historyBareSeries: number
   private readonly guide: GuidanceBanner
   private readonly somaHalo: Circle
+  private readonly tipOverlay: Node
+  private readonly relayoutPanel: () => void
   private pulse = 0
   private hopFlash = 0
   private hopFlashIndex = -1
   private lastArrived = false
   private raceDisplayTime = 0
   private trailFrame = 0
+  private tipTimer = 0
+  private quizWasVisible = false
+  private ionLabels: { node: Text; life: number; maxLife: number }[] = []
 
   public constructor(model: NeuronSignalModel, providedOptions?: Options) {
     super(providedOptions)
@@ -65,7 +86,7 @@ export class NeuronSignalScreenView extends ScreenView {
     const m = NervousConstants.SCREEN_VIEW_X_MARGIN
     const my = NervousConstants.SCREEN_VIEW_Y_MARGIN
     const lb = this.layoutBounds
-    const rightW = 270
+    const rightW = 280
     const gap = 14
     const stageLeft = m
     const stageTop = my + 78
@@ -274,6 +295,8 @@ export class NeuronSignalScreenView extends ScreenView {
 
     this.particles = new ParticleBurst(90)
     this.addChild(this.particles)
+    this.ionLayer = new Node({ pickable: false })
+    this.addChild(this.ionLayer)
 
     this.impulseGlow = new Circle(18, {
       fill: 'rgba(244,208,63,0.3)',
@@ -328,13 +351,15 @@ export class NeuronSignalScreenView extends ScreenView {
     })
     this.addChild(this.speedFill)
 
+    // ---- Right panel (scrollable, ecology-density) ----
     const card = new DepthCard(rightW, stageH, { title: NeuronSignalStrings.axonStringProperty.value })
     card.left = stageLeft + stageW + gap
     card.top = stageTop
     this.addChild(card)
 
-    let panelY = 36
-    const halfBtnW = Math.floor((rightW - 32 - 8) / 2)
+    const panelContent = new Node()
+    const contentW = rightW - 40
+    const halfBtnW = Math.floor((contentW - 8) / 2)
 
     this.exploreButton = new SoftButton(NeuronSignalStrings.exploreStringProperty.value, () => {
       model.setChallenge('explore')
@@ -344,9 +369,7 @@ export class NeuronSignalScreenView extends ScreenView {
       fill: NervousColors.accent,
       selected: true,
     })
-    this.exploreButton.left = 16
-    this.exploreButton.top = panelY
-    card.content.addChild(this.exploreButton)
+    panelContent.addChild(this.exploreButton)
 
     this.raceButton = new SoftButton(NeuronSignalStrings.raceStringProperty.value, () => {
       model.setChallenge('race')
@@ -355,111 +378,285 @@ export class NeuronSignalScreenView extends ScreenView {
       height: 36,
       fill: '#7c3aed',
     })
-    this.raceButton.left = 16 + halfBtnW + 8
-    this.raceButton.top = panelY
-    card.content.addChild(this.raceButton)
-    panelY += 44
+    panelContent.addChild(this.raceButton)
 
-    this.statusText = new Text(model.statusProperty, {
+    this.demyelinationButton = new SoftButton(NeuronSignalStrings.demyelinationStringProperty.value, () => {
+      model.setChallenge('demyelination')
+    }, {
+      width: contentW,
+      height: 34,
+      fill: '#dc2626',
+    })
+    panelContent.addChild(this.demyelinationButton)
+
+    this.raceLockHint = new Text(NeuronSignalStrings.raceLockedStringProperty.value, {
+      font: new PhetFont({ size: 11, weight: 'bold' }),
+      fill: NervousColors.muted,
+      maxWidth: contentW,
+    })
+    panelContent.addChild(this.raceLockHint)
+
+    this.statusText = new Text(model.statusProperty.value, {
       font: new PhetFont({ size: 12, weight: 'bold' }),
       fill: NervousColors.muted,
-      left: 16,
-      top: panelY,
-      maxWidth: rightW - 32,
+      maxWidth: contentW,
     })
-    card.content.addChild(this.statusText)
-    panelY += 38
+    panelContent.addChild(this.statusText)
 
     this.raceTimeText = new Text('', {
       font: new PhetFont({ size: 12, weight: 'bold' }),
       fill: '#fde68a',
-      left: 16,
-      top: panelY,
-      maxWidth: rightW - 32,
+      maxWidth: contentW,
       visible: false,
     })
-    card.content.addChild(this.raceTimeText)
-    panelY += 28
+    panelContent.addChild(this.raceTimeText)
+
+    this.teachingTriad = new TeachingTriad(contentW)
+    panelContent.addChild(this.teachingTriad)
+
+    this.starsText = new Text('★ 0', {
+      font: new PhetFont({ size: 15, weight: 'bold' }),
+      fill: '#d97706',
+    })
+    panelContent.addChild(this.starsText)
 
     const speedSlider = new DepthSlider(model.speedScaleProperty, {
       min: 0.5,
       max: 1.8,
-      width: rightW - 32,
+      width: contentW,
       label: NeuronSignalStrings.conductionSpeedStringProperty.value,
       format: (n) => `${n.toFixed(1)}×`,
       fill: NervousColors.signal,
     })
-    speedSlider.left = 16
-    speedSlider.top = panelY
-    card.content.addChild(speedSlider)
-    panelY += 54
+    panelContent.addChild(speedSlider)
 
     const fireBtn = new SoftButton(NeuronSignalStrings.fireStringProperty.value, () => model.fire(), {
-      width: rightW - 32,
+      width: contentW,
       height: 42,
       fill: '#c0392b',
     })
-    fireBtn.left = 16
-    fireBtn.top = panelY
-    card.content.addChild(fireBtn)
-    panelY += 50
+    panelContent.addChild(fireBtn)
 
     this.myelinButton = new SoftButton(NeuronSignalStrings.myelinStringProperty.value, () => {
       model.setMyelin(!model.myelinProperty.value)
     }, {
-      width: rightW - 32,
+      width: contentW,
       height: 42,
       fill: NervousColors.myelin,
       textFill: '#1a1a1a',
       selected: true,
     })
-    this.myelinButton.left = 16
-    this.myelinButton.top = panelY
-    card.content.addChild(this.myelinButton)
-    panelY += 50
+    panelContent.addChild(this.myelinButton)
+
+    this.showIonsButton = new SoftButton(NeuronSignalStrings.showIonsStringProperty.value, () => {
+      model.setShowIons(!model.showIonsProperty.value)
+    }, {
+      width: contentW,
+      height: 38,
+      fill: '#0ea5e9',
+      selected: false,
+    })
+    panelContent.addChild(this.showIonsButton)
 
     this.playButton = new SoftButton(NeuronSignalStrings.pauseStringProperty.value, () => {
       model.runningProperty.value = !model.runningProperty.value
     }, {
-      width: rightW - 32,
+      width: contentW,
       height: 42,
       fill: NervousColors.accent,
       selected: true,
     })
-    this.playButton.left = 16
-    this.playButton.top = panelY
-    card.content.addChild(this.playButton)
-    panelY += 54
+    panelContent.addChild(this.playButton)
+
+    const historyHeader = new Text(NeuronSignalStrings.historyStringProperty.value, {
+      font: new PhetFont({ size: 13, weight: 'bold' }),
+      fill: NervousColors.ink,
+    })
+    panelContent.addChild(historyHeader)
+
+    const legendMyelin = new Text(NeuronSignalStrings.legendMyelinStringProperty.value, {
+      font: new PhetFont({ size: 11, weight: 'bold' }),
+      fill: NervousColors.myelin,
+    })
+    const legendBare = new Text(NeuronSignalStrings.legendBareStringProperty.value, {
+      font: new PhetFont({ size: 11, weight: 'bold' }),
+      fill: '#94a3b8',
+    })
+    panelContent.addChild(legendMyelin)
+    panelContent.addChild(legendBare)
+
+    this.historyChart = new HistoryChart(contentW, 90, {
+      title: NeuronSignalStrings.historyStringProperty.value,
+      maxPoints: 12,
+    })
+    this.historyMyelinSeries = this.historyChart.addSeries(NervousColors.myelin)
+    this.historyBareSeries = this.historyChart.addSeries('#94a3b8')
+    panelContent.addChild(this.historyChart)
+
+    this.miniQuiz = new MiniQuiz(contentW)
+    panelContent.addChild(this.miniQuiz)
 
     const tapTip = createPanelTip(NeuronSignalStrings.tapNodeStringProperty.value, {
-      width: rightW - 32,
-      fontSize: 16,
+      width: contentW,
+      fontSize: 15,
     })
-    tapTip.left = 16
-    tapTip.top = panelY
-    card.content.addChild(tapTip)
-    panelY += 58
+    panelContent.addChild(tapTip)
 
     const learnTip = createPanelTip(NeuronSignalStrings.learnMoreStringProperty.value, {
-      width: rightW - 32,
-      fontSize: 18,
+      width: contentW,
+      fontSize: 15,
     })
-    learnTip.left = 16
-    learnTip.top = panelY
-    card.content.addChild(learnTip)
+    panelContent.addChild(learnTip)
+
+    const bottomPad = new Rectangle(0, 0, contentW, 20, {
+      fill: 'rgba(255,255,255,0)',
+      pickable: false,
+    })
+    panelContent.addChild(bottomPad)
+
+    this.relayoutPanel = () => {
+      let py = 4
+      this.exploreButton.left = 0
+      this.exploreButton.top = py
+      this.raceButton.left = halfBtnW + 8
+      this.raceButton.top = py
+      py = this.exploreButton.bottom + 8
+
+      this.demyelinationButton.left = 0
+      this.demyelinationButton.top = py
+      py = this.demyelinationButton.bottom + 6
+
+      this.raceLockHint.left = 0
+      this.raceLockHint.top = py
+      py = this.raceLockHint.visible ? this.raceLockHint.bottom + 8 : py + 2
+
+      this.statusText.left = 0
+      this.statusText.top = py
+      py = this.statusText.bottom + 8
+
+      this.raceTimeText.left = 0
+      this.raceTimeText.top = py
+      py = this.raceTimeText.visible ? this.raceTimeText.bottom + 10 : py
+
+      this.teachingTriad.left = 0
+      this.teachingTriad.top = py
+      py = this.teachingTriad.bottom + 10
+
+      this.starsText.left = 0
+      this.starsText.top = py
+      py = this.starsText.bottom + 10
+
+      speedSlider.left = 0
+      speedSlider.top = py
+      py = speedSlider.bottom + 16
+
+      fireBtn.left = 0
+      fireBtn.top = py
+      py = fireBtn.bottom + 10
+
+      this.myelinButton.left = 0
+      this.myelinButton.top = py
+      py = this.myelinButton.bottom + 10
+
+      this.showIonsButton.left = 0
+      this.showIonsButton.top = py
+      py = this.showIonsButton.bottom + 10
+
+      this.playButton.left = 0
+      this.playButton.top = py
+      py = this.playButton.bottom + 16
+
+      historyHeader.left = 0
+      historyHeader.top = py
+      py = historyHeader.bottom + 4
+
+      legendMyelin.left = 0
+      legendMyelin.top = py
+      legendBare.left = Math.floor(contentW / 2)
+      legendBare.top = py
+      py = legendMyelin.bottom + 4
+
+      this.historyChart.left = 0
+      this.historyChart.top = py
+      py = this.historyChart.bottom + 14
+
+      this.miniQuiz.left = 0
+      this.miniQuiz.top = py
+      py = this.miniQuiz.visible ? this.miniQuiz.bottom + 14 : py
+
+      tapTip.left = 0
+      tapTip.top = py
+      py = tapTip.bottom + 12
+
+      learnTip.left = 0
+      learnTip.top = py
+      py = learnTip.bottom + 4
+
+      bottomPad.top = py
+    }
+    this.relayoutPanel()
+
+    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 56)
+    scroller.left = 12
+    scroller.top = 38
+    card.content.addChild(scroller)
 
     this.addChild(
       new ResetAllButton({
         listener: () => {
           model.reset()
           this.particles.clear()
+          this.ionLayer.removeAllChildren()
+          this.ionLabels.length = 0
+          this.historyChart.clear()
+          this.miniQuiz.hideQuiz()
           this.raceDisplayTime = 0
           this.lastArrived = false
+          this.tipTimer = 0
+          this.tipOverlay.visible = false
+          this.relayoutPanel()
         },
         right: lb.right - m,
         bottom: lb.bottom - my,
       }),
     )
+
+    // ---- Timed tip overlay (first fire) ----
+    const tipCardW = Math.min(460, stageW - 40)
+    const tipBg = new Rectangle(0, 0, tipCardW, 100, {
+      cornerRadius: 14,
+      fill: 'rgba(15,23,42,0.94)',
+      stroke: 'rgba(244,208,63,0.6)',
+      lineWidth: 2,
+    })
+    const tipText = new RichText(NeuronSignalStrings.tipOverlayStringProperty.value, {
+      font: new PhetFont({ size: 14, weight: 'bold' }),
+      fill: '#fef3c7',
+      lineWrap: tipCardW - 32,
+      leading: 4,
+      left: 16,
+      top: 14,
+    })
+    const tipDismiss = new SoftButton(NeuronSignalStrings.tipDismissStringProperty.value, () => {
+      this.tipTimer = 0
+      this.tipOverlay.visible = false
+    }, {
+      width: 110,
+      height: 30,
+      fill: NervousColors.myelin,
+      textFill: '#1a1a1a',
+      fontSize: 12,
+    })
+    tipBg.setRectHeight(Math.max(90, tipText.bottom + 44))
+    tipDismiss.left = 16
+    tipDismiss.top = tipBg.rectHeight - 40
+    this.tipOverlay = new Node({
+      children: [tipBg, tipText, tipDismiss],
+      visible: false,
+      centerX: stageLeft + stageW / 2,
+      top: stageTop + 24,
+    })
+    this.addChild(this.tipOverlay)
 
     const hopX = (hop: number) => this.ax0 + hop * (this.ax1 - this.ax0) / NODE_COUNT
 
@@ -487,6 +684,23 @@ export class NeuronSignalScreenView extends ScreenView {
         this.hopFlash = 0.28
         this.nodeButtons[hop - 1].radius = 14
       }
+      if (model.showIonsProperty.value) {
+        this.particles.burst(x, this.axonY - 8, {
+          count: 9,
+          color: '#3b82f6',
+          speed: 70,
+          life: 0.5,
+          radius: 2.6,
+        })
+        this.particles.burst(x, this.axonY - 8, {
+          count: 6,
+          color: '#f59e0b',
+          speed: 50,
+          life: 0.45,
+          radius: 2.2,
+        })
+        this.spawnIonLabel(x, this.axonY - 26)
+      }
     })
 
     model.arrivedProperty.link((arrived) => {
@@ -508,6 +722,49 @@ export class NeuronSignalScreenView extends ScreenView {
       }
       this.lastArrived = arrived
     })
+
+    const syncTriad = () => {
+      const challenge = model.challengeProperty.value
+      const myelinOn = model.myelinProperty.value
+      const phase = model.racePhaseProperty.value
+
+      let nowStr: string
+      let whyStr: string
+      let nextStr: string
+
+      if (challenge === 'race') {
+        nowStr = phase === 1
+          ? NeuronSignalStrings.triadNowRaceHeat1StringProperty.value
+          : phase === 2
+            ? NeuronSignalStrings.triadNowRaceHeat2StringProperty.value
+            : NeuronSignalStrings.triadNowRaceDoneStringProperty.value
+        whyStr = myelinOn
+          ? NeuronSignalStrings.triadWhyMyelinStringProperty.value
+          : NeuronSignalStrings.triadWhyBareStringProperty.value
+        nextStr = phase >= 3
+          ? NeuronSignalStrings.triadNextQuizStringProperty.value
+          : NeuronSignalStrings.triadNextToggleStringProperty.value
+      }
+      else if (challenge === 'demyelination') {
+        nowStr = NeuronSignalStrings.triadNowDemyelinationStringProperty.value
+        whyStr = NeuronSignalStrings.triadWhyDemyelinationStringProperty.value
+        nextStr = NeuronSignalStrings.triadNextIonsStringProperty.value
+      }
+      else {
+        nowStr = myelinOn
+          ? NeuronSignalStrings.triadNowMyelinStringProperty.value
+          : NeuronSignalStrings.triadNowBareStringProperty.value
+        whyStr = myelinOn
+          ? NeuronSignalStrings.triadWhyMyelinStringProperty.value
+          : NeuronSignalStrings.triadWhyBareStringProperty.value
+        nextStr = !model.raceUnlockedProperty.value
+          ? NeuronSignalStrings.triadNextRaceLockedStringProperty.value
+          : NeuronSignalStrings.triadNextRaceStringProperty.value
+      }
+
+      this.teachingTriad.setTriad(nowStr, whyStr, nextStr)
+      this.relayoutPanel()
+    }
 
     const syncMyelin = () => {
       const on = model.myelinProperty.value
@@ -545,9 +802,11 @@ export class NeuronSignalScreenView extends ScreenView {
         node.visible = on
       }
       this.myelinButton.setSelected(on)
+      this.myelinButton.opacity = model.challengeProperty.value === 'demyelination' ? 0.5 : 1
       const speedFrac = (on ? 1 : 0.28) * model.speedScaleProperty.value / 1.8
       this.speedFill.setRectWidth(Math.max(10, speedFrac * this.speedTrackW))
       this.speedFill.fill = on ? NervousColors.myelin : '#64748b'
+      syncTriad()
     }
     model.myelinProperty.link(syncMyelin)
     model.speedScaleProperty.link(() => syncMyelin())
@@ -561,9 +820,36 @@ export class NeuronSignalScreenView extends ScreenView {
       this.playButton.setSelected(running)
     })
 
-    model.challengeProperty.link((mode) => {
+    model.showIonsProperty.link((show) => {
+      this.showIonsButton.setLabel(
+        show
+          ? NeuronSignalStrings.hideIonsStringProperty.value
+          : NeuronSignalStrings.showIonsStringProperty.value,
+      )
+      this.showIonsButton.setSelected(show)
+      if (!show) {
+        this.ionLayer.removeAllChildren()
+        this.ionLabels.length = 0
+      }
+    })
+
+    const syncChallenge = () => {
+      const mode = model.challengeProperty.value
       this.exploreButton.setSelected(mode === 'explore')
       this.raceButton.setSelected(mode === 'race')
+      this.demyelinationButton.setSelected(mode === 'demyelination')
+      this.raceButton.opacity = model.raceUnlockedProperty.value ? 1 : 0.55
+      this.myelinButton.opacity = mode === 'demyelination' ? 0.5 : 1
+      syncTriad()
+      this.relayoutPanel()
+    }
+
+    model.challengeProperty.link(syncChallenge)
+    model.raceUnlockedProperty.link((unlocked) => {
+      this.raceLockHint.visible = !unlocked
+      this.raceButton.opacity = unlocked ? 1 : 0.55
+      syncTriad()
+      this.relayoutPanel()
     })
 
     model.statusProperty.link((status) => {
@@ -571,6 +857,31 @@ export class NeuronSignalScreenView extends ScreenView {
         NeuronSignalStrings.guideTitleStringProperty.value,
         status,
       )
+      this.statusText.string = status
+      this.relayoutPanel()
+    })
+
+    model.starsProperty.link((stars) => {
+      this.starsText.string = `★ ${stars}`
+    })
+
+    model.lastLapResultProperty.link((result) => {
+      if (!result) {
+        return
+      }
+      if (result.myelinOn) {
+        this.historyChart.push(this.historyMyelinSeries, result.time)
+      }
+      else {
+        this.historyChart.push(this.historyBareSeries, result.time)
+      }
+    })
+
+    model.fireCountProperty.link((count, oldCount) => {
+      if (count === 1 && (oldCount === 0 || oldCount === null)) {
+        this.tipOverlay.visible = true
+        this.tipTimer = TIP_OVERLAY_DURATION
+      }
     })
 
     const syncRaceReadout = () => {
@@ -580,16 +891,17 @@ export class NeuronSignalScreenView extends ScreenView {
         this.raceTimeText.string = `${NeuronSignalStrings.raceHeat1StringProperty.value} · ${this.raceDisplayTime.toFixed(1)}s`
       }
       else if (phase === 2) {
-        const m = model.raceMyelinTimeProperty.value
-        this.raceTimeText.string = `${m.toFixed(1)}s · ${NeuronSignalStrings.raceHeat2StringProperty.value} · ${this.raceDisplayTime.toFixed(1)}s`
+        const mm = model.raceMyelinTimeProperty.value
+        this.raceTimeText.string = `${mm.toFixed(1)}s · ${NeuronSignalStrings.raceHeat2StringProperty.value} · ${this.raceDisplayTime.toFixed(1)}s`
       }
       else if (phase === 3) {
-        const m = model.raceMyelinTimeProperty.value
-        const b = model.raceBareTimeProperty.value
+        const mm = model.raceMyelinTimeProperty.value
+        const bb = model.raceBareTimeProperty.value
         this.raceTimeText.string = NeuronSignalStrings.raceTimesStringProperty.value
-          .replace('{{myelin}}', m.toFixed(1))
-          .replace('{{bare}}', b.toFixed(1))
+          .replace('{{myelin}}', mm.toFixed(1))
+          .replace('{{bare}}', bb.toFixed(1))
       }
+      this.relayoutPanel()
     }
     model.racePhaseProperty.link((phase) => {
       this.raceDisplayTime = 0
@@ -597,9 +909,40 @@ export class NeuronSignalScreenView extends ScreenView {
       if (phase === 0) {
         this.raceTimeText.visible = false
       }
+      if (phase === 3) {
+        this.miniQuiz.showQuiz(
+          NeuronSignalStrings.quizQuestionStringProperty.value,
+          [
+            { label: NeuronSignalStrings.quizOptionJumpStringProperty.value, correct: true },
+            { label: NeuronSignalStrings.quizOptionContinuousStringProperty.value, correct: false },
+            { label: NeuronSignalStrings.quizOptionThickerStringProperty.value, correct: false },
+          ],
+          (correct) => model.recordQuizAnswer(correct),
+        )
+      }
+      syncTriad()
+      this.relayoutPanel()
     })
     model.raceMyelinTimeProperty.link(syncRaceReadout)
     model.raceBareTimeProperty.link(syncRaceReadout)
+
+    syncMyelin()
+    syncChallenge()
+    syncRaceReadout()
+    syncTriad()
+    this.raceLockHint.visible = !model.raceUnlockedProperty.value
+  }
+
+  private spawnIonLabel(x: number, y: number): void {
+    const node = new Text('Na⁺', {
+      font: new PhetFont({ size: 12, weight: 'bold' }),
+      fill: '#60a5fa',
+      centerX: x,
+      centerY: y,
+      pickable: false,
+    })
+    this.ionLayer.addChild(node)
+    this.ionLabels.push({ node, life: 0.9, maxLife: 0.9 })
   }
 
   public override step(dt: number): void {
@@ -619,8 +962,8 @@ export class NeuronSignalScreenView extends ScreenView {
         this.raceTimeText.string = `${NeuronSignalStrings.raceHeat1StringProperty.value} · ${this.raceDisplayTime.toFixed(1)}s`
       }
       else if (phase === 2) {
-        const m = this.model.raceMyelinTimeProperty.value
-        this.raceTimeText.string = `${m.toFixed(1)}s · ${NeuronSignalStrings.raceHeat2StringProperty.value} · ${this.raceDisplayTime.toFixed(1)}s`
+        const mm = this.model.raceMyelinTimeProperty.value
+        this.raceTimeText.string = `${mm.toFixed(1)}s · ${NeuronSignalStrings.raceHeat2StringProperty.value} · ${this.raceDisplayTime.toFixed(1)}s`
       }
       this.raceTimeText.visible = true
     }
@@ -631,6 +974,30 @@ export class NeuronSignalScreenView extends ScreenView {
         this.nodeButtons[this.hopFlashIndex].radius = 9
         this.hopFlashIndex = -1
       }
+    }
+
+    for (let i = this.ionLabels.length - 1; i >= 0; i--) {
+      const label = this.ionLabels[i]
+      label.life -= dt
+      if (label.life <= 0) {
+        this.ionLayer.removeChild(label.node)
+        this.ionLabels.splice(i, 1)
+        continue
+      }
+      label.node.centerY -= dt * 22
+      label.node.opacity = Math.max(0, label.life / label.maxLife)
+    }
+
+    if (this.tipTimer > 0) {
+      this.tipTimer -= dt
+      if (this.tipTimer <= 0) {
+        this.tipOverlay.visible = false
+      }
+    }
+
+    if (this.miniQuiz.visible !== this.quizWasVisible) {
+      this.quizWasVisible = this.miniQuiz.visible
+      this.relayoutPanel()
     }
 
     const vt = this.model.visualT()

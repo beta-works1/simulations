@@ -1,10 +1,15 @@
 import { BooleanProperty, NumberProperty, Property, StringProperty } from 'scenerystack/axon'
 import { TModel } from 'scenerystack/joist'
 
-export type NeuronChallenge = 'explore' | 'race'
+export type NeuronChallenge = 'explore' | 'race' | 'demyelination'
+
+export type LapResult = { time: number; myelinOn: boolean }
+
+const DEMYELINATION_SPEED_CAP = 0.6
 
 /**
- * Action potential along axon — saltatory hops, speed scrub, and myelin race challenge.
+ * Action potential along axon — saltatory hops, speed scrub, myelin race challenge,
+ * a demyelination disease challenge, and ecology-style stars/quiz progression.
  */
 export class NeuronSignalModel implements TModel {
   public readonly myelinProperty: BooleanProperty
@@ -18,10 +23,21 @@ export class NeuronSignalModel implements TModel {
   public readonly hopIndexProperty: NumberProperty
   public readonly arrivedProperty: BooleanProperty
   public readonly statusProperty: StringProperty
+  public readonly showIonsProperty: BooleanProperty
+  public readonly raceUnlockedProperty: BooleanProperty
+  public readonly raceCompletedProperty: BooleanProperty
+  public readonly quizCorrectProperty: BooleanProperty
+  public readonly starsProperty: NumberProperty
+  public readonly fireCountProperty: NumberProperty
+  public readonly lastLapResultProperty: Property<LapResult | null>
 
   private raceClock = 0
   private lastHop = -1
   private readonly nodeCount = 7
+  private lapClock = 0
+  private lapMyelinAtFire = true
+  private triedMyelinOn = false
+  private triedMyelinOff = false
 
   public constructor() {
     this.myelinProperty = new BooleanProperty(true)
@@ -35,6 +51,13 @@ export class NeuronSignalModel implements TModel {
     this.hopIndexProperty = new NumberProperty(-1)
     this.arrivedProperty = new BooleanProperty(false)
     this.statusProperty = new StringProperty('Fire a signal — toggle myelin to compare.')
+    this.showIonsProperty = new BooleanProperty(false)
+    this.raceUnlockedProperty = new BooleanProperty(false)
+    this.raceCompletedProperty = new BooleanProperty(false)
+    this.quizCorrectProperty = new BooleanProperty(false)
+    this.starsProperty = new NumberProperty(0)
+    this.fireCountProperty = new NumberProperty(0)
+    this.lastLapResultProperty = new Property<LapResult | null>(null)
   }
 
   public fire(): void {
@@ -43,9 +66,15 @@ export class NeuronSignalModel implements TModel {
     this.arrivedProperty.value = false
     this.lastHop = -1
     this.hopIndexProperty.value = -1
+    this.lapClock = 0
+    this.lapMyelinAtFire = this.myelinProperty.value
+    this.fireCountProperty.value += 1
+    this.registerTried()
     this.statusProperty.value = this.myelinProperty.value
       ? 'Saltatory conduction — watch it hop node to node!'
-      : 'Continuous conduction — slower crawl along the axon.'
+      : this.challengeProperty.value === 'demyelination'
+        ? 'Demyelinated axon firing — a slow, effortful crawl.'
+        : 'Continuous conduction — slower crawl along the axon.'
   }
 
   public fireAt(t: number): void {
@@ -54,9 +83,29 @@ export class NeuronSignalModel implements TModel {
     this.arrivedProperty.value = false
     this.lastHop = -1
     this.hopIndexProperty.value = -1
+    this.lapClock = 0
+    this.lapMyelinAtFire = this.myelinProperty.value
+    this.fireCountProperty.value += 1
+    this.registerTried()
+  }
+
+  private registerTried(): void {
+    if (this.myelinProperty.value) {
+      this.triedMyelinOn = true
+    }
+    else {
+      this.triedMyelinOff = true
+    }
+    if (this.triedMyelinOn && this.triedMyelinOff && !this.raceUnlockedProperty.value) {
+      this.raceUnlockedProperty.value = true
+    }
   }
 
   public setMyelin(value: boolean): void {
+    if (this.challengeProperty.value === 'demyelination') {
+      this.statusProperty.value = 'Myelin is damaged in this challenge — leave it to see the effect.'
+      return
+    }
     this.myelinProperty.value = value
     this.tProperty.value = 0
     this.arrivedProperty.value = false
@@ -65,6 +114,13 @@ export class NeuronSignalModel implements TModel {
     this.statusProperty.value = value
       ? 'Myelin ON — saltatory (fast jumps).'
       : 'Myelin OFF — continuous (slow).'
+  }
+
+  public setShowIons(value: boolean): void {
+    this.showIonsProperty.value = value
+    this.statusProperty.value = value
+      ? 'Na⁺ ions shown — watch them rush in at each hop.'
+      : 'Ion labels hidden.'
   }
 
   public startRace(): void {
@@ -79,10 +135,20 @@ export class NeuronSignalModel implements TModel {
   }
 
   public setChallenge(mode: NeuronChallenge): void {
+    if (mode === 'race' && !this.raceUnlockedProperty.value) {
+      this.statusProperty.value = 'Try firing with myelin ON and OFF once each in Explore to unlock the race!'
+      return
+    }
     this.challengeProperty.value = mode
     this.racePhaseProperty.value = 0
     if (mode === 'race') {
       this.startRace()
+    }
+    else if (mode === 'demyelination') {
+      this.myelinProperty.value = false
+      this.speedScaleProperty.value = Math.min(this.speedScaleProperty.value, DEMYELINATION_SPEED_CAP)
+      this.fire()
+      this.statusProperty.value = 'Demyelination challenge: disease strips the sheath — myelin locked OFF.'
     }
     else {
       this.statusProperty.value = 'Explore — scrub speed, tap nodes, toggle myelin.'
@@ -108,14 +174,20 @@ export class NeuronSignalModel implements TModel {
   }
 
   public step(dt: number): void {
+    if (this.challengeProperty.value === 'demyelination' && this.speedScaleProperty.value > DEMYELINATION_SPEED_CAP) {
+      this.speedScaleProperty.value = DEMYELINATION_SPEED_CAP
+    }
+
     if (!this.runningProperty.value || dt <= 0) {
       return
     }
 
-    const base = this.myelinProperty.value ? 1.25 : 0.36
+    const demyelinated = this.challengeProperty.value === 'demyelination'
+    const base = this.myelinProperty.value ? 1.25 : (demyelinated ? 0.2 : 0.36)
     const speed = base * Math.max(0.35, this.speedScaleProperty.value)
     const prev = this.tProperty.value
     this.tProperty.value += dt * speed
+    this.lapClock += dt
 
     if (this.myelinProperty.value) {
       const hop = Math.floor((this.tProperty.value % 1) * this.nodeCount)
@@ -140,6 +212,8 @@ export class NeuronSignalModel implements TModel {
   }
 
   private onArrive(): void {
+    this.lastLapResultProperty.value = { time: this.lapClock, myelinOn: this.lapMyelinAtFire }
+
     if (this.challengeProperty.value === 'race') {
       if (this.racePhaseProperty.value === 1) {
         this.raceMyelinTimeProperty.value = this.raceClock
@@ -158,11 +232,34 @@ export class NeuronSignalModel implements TModel {
         const ratio = b > 0 ? (b / Math.max(0.01, m)).toFixed(1) : '—'
         this.statusProperty.value = `Race done! Myelin ~${ratio}× faster (${m.toFixed(1)}s vs ${b.toFixed(1)}s).`
         this.myelinProperty.value = true
+        this.raceCompletedProperty.value = true
+        this.recomputeStars()
       }
+    }
+    else if (this.challengeProperty.value === 'demyelination') {
+      this.statusProperty.value = 'Signal survived — but slowly. Real MS can also block signals entirely.'
     }
     else {
       this.statusProperty.value = 'Signal reached the synaptic terminal — transmitters release!'
     }
+  }
+
+  public recordQuizAnswer(correct: boolean): void {
+    if (correct) {
+      this.quizCorrectProperty.value = true
+    }
+    this.recomputeStars()
+  }
+
+  private recomputeStars(): void {
+    let stars = 0
+    if (this.raceCompletedProperty.value) {
+      stars += 1
+    }
+    if (this.quizCorrectProperty.value) {
+      stars += 1
+    }
+    this.starsProperty.value = stars
   }
 
   public reset(): void {
@@ -176,9 +273,20 @@ export class NeuronSignalModel implements TModel {
     this.racePhaseProperty.reset()
     this.hopIndexProperty.reset()
     this.arrivedProperty.reset()
+    this.showIonsProperty.reset()
+    this.raceUnlockedProperty.reset()
+    this.raceCompletedProperty.reset()
+    this.quizCorrectProperty.reset()
+    this.starsProperty.reset()
+    this.fireCountProperty.reset()
+    this.lastLapResultProperty.value = null
     this.statusProperty.value = 'Fire a signal — toggle myelin to compare.'
     this.raceClock = 0
     this.lastHop = -1
+    this.lapClock = 0
+    this.lapMyelinAtFire = true
+    this.triedMyelinOn = false
+    this.triedMyelinOff = false
   }
 }
 
