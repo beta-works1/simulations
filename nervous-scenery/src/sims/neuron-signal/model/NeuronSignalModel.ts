@@ -30,6 +30,7 @@ export class NeuronSignalModel implements TModel {
   public readonly starsProperty: NumberProperty
   public readonly fireCountProperty: NumberProperty
   public readonly lastLapResultProperty: Property<LapResult | null>
+  public readonly soundEnabledProperty: BooleanProperty
 
   private raceClock = 0
   private lastHop = -1
@@ -58,6 +59,7 @@ export class NeuronSignalModel implements TModel {
     this.starsProperty = new NumberProperty(0)
     this.fireCountProperty = new NumberProperty(0)
     this.lastLapResultProperty = new Property<LapResult | null>(null)
+    this.soundEnabledProperty = new BooleanProperty(true)
   }
 
   public fire(): void {
@@ -280,6 +282,7 @@ export class NeuronSignalModel implements TModel {
     this.starsProperty.reset()
     this.fireCountProperty.reset()
     this.lastLapResultProperty.value = null
+    this.soundEnabledProperty.reset()
     this.statusProperty.value = 'Fire a signal — toggle myelin to compare.'
     this.raceClock = 0
     this.lastHop = -1

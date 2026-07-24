@@ -58,5 +58,7 @@
   "triadNextRace": "Start the Myelin race to time both modes.",
   "triadNextQuiz": "Answer the quick check below.",
   "triadNextIons": "Turn on Show ions to see Na⁺ rush in at each hop.",
-  "triadNextDemyelination": "Try the Demyelination challenge to see disease effects."
+  "triadNextDemyelination": "Try the Demyelination challenge to see disease effects.",
+  "soundOn": "Sound: On",
+  "soundOff": "Sound: Off"
 }
