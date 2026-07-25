@@ -843,8 +843,8 @@ export class WarmingScreenView extends ScreenView {
     const s = this.sceneBounds
     const factoryXs =
       id === 'factories'
-        ? [s.left + s.width * 0.68, s.left + s.width * 0.78, s.left + s.width * 0.88]
-        : [s.left + s.width * 0.78]
+        ? [s.left + s.width * 0.7, s.left + s.width * 0.8, s.left + s.width * 0.9]
+        : [s.left + s.width * 0.8]
     const fy = this.groundTop + 4
     for (let i = 0; i < this.smokePuffs.length; i++) {
       const puff = this.smokePuffs[i]!
