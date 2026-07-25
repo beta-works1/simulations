@@ -222,6 +222,8 @@ export class WarmingScreenView extends ScreenView {
     })
     this.escapeArrow = new Path(null, {
       fill: 'rgba(251,146,60,0.95)',
+      stroke: 'rgba(254,215,170,0.9)',
+      lineWidth: 1,
       pickable: false,
       visible: false,
     })
@@ -368,9 +370,9 @@ export class WarmingScreenView extends ScreenView {
       this.ghgPill.centerY = this.bandMinTop + Math.min(thick * 0.4, thick - 18)
       this.ghgLabel.center = this.ghgPill.center
 
-      // Handle fully below the band with clear spacing (not straddling the border)
+      // Handle fully below the band (clear gap — not straddling the border)
       this.ghgHandle.centerX = this.bandLeft + this.bandWidth * 0.5
-      this.ghgHandle.centerY = this.bandMinTop + thick + 22
+      this.ghgHandle.centerY = this.bandMinTop + thick + 30
 
       this.trapValueLabel.string = `Heat trapped: ${Math.round(co2 * 100)}%`
       this.trapValueLabel.right = sceneLeft + sceneW - 12
@@ -510,17 +512,17 @@ export class WarmingScreenView extends ScreenView {
       const x0 = midX
       const y0 = this.ghgBand.top + 2
       const x1 = midX + 6
-      const y1 = s.top + 36
+      const y1 = s.top + 52
       this.escapePath.shape = new Shape().moveTo(x0, y0).lineTo(x1, y1)
-      // Clear arrowhead pointing up / off toward space
       const arrow = new Shape()
-      arrow.moveTo(x1, y1 - 10)
-      arrow.lineTo(x1 - 9, y1 + 4)
-      arrow.lineTo(x1 + 9, y1 + 4)
+      arrow.moveTo(x1, y1 - 12)
+      arrow.lineTo(x1 - 10, y1 + 2)
+      arrow.lineTo(x1 + 10, y1 + 2)
       arrow.close()
       this.escapeArrow.shape = arrow
-      this.escapeLabel.left = x1 + 14
-      this.escapeLabel.centerY = y1 - 2
+      // Label beside the mid-path so it never clips the scene top
+      this.escapeLabel.left = x1 + 16
+      this.escapeLabel.centerY = (y0 + y1) * 0.5
     }
 
     this.trapPath.opacity = 0.45 + co2 * 0.55
