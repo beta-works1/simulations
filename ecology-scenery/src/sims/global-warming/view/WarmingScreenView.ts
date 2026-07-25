@@ -22,40 +22,60 @@ import { WarmingSounds } from './WarmingSounds.js'
 type SelfOptions = EmptySelfOptions
 type Options = SelfOptions & ScreenViewOptions
 
-/** Presentation/clarity view — model physics unchanged. */
+const GAS_PARTICLE_POOL = 14
+const HEAT_DOT_COUNT = 4
+const CLOUD_COUNT = 3
+
+/**
+ * Visual depth + polish on top of the clarity pass.
+ * Model physics and clarity UX (one tip, one temp, legend) stay intact.
+ */
 export class WarmingScreenView extends ScreenView {
   private readonly model: WarmingModel
   private readonly sounds: WarmingSounds
 
   private readonly sky: Rectangle
   private readonly hills: Path
+  private readonly sunGlow: Circle
+  private readonly sunShadow: Path
   private readonly sunNode: Node
+  private readonly sunRays: Path[] = []
   private readonly risePath: Path
   private readonly trapPath: Path
   private readonly escapePath: Path
   private readonly escapeArrow: Path
   private readonly escapeLabel: Text
   private readonly heatDots: Circle[] = []
+  private readonly gasParticles: Circle[] = []
   private readonly smokePuffs: Circle[] = []
+  private readonly clouds: Node[] = []
+  private readonly cloudBaseX: number[] = []
+
   private readonly ghgBand: Rectangle
   private readonly ghgHandle: Node
   private readonly ghgLabel: Text
   private readonly ghgPill: Rectangle
-  private readonly ground: Rectangle
+  private readonly soil: Rectangle
+  private readonly grass: Rectangle
+  private readonly groundScene: Node
+  private readonly treeLayer: Node
+  private readonly factoryLayer: Node
   private readonly tempBg: Rectangle
   private readonly tempChip: Text
+  private readonly tempShadow: Path
   private readonly trapValueLabel: Text
   private readonly nowCard: Node
   private readonly nowText: Text
   private readonly nowBg: Rectangle
   private readonly sceneBounds: { left: number; top: number; width: number; height: number }
-  private readonly sunX: number
-  private readonly sunY: number
+  private readonly sunOriginX: number
+  private readonly sunOriginY: number
   private readonly bandLeft: number
   private readonly bandWidth: number
   private readonly bandMinTop: number
   private readonly bandMaxBottom: number
   private readonly groundTop: number
+  private readonly beamTargets: { x: number; y: number }[]
 
   private visualHeat = 0.2
   private visualCo2 = 0.4
@@ -76,7 +96,6 @@ export class WarmingScreenView extends ScreenView {
     const panelW = 250
     const b = this.layoutBounds
 
-    // No top status banner — explanation lives only in the scene callout
     const sceneLeft = b.left + margin
     const sceneTop = b.top + margin
     const sceneW = b.width - panelW - margin * 3
@@ -90,6 +109,19 @@ export class WarmingScreenView extends ScreenView {
       lineWidth: 1,
     })
     this.addChild(this.sky)
+
+    // Drifting clouds (ambient motion)
+    for (let i = 0; i < CLOUD_COUNT; i++) {
+      const cloud = this.makeCloud(70 + i * 18)
+      const baseX = sceneLeft + 40 + i * (sceneW * 0.28)
+      this.cloudBaseX.push(baseX)
+      cloud.centerX = baseX
+      cloud.centerY = sceneTop + 36 + i * 22
+      cloud.opacity = 0.35
+      cloud.pickable = false
+      this.clouds.push(cloud)
+      this.addChild(cloud)
+    }
 
     const hillShape = new Shape()
     hillShape.moveTo(sceneLeft, sceneTop + sceneH * 0.72)
@@ -111,15 +143,52 @@ export class WarmingScreenView extends ScreenView {
     this.hills = new Path(hillShape, { fill: 'rgba(34, 100, 60, 0.4)', pickable: false })
     this.addChild(this.hills)
 
-    this.sunX = sceneLeft + sceneW * 0.84
-    this.sunY = sceneTop + sceneH * 0.13
+    // Sun origin is the single source of truth for icon + rays
+    this.sunOriginX = sceneLeft + sceneW * 0.84
+    this.sunOriginY = sceneTop + sceneH * 0.14
+
+    this.groundTop = sceneTop + sceneH * 0.76
+    this.bandLeft = sceneLeft + sceneW * 0.3
+    this.bandWidth = sceneW * 0.4
+    this.bandMinTop = sceneTop + sceneH * 0.34
+    this.bandMaxBottom = this.groundTop - 36
+
+    // Beam targets stay left of the right-edge drag thumb
+    this.beamTargets = [
+      { x: sceneLeft + sceneW * 0.36, y: this.groundTop - 4 },
+      { x: sceneLeft + sceneW * 0.46, y: this.groundTop - 4 },
+      { x: sceneLeft + sceneW * 0.55, y: this.groundTop - 4 },
+    ]
+    for (let i = 0; i < this.beamTargets.length; i++) {
+      const ray = new Path(null, {
+        stroke: 'rgba(250,204,21,0.55)',
+        lineWidth: 2.5,
+        lineCap: 'round',
+        pickable: false,
+      })
+      this.sunRays.push(ray)
+      this.addChild(ray)
+    }
+    this.rebuildSunRays()
+
+    // Sun on top of rays so beams read as leaving the icon
+    this.sunShadow = this.makeOval(22, 8, 'rgba(15,23,42,0.28)')
+    this.sunShadow.centerX = this.sunOriginX
+    this.sunShadow.centerY = this.sunOriginY + 26
+    this.addChild(this.sunShadow)
+    this.sunGlow = new Circle(28, {
+      fill: 'rgba(250,204,21,0.22)',
+      centerX: this.sunOriginX,
+      centerY: this.sunOriginY,
+      pickable: false,
+    })
+    this.addChild(this.sunGlow)
     this.sunNode = createEcologyIcon('sun', 48)
-    this.sunNode.centerX = this.sunX
-    this.sunNode.centerY = this.sunY
+    this.sunNode.centerX = this.sunOriginX
+    this.sunNode.centerY = this.sunOriginY
     this.sunNode.pickable = false
     this.addChild(this.sunNode)
 
-    // Sunlight label on a chip above the sun (clear of ray lines)
     const sunLabel = new Text('Sunlight in', {
       font: new PhetFont({ size: 12, weight: 'bold' }),
       fill: '#fde68a',
@@ -130,69 +199,58 @@ export class WarmingScreenView extends ScreenView {
       fill: 'rgba(15,23,42,0.82)',
       pickable: false,
     })
-    sunChip.centerX = this.sunX
-    sunChip.bottom = this.sunY - 26
+    sunChip.centerX = this.sunOriginX
+    sunChip.bottom = this.sunOriginY - this.sunNode.height * 0.5 - 6
     sunLabel.center = sunChip.center
     this.addChild(sunChip)
     this.addChild(sunLabel)
 
-    this.groundTop = sceneTop + sceneH * 0.76
-    this.bandLeft = sceneLeft + sceneW * 0.3
-    this.bandWidth = sceneW * 0.4
-    this.bandMinTop = sceneTop + sceneH * 0.34
-    this.bandMaxBottom = this.groundTop - 28
-
-    const beamTargets = [
-      { x: sceneLeft + sceneW * 0.42, y: this.groundTop - 4 },
-      { x: sceneLeft + sceneW * 0.52, y: this.groundTop - 4 },
-      { x: sceneLeft + sceneW * 0.62, y: this.groundTop - 4 },
-    ]
-    for (const t of beamTargets) {
-      this.addChild(
-        new Path(new Shape().moveTo(this.sunX - 10, this.sunY + 18).lineTo(t.x, t.y), {
-          stroke: 'rgba(250,204,21,0.55)',
-          lineWidth: 2.5,
-          lineCap: 'round',
-          pickable: false,
-        }),
-      )
-    }
-
+    // Atmospheric gas blanket (haze fill + subtle outline)
     this.ghgBand = new Rectangle(this.bandLeft, this.bandMinTop, this.bandWidth, 40, {
-      cornerRadius: 12,
-      fill: 'rgba(100,90,80,0.45)',
-      stroke: 'rgba(255,255,255,0.45)',
-      lineWidth: 2,
+      cornerRadius: 14,
+      fill: 'rgba(125, 211, 252, 0.28)',
+      stroke: 'rgba(186, 230, 253, 0.45)',
+      lineWidth: 1.5,
       cursor: 'ns-resize',
     })
     this.addChild(this.ghgBand)
 
-    this.ghgLabel = new Text('Gas blanket — drag ↕', {
-      font: new PhetFont({ size: 13, weight: 'bold' }),
-      fill: '#fff',
+    // Gas molecule particles (density scales with blanket %)
+    for (let i = 0; i < GAS_PARTICLE_POOL; i++) {
+      const p = new Circle(2.2 + (i % 3) * 0.6, {
+        fill: 'rgba(224, 242, 254, 0.7)',
+        pickable: false,
+      })
+      this.gasParticles.push(p)
+      this.addChild(p)
+    }
+
+    this.ghgLabel = new Text('Gas blanket', {
+      font: new PhetFont({ size: 12, weight: 'bold' }),
+      fill: '#ecfeff',
       pickable: false,
     })
-    this.ghgPill = new Rectangle(0, 0, 200, 26, {
+    this.ghgPill = new Rectangle(0, 0, 120, 22, {
       cornerRadius: 8,
-      fill: 'rgba(15,23,42,0.65)',
+      fill: 'rgba(15,23,42,0.55)',
       pickable: false,
     })
     this.addChild(this.ghgPill)
     this.addChild(this.ghgLabel)
 
-    // Drag handle fully below the band (clear spacing from instruction pill)
+    // Vertical slider thumb on the RIGHT edge of the blanket (out of ray paths)
     this.ghgHandle = new Node({ cursor: 'ns-resize' })
     this.ghgHandle.addChild(
-      new Rectangle(-42, -14, 84, 28, {
-        cornerRadius: 14,
+      new Rectangle(-11, -26, 22, 52, {
+        cornerRadius: 11,
         fill: '#f8fafc',
         stroke: '#0ea5e9',
         lineWidth: 2.5,
       }),
     )
     this.ghgHandle.addChild(
-      new Text('↕ Drag', {
-        font: new PhetFont({ size: 12, weight: 'bold' }),
+      new Text('↕', {
+        font: new PhetFont({ size: 14, weight: 'bold' }),
         fill: '#0f172a',
         centerX: 0,
         centerY: 0,
@@ -239,8 +297,7 @@ export class WarmingScreenView extends ScreenView {
     })
     this.addChild(this.escapeLabel)
 
-    // Moving heat packets — labeled via legend as “Heat moving”
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < HEAT_DOT_COUNT; i++) {
       const dot = new Circle(5, {
         fill: '#f87171',
         stroke: '#fff',
@@ -251,30 +308,30 @@ export class WarmingScreenView extends ScreenView {
       this.addChild(dot)
     }
 
-    this.ground = new Rectangle(sceneLeft, this.groundTop, sceneW, sceneTop + sceneH - this.groundTop, {
-      fill: '#a16207',
+    // Ground: soil gradient + grass strip
+    const groundH = sceneTop + sceneH - this.groundTop
+    this.soil = new Rectangle(sceneLeft, this.groundTop, sceneW, groundH, {
+      fill: new LinearGradient(0, this.groundTop, 0, this.groundTop + groundH)
+        .addColorStop(0, '#a16207')
+        .addColorStop(1, '#78350f'),
     })
-    this.addChild(this.ground)
+    this.grass = new Rectangle(sceneLeft, this.groundTop, sceneW, 16, {
+      fill: new LinearGradient(0, this.groundTop, 0, this.groundTop + 16)
+        .addColorStop(0, '#4ade80')
+        .addColorStop(1, '#15803d'),
+    })
+    this.addChild(this.soil)
+    this.addChild(this.grass)
 
-    const treeL = createEcologyIcon('tree', 38)
-    treeL.centerX = sceneLeft + sceneW * 0.2
-    treeL.centerY = this.groundTop + 30
-    treeL.pickable = false
-    this.addChild(treeL)
+    this.groundScene = new Node({ pickable: false })
+    this.treeLayer = new Node({ pickable: false })
+    this.factoryLayer = new Node({ pickable: false })
+    this.groundScene.addChild(this.treeLayer)
+    this.groundScene.addChild(this.factoryLayer)
+    this.addChild(this.groundScene)
+    this.buildGroundProps(sceneLeft, sceneW)
 
-    const earth = createEcologyIcon('earth', 50)
-    earth.centerX = sceneLeft + sceneW * 0.5
-    earth.centerY = this.groundTop + 34
-    earth.pickable = false
-    this.addChild(earth)
-
-    const factory = createEcologyIcon('factory', 42)
-    factory.centerX = sceneLeft + sceneW * 0.78
-    factory.centerY = this.groundTop + 30
-    factory.pickable = false
-    this.addChild(factory)
-
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 6; i++) {
       const puff = new Circle(6, {
         fill: 'rgba(148,163,184,0.35)',
         pickable: false,
@@ -303,7 +360,10 @@ export class WarmingScreenView extends ScreenView {
     })
     this.addChild(this.trapValueLabel)
 
-    // Single Earth temperature (shared model.temperatureProperty)
+    this.tempShadow = this.makeOval(70, 8, 'rgba(15,23,42,0.35)')
+    this.tempShadow.centerX = sceneLeft + sceneW / 2
+    this.tempShadow.centerY = this.groundTop - 6
+    this.addChild(this.tempShadow)
     this.tempBg = new Rectangle(0, 0, 160, 40, {
       cornerRadius: 12,
       fill: 'rgba(15,23,42,0.9)',
@@ -325,10 +385,11 @@ export class WarmingScreenView extends ScreenView {
       this.tempBg.rectWidth = Math.max(160, this.tempChip.width + 24)
       this.tempBg.centerX = sceneLeft + sceneW / 2
       this.tempChip.center = this.tempBg.center
+      this.tempShadow.centerX = this.tempBg.centerX
+      this.tempShadow.centerY = this.tempBg.bottom + 4
     }
     model.temperatureProperty.link(refreshTemp)
 
-    // Single live explanation callout
     this.nowText = new Text('', {
       font: new PhetFont({ size: 13, weight: 'bold' }),
       fill: '#fde68a',
@@ -355,29 +416,32 @@ export class WarmingScreenView extends ScreenView {
     model.tipProperty.link(refreshNow)
     model.showTipsProperty.link(refreshNow)
 
-    // Ray legend (permanent key)
     this.addChild(this.buildLegend(sceneLeft + 10, this.groundTop - 78))
 
     const applyBandFromCo2 = (co2: number) => {
       const maxThick = this.bandMaxBottom - this.bandMinTop
       const thick = 36 + co2 * (maxThick - 36)
       this.ghgBand.setRect(this.bandLeft, this.bandMinTop, this.bandWidth, thick)
-      this.ghgBand.fill = `rgba(100, 90, 80, ${0.28 + co2 * 0.45})`
+      // Soft atmospheric haze (amber as it thickens)
+      const cool = new Color(125, 211, 252, 0.22)
+      const warm = new Color(251, 191, 36, 0.38)
+      this.ghgBand.fill = Color.interpolateRGBA(cool, warm, co2)
+      this.ghgBand.stroke = `rgba(255,255,255,${0.25 + co2 * 0.25})`
 
-      // Instruction pill inside the band
-      this.ghgPill.rectWidth = Math.max(180, this.ghgLabel.width + 16)
-      this.ghgPill.centerX = this.bandLeft + this.bandWidth * 0.5
-      this.ghgPill.centerY = this.bandMinTop + Math.min(thick * 0.4, thick - 18)
+      this.ghgPill.rectWidth = Math.max(110, this.ghgLabel.width + 14)
+      this.ghgPill.left = this.bandLeft + 8
+      this.ghgPill.top = this.bandMinTop + 6
       this.ghgLabel.center = this.ghgPill.center
 
-      // Handle fully below the band (clear gap — not straddling the border)
-      this.ghgHandle.centerX = this.bandLeft + this.bandWidth * 0.5
-      this.ghgHandle.centerY = this.bandMinTop + thick + 30
+      // Thumb on right edge, mid-height of the current blanket
+      this.ghgHandle.centerX = this.bandLeft + this.bandWidth
+      this.ghgHandle.centerY = this.bandMinTop + thick * 0.5
 
       this.trapValueLabel.string = `Heat trapped: ${Math.round(co2 * 100)}%`
       this.trapValueLabel.right = sceneLeft + sceneW - 12
 
       this.rebuildHeatPaths(co2)
+      this.layoutGasParticles(co2)
     }
     applyBandFromCo2(model.co2LevelProperty.value)
 
@@ -420,6 +484,8 @@ export class WarmingScreenView extends ScreenView {
       if (!this.syncingCo2) applyBandFromCo2(co2)
       this.visualCo2 = co2
     })
+    model.scenarioIdProperty.link(() => this.applyScenarioGround())
+    this.applyScenarioGround()
 
     this.addChild(
       new WarmingControlPanel(model, this.sounds, {
@@ -433,6 +499,135 @@ export class WarmingScreenView extends ScreenView {
     this.visualHeat = (model.temperatureProperty.value - 10) / 28
     this.visualCo2 = model.co2LevelProperty.value
     this.updateSky(true)
+  }
+
+  private makeOval(rx: number, ry: number, fill: string): Path {
+    return new Path(Shape.ellipse(0, 0, rx, ry, 0), {
+      fill,
+      pickable: false,
+    })
+  }
+
+  private makeCloud(width: number): Node {
+    const h = width * 0.38
+    const cloud = new Node()
+    cloud.addChild(this.makeOval(width * 0.45, h * 0.55, 'rgba(248,250,252,0.55)'))
+    const left = this.makeOval(width * 0.28, h * 0.45, 'rgba(248,250,252,0.5)')
+    left.centerX = -width * 0.28
+    left.centerY = h * 0.08
+    cloud.addChild(left)
+    const right = this.makeOval(width * 0.3, h * 0.48, 'rgba(248,250,252,0.5)')
+    right.centerX = width * 0.26
+    right.centerY = h * 0.05
+    cloud.addChild(right)
+    return cloud
+  }
+
+  private addGroundIcon(parent: Node, name: string, size: number, cx: number, cy: number): void {
+    const shadow = this.makeOval(size * 0.38, size * 0.12, 'rgba(15,23,42,0.35)')
+    shadow.centerX = cx
+    shadow.centerY = cy + size * 0.38
+    parent.addChild(shadow)
+    const icon = createEcologyIcon(name, size)
+    icon.centerX = cx
+    icon.centerY = cy
+    icon.pickable = false
+    parent.addChild(icon)
+  }
+
+  private buildGroundProps(sceneLeft: number, sceneW: number): void {
+    const cy = this.groundTop + 28
+    // Tree cluster (visibility toggled by scenario)
+    this.addGroundIcon(this.treeLayer, 'tree', 46, sceneLeft + sceneW * 0.1, cy)
+    this.addGroundIcon(this.treeLayer, 'tree', 40, sceneLeft + sceneW * 0.17, cy + 2)
+    this.addGroundIcon(this.treeLayer, 'grass', 32, sceneLeft + sceneW * 0.23, cy + 4)
+    this.addGroundIcon(this.treeLayer, 'tree', 42, sceneLeft + sceneW * 0.29, cy)
+    this.addGroundIcon(this.treeLayer, 'tree', 38, sceneLeft + sceneW * 0.36, cy + 3)
+
+    // Earth globe (always present, with shadow)
+    this.addGroundIcon(this.groundScene, 'earth', 52, sceneLeft + sceneW * 0.5, cy + 4)
+
+    // Factory cluster
+    this.addGroundIcon(this.factoryLayer, 'factory', 46, sceneLeft + sceneW * 0.66, cy)
+    this.addGroundIcon(this.factoryLayer, 'factory', 42, sceneLeft + sceneW * 0.76, cy + 2)
+    this.addGroundIcon(this.factoryLayer, 'factory', 48, sceneLeft + sceneW * 0.87, cy)
+  }
+
+  /**
+   * Scenario buttons drive the ground scene (not just numbers).
+   * "Cut fewer trees" keeps/more trees (matches the button meaning).
+   */
+  private applyScenarioGround(): void {
+    const id = this.model.scenarioIdProperty.value
+    const trees = this.treeLayer.children
+    const factories = this.factoryLayer.children
+    // Each prop is shadow+icon pairs — toggle by index groups of 2
+    const showTreePairs = (n: number) => {
+      const pairs = Math.floor(trees.length / 2)
+      for (let i = 0; i < pairs; i++) {
+        const on = i < n
+        trees[i * 2]!.visible = on
+        trees[i * 2 + 1]!.visible = on
+      }
+    }
+    const showFactoryPairs = (n: number) => {
+      const pairs = Math.floor(factories.length / 2)
+      for (let i = 0; i < pairs; i++) {
+        const on = i < n
+        factories[i * 2]!.visible = on
+        factories[i * 2 + 1]!.visible = on
+      }
+    }
+
+    if (id === 'factories') {
+      showTreePairs(1)
+      showFactoryPairs(3)
+    }
+    else if (id === 'clean') {
+      showTreePairs(5)
+      showFactoryPairs(0)
+    }
+    else if (id === 'trees') {
+      showTreePairs(5)
+      showFactoryPairs(1)
+    }
+    else {
+      // today — balanced baseline
+      showTreePairs(3)
+      showFactoryPairs(1)
+    }
+  }
+
+  /** Rays always use the same origin coordinates as the sun icon. */
+  private rebuildSunRays(): void {
+    const ox = this.sunOriginX
+    const oy = this.sunOriginY
+    for (let i = 0; i < this.sunRays.length; i++) {
+      const t = this.beamTargets[i]!
+      this.sunRays[i]!.shape = new Shape().moveTo(ox, oy).lineTo(t.x, t.y)
+    }
+  }
+
+  private layoutGasParticles(co2: number): void {
+    const active = Math.round(5 + co2 * (GAS_PARTICLE_POOL - 5))
+    const left = this.bandLeft + 10
+    const top = this.bandMinTop + 8
+    const w = this.bandWidth - 36
+    const h = Math.max(20, this.ghgBand.getRectHeight() - 16)
+    for (let i = 0; i < this.gasParticles.length; i++) {
+      const p = this.gasParticles[i]!
+      if (i >= active) {
+        p.visible = false
+        continue
+      }
+      p.visible = true
+      const col = i % 5
+      const row = Math.floor(i / 5)
+      p.centerX = left + (col + 0.5) * (w / 5) + (i % 2) * 5
+      p.centerY = top + (row + 0.35) * (h / Math.max(1, Math.ceil(active / 5)))
+      p.setRadius(2.4 + (i % 3) * 0.8)
+      p.opacity = 0.4 + co2 * 0.55
+    }
   }
 
   private buildLegend(left: number, top: number): Node {
@@ -520,7 +715,6 @@ export class WarmingScreenView extends ScreenView {
       arrow.lineTo(x1 + 10, y1 + 2)
       arrow.close()
       this.escapeArrow.shape = arrow
-      // Label beside the mid-path so it never clips the scene top
       this.escapeLabel.left = x1 + 16
       this.escapeLabel.centerY = (y0 + y1) * 0.5
     }
@@ -531,15 +725,23 @@ export class WarmingScreenView extends ScreenView {
 
   public override step(dt: number): void {
     this.model.step(dt)
-    this.animTime += dt
+    const running = this.model.runningProperty.value
+    if (running && dt > 0) {
+      this.animTime += dt
+    }
 
     const targetHeat = clamp((this.model.temperatureProperty.value - 10) / 28, 0, 1)
     this.visualHeat = damp(this.visualHeat, targetHeat, 4, dt)
     this.visualCo2 = damp(this.visualCo2, this.model.co2LevelProperty.value, 6, dt)
 
     this.updateSky(false)
-    this.updateHeatDots()
-    this.updateSmoke()
+    if (running) {
+      this.updateHeatDots()
+      this.updateGasDrift()
+      this.updateSmoke()
+      this.updateClouds()
+      this.sunGlow.opacity = 0.45 + 0.2 * Math.sin(this.animTime * 1.2)
+    }
   }
 
   private updateSky(force: boolean): void {
@@ -558,7 +760,13 @@ export class WarmingScreenView extends ScreenView {
       new Color('#50321e'),
       heat,
     ).withAlpha(0.4)
-    this.ground.fill = Color.interpolateRGBA(new Color(161, 98, 7), new Color(220, 80, 30), heat)
+    const groundH = s.top + s.height - this.groundTop
+    this.soil.fill = new LinearGradient(0, this.groundTop, 0, this.groundTop + groundH)
+      .addColorStop(0, Color.interpolateRGBA(new Color(161, 98, 7), new Color(220, 80, 30), heat))
+      .addColorStop(1, Color.interpolateRGBA(new Color(120, 53, 15), new Color(127, 29, 29), heat))
+    this.grass.fill = new LinearGradient(0, this.groundTop, 0, this.groundTop + 16)
+      .addColorStop(0, Color.interpolateRGBA(new Color(74, 222, 128), new Color(202, 138, 4), heat))
+      .addColorStop(1, Color.interpolateRGBA(new Color(21, 128, 61), new Color(120, 53, 15), heat))
   }
 
   private updateHeatDots(): void {
@@ -573,38 +781,74 @@ export class WarmingScreenView extends ScreenView {
 
     for (let i = 0; i < this.heatDots.length; i++) {
       const dot = this.heatDots[i]!
-      const cycle = (t * 0.35 + i * 0.33) % 1
-      if (cycle < 0.5) {
-        const u = cycle / 0.5
+      // Continuous travel: up the rise path, then back down the trap path
+      const cycle = (t * 0.45 + i * 0.25) % 1
+      if (cycle < 0.55) {
+        const u = cycle / 0.55
         dot.centerX = lerp(leftX, midX - 10, u)
         dot.centerY = lerp(groundY, hitY, u)
         dot.fill = '#fca5a5'
         dot.visible = true
       }
       else {
-        const u = (cycle - 0.5) / 0.5
-        const bounce = 0.35 + co2 * 0.65
+        const u = (cycle - 0.55) / 0.45
+        const bounce = 0.4 + co2 * 0.6
         if (u > bounce) {
+          // Escaped when blanket is thin
           dot.visible = co2 >= 0.35
           if (!dot.visible) continue
         }
         else {
           dot.visible = true
         }
-        const v = Math.min(1, u / Math.max(0.2, bounce))
+        const v = Math.min(1, u / Math.max(0.25, bounce))
         dot.centerX = lerp(midX + 10, rightX, v)
         dot.centerY = lerp(hitY, groundY - 8, v)
         dot.fill = '#ef4444'
       }
-      dot.opacity = 0.55 + co2 * 0.4
+      dot.opacity = 0.6 + co2 * 0.35
+    }
+  }
+
+  private updateGasDrift(): void {
+    const co2 = this.visualCo2
+    const t = this.animTime
+    const top = this.bandMinTop + 8
+    const h = Math.max(16, this.ghgBand.getRectHeight() - 16)
+    for (let i = 0; i < this.gasParticles.length; i++) {
+      const p = this.gasParticles[i]!
+      if (!p.visible) continue
+      p.centerX += Math.sin(t * 0.7 + i * 1.3) * 0.15
+      p.centerY = clamp(
+        p.centerY + Math.cos(t * 0.5 + i) * 0.12,
+        top,
+        top + h,
+      )
+      p.opacity = 0.3 + co2 * 0.55 + 0.1 * Math.sin(t + i)
+    }
+  }
+
+  private updateClouds(): void {
+    const s = this.sceneBounds
+    for (let i = 0; i < this.clouds.length; i++) {
+      const cloud = this.clouds[i]!
+      const base = this.cloudBaseX[i]!
+      const drift = ((this.animTime * (4 + i * 1.5) + i * 40) % (s.width + 80)) - 40
+      cloud.centerX = s.left + ((base - s.left + drift) % (s.width + 60))
+      cloud.opacity = 0.28 + 0.08 * Math.sin(this.animTime * 0.4 + i)
     }
   }
 
   private updateSmoke(): void {
+    const id = this.model.scenarioIdProperty.value
     const co2 = this.visualCo2
-    const show = co2 >= 0.4
-    const fx = this.sceneBounds.left + this.sceneBounds.width * 0.78
-    const fy = this.groundTop + 6
+    const show = id === 'factories' || (id === 'today' && co2 >= 0.45) || co2 >= 0.7
+    const s = this.sceneBounds
+    const factoryXs =
+      id === 'factories'
+        ? [s.left + s.width * 0.68, s.left + s.width * 0.78, s.left + s.width * 0.88]
+        : [s.left + s.width * 0.78]
+    const fy = this.groundTop + 4
     for (let i = 0; i < this.smokePuffs.length; i++) {
       const puff = this.smokePuffs[i]!
       if (!show) {
@@ -612,11 +856,12 @@ export class WarmingScreenView extends ScreenView {
         continue
       }
       puff.visible = true
-      const u = (this.animTime * 0.22 + i * 0.28) % 1
-      puff.setRadius(5 + u * 5)
+      const fx = factoryXs[i % factoryXs.length]!
+      const u = (this.animTime * 0.22 + i * 0.18) % 1
+      puff.setRadius(5 + u * 6)
       puff.centerX = fx + Math.sin(u * 5 + i) * 6
-      puff.centerY = fy - u * 42
-      puff.opacity = 0.35 * (1 - u) * Math.min(1, (co2 - 0.35) / 0.4)
+      puff.centerY = fy - u * 48
+      puff.opacity = 0.4 * (1 - u) * (id === 'factories' ? 1 : Math.min(1, co2))
     }
   }
 }
