@@ -153,11 +153,11 @@ export class WarmingScreenView extends ScreenView {
     this.bandMinTop = sceneTop + sceneH * 0.34
     this.bandMaxBottom = this.groundTop - 36
 
-    // Beam targets stay left of the right-edge drag thumb
+    // Beam targets land in the open center (clear of Earth/temp on the right)
     this.beamTargets = [
-      { x: sceneLeft + sceneW * 0.36, y: this.groundTop - 4 },
-      { x: sceneLeft + sceneW * 0.46, y: this.groundTop - 4 },
-      { x: sceneLeft + sceneW * 0.55, y: this.groundTop - 4 },
+      { x: sceneLeft + sceneW * 0.34, y: this.groundTop - 4 },
+      { x: sceneLeft + sceneW * 0.44, y: this.groundTop - 4 },
+      { x: sceneLeft + sceneW * 0.52, y: this.groundTop - 4 },
     ]
     for (let i = 0; i < this.beamTargets.length; i++) {
       const ray = new Path(null, {
@@ -360,17 +360,15 @@ export class WarmingScreenView extends ScreenView {
     })
     this.addChild(this.trapValueLabel)
 
+    // Temperature + Earth sit on the RIGHT so center ray paths stay clear
+    const tempRight = sceneLeft + sceneW - 12
     this.tempShadow = this.makeOval(70, 8, 'rgba(15,23,42,0.35)')
-    this.tempShadow.centerX = sceneLeft + sceneW / 2
-    this.tempShadow.centerY = this.groundTop - 6
     this.addChild(this.tempShadow)
     this.tempBg = new Rectangle(0, 0, 160, 40, {
       cornerRadius: 12,
       fill: 'rgba(15,23,42,0.9)',
       stroke: 'rgba(251,146,60,0.7)',
       lineWidth: 1.5,
-      centerX: sceneLeft + sceneW / 2,
-      bottom: this.groundTop - 10,
       pickable: false,
     })
     this.tempChip = new Text('', {
@@ -382,8 +380,9 @@ export class WarmingScreenView extends ScreenView {
     this.addChild(this.tempChip)
     const refreshTemp = (temp: number) => {
       this.tempChip.string = `Earth ${temp.toFixed(1)} °C`
-      this.tempBg.rectWidth = Math.max(160, this.tempChip.width + 24)
-      this.tempBg.centerX = sceneLeft + sceneW / 2
+      this.tempBg.rectWidth = Math.max(150, this.tempChip.width + 24)
+      this.tempBg.right = tempRight
+      this.tempBg.bottom = this.groundTop - 12
       this.tempChip.center = this.tempBg.center
       this.tempShadow.centerX = this.tempBg.centerX
       this.tempShadow.centerY = this.tempBg.bottom + 4
@@ -537,20 +536,18 @@ export class WarmingScreenView extends ScreenView {
 
   private buildGroundProps(sceneLeft: number, sceneW: number): void {
     const cy = this.groundTop + 28
-    // Tree cluster (visibility toggled by scenario)
-    this.addGroundIcon(this.treeLayer, 'tree', 46, sceneLeft + sceneW * 0.1, cy)
-    this.addGroundIcon(this.treeLayer, 'tree', 40, sceneLeft + sceneW * 0.17, cy + 2)
-    this.addGroundIcon(this.treeLayer, 'grass', 32, sceneLeft + sceneW * 0.23, cy + 4)
-    this.addGroundIcon(this.treeLayer, 'tree', 42, sceneLeft + sceneW * 0.29, cy)
-    this.addGroundIcon(this.treeLayer, 'tree', 38, sceneLeft + sceneW * 0.36, cy + 3)
+    // Trees stay on the LEFT — center stays open for sunlight / heat rays
+    this.addGroundIcon(this.treeLayer, 'tree', 46, sceneLeft + sceneW * 0.08, cy)
+    this.addGroundIcon(this.treeLayer, 'tree', 40, sceneLeft + sceneW * 0.14, cy + 2)
+    this.addGroundIcon(this.treeLayer, 'grass', 32, sceneLeft + sceneW * 0.2, cy + 4)
+    this.addGroundIcon(this.treeLayer, 'tree', 42, sceneLeft + sceneW * 0.26, cy)
+    this.addGroundIcon(this.treeLayer, 'tree', 38, sceneLeft + sceneW * 0.32, cy + 3)
 
-    // Earth globe (always present, with shadow)
-    this.addGroundIcon(this.groundScene, 'earth', 52, sceneLeft + sceneW * 0.5, cy + 4)
-
-    // Factory cluster
-    this.addGroundIcon(this.factoryLayer, 'factory', 46, sceneLeft + sceneW * 0.66, cy)
-    this.addGroundIcon(this.factoryLayer, 'factory', 42, sceneLeft + sceneW * 0.76, cy + 2)
-    this.addGroundIcon(this.factoryLayer, 'factory', 48, sceneLeft + sceneW * 0.87, cy)
+    // Earth + factories on the RIGHT (next to the temperature chip)
+    this.addGroundIcon(this.groundScene, 'earth', 48, sceneLeft + sceneW * 0.58, cy + 2)
+    this.addGroundIcon(this.factoryLayer, 'factory', 42, sceneLeft + sceneW * 0.7, cy)
+    this.addGroundIcon(this.factoryLayer, 'factory', 40, sceneLeft + sceneW * 0.8, cy + 2)
+    this.addGroundIcon(this.factoryLayer, 'factory', 44, sceneLeft + sceneW * 0.9, cy)
   }
 
   /**
@@ -693,8 +690,8 @@ export class WarmingScreenView extends ScreenView {
     const groundY = this.groundTop - 4
     const hitY = this.ghgBand.bottom - 2
     const midX = this.bandLeft + this.bandWidth * 0.5
-    const leftX = s.left + s.width * 0.4
-    const rightX = this.bandLeft + this.bandWidth * 0.7
+    const leftX = s.left + s.width * 0.38
+    const rightX = s.left + s.width * 0.52
 
     this.risePath.shape = new Shape().moveTo(leftX, groundY).lineTo(midX - 10, hitY)
     this.trapPath.shape = new Shape().moveTo(midX + 10, hitY).lineTo(rightX, groundY - 8)
@@ -775,8 +772,8 @@ export class WarmingScreenView extends ScreenView {
     const hitY = this.ghgBand.bottom - 2
     const s = this.sceneBounds
     const midX = this.bandLeft + this.bandWidth * 0.5
-    const leftX = s.left + s.width * 0.4
-    const rightX = this.bandLeft + this.bandWidth * 0.7
+    const leftX = s.left + s.width * 0.38
+    const rightX = s.left + s.width * 0.52
     const t = this.animTime
 
     for (let i = 0; i < this.heatDots.length; i++) {
