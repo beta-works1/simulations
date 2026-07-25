@@ -32,6 +32,7 @@ export class WarmingScreenView extends ScreenView {
   private readonly risePath: Path
   private readonly trapPath: Path
   private readonly escapePath: Path
+  private readonly escapeLabel: Text
   private readonly heatDots: Circle[] = []
   private readonly smokePuffs: Circle[] = []
   private readonly ghgBand: Rectangle
@@ -133,7 +134,7 @@ export class WarmingScreenView extends ScreenView {
     this.sunNode.pickable = false
     this.addChild(this.sunNode)
     this.addChild(
-      new Text('Sunlight', {
+      new Text('1. Sunlight in', {
         font: new PhetFont({ size: 12, weight: 'bold' }),
         fill: '#fde68a',
         centerX: this.sunX,
@@ -174,7 +175,7 @@ export class WarmingScreenView extends ScreenView {
     })
     this.addChild(this.ghgBand)
 
-    this.ghgLabel = new Text('Gas blanket — drag up/down', {
+    this.ghgLabel = new Text('3. Greenhouse gases — drag ↕', {
       font: new PhetFont({ size: 13, weight: 'bold' }),
       fill: '#fff',
       pickable: false,
@@ -230,6 +231,13 @@ export class WarmingScreenView extends ScreenView {
     this.addChild(this.risePath)
     this.addChild(this.trapPath)
     this.addChild(this.escapePath)
+    this.escapeLabel = new Text('to space →', {
+      font: new PhetFont({ size: 11, weight: 'bold' }),
+      fill: '#fdba74',
+      pickable: false,
+      visible: false,
+    })
+    this.addChild(this.escapeLabel)
 
     // Moving heat “packets” — only move centers each frame
     for (let i = 0; i < 3; i++) {
@@ -278,7 +286,7 @@ export class WarmingScreenView extends ScreenView {
     }
 
     this.addChild(
-      new Text('Heat rises ↑', {
+      new Text('2. Earth heat ↑', {
         font: new PhetFont({ size: 12, weight: 'bold' }),
         fill: '#fecaca',
         left: sceneLeft + 12,
@@ -287,7 +295,7 @@ export class WarmingScreenView extends ScreenView {
       }),
     )
     this.addChild(
-      new Text('Heat trapped ↓', {
+      new Text('4. Heat sent back ↓', {
         font: new PhetFont({ size: 12, weight: 'bold' }),
         fill: '#fecaca',
         right: sceneLeft + sceneW - 12,
@@ -305,7 +313,7 @@ export class WarmingScreenView extends ScreenView {
       bottom: this.groundTop - 10,
       pickable: false,
     })
-    this.tempChip = new Text('Earth 15.0 °C', {
+    this.tempChip = new Text('5. Earth 15.0 °C', {
       font: new PhetFont({ size: 15, weight: 'bold' }),
       fill: '#fdba74',
       center: tempBg.center,
@@ -428,10 +436,13 @@ export class WarmingScreenView extends ScreenView {
 
     const escapeOn = co2 < 0.42
     this.escapePath.visible = escapeOn
+    this.escapeLabel.visible = escapeOn
     if (escapeOn) {
       this.escapePath.shape = new Shape()
         .moveTo(midX, this.ghgBand.top + 2)
         .lineTo(midX + 12, s.top + 28)
+      this.escapeLabel.centerX = midX + 40
+      this.escapeLabel.top = s.top + 12
     }
 
     // Stronger trap stroke when thicker
@@ -454,7 +465,7 @@ export class WarmingScreenView extends ScreenView {
     const temp = this.model.temperatureProperty.value
     if (Math.abs(temp - this.lastTempShown) >= 0.1) {
       this.lastTempShown = temp
-      this.tempChip.string = `Earth ${temp.toFixed(1)} °C`
+      this.tempChip.string = `5. Earth ${temp.toFixed(1)} °C`
     }
   }
 

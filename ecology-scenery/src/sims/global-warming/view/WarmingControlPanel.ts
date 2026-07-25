@@ -13,7 +13,7 @@ type SelfOptions = {
 
 type Options = SelfOptions & EmptySelfOptions & PanelOptions
 
-/** Lean Class-8 panel: meters, easy thickness, 3 stories, sound, reset. */
+/** Class-8 panel: mechanism story, meters, gas blanket, human-cause scenarios. */
 export class WarmingControlPanel extends Panel {
   public constructor(model: WarmingModel, sounds: WarmingSounds, providedOptions: Options) {
     const w = (providedOptions.maxWidth as number | undefined) ?? 250
@@ -56,6 +56,11 @@ export class WarmingControlPanel extends Panel {
       fill: '#a7f3d0',
       maxWidth: w,
     })
+    const effectReadout = new Text(model.effectProperty, {
+      font: new PhetFont(12),
+      fill: '#fdba74',
+      maxWidth: w,
+    })
     const tempReadout = new Text('', {
       font: new PhetFont({ size: 16, weight: 'bold' }),
       fill: '#fb923c',
@@ -69,7 +74,7 @@ export class WarmingControlPanel extends Panel {
 
     const refreshMeters = () => {
       tempReadout.string = `Earth: ${model.temperatureProperty.value.toFixed(1)} °C`
-      gasReadout.string = `Gas blanket: ${Math.round(model.co2LevelProperty.value * 100)}%`
+      gasReadout.string = `Greenhouse gases: ${Math.round(model.co2LevelProperty.value * 100)}%`
     }
     model.temperatureProperty.link(refreshMeters)
     model.co2LevelProperty.link(refreshMeters)
@@ -101,37 +106,45 @@ export class WarmingControlPanel extends Panel {
       soundLabel.string = on ? 'Sound: On' : 'Sound: Off'
     })
 
-    const storyBtns = WARMING_SCENARIOS.filter(s =>
-      s.id === 'clean' || s.id === 'today' || s.id === 'factories',
-    ).map(s =>
-      mkBtn(
+    const storyOrder = ['today', 'factories', 'trees', 'clean'] as const
+    const storyBtns = storyOrder.map(id => {
+      const s = WARMING_SCENARIOS.find(x => x.id === id)!
+      const color =
+        id === 'factories' ? '#c0392b' : id === 'clean' ? '#2980b9' : id === 'trees' ? '#1e8449' : '#f1c40f'
+      return mkBtn(
         s.name.replace(/^\d+\.\s*/, ''),
         () => {
           model.applyScenario(s.id)
           sounds.scenario()
         },
-        s.id === 'factories' ? '#c0392b' : s.id === 'clean' ? '#2980b9' : '#f1c40f',
-      ),
-    )
+        color,
+      )
+    })
 
     const content = new VBox({
       align: 'left',
-      spacing: 8,
+      spacing: 7,
       children: [
         new Text('Controls', {
           font: new PhetFont({ size: 17, weight: 'bold' }),
           fill: 'white',
           maxWidth: w,
         }),
-        help('Sunlight → heat rises → gas blanket traps heat → Earth warms.'),
+        section('How it works'),
+        help('1. Sunlight reaches Earth and warms land & oceans.'),
+        help('2. Earth gives energy back as heat (infrared).'),
+        help('3. Greenhouse gases (CO₂, CH₄…) absorb heat.'),
+        help('4. Gases re-radiate heat — some back to Earth.'),
+        help('5. Extra gases → thicker blanket → global warming.'),
         section('What is happening'),
         tipReadout,
         whyReadout,
+        effectReadout,
         section('Meters'),
         tempReadout,
         gasReadout,
-        section('Change the gas blanket'),
-        help('Thicker = more gases = hotter Earth.'),
+        section('Greenhouse-gas blanket'),
+        help('Thicker = more gases = more trapped heat.'),
         new HBox({
           spacing: 8,
           children: [
@@ -165,7 +178,8 @@ export class WarmingControlPanel extends Panel {
           majorTickLength: 0,
           minorTickLength: 0,
         }),
-        section('Try a story'),
+        section('Human causes'),
+        help('Burning fuels and cutting forests add CO₂.'),
         ...storyBtns,
         soundBtn,
         mkBtn(
