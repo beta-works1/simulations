@@ -56,8 +56,12 @@ export class WarmingScreenView extends ScreenView {
   private readonly ghgLabel: Text
   private readonly ghgPill: Rectangle
   private readonly soil: Rectangle
+  private readonly soilUnderGrass: Rectangle
   private readonly grass: Rectangle
+  private readonly grassPatches: Rectangle[] = []
+  private readonly grassBlades: { node: Node; phase: number; amp: number; baseRot: number }[] = []
   private readonly groundScene: Node
+  private readonly ambientLayer: Node
   private readonly treeLayer: Node
   private readonly factoryLayer: Node
   private readonly tempBg: Rectangle
@@ -308,28 +312,42 @@ export class WarmingScreenView extends ScreenView {
       this.addChild(dot)
     }
 
-    // Ground: soil gradient + grass strip
+    // Ground: textured soil + grass strip with blades
     const groundH = sceneTop + sceneH - this.groundTop
     this.soil = new Rectangle(sceneLeft, this.groundTop, sceneW, groundH, {
       fill: new LinearGradient(0, this.groundTop, 0, this.groundTop + groundH)
         .addColorStop(0, '#a16207')
+        .addColorStop(0.45, '#92400e')
         .addColorStop(1, '#78350f'),
     })
+    this.addChild(this.soil)
+    // Darker band right under grass so soil/grass read as separate materials
+    this.soilUnderGrass = new Rectangle(sceneLeft, this.groundTop + 14, sceneW, 10, {
+      fill: 'rgba(69, 26, 3, 0.45)',
+      pickable: false,
+    })
+    this.addChild(this.soilUnderGrass)
+    this.buildSoilDetails(sceneLeft, sceneW, groundH)
+
     this.grass = new Rectangle(sceneLeft, this.groundTop, sceneW, 16, {
       fill: new LinearGradient(0, this.groundTop, 0, this.groundTop + 16)
         .addColorStop(0, '#4ade80')
+        .addColorStop(0.55, '#22c55e')
         .addColorStop(1, '#15803d'),
     })
-    this.addChild(this.soil)
     this.addChild(this.grass)
+    this.buildGrassTexture(sceneLeft, sceneW)
 
     this.groundScene = new Node({ pickable: false })
+    this.ambientLayer = new Node({ pickable: false })
     this.treeLayer = new Node({ pickable: false })
     this.factoryLayer = new Node({ pickable: false })
+    this.groundScene.addChild(this.ambientLayer)
     this.groundScene.addChild(this.treeLayer)
     this.groundScene.addChild(this.factoryLayer)
     this.addChild(this.groundScene)
     this.buildGroundProps(sceneLeft, sceneW)
+    this.buildAmbientGround(sceneLeft, sceneW)
 
     for (let i = 0; i < 6; i++) {
       const puff = new Circle(6, {
@@ -532,6 +550,176 @@ export class WarmingScreenView extends ScreenView {
     icon.centerY = cy
     icon.pickable = false
     parent.addChild(icon)
+  }
+
+  /** Soft pebbles, cracks, and mounds across the soil (low-key texture). */
+  private buildSoilDetails(sceneLeft: number, sceneW: number, groundH: number): void {
+    const details = new Node({ pickable: false })
+    // Subtle mottling patches
+    const mottles = [
+      { x: 0.12, y: 0.35, rx: 18, ry: 6, c: 'rgba(120, 53, 15, 0.35)' },
+      { x: 0.28, y: 0.55, rx: 22, ry: 7, c: 'rgba(146, 64, 14, 0.3)' },
+      { x: 0.45, y: 0.4, rx: 16, ry: 5, c: 'rgba(90, 40, 10, 0.32)' },
+      { x: 0.62, y: 0.6, rx: 20, ry: 6, c: 'rgba(120, 53, 15, 0.28)' },
+      { x: 0.78, y: 0.38, rx: 24, ry: 7, c: 'rgba(146, 64, 14, 0.28)' },
+      { x: 0.9, y: 0.58, rx: 14, ry: 5, c: 'rgba(90, 40, 10, 0.3)' },
+    ]
+    for (const m of mottles) {
+      const oval = this.makeOval(m.rx, m.ry, m.c)
+      oval.centerX = sceneLeft + sceneW * m.x
+      oval.centerY = this.groundTop + 18 + m.y * (groundH - 22)
+      details.addChild(oval)
+    }
+    // Dirt crack lines
+    const cracks: { x0: number; y0: number; x1: number; y1: number }[] = [
+      { x0: 0.18, y0: 0.42, x1: 0.26, y1: 0.62 },
+      { x0: 0.4, y0: 0.5, x1: 0.48, y1: 0.72 },
+      { x0: 0.72, y0: 0.38, x1: 0.8, y1: 0.55 },
+    ]
+    for (const c of cracks) {
+      details.addChild(
+        new Path(
+          new Shape()
+            .moveTo(sceneLeft + sceneW * c.x0, this.groundTop + 20 + c.y0 * (groundH - 24))
+            .lineTo(sceneLeft + sceneW * c.x1, this.groundTop + 20 + c.y1 * (groundH - 24)),
+          {
+            stroke: 'rgba(55, 25, 8, 0.4)',
+            lineWidth: 1.2,
+            lineCap: 'round',
+            pickable: false,
+          },
+        ),
+      )
+    }
+    // Rocks with shadows
+    const rocks = [
+      { x: 0.22, y: 0.48, r: 5 },
+      { x: 0.38, y: 0.65, r: 4 },
+      { x: 0.5, y: 0.42, r: 6 },
+      { x: 0.65, y: 0.7, r: 4.5 },
+      { x: 0.84, y: 0.5, r: 5.5 },
+    ]
+    for (const r of rocks) {
+      const cx = sceneLeft + sceneW * r.x
+      const cy = this.groundTop + 22 + r.y * (groundH - 28)
+      const shadow = this.makeOval(r.r * 1.4, r.r * 0.45, 'rgba(15,23,42,0.3)')
+      shadow.centerX = cx
+      shadow.centerY = cy + r.r * 0.55
+      details.addChild(shadow)
+      details.addChild(
+        new Circle(r.r, {
+          fill: '#78716c',
+          stroke: '#57534e',
+          lineWidth: 0.8,
+          centerX: cx,
+          centerY: cy,
+          pickable: false,
+        }),
+      )
+      details.addChild(
+        new Circle(r.r * 0.35, {
+          fill: 'rgba(214, 211, 209, 0.35)',
+          centerX: cx - r.r * 0.25,
+          centerY: cy - r.r * 0.25,
+          pickable: false,
+        }),
+      )
+    }
+    this.addChild(details)
+  }
+
+  /** Multi-shade grass patches + individual blades that sway. */
+  private buildGrassTexture(sceneLeft: number, sceneW: number): void {
+    const greens = ['rgba(34, 197, 94, 0.45)', 'rgba(22, 163, 74, 0.4)', 'rgba(74, 222, 128, 0.35)', 'rgba(21, 128, 61, 0.4)']
+    for (let i = 0; i < 8; i++) {
+      const w = 28 + (i % 4) * 10
+      const patch = new Rectangle(0, 0, w, 10 + (i % 3), {
+        fill: greens[i % greens.length],
+        cornerRadius: 3,
+        pickable: false,
+      })
+      patch.left = sceneLeft + 8 + i * (sceneW / 8.5) + (i % 2) * 6
+      patch.top = this.groundTop + 2 + (i % 3)
+      this.grassPatches.push(patch)
+      this.addChild(patch)
+    }
+
+    const bladeCount = 36
+    for (let i = 0; i < bladeCount; i++) {
+      const h = 7 + (i % 5) * 1.6
+      const w = 1.6 + (i % 3) * 0.4
+      const shade = i % 3 === 0 ? '#86efac' : i % 3 === 1 ? '#4ade80' : '#16a34a'
+      const blade = new Path(
+        new Shape().moveTo(0, 0).lineTo(-w, -h).lineTo(w * 0.35, -h * 0.85).close(),
+        { fill: shade, pickable: false },
+      )
+      const wrap = new Node({ children: [blade], pickable: false })
+      // Soft shadow under each tuft
+      const shadow = this.makeOval(3.5, 1.2, 'rgba(15,23,42,0.22)')
+      shadow.centerY = 1
+      wrap.addChild(shadow)
+      wrap.moveChildToBack(shadow)
+
+      const x = sceneLeft + 10 + (i / bladeCount) * (sceneW - 20) + Math.sin(i * 2.1) * 4
+      const y = this.groundTop + 14
+      wrap.x = x
+      wrap.y = y
+      const baseRot = ((i % 7) - 3) * 0.04
+      wrap.rotation = baseRot
+      this.grassBlades.push({
+        node: wrap,
+        phase: i * 0.7,
+        amp: 0.05 + (i % 4) * 0.012,
+        baseRot,
+      })
+      this.addChild(wrap)
+    }
+  }
+
+  /** Low-key bushes/rocks between the main clusters — not scenario-driven. */
+  private buildAmbientGround(sceneLeft: number, sceneW: number): void {
+    const cy = this.groundTop + 30
+    // Small bushes / grass tufts in the open middle
+    const bushes = [
+      { x: 0.38, size: 22 },
+      { x: 0.44, size: 18 },
+      { x: 0.5, size: 24 },
+      { x: 0.54, size: 20 },
+    ]
+    for (const b of bushes) {
+      this.addGroundIcon(this.ambientLayer, 'grass', b.size, sceneLeft + sceneW * b.x, cy + 6)
+    }
+    // Extra low rocks with shadows
+    const rocks = [
+      { x: 0.41, y: 12, r: 4 },
+      { x: 0.47, y: 18, r: 3.5 },
+      { x: 0.53, y: 10, r: 5 },
+    ]
+    for (const r of rocks) {
+      const cx = sceneLeft + sceneW * r.x
+      const ry = this.groundTop + 20 + r.y
+      const shadow = this.makeOval(r.r * 1.5, r.r * 0.5, 'rgba(15,23,42,0.3)')
+      shadow.centerX = cx
+      shadow.centerY = ry + r.r * 0.5
+      this.ambientLayer.addChild(shadow)
+      this.ambientLayer.addChild(
+        new Circle(r.r, {
+          fill: '#a8a29e',
+          stroke: '#78716c',
+          lineWidth: 0.7,
+          centerX: cx,
+          centerY: ry,
+          pickable: false,
+        }),
+      )
+    }
+  }
+
+  private updateGrassSway(): void {
+    const t = this.animTime
+    for (const blade of this.grassBlades) {
+      blade.node.rotation = blade.baseRot + Math.sin(t * 1.6 + blade.phase) * blade.amp
+    }
   }
 
   private buildGroundProps(sceneLeft: number, sceneW: number): void {
@@ -737,6 +925,7 @@ export class WarmingScreenView extends ScreenView {
       this.updateGasDrift()
       this.updateSmoke()
       this.updateClouds()
+      this.updateGrassSway()
       this.sunGlow.opacity = 0.45 + 0.2 * Math.sin(this.animTime * 1.2)
     }
   }
@@ -760,10 +949,15 @@ export class WarmingScreenView extends ScreenView {
     const groundH = s.top + s.height - this.groundTop
     this.soil.fill = new LinearGradient(0, this.groundTop, 0, this.groundTop + groundH)
       .addColorStop(0, Color.interpolateRGBA(new Color(161, 98, 7), new Color(220, 80, 30), heat))
+      .addColorStop(0.45, Color.interpolateRGBA(new Color(146, 64, 14), new Color(180, 60, 20), heat))
       .addColorStop(1, Color.interpolateRGBA(new Color(120, 53, 15), new Color(127, 29, 29), heat))
     this.grass.fill = new LinearGradient(0, this.groundTop, 0, this.groundTop + 16)
       .addColorStop(0, Color.interpolateRGBA(new Color(74, 222, 128), new Color(202, 138, 4), heat))
+      .addColorStop(0.55, Color.interpolateRGBA(new Color(34, 197, 94), new Color(180, 120, 20), heat))
       .addColorStop(1, Color.interpolateRGBA(new Color(21, 128, 61), new Color(120, 53, 15), heat))
+    this.soilUnderGrass.fill = heat > 0.55
+      ? 'rgba(80, 20, 8, 0.5)'
+      : 'rgba(69, 26, 3, 0.45)'
   }
 
   private updateHeatDots(): void {
