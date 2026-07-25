@@ -1,10 +1,11 @@
 import { Range, Dimension2 } from 'scenerystack/dot'
 import { EmptySelfOptions, optionize } from 'scenerystack/phet-core'
 import { HSlider, Panel, PanelOptions, RectangularPushButton } from 'scenerystack/sun'
-import { Text, VBox } from 'scenerystack/scenery'
+import { HBox, Text, VBox } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
 import { WarmingModel, WARMING_SCENARIOS } from '../model/WarmingModel.js'
 import { ScrollableNode } from './ScrollableNode.js'
+import { WarmingSounds } from './WarmingSounds.js'
 
 type SelfOptions = {
   panelMaxHeight?: number
@@ -13,7 +14,7 @@ type SelfOptions = {
 type Options = SelfOptions & EmptySelfOptions & PanelOptions
 
 export class WarmingControlPanel extends Panel {
-  public constructor(model: WarmingModel, providedOptions: Options) {
+  public constructor(model: WarmingModel, sounds: WarmingSounds, providedOptions: Options) {
     const w = (providedOptions.maxWidth as number | undefined) ?? 260
     const panelMaxHeight = providedOptions.panelMaxHeight ?? 520
     const options = optionize<Options, SelfOptions, PanelOptions>()(
@@ -78,6 +79,12 @@ export class WarmingControlPanel extends Panel {
     model.temperatureProperty.link(refreshMeters)
     model.co2LevelProperty.link(refreshMeters)
 
+    let lastCo2 = model.co2LevelProperty.value
+    model.co2LevelProperty.lazyLink(v => {
+      if (Math.abs(v - lastCo2) > 0.02) sounds.sliderTick()
+      lastCo2 = v
+    })
+
     const playPauseLabel = new Text(model.runningProperty.value ? 'Pause' : 'Play', {
       font: new PhetFont(12),
       fill: 'white',
@@ -90,11 +97,33 @@ export class WarmingControlPanel extends Panel {
       yMargin: 6,
       listener: () => {
         model.runningProperty.value = !model.runningProperty.value
+        sounds.playPause(model.runningProperty.value)
       },
       minWidth: w - 16,
     })
     model.runningProperty.link(running => {
       playPauseLabel.string = running ? 'Pause' : 'Play'
+    })
+
+    const soundLabel = new Text(model.soundEnabledProperty.value ? 'Sound: On' : 'Sound: Off', {
+      font: new PhetFont(12),
+      fill: 'white',
+      maxWidth: w - 24,
+    })
+    const soundBtn = new RectangularPushButton({
+      content: soundLabel,
+      baseColor: '#0e6655',
+      xMargin: 8,
+      yMargin: 6,
+      listener: () => {
+        model.soundEnabledProperty.value = !model.soundEnabledProperty.value
+        sounds.setEnabled(model.soundEnabledProperty.value)
+        if (model.soundEnabledProperty.value) sounds.button()
+      },
+      minWidth: w - 16,
+    })
+    model.soundEnabledProperty.link(on => {
+      soundLabel.string = on ? 'Sound: On' : 'Sound: Off'
     })
 
     const tipsLabel = new Text(model.showTipsProperty.value ? 'Tips on screen: On' : 'Tips on screen: Off', {
@@ -109,6 +138,7 @@ export class WarmingControlPanel extends Panel {
       yMargin: 6,
       listener: () => {
         model.showTipsProperty.value = !model.showTipsProperty.value
+        sounds.toggle(model.showTipsProperty.value)
       },
       minWidth: w - 16,
     })
@@ -125,7 +155,14 @@ export class WarmingControlPanel extends Panel {
         help('Try these after you can explain sunlight → heat → blanket → warmer Earth.'),
         section('What if…?'),
         ...WARMING_SCENARIOS.filter(s => s.id !== 'today').map(s =>
-          mkBtn(s.name, () => model.applyScenario(s.id), '#0e6655'),
+          mkBtn(
+            s.name,
+            () => {
+              model.applyScenario(s.id)
+              sounds.scenario()
+            },
+            '#0e6655',
+          ),
         ),
       ]
     }
@@ -143,6 +180,7 @@ export class WarmingControlPanel extends Panel {
       yMargin: 6,
       listener: () => {
         model.showAdvancedProperty.value = !model.showAdvancedProperty.value
+        sounds.button()
       },
       minWidth: w - 16,
     })
@@ -159,7 +197,7 @@ export class WarmingControlPanel extends Panel {
           fill: 'white',
           maxWidth: w,
         }),
-        help('How to learn: watch the sun and heat rays, then thicken the gas blanket.'),
+        help('Story: sunlight → Earth warms → heat rises → gas blanket traps heat → hotter.'),
         section('What is happening'),
         tipReadout,
         whyReadout,
@@ -167,21 +205,63 @@ export class WarmingControlPanel extends Panel {
         section('Meters'),
         tempReadout,
         gasReadout,
-        section('Gas blanket (main control)'),
-        help('Thicker = more greenhouse gases = hotter Earth.'),
+        section('Gas blanket (easy controls)'),
+        help('Thicker blanket = more greenhouse gases = hotter Earth.'),
+        new HBox({
+          spacing: 8,
+          children: [
+            new RectangularPushButton({
+              content: new Text('− Thinner', { font: new PhetFont(12), fill: 'white' }),
+              baseColor: '#2980b9',
+              xMargin: 10,
+              yMargin: 6,
+              listener: () => {
+                model.nudgeCo2(-0.08)
+                sounds.button()
+              },
+              minWidth: (w - 24) / 2,
+            }),
+            new RectangularPushButton({
+              content: new Text('+ Thicker', { font: new PhetFont(12), fill: 'white' }),
+              baseColor: '#c0392b',
+              xMargin: 10,
+              yMargin: 6,
+              listener: () => {
+                model.nudgeCo2(0.08)
+                sounds.button()
+              },
+              minWidth: (w - 24) / 2,
+            }),
+          ],
+        }),
         new HSlider(model.co2LevelProperty, new Range(0.05, 1), {
           trackSize: new Dimension2(w - 28, 6),
           thumbSize: new Dimension2(16, 24),
           majorTickLength: 0,
           minorTickLength: 0,
         }),
-        mkBtn('Start here (today)', () => model.applyScenario('today'), '#f1c40f'),
+        mkBtn(
+          'Start here (today)',
+          () => {
+            model.applyScenario('today')
+            sounds.scenario()
+          },
+          '#f1c40f',
+        ),
         section('Simple controls'),
+        soundBtn,
         tipsBtn,
         playPauseBtn,
         advancedBtn,
         advancedBox,
-        mkBtn('Reset', () => model.reset(), '#c0392b'),
+        mkBtn(
+          'Reset',
+          () => {
+            model.reset()
+            sounds.resetAll()
+          },
+          '#c0392b',
+        ),
       ],
     })
 

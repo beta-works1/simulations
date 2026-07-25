@@ -84,6 +84,11 @@ export class WarmingModel implements TModel {
     this.co2LevelProperty.value = clamp(value, 0.05, 1)
   }
 
+  /** Easy Class-8 nudges for the gas blanket. */
+  public nudgeCo2(delta: number): void {
+    this.setCo2(this.co2LevelProperty.value + delta)
+  }
+
   public applyScenario(id: string): void {
     const s = WARMING_SCENARIOS.find(x => x.id === id) ?? WARMING_SCENARIOS[0]!
     this.scenarioIdProperty.value = s.id
