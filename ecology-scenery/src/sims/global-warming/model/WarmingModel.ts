@@ -9,37 +9,41 @@ export interface WarmingScenario {
   blurb: string
 }
 
-/** Short Class-8 stories — core lesson uses “Start here”; extras stay under More options. */
+/**
+ * Class-8 stories: natural greenhouse vs human thickening of the gas blanket.
+ * Science: sunlight in → Earth re-emits heat → GHGs absorb/re-radiate → more gas → warming.
+ */
 export const WARMING_SCENARIOS: WarmingScenario[] = [
   {
     id: 'today',
     name: '1. Start here (today)',
     co2: 0.4,
-    blurb: 'A normal gas blanket. Watch heat bounce back to Earth.',
+    blurb: 'A medium gas blanket traps some heat (greenhouse effect).',
   },
   {
     id: 'clean',
     name: '2. Cleaner air',
     co2: 0.15,
-    blurb: 'Thin gas blanket — more heat escapes to space. Earth stays cooler.',
+    blurb: 'A thinner gas blanket lets more heat escape to space.',
   },
   {
     id: 'factories',
-    name: '3. More factories',
+    name: '3. Burn fossil fuels',
     co2: 0.85,
-    blurb: 'Thick gas blanket — lots of heat is trapped. Earth gets hotter.',
+    blurb: 'Extra CO₂ thickens the gas blanket and traps more heat.',
   },
   {
     id: 'trees',
-    name: '4. More trees help',
+    name: '4. Cut fewer trees',
     co2: 0.28,
-    blurb: 'Plants take in CO₂, so the blanket can thin a little.',
+    blurb: 'Trees take in CO₂, so the gas blanket can stay thinner.',
   },
 ]
 
 /**
- * Greenhouse / global warming mechanism — Class-8 carbon story.
- * Sunlight in → Earth warms → heat rises → gas blanket traps heat → temperature rises.
+ * Global warming mechanism model for Grade 8.
+ * Extra greenhouse gases thicken Earth’s “blanket,” so more outgoing heat returns to the surface.
+ * Physics/step logic is intentional — presentation copy lives in tipProperty only for the scene.
  */
 export class WarmingModel implements TModel {
   public readonly co2LevelProperty: NumberProperty
@@ -50,9 +54,11 @@ export class WarmingModel implements TModel {
   public readonly showTipsProperty: BooleanProperty
   public readonly showAdvancedProperty: BooleanProperty
   public readonly statusProperty: StringProperty
+  /** Single live scene explanation (Grade 8, one idea per line). */
   public readonly tipProperty: StringProperty
   public readonly whyProperty: StringProperty
   public readonly nextHintProperty: StringProperty
+  public readonly effectProperty: StringProperty
   public readonly scenarioIdProperty: StringProperty
 
   public constructor() {
@@ -63,18 +69,13 @@ export class WarmingModel implements TModel {
     this.soundEnabledProperty = new BooleanProperty(true)
     this.showTipsProperty = new BooleanProperty(true)
     this.showAdvancedProperty = new BooleanProperty(false)
-    this.statusProperty = new StringProperty(
-      'Sunlight warms Earth. Drag the gas blanket thicker — watch temperature rise.',
-    )
+    this.statusProperty = new StringProperty('')
     this.tipProperty = new StringProperty(
-      'NOW: Sunlight hits Earth — the ground warms up.',
+      'Medium gas blanket → some heat sent back → Earth warming',
     )
-    this.whyProperty = new StringProperty(
-      'Why: Earth then sends heat up. A thicker gas blanket traps more of that heat.',
-    )
-    this.nextHintProperty = new StringProperty(
-      'Next: drag the gas blanket thicker and watch the red heat bounce back.',
-    )
+    this.whyProperty = new StringProperty('')
+    this.nextHintProperty = new StringProperty('')
+    this.effectProperty = new StringProperty('')
     this.scenarioIdProperty = new StringProperty('today')
 
     this.co2LevelProperty.link(() => this.updateTeachingCopy())
@@ -84,13 +85,15 @@ export class WarmingModel implements TModel {
     this.co2LevelProperty.value = clamp(value, 0.05, 1)
   }
 
+  public nudgeCo2(delta: number): void {
+    this.setCo2(this.co2LevelProperty.value + delta)
+  }
+
   public applyScenario(id: string): void {
     const s = WARMING_SCENARIOS.find(x => x.id === id) ?? WARMING_SCENARIOS[0]!
     this.scenarioIdProperty.value = s.id
     this.setCo2(s.co2)
-    this.statusProperty.value = `${s.name}: ${s.blurb}`
     this.updateTeachingCopy()
-    this.whyProperty.value = `Why: ${s.blurb}`
   }
 
   public step(dt: number): void {
@@ -111,31 +114,19 @@ export class WarmingModel implements TModel {
     this.showTipsProperty.value = true
     this.showAdvancedProperty.value = false
     this.scenarioIdProperty.value = 'today'
-    this.statusProperty.value =
-      'Sunlight warms Earth. Drag the gas blanket thicker — watch temperature rise.'
     this.updateTeachingCopy()
   }
 
   private updateTeachingCopy(): void {
     const co2 = this.co2LevelProperty.value
-    const temp = 10 + co2 * 28
     if (co2 < 0.28) {
-      this.tipProperty.value = 'NOW: Thin gas blanket — more heat escapes to space.'
-      this.whyProperty.value = 'Why: with fewer gases, heat from Earth is not trapped as much.'
-      this.nextHintProperty.value = 'Next: thicken the blanket (more gases) and watch Earth warm.'
-      this.statusProperty.value = `Cooler Earth (~${temp.toFixed(0)} °C). Thin blanket lets heat escape.`
+      this.tipProperty.value = 'Thin gas blanket → heat escapes to space → Earth cooler'
     }
     else if (co2 < 0.55) {
-      this.tipProperty.value = 'NOW: Medium gas blanket — some heat bounces back to Earth.'
-      this.whyProperty.value = 'Why: greenhouse gases catch heat rising from the ground.'
-      this.nextHintProperty.value = 'Next: add more gases (factories) or try “Cleaner air”.'
-      this.statusProperty.value = `Warming (~${temp.toFixed(0)} °C). Watch red heat bounce off the gas layer.`
+      this.tipProperty.value = 'Medium gas blanket → some heat sent back → Earth warming'
     }
     else {
-      this.tipProperty.value = 'NOW: Thick gas blanket — lots of heat is trapped.'
-      this.whyProperty.value = 'Why: a thicker blanket sends more heat back down → hotter Earth.'
-      this.nextHintProperty.value = 'Next: thin the blanket again and compare the temperature.'
-      this.statusProperty.value = `Hot Earth (~${temp.toFixed(0)} °C). Thick blanket traps heat.`
+      this.tipProperty.value = 'Thick gas blanket → more heat trapped → Earth hotter'
     }
   }
 }
