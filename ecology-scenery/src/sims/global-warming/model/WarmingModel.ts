@@ -64,16 +64,16 @@ export class WarmingModel implements TModel {
     this.showTipsProperty = new BooleanProperty(true)
     this.showAdvancedProperty = new BooleanProperty(false)
     this.statusProperty = new StringProperty(
-      'Sunlight warms Earth. Drag the gas blanket thicker — watch temperature rise.',
+      'Drag the gas blanket thicker. Watch heat bounce back and Earth warm up.',
     )
     this.tipProperty = new StringProperty(
-      'NOW: Sunlight hits Earth — the ground warms up.',
+      'NOW: Medium blanket — some heat bounces back.',
     )
     this.whyProperty = new StringProperty(
-      'Why: Earth then sends heat up. A thicker gas blanket traps more of that heat.',
+      'Why: gases trap heat rising from Earth (greenhouse effect).',
     )
     this.nextHintProperty = new StringProperty(
-      'Next: drag the gas blanket thicker and watch the red heat bounce back.',
+      'Next: try Thicker, then Cleaner air.',
     )
     this.scenarioIdProperty = new StringProperty('today')
 
@@ -125,22 +125,22 @@ export class WarmingModel implements TModel {
     const co2 = this.co2LevelProperty.value
     const temp = 10 + co2 * 28
     if (co2 < 0.28) {
-      this.tipProperty.value = 'NOW: Thin gas blanket — more heat escapes to space.'
-      this.whyProperty.value = 'Why: with fewer gases, heat from Earth is not trapped as much.'
-      this.nextHintProperty.value = 'Next: thicken the blanket (more gases) and watch Earth warm.'
-      this.statusProperty.value = `Cooler Earth (~${temp.toFixed(0)} °C). Thin blanket lets heat escape.`
+      this.tipProperty.value = 'NOW: Thin blanket — heat escapes to space.'
+      this.whyProperty.value = 'Why: fewer gases → less heat trapped → cooler Earth.'
+      this.nextHintProperty.value = 'Next: make the blanket thicker.'
+      this.statusProperty.value = `Cooler (~${temp.toFixed(0)} °C). Thin blanket lets heat escape.`
     }
     else if (co2 < 0.55) {
-      this.tipProperty.value = 'NOW: Medium gas blanket — some heat bounces back to Earth.'
-      this.whyProperty.value = 'Why: greenhouse gases catch heat rising from the ground.'
-      this.nextHintProperty.value = 'Next: add more gases (factories) or try “Cleaner air”.'
-      this.statusProperty.value = `Warming (~${temp.toFixed(0)} °C). Watch red heat bounce off the gas layer.`
+      this.tipProperty.value = 'NOW: Medium blanket — some heat bounces back.'
+      this.whyProperty.value = 'Why: gases trap heat rising from Earth (greenhouse effect).'
+      this.nextHintProperty.value = 'Next: try More factories, then Cleaner air.'
+      this.statusProperty.value = `Warming (~${temp.toFixed(0)} °C). Red dots bounce off the gas blanket.`
     }
     else {
-      this.tipProperty.value = 'NOW: Thick gas blanket — lots of heat is trapped.'
-      this.whyProperty.value = 'Why: a thicker blanket sends more heat back down → hotter Earth.'
-      this.nextHintProperty.value = 'Next: thin the blanket again and compare the temperature.'
-      this.statusProperty.value = `Hot Earth (~${temp.toFixed(0)} °C). Thick blanket traps heat.`
+      this.tipProperty.value = 'NOW: Thick blanket — lots of heat is trapped.'
+      this.whyProperty.value = 'Why: more gases send more heat back down → hotter Earth.'
+      this.nextHintProperty.value = 'Next: thin the blanket and compare.'
+      this.statusProperty.value = `Hot (~${temp.toFixed(0)} °C). Thick blanket traps heat.`
     }
   }
 }
