@@ -5,6 +5,7 @@ import {
   Color,
   DragListener,
   LinearGradient,
+  Line,
   Node,
   Path,
   Rectangle,
@@ -21,7 +22,7 @@ import { WarmingSounds } from './WarmingSounds.js'
 type SelfOptions = EmptySelfOptions
 type Options = SelfOptions & ScreenViewOptions
 
-/** Cheap greenhouse view: static paths + a few moving dots (no per-frame Shape rebuild spam). */
+/** Presentation/clarity view — model physics unchanged. */
 export class WarmingScreenView extends ScreenView {
   private readonly model: WarmingModel
   private readonly sounds: WarmingSounds
@@ -32,6 +33,7 @@ export class WarmingScreenView extends ScreenView {
   private readonly risePath: Path
   private readonly trapPath: Path
   private readonly escapePath: Path
+  private readonly escapeArrow: Path
   private readonly escapeLabel: Text
   private readonly heatDots: Circle[] = []
   private readonly smokePuffs: Circle[] = []
@@ -40,9 +42,12 @@ export class WarmingScreenView extends ScreenView {
   private readonly ghgLabel: Text
   private readonly ghgPill: Rectangle
   private readonly ground: Rectangle
+  private readonly tempBg: Rectangle
   private readonly tempChip: Text
+  private readonly trapValueLabel: Text
   private readonly nowCard: Node
   private readonly nowText: Text
+  private readonly nowBg: Rectangle
   private readonly sceneBounds: { left: number; top: number; width: number; height: number }
   private readonly sunX: number
   private readonly sunY: number
@@ -58,8 +63,6 @@ export class WarmingScreenView extends ScreenView {
   private syncingCo2 = false
   private lastBandSound = 0
   private lastSkyHeat = -1
-  private lastPathCo2 = -1
-  private lastTempShown = -1
 
   public constructor(model: WarmingModel, providedOptions?: Options) {
     super(providedOptions)
@@ -71,31 +74,14 @@ export class WarmingScreenView extends ScreenView {
 
     const margin = 10
     const panelW = 250
-    const statusH = 36
     const b = this.layoutBounds
 
+    // No top status banner — explanation lives only in the scene callout
     const sceneLeft = b.left + margin
-    const sceneTop = b.top + statusH + margin
+    const sceneTop = b.top + margin
     const sceneW = b.width - panelW - margin * 3
-    const sceneH = b.height - statusH - margin * 2
+    const sceneH = b.height - margin * 2
     this.sceneBounds = { left: sceneLeft, top: sceneTop, width: sceneW, height: sceneH }
-
-    const statusBg = new Rectangle(b.left + margin, b.top + 4, b.width - margin * 2, statusH, {
-      cornerRadius: 10,
-      fill: 'rgba(15, 23, 42, 0.94)',
-      stroke: 'rgba(125, 211, 252, 0.35)',
-      lineWidth: 1,
-    })
-    this.addChild(statusBg)
-    this.addChild(
-      new Text(model.statusProperty, {
-        font: new PhetFont(13),
-        fill: '#ecfeff',
-        maxWidth: b.width - margin * 4,
-        centerX: b.centerX,
-        centerY: statusBg.centerY,
-      }),
-    )
 
     this.sky = new Rectangle(sceneLeft, sceneTop, sceneW, sceneH, {
       fill: '#38bdf8',
@@ -125,30 +111,36 @@ export class WarmingScreenView extends ScreenView {
     this.hills = new Path(hillShape, { fill: 'rgba(34, 100, 60, 0.4)', pickable: false })
     this.addChild(this.hills)
 
-    // One sun only (illustrated icon — no glow circle behind it)
-    this.sunX = sceneLeft + sceneW * 0.82
-    this.sunY = sceneTop + sceneH * 0.14
+    this.sunX = sceneLeft + sceneW * 0.84
+    this.sunY = sceneTop + sceneH * 0.13
     this.sunNode = createEcologyIcon('sun', 48)
     this.sunNode.centerX = this.sunX
     this.sunNode.centerY = this.sunY
     this.sunNode.pickable = false
     this.addChild(this.sunNode)
-    this.addChild(
-      new Text('1. Sunlight in', {
-        font: new PhetFont({ size: 12, weight: 'bold' }),
-        fill: '#fde68a',
-        centerX: this.sunX,
-        top: this.sunY + 28,
-        pickable: false,
-      }),
-    )
 
-    // Static sunlight beams (drawn once)
+    // Sunlight label on a chip above the sun (clear of ray lines)
+    const sunLabel = new Text('Sunlight in', {
+      font: new PhetFont({ size: 12, weight: 'bold' }),
+      fill: '#fde68a',
+      pickable: false,
+    })
+    const sunChip = new Rectangle(0, 0, sunLabel.width + 14, 22, {
+      cornerRadius: 8,
+      fill: 'rgba(15,23,42,0.82)',
+      pickable: false,
+    })
+    sunChip.centerX = this.sunX
+    sunChip.bottom = this.sunY - 26
+    sunLabel.center = sunChip.center
+    this.addChild(sunChip)
+    this.addChild(sunLabel)
+
     this.groundTop = sceneTop + sceneH * 0.76
     this.bandLeft = sceneLeft + sceneW * 0.3
     this.bandWidth = sceneW * 0.4
-    this.bandMinTop = sceneTop + sceneH * 0.32
-    this.bandMaxBottom = this.groundTop - 18
+    this.bandMinTop = sceneTop + sceneH * 0.34
+    this.bandMaxBottom = this.groundTop - 28
 
     const beamTargets = [
       { x: sceneLeft + sceneW * 0.42, y: this.groundTop - 4 },
@@ -175,7 +167,7 @@ export class WarmingScreenView extends ScreenView {
     })
     this.addChild(this.ghgBand)
 
-    this.ghgLabel = new Text('3. Greenhouse gases — drag ↕', {
+    this.ghgLabel = new Text('Gas blanket — drag ↕', {
       font: new PhetFont({ size: 13, weight: 'bold' }),
       fill: '#fff',
       pickable: false,
@@ -188,6 +180,7 @@ export class WarmingScreenView extends ScreenView {
     this.addChild(this.ghgPill)
     this.addChild(this.ghgLabel)
 
+    // Drag handle fully below the band (clear spacing from instruction pill)
     this.ghgHandle = new Node({ cursor: 'ns-resize' })
     this.ghgHandle.addChild(
       new Rectangle(-42, -14, 84, 28, {
@@ -208,7 +201,6 @@ export class WarmingScreenView extends ScreenView {
     )
     this.addChild(this.ghgHandle)
 
-    // Heat paths (updated only when blanket thickness changes)
     this.risePath = new Path(null, {
       stroke: 'rgba(248,113,113,0.75)',
       lineWidth: 3,
@@ -222,16 +214,22 @@ export class WarmingScreenView extends ScreenView {
       pickable: false,
     })
     this.escapePath = new Path(null, {
-      stroke: 'rgba(251,146,60,0.7)',
+      stroke: 'rgba(251,146,60,0.85)',
       lineWidth: 2.5,
       lineCap: 'round',
       lineDash: [6, 5],
       pickable: false,
     })
+    this.escapeArrow = new Path(null, {
+      fill: 'rgba(251,146,60,0.95)',
+      pickable: false,
+      visible: false,
+    })
     this.addChild(this.risePath)
     this.addChild(this.trapPath)
     this.addChild(this.escapePath)
-    this.escapeLabel = new Text('to space →', {
+    this.addChild(this.escapeArrow)
+    this.escapeLabel = new Text('Escapes to space', {
       font: new PhetFont({ size: 11, weight: 'bold' }),
       fill: '#fdba74',
       pickable: false,
@@ -239,7 +237,7 @@ export class WarmingScreenView extends ScreenView {
     })
     this.addChild(this.escapeLabel)
 
-    // Moving heat “packets” — only move centers each frame
+    // Moving heat packets — labeled via legend as “Heat moving”
     for (let i = 0; i < 3; i++) {
       const dot = new Circle(5, {
         fill: '#f87171',
@@ -274,7 +272,6 @@ export class WarmingScreenView extends ScreenView {
     factory.pickable = false
     this.addChild(factory)
 
-    // Pooled smoke (never recreate)
     for (let i = 0; i < 3; i++) {
       const puff = new Circle(6, {
         fill: 'rgba(148,163,184,0.35)',
@@ -286,25 +283,26 @@ export class WarmingScreenView extends ScreenView {
     }
 
     this.addChild(
-      new Text('2. Earth heat ↑', {
+      new Text('Heat radiating ↑', {
         font: new PhetFont({ size: 12, weight: 'bold' }),
         fill: '#fecaca',
         left: sceneLeft + 12,
-        bottom: this.groundTop - 8,
-        pickable: false,
-      }),
-    )
-    this.addChild(
-      new Text('4. Heat sent back ↓', {
-        font: new PhetFont({ size: 12, weight: 'bold' }),
-        fill: '#fecaca',
-        right: sceneLeft + sceneW - 12,
-        top: this.bandMinTop - 22,
+        bottom: this.groundTop - 90,
         pickable: false,
       }),
     )
 
-    const tempBg = new Rectangle(0, 0, 160, 40, {
+    this.trapValueLabel = new Text('Heat trapped: 40%', {
+      font: new PhetFont({ size: 12, weight: 'bold' }),
+      fill: '#fecaca',
+      right: sceneLeft + sceneW - 12,
+      top: this.bandMinTop - 24,
+      pickable: false,
+    })
+    this.addChild(this.trapValueLabel)
+
+    // Single Earth temperature (shared model.temperatureProperty)
+    this.tempBg = new Rectangle(0, 0, 160, 40, {
       cornerRadius: 12,
       fill: 'rgba(15,23,42,0.9)',
       stroke: 'rgba(251,146,60,0.7)',
@@ -313,54 +311,70 @@ export class WarmingScreenView extends ScreenView {
       bottom: this.groundTop - 10,
       pickable: false,
     })
-    this.tempChip = new Text('5. Earth 15.0 °C', {
+    this.tempChip = new Text('', {
       font: new PhetFont({ size: 15, weight: 'bold' }),
       fill: '#fdba74',
-      center: tempBg.center,
       pickable: false,
     })
-    this.addChild(tempBg)
+    this.addChild(this.tempBg)
     this.addChild(this.tempChip)
+    const refreshTemp = (temp: number) => {
+      this.tempChip.string = `Earth ${temp.toFixed(1)} °C`
+      this.tempBg.rectWidth = Math.max(160, this.tempChip.width + 24)
+      this.tempBg.centerX = sceneLeft + sceneW / 2
+      this.tempChip.center = this.tempBg.center
+    }
+    model.temperatureProperty.link(refreshTemp)
 
-    // Single NOW caption on canvas (Why lives in the side panel)
+    // Single live explanation callout
     this.nowText = new Text('', {
-      font: new PhetFont({ size: 14, weight: 'bold' }),
+      font: new PhetFont({ size: 13, weight: 'bold' }),
       fill: '#fde68a',
-      maxWidth: sceneW * 0.55,
+      maxWidth: sceneW * 0.52,
     })
-    const nowBg = new Rectangle(0, 0, 20, 20, {
+    this.nowBg = new Rectangle(0, 0, 20, 20, {
       fill: 'rgba(8, 18, 32, 0.92)',
       cornerRadius: 8,
       stroke: 'rgba(250, 204, 21, 0.45)',
       lineWidth: 1.5,
     })
-    this.nowCard = new Node({ children: [nowBg, this.nowText], pickable: false })
+    this.nowCard = new Node({ children: [this.nowBg, this.nowText], pickable: false })
     this.addChild(this.nowCard)
 
     const refreshNow = () => {
-      const show = model.showTipsProperty.value
       this.nowText.string = model.tipProperty.value
-      nowBg.rectWidth = Math.min(sceneW * 0.58, this.nowText.width + 20)
-      nowBg.rectHeight = this.nowText.height + 14
-      this.nowText.center = nowBg.center
+      this.nowBg.rectWidth = Math.min(sceneW * 0.55, this.nowText.width + 20)
+      this.nowBg.rectHeight = this.nowText.height + 14
+      this.nowText.center = this.nowBg.center
       this.nowCard.left = sceneLeft + 10
       this.nowCard.top = sceneTop + 10
-      this.nowCard.visible = show
+      this.nowCard.visible = model.showTipsProperty.value
     }
     model.tipProperty.link(refreshNow)
     model.showTipsProperty.link(refreshNow)
+
+    // Ray legend (permanent key)
+    this.addChild(this.buildLegend(sceneLeft + 10, this.groundTop - 78))
 
     const applyBandFromCo2 = (co2: number) => {
       const maxThick = this.bandMaxBottom - this.bandMinTop
       const thick = 36 + co2 * (maxThick - 36)
       this.ghgBand.setRect(this.bandLeft, this.bandMinTop, this.bandWidth, thick)
       this.ghgBand.fill = `rgba(100, 90, 80, ${0.28 + co2 * 0.45})`
-      this.ghgHandle.centerX = this.bandLeft + this.bandWidth * 0.5
-      this.ghgHandle.centerY = this.bandMinTop + thick
+
+      // Instruction pill inside the band
       this.ghgPill.rectWidth = Math.max(180, this.ghgLabel.width + 16)
       this.ghgPill.centerX = this.bandLeft + this.bandWidth * 0.5
-      this.ghgPill.centerY = this.bandMinTop + Math.min(thick * 0.35, thick - 16)
+      this.ghgPill.centerY = this.bandMinTop + Math.min(thick * 0.4, thick - 18)
       this.ghgLabel.center = this.ghgPill.center
+
+      // Handle fully below the band with clear spacing (not straddling the border)
+      this.ghgHandle.centerX = this.bandLeft + this.bandWidth * 0.5
+      this.ghgHandle.centerY = this.bandMinTop + thick + 22
+
+      this.trapValueLabel.string = `Heat trapped: ${Math.round(co2 * 100)}%`
+      this.trapValueLabel.right = sceneLeft + sceneW - 12
+
       this.rebuildHeatPaths(co2)
     }
     applyBandFromCo2(model.co2LevelProperty.value)
@@ -419,11 +433,65 @@ export class WarmingScreenView extends ScreenView {
     this.updateSky(true)
   }
 
-  /** Rebuild rise/trap/escape guides only when CO₂ changes enough. */
-  private rebuildHeatPaths(co2: number): void {
-    if (Math.abs(co2 - this.lastPathCo2) < 0.015) return
-    this.lastPathCo2 = co2
+  private buildLegend(left: number, top: number): Node {
+    const rows: { stroke: string; dash?: number[]; label: string; swatch?: 'dot' }[] = [
+      { stroke: 'rgba(250,204,21,0.9)', label: 'Sunlight in' },
+      { stroke: 'rgba(239,68,68,0.9)', label: 'Heat moving (red dots)', swatch: 'dot' },
+      { stroke: 'rgba(251,146,60,0.9)', dash: [5, 4], label: 'Escapes to space' },
+    ]
+    const bg = new Rectangle(0, 0, 188, 72, {
+      cornerRadius: 8,
+      fill: 'rgba(8, 18, 32, 0.88)',
+      stroke: 'rgba(255,255,255,0.2)',
+      lineWidth: 1,
+      pickable: false,
+    })
+    const title = new Text('Key', {
+      font: new PhetFont({ size: 11, weight: 'bold' }),
+      fill: '#cbd5e1',
+      left: 8,
+      top: 6,
+      pickable: false,
+    })
+    const node = new Node({ children: [bg, title], left, top, pickable: false })
+    rows.forEach((row, i) => {
+      const y = 26 + i * 15
+      if (row.swatch === 'dot') {
+        node.addChild(
+          new Circle(4, {
+            fill: row.stroke,
+            stroke: '#fff',
+            lineWidth: 0.8,
+            left: 10,
+            centerY: y,
+            pickable: false,
+          }),
+        )
+      }
+      else {
+        node.addChild(
+          new Line(10, y, 34, y, {
+            stroke: row.stroke,
+            lineWidth: 2.5,
+            lineDash: row.dash,
+            pickable: false,
+          }),
+        )
+      }
+      node.addChild(
+        new Text(row.label, {
+          font: new PhetFont(11),
+          fill: '#e2e8f0',
+          left: 40,
+          centerY: y,
+          pickable: false,
+        }),
+      )
+    })
+    return node
+  }
 
+  private rebuildHeatPaths(co2: number): void {
     const s = this.sceneBounds
     const groundY = this.groundTop - 4
     const hitY = this.ghgBand.bottom - 2
@@ -436,16 +504,25 @@ export class WarmingScreenView extends ScreenView {
 
     const escapeOn = co2 < 0.42
     this.escapePath.visible = escapeOn
+    this.escapeArrow.visible = escapeOn
     this.escapeLabel.visible = escapeOn
     if (escapeOn) {
-      this.escapePath.shape = new Shape()
-        .moveTo(midX, this.ghgBand.top + 2)
-        .lineTo(midX + 12, s.top + 28)
-      this.escapeLabel.centerX = midX + 40
-      this.escapeLabel.top = s.top + 12
+      const x0 = midX
+      const y0 = this.ghgBand.top + 2
+      const x1 = midX + 6
+      const y1 = s.top + 36
+      this.escapePath.shape = new Shape().moveTo(x0, y0).lineTo(x1, y1)
+      // Clear arrowhead pointing up / off toward space
+      const arrow = new Shape()
+      arrow.moveTo(x1, y1 - 10)
+      arrow.lineTo(x1 - 9, y1 + 4)
+      arrow.lineTo(x1 + 9, y1 + 4)
+      arrow.close()
+      this.escapeArrow.shape = arrow
+      this.escapeLabel.left = x1 + 14
+      this.escapeLabel.centerY = y1 - 2
     }
 
-    // Stronger trap stroke when thicker
     this.trapPath.opacity = 0.45 + co2 * 0.55
     this.risePath.opacity = 0.55 + co2 * 0.35
   }
@@ -461,12 +538,6 @@ export class WarmingScreenView extends ScreenView {
     this.updateSky(false)
     this.updateHeatDots()
     this.updateSmoke()
-
-    const temp = this.model.temperatureProperty.value
-    if (Math.abs(temp - this.lastTempShown) >= 0.1) {
-      this.lastTempShown = temp
-      this.tempChip.string = `5. Earth ${temp.toFixed(1)} °C`
-    }
   }
 
   private updateSky(force: boolean): void {
@@ -506,13 +577,12 @@ export class WarmingScreenView extends ScreenView {
         dot.centerX = lerp(leftX, midX - 10, u)
         dot.centerY = lerp(groundY, hitY, u)
         dot.fill = '#fca5a5'
+        dot.visible = true
       }
       else {
         const u = (cycle - 0.5) / 0.5
-        // More bounce when blanket is thick
         const bounce = 0.35 + co2 * 0.65
         if (u > bounce) {
-          // Escaped / faded when thin
           dot.visible = co2 >= 0.35
           if (!dot.visible) continue
         }

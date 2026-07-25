@@ -13,7 +13,10 @@ type SelfOptions = {
 
 type Options = SelfOptions & EmptySelfOptions & PanelOptions
 
-/** Class-8 panel: mechanism story, meters, gas blanket, human-cause scenarios. */
+/**
+ * Clarity-pass Controls: how-it-works, gas blanket, gas %, stories, settings.
+ * Temperature lives only on the scene (single shared model value).
+ */
 export class WarmingControlPanel extends Panel {
   public constructor(model: WarmingModel, sounds: WarmingSounds, providedOptions: Options) {
     const w = (providedOptions.maxWidth as number | undefined) ?? 250
@@ -44,40 +47,16 @@ export class WarmingControlPanel extends Panel {
       new Text(t, { font: new PhetFont({ size: 13, weight: 'bold' }), fill: '#7dcea0', maxWidth: w })
 
     const help = (t: string) =>
-      new Text(t, { font: new PhetFont(12), fill: '#94a3b8', maxWidth: w })
+      new Text(t, { font: new PhetFont(11), fill: '#94a3b8', maxWidth: w - 8 })
 
-    const tipReadout = new Text(model.tipProperty, {
-      font: new PhetFont({ size: 13, weight: 'bold' }),
-      fill: '#fde68a',
-      maxWidth: w,
-    })
-    const whyReadout = new Text(model.whyProperty, {
-      font: new PhetFont(12),
-      fill: '#a7f3d0',
-      maxWidth: w,
-    })
-    const effectReadout = new Text(model.effectProperty, {
-      font: new PhetFont(12),
-      fill: '#fdba74',
-      maxWidth: w,
-    })
-    const tempReadout = new Text('', {
-      font: new PhetFont({ size: 16, weight: 'bold' }),
-      fill: '#fb923c',
-      maxWidth: w,
-    })
     const gasReadout = new Text('', {
       font: new PhetFont(13),
       fill: '#e2e8f0',
       maxWidth: w,
     })
-
-    const refreshMeters = () => {
-      tempReadout.string = `Earth: ${model.temperatureProperty.value.toFixed(1)} °C`
-      gasReadout.string = `Greenhouse gases: ${Math.round(model.co2LevelProperty.value * 100)}%`
-    }
-    model.temperatureProperty.link(refreshMeters)
-    model.co2LevelProperty.link(refreshMeters)
+    model.co2LevelProperty.link(co2 => {
+      gasReadout.string = `Gas blanket: ${Math.round(co2 * 100)}%`
+    })
 
     let lastCo2 = model.co2LevelProperty.value
     model.co2LevelProperty.lazyLink(v => {
@@ -87,12 +66,12 @@ export class WarmingControlPanel extends Panel {
 
     const soundLabel = new Text(model.soundEnabledProperty.value ? 'Sound: On' : 'Sound: Off', {
       font: new PhetFont(12),
-      fill: 'white',
+      fill: '#e2e8f0',
       maxWidth: w - 24,
     })
     const soundBtn = new RectangularPushButton({
       content: soundLabel,
-      baseColor: '#0e6655',
+      baseColor: '#1e293b',
       xMargin: 8,
       yMargin: 6,
       listener: () => {
@@ -106,11 +85,12 @@ export class WarmingControlPanel extends Panel {
       soundLabel.string = on ? 'Sound: On' : 'Sound: Off'
     })
 
-    const storyOrder = ['today', 'factories', 'trees', 'clean'] as const
+    // Scenario presets only (stories), not utilities
+    const storyOrder = ['today', 'clean', 'factories', 'trees'] as const
     const storyBtns = storyOrder.map(id => {
       const s = WARMING_SCENARIOS.find(x => x.id === id)!
       const color =
-        id === 'factories' ? '#c0392b' : id === 'clean' ? '#2980b9' : id === 'trees' ? '#1e8449' : '#f1c40f'
+        id === 'factories' ? '#c0392b' : id === 'clean' ? '#2980b9' : id === 'trees' ? '#1e8449' : '#d4a017'
       return mkBtn(
         s.name.replace(/^\d+\.\s*/, ''),
         () => {
@@ -131,20 +111,13 @@ export class WarmingControlPanel extends Panel {
           maxWidth: w,
         }),
         section('How it works'),
-        help('1. Sunlight reaches Earth and warms land & oceans.'),
-        help('2. Earth gives energy back as heat (infrared).'),
-        help('3. Greenhouse gases (CO₂, CH₄…) absorb heat.'),
-        help('4. Gases re-radiate heat — some back to Earth.'),
-        help('5. Extra gases → thicker blanket → global warming.'),
-        section('What is happening'),
-        tipReadout,
-        whyReadout,
-        effectReadout,
-        section('Meters'),
-        tempReadout,
+        help('Sunlight warms Earth.'),
+        help('Earth sends heat back up.'),
+        help('The gas blanket traps some heat.'),
+        help('A thicker blanket → hotter Earth.'),
+        section('Gas blanket'),
         gasReadout,
-        section('Greenhouse-gas blanket'),
-        help('Thicker = more gases = more trapped heat.'),
+        help('Thicker = more gases = more heat trapped.'),
         new HBox({
           spacing: 8,
           children: [
@@ -178,18 +151,21 @@ export class WarmingControlPanel extends Panel {
           majorTickLength: 0,
           minorTickLength: 0,
         }),
-        section('Human causes'),
-        help('Burning fuels and cutting forests add CO₂.'),
+        section('Try a story'),
         ...storyBtns,
+        section('Settings'),
         soundBtn,
-        mkBtn(
-          'Reset',
-          () => {
+        new RectangularPushButton({
+          content: new Text('Reset', { font: new PhetFont(12), fill: '#e2e8f0', maxWidth: w - 28 }),
+          baseColor: '#334155',
+          xMargin: 8,
+          yMargin: 6,
+          listener: () => {
             model.reset()
             sounds.resetAll()
           },
-          '#c0392b',
-        ),
+          minWidth: w - 16,
+        }),
       ],
     })
 
