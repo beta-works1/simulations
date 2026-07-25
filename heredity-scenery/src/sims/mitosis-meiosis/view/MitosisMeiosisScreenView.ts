@@ -49,7 +49,6 @@ const PALETTE: readonly string[] = [
 ]
 
 const POOL_SIZE = 12
-const STAGE_ANIM_SECONDS = 1.15
 
 function phaseKindFor(mode: DivisionMode, stageIdx: number): PhaseKind {
   const list = mode === 'mitosis' ? MITOSIS_PHASES : MEIOSIS_PHASES
@@ -92,16 +91,24 @@ class ChromosomeNode extends Node {
     this.addChild(this.centromere)
   }
 
-  public apply(unit: Unit): void {
+  public apply(unit: Unit, condensation = 1): void {
     this.visible = true
     this.x = unit.x
     this.y = unit.y
     this.rotation = unit.rotation
+    const barW = 8 * condensation
+    const barH = 28 * condensation
+    this.barA.setRect(-barW / 2, -barH / 2, barW, barH)
+    this.barB.setRect(-barW / 2, -barH / 2, barW, barH)
+    this.barA.cornerRadius = 4 * condensation
+    this.barB.cornerRadius = 4 * condensation
+    this.centromere.radius = 3 * condensation
     this.barA.fill = unit.color
     this.barB.fill = unit.color
     if (unit.doubled) {
-      this.barA.x = -7
-      this.barB.x = 7
+      const sep = 7 * condensation
+      this.barA.x = -sep
+      this.barB.x = sep
       this.barB.visible = true
       this.centromere.visible = true
     }
@@ -143,16 +150,16 @@ export class MitosisMeiosisScreenView extends ScreenView {
   private readonly compareBtn: SoftButton
   private readonly autoAdvanceBtn: SoftButton
   private readonly playPauseBtn: SoftButton
+  private readonly cytoplasmBtn: SoftButton
+  private readonly crossingOverBtn: SoftButton
+  private readonly pauseAtEndBtn: SoftButton
+  private readonly loopBtn: SoftButton
   private readonly starsText: Text
   private readonly statusText: Text
   private readonly cx: number
   private readonly cy: number
   private readonly cellR: number
-  private readonly leftCellCenter: Pt
-  private readonly rightCellCenter: Pt
-  private readonly gameteCenters: Pt[]
   private time = 0
-  private stageElapsed = 0
   private assortment: number[] = []
   private assortmentValid = false
   private tipTimer = 0
@@ -179,12 +186,6 @@ export class MitosisMeiosisScreenView extends ScreenView {
     this.cx = stageLeft + stageW / 2
     this.cy = stageTop + stageH / 2 + 12
     this.cellR = Math.min(stageW, stageH) * 0.23
-    this.leftCellCenter = { x: this.cx - this.cellR * 1.35, y: this.cy }
-    this.rightCellCenter = { x: this.cx + this.cellR * 1.35, y: this.cy }
-    this.gameteCenters = [0, 1, 2, 3].map((i) => ({
-      x: this.cx + (i - 1.5) * this.cellR * 1.15,
-      y: this.cy,
-    }))
 
     this.guide = new GuidanceBanner(lb.width - m * 2, {
       title: MitosisMeiosisStrings.guideTitleStringProperty.value,
@@ -215,7 +216,7 @@ export class MitosisMeiosisScreenView extends ScreenView {
     this.compareCard.addChild(
       new Text('Compare', {
         font: new PhetFont({ size: 11, weight: 'bold' }),
-        fill: '#7cb068',
+        fill: HeredityColors.accent,
         left: 10,
         top: 6,
       }),
@@ -261,7 +262,7 @@ export class MitosisMeiosisScreenView extends ScreenView {
     leftCard.content.addChild(this.soundBtn)
 
     // ── Center stage ───────────────────────────────────────────────────────────
-    this.addChild(new StageBackdrop(stageLeft, stageTop, stageW, stageH, { top: '#c7d9ee', bottom: '#eef4f8' }))
+    this.addChild(new StageBackdrop(stageLeft, stageTop, stageW, stageH, { top: '#a8c8e8', bottom: '#eef4f8' }))
 
     this.stageNameText = new Text('', {
       font: new PhetFont({ size: 20, weight: 'bold' }),
@@ -344,7 +345,7 @@ export class MitosisMeiosisScreenView extends ScreenView {
     }, { width: contentW, height: btnH, fill: '#16a34a', selected: false, onSound: () => sounds.scenario() })
     const gametesBtn = new SoftButton(MitosisMeiosisStrings.scenarioGametesStringProperty.value, () => {
       model.setScenario('gametes')
-    }, { width: contentW, height: btnH, fill: '#8e44ad', selected: false, onSound: () => sounds.scenario() })
+    }, { width: contentW, height: btnH, fill: HeredityColors.nucleusFill, selected: false, onSound: () => sounds.scenario() })
     panelContent.addChild(exploreBtn)
     panelContent.addChild(growthBtn)
     panelContent.addChild(gametesBtn)
@@ -377,6 +378,9 @@ export class MitosisMeiosisScreenView extends ScreenView {
     })
     panelContent.addChild(chromosomeSlider)
 
+    const visualHeader = controlSection(MitosisMeiosisStrings.sectionVisualStringProperty.value, contentW)
+    panelContent.addChild(visualHeader)
+
     const stageSlider = new DepthSlider(model.stageProperty, {
       min: 0,
       max: MEIOSIS_PHASES.length,
@@ -390,6 +394,50 @@ export class MitosisMeiosisScreenView extends ScreenView {
       onTick: () => sounds.sliderTick(),
     })
     panelContent.addChild(stageSlider)
+
+    const stageBlendSlider = new DepthSlider(model.stageBlendProperty, {
+      min: 0,
+      max: 1,
+      width: contentW,
+      label: MitosisMeiosisStrings.stageBlendStringProperty.value,
+      format: (n) => `${Math.round(n * 100)}%`,
+      fill: HeredityColors.accent,
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(stageBlendSlider)
+
+    const cellSizeSlider = new DepthSlider(model.cellSizeProperty, {
+      min: 0.7,
+      max: 1.3,
+      width: contentW,
+      label: MitosisMeiosisStrings.cellSizeStringProperty.value,
+      format: (n) => `${n.toFixed(2)}×`,
+      fill: HeredityColors.cellMembrane,
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(cellSizeSlider)
+
+    const condensationSlider = new DepthSlider(model.condensationProperty, {
+      min: 0.4,
+      max: 1.4,
+      width: contentW,
+      label: MitosisMeiosisStrings.condensationStringProperty.value,
+      format: (n) => `${n.toFixed(2)}×`,
+      fill: HeredityColors.chromosome,
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(condensationSlider)
+
+    const particleIntensitySlider = new DepthSlider(model.particleIntensityProperty, {
+      min: 0,
+      max: 2,
+      width: contentW,
+      label: MitosisMeiosisStrings.particleIntensityStringProperty.value,
+      format: (n) => `${n.toFixed(1)}×`,
+      fill: HeredityColors.dnaStrandA,
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(particleIntensitySlider)
 
     // Section 4 — Display
     const displayHeader = controlSection(MitosisMeiosisStrings.sectionDisplayStringProperty.value, contentW)
@@ -406,14 +454,22 @@ export class MitosisMeiosisScreenView extends ScreenView {
     }, { width: halfW, height: btnH, fill: '#0ea5e9', selected: true, fontSize: 11, onSound: () => sounds.softClick() })
     this.centriolesBtn = new SoftButton(MitosisMeiosisStrings.centriolesOnStringProperty.value, () => {
       model.showCentriolesProperty.value = !model.showCentriolesProperty.value
-    }, { width: halfW, height: btnH, fill: '#f59e0b', selected: true, fontSize: 11, onSound: () => sounds.softClick() })
+    }, { width: halfW, height: btnH, fill: HeredityColors.spindle, selected: true, fontSize: 11, onSound: () => sounds.softClick() })
+    this.cytoplasmBtn = new SoftButton(MitosisMeiosisStrings.cytoplasmOnStringProperty.value, () => {
+      model.showCytoplasmProperty.value = !model.showCytoplasmProperty.value
+    }, { width: halfW, height: btnH, fill: HeredityColors.cellMembrane, selected: true, fontSize: 11, onSound: () => sounds.softClick() })
+    this.crossingOverBtn = new SoftButton(MitosisMeiosisStrings.crossingOverOnStringProperty.value, () => {
+      model.showCrossingOverProperty.value = !model.showCrossingOverProperty.value
+    }, { width: halfW, height: btnH, fill: HeredityColors.chromosomeAlt, selected: true, fontSize: 11, onSound: () => sounds.softClick() })
     this.compareBtn = new SoftButton(MitosisMeiosisStrings.compareOnStringProperty.value, () => {
       model.compareModeProperty.value = !model.compareModeProperty.value
-    }, { width: contentW, height: btnH, fill: '#10b981', selected: false, fontSize: 11, onSound: () => sounds.softClick() })
+    }, { width: halfW, height: btnH, fill: '#16a34a', selected: false, fontSize: 11, onSound: () => sounds.softClick() })
     panelContent.addChild(this.labelsBtn)
     panelContent.addChild(this.spindleBtn)
     panelContent.addChild(this.envelopeBtn)
     panelContent.addChild(this.centriolesBtn)
+    panelContent.addChild(this.cytoplasmBtn)
+    panelContent.addChild(this.crossingOverBtn)
     panelContent.addChild(this.compareBtn)
 
     const compareHint = controlHint(MitosisMeiosisStrings.compareHintStringProperty.value, contentW)
@@ -459,7 +515,15 @@ export class MitosisMeiosisScreenView extends ScreenView {
     this.autoAdvanceBtn = new SoftButton(MitosisMeiosisStrings.autoAdvanceOnStringProperty.value, () => {
       model.autoAdvanceProperty.value = !model.autoAdvanceProperty.value
     }, { width: contentW, height: btnH, fill: '#0ea5e9', selected: true, fontSize: 11, onSound: () => sounds.softClick() })
+    this.pauseAtEndBtn = new SoftButton(MitosisMeiosisStrings.pauseAtEndOnStringProperty.value, () => {
+      model.pauseAtEndProperty.value = !model.pauseAtEndProperty.value
+    }, { width: halfW, height: btnH, fill: '#64748b', selected: false, fontSize: 11, onSound: () => sounds.softClick() })
+    this.loopBtn = new SoftButton(MitosisMeiosisStrings.loopOnStringProperty.value, () => {
+      model.loopProperty.value = !model.loopProperty.value
+    }, { width: halfW, height: btnH, fill: HeredityColors.accent, selected: true, fontSize: 11, onSound: () => sounds.softClick() })
     panelContent.addChild(this.autoAdvanceBtn)
+    panelContent.addChild(this.pauseAtEndBtn)
+    panelContent.addChild(this.loopBtn)
 
     const soundToggleBtn = new SoftButton(
       MitosisMeiosisStrings.soundOnStringProperty.value,
@@ -469,8 +533,13 @@ export class MitosisMeiosisScreenView extends ScreenView {
         model.soundEnabledProperty.value = on
         sounds.toggle(on)
         if (on) sounds.button()
+        soundToggleBtn.setLabel(
+          on
+            ? MitosisMeiosisStrings.soundOnStringProperty.value
+            : MitosisMeiosisStrings.soundOffStringProperty.value,
+        )
       },
-      { width: contentW, height: btnH, fill: '#64748b', selected: true, fontSize: 11 },
+      { width: contentW, height: btnH, fill: '#64748b', selected: true, fontSize: 11, onSound: () => sounds.softClick() },
     )
     panelContent.addChild(soundToggleBtn)
 
@@ -483,7 +552,7 @@ export class MitosisMeiosisScreenView extends ScreenView {
 
     this.starsText = new Text('', {
       font: new PhetFont({ size: 15, weight: 'bold' }),
-      fill: '#d97706',
+      fill: HeredityColors.accent,
     })
     panelContent.addChild(this.starsText)
 
@@ -532,10 +601,26 @@ export class MitosisMeiosisScreenView extends ScreenView {
       py = chromosomesHeader.bottom + 6
       chromosomeSlider.left = 0
       chromosomeSlider.top = py
-      py = chromosomeSlider.bottom + 8
+      py = chromosomeSlider.bottom + 12
+
+      visualHeader.left = 0
+      visualHeader.top = py
+      py = visualHeader.bottom + 6
       stageSlider.left = 0
       stageSlider.top = py
-      py = stageSlider.bottom + 12
+      py = stageSlider.bottom + 8
+      stageBlendSlider.left = 0
+      stageBlendSlider.top = py
+      py = stageBlendSlider.bottom + 8
+      cellSizeSlider.left = 0
+      cellSizeSlider.top = py
+      py = cellSizeSlider.bottom + 8
+      condensationSlider.left = 0
+      condensationSlider.top = py
+      py = condensationSlider.bottom + 8
+      particleIntensitySlider.left = 0
+      particleIntensitySlider.top = py
+      py = particleIntensitySlider.bottom + 12
 
       displayHeader.left = 0
       displayHeader.top = py
@@ -549,7 +634,12 @@ export class MitosisMeiosisScreenView extends ScreenView {
       this.envelopeBtn.top = py
       this.centriolesBtn.left = halfW + 8
       this.centriolesBtn.top = py
-      py = this.envelopeBtn.bottom + gridGap
+      py = this.labelsBtn.bottom + gridGap
+      this.cytoplasmBtn.left = 0
+      this.cytoplasmBtn.top = py
+      this.crossingOverBtn.left = halfW + 8
+      this.crossingOverBtn.top = py
+      py = this.cytoplasmBtn.bottom + gridGap
       this.compareBtn.left = 0
       this.compareBtn.top = py
       py = this.compareBtn.bottom + 4
@@ -576,6 +666,11 @@ export class MitosisMeiosisScreenView extends ScreenView {
       this.autoAdvanceBtn.left = 0
       this.autoAdvanceBtn.top = py
       py = this.autoAdvanceBtn.bottom + gridGap
+      this.pauseAtEndBtn.left = 0
+      this.pauseAtEndBtn.top = py
+      this.loopBtn.left = halfW + 8
+      this.loopBtn.top = py
+      py = this.pauseAtEndBtn.bottom + gridGap
       soundToggleBtn.left = 0
       soundToggleBtn.top = py
       py = soundToggleBtn.bottom + 12
@@ -689,6 +784,38 @@ export class MitosisMeiosisScreenView extends ScreenView {
           : MitosisMeiosisStrings.autoAdvanceOffStringProperty.value,
       )
     }
+    const syncCytoplasm = () => {
+      this.cytoplasmBtn.setSelected(model.showCytoplasmProperty.value)
+      this.cytoplasmBtn.setLabel(
+        model.showCytoplasmProperty.value
+          ? MitosisMeiosisStrings.cytoplasmOnStringProperty.value
+          : MitosisMeiosisStrings.cytoplasmOffStringProperty.value,
+      )
+    }
+    const syncCrossingOver = () => {
+      this.crossingOverBtn.setSelected(model.showCrossingOverProperty.value)
+      this.crossingOverBtn.setLabel(
+        model.showCrossingOverProperty.value
+          ? MitosisMeiosisStrings.crossingOverOnStringProperty.value
+          : MitosisMeiosisStrings.crossingOverOffStringProperty.value,
+      )
+    }
+    const syncPauseAtEnd = () => {
+      this.pauseAtEndBtn.setSelected(model.pauseAtEndProperty.value)
+      this.pauseAtEndBtn.setLabel(
+        model.pauseAtEndProperty.value
+          ? MitosisMeiosisStrings.pauseAtEndOnStringProperty.value
+          : MitosisMeiosisStrings.pauseAtEndOffStringProperty.value,
+      )
+    }
+    const syncLoop = () => {
+      this.loopBtn.setSelected(model.loopProperty.value)
+      this.loopBtn.setLabel(
+        model.loopProperty.value
+          ? MitosisMeiosisStrings.loopOnStringProperty.value
+          : MitosisMeiosisStrings.loopOffStringProperty.value,
+      )
+    }
 
     model.soundEnabledProperty.link((on) => sounds.setEnabled(on))
     model.scenarioProperty.link(syncScenario)
@@ -700,6 +827,10 @@ export class MitosisMeiosisScreenView extends ScreenView {
     model.showCentriolesProperty.link(syncCentrioles)
     model.compareModeProperty.link(syncCompare)
     model.autoAdvanceProperty.link(syncAutoAdvance)
+    model.showCytoplasmProperty.link(syncCytoplasm)
+    model.showCrossingOverProperty.link(syncCrossingOver)
+    model.pauseAtEndProperty.link(syncPauseAtEnd)
+    model.loopProperty.link(syncLoop)
     model.starsProperty.link(syncStars)
     model.statusProperty.link(syncStatus)
     model.chromosomeCountProperty.link(() => {
@@ -708,22 +839,23 @@ export class MitosisMeiosisScreenView extends ScreenView {
     })
 
     model.stageProperty.lazyLink((stage) => {
-      this.stageElapsed = 0
       if (stage <= 1) {
         this.assortmentValid = false
       }
-      this.particles.burst(this.cx, this.cy, {
-        count: 16,
-        color: PALETTE[stage % PALETTE.length],
-        speed: 70,
-        life: 0.45,
-        radius: 3,
-      })
+      const intensity = Math.max(0, model.particleIntensityProperty.value)
+      if (intensity > 0) {
+        this.particles.burst(this.cx, this.cy, {
+          count: Math.round(16 * intensity),
+          color: PALETTE[stage % PALETTE.length],
+          speed: 70,
+          life: 0.45,
+          radius: 3,
+        })
+      }
       sounds.hop()
       this.updateGuidance()
     })
     model.modeProperty.lazyLink((mode) => {
-      this.stageElapsed = 0
       this.assortmentValid = false
       sounds.modeChange(mode === 'meiosis')
       this.showTipCard(
@@ -734,7 +866,16 @@ export class MitosisMeiosisScreenView extends ScreenView {
     })
     model.cycleCountProperty.lazyLink(() => {
       sounds.celebrate()
-      this.particles.burst(this.cx, this.cy, { count: 30, color: HeredityColors.gene, speed: 110, life: 0.7, radius: 4 })
+      const intensity = Math.max(0, model.particleIntensityProperty.value)
+      if (intensity > 0) {
+        this.particles.burst(this.cx, this.cy, {
+          count: Math.round(30 * intensity),
+          color: HeredityColors.gene,
+          speed: 110,
+          life: 0.7,
+          radius: 4,
+        })
+      }
       if (!this.quizShown) {
         this.quizShown = true
         this.showQuiz()
@@ -752,6 +893,10 @@ export class MitosisMeiosisScreenView extends ScreenView {
     syncCentrioles()
     syncCompare()
     syncAutoAdvance()
+    syncCytoplasm()
+    syncCrossingOver()
+    syncPauseAtEnd()
+    syncLoop()
     this.updateGuidance()
     this.updateCompareCard()
   }
@@ -763,11 +908,34 @@ export class MitosisMeiosisScreenView extends ScreenView {
     }
   }
 
-  private computeUnits(phase: PhaseKind, mode: DivisionMode, n: number, progress: number): Unit[] {
+  private computeUnitsScaled(
+    phase: PhaseKind,
+    mode: DivisionMode,
+    n: number,
+    progress: number,
+    R: number,
+    cx: number,
+    cy: number,
+    leftCellCenter: Pt,
+    rightCellCenter: Pt,
+    gameteCenters: Pt[],
+  ): Unit[] {
+    return this.computeUnits(phase, mode, n, progress, R, cx, cy, leftCellCenter, rightCellCenter, gameteCenters)
+  }
+
+  private computeUnits(
+    phase: PhaseKind,
+    mode: DivisionMode,
+    n: number,
+    progress: number,
+    R: number,
+    cx: number,
+    cy: number,
+    leftCellCenter: Pt,
+    rightCellCenter: Pt,
+    gameteCenters: Pt[],
+  ): Unit[] {
     const numPairs = Math.max(1, Math.floor(n / 2))
-    const cx = this.cx
-    const cy = this.cy
-    const R = this.cellR
     const units: Unit[] = []
 
     if (phase === 'prophase') {
@@ -846,8 +1014,8 @@ export class MitosisMeiosisScreenView extends ScreenView {
 
     if (phase === 'telophase') {
       const pinchT = progress
-      const leftC = this.leftCellCenter
-      const rightC = this.rightCellCenter
+      const leftC = leftCellCenter
+      const rightC = rightCellCenter
       if (mode === 'mitosis') {
         for (let i = 0; i < n; i++) {
           const jTop = seededJitter(i)
@@ -884,8 +1052,8 @@ export class MitosisMeiosisScreenView extends ScreenView {
       this.ensureAssortment(numPairs)
       const splitProgress = clamp((progress - 0.5) * 2, 0, 1)
       const cells = [
-        { center: this.leftCellCenter, sign: 0 },
-        { center: this.rightCellCenter, sign: 1 },
+        { center: leftCellCenter, sign: 0 },
+        { center: rightCellCenter, sign: 1 },
       ]
       for (const cell of cells) {
         for (let p = 0; p < numPairs; p++) {
@@ -898,8 +1066,8 @@ export class MitosisMeiosisScreenView extends ScreenView {
             units.push({ x: plateX, y: plateY, rotation: 0, doubled: true, color })
           }
           else {
-            const poleTopY = cell.center.y - this.cellR * 0.55
-            const poleBottomY = cell.center.y + this.cellR * 0.55
+            const poleTopY = cell.center.y - R * 0.55
+            const poleBottomY = cell.center.y + R * 0.55
             const yTop = lerp(plateY, poleTopY, splitProgress)
             const yBottom = lerp(plateY, poleBottomY, splitProgress)
             units.push({ x: plateX, y: yTop, rotation: 0, doubled: false, color })
@@ -912,7 +1080,7 @@ export class MitosisMeiosisScreenView extends ScreenView {
 
     // result
     if (mode === 'mitosis') {
-      for (const center of [this.leftCellCenter, this.rightCellCenter]) {
+      for (const center of [leftCellCenter, rightCellCenter]) {
         const cols = Math.max(1, Math.ceil(n / 2))
         for (let i = 0; i < n; i++) {
           const row = Math.floor(i / cols)
@@ -927,7 +1095,7 @@ export class MitosisMeiosisScreenView extends ScreenView {
       this.ensureAssortment(numPairs)
       for (let g = 0; g < 4; g++) {
         const secondaryCellSign = g < 2 ? 0 : 1
-        const center = this.gameteCenters[g]
+        const center = gameteCenters[g]
         for (let p = 0; p < numPairs; p++) {
           const colorIdx = this.assortment[p] === secondaryCellSign ? p * 2 : p * 2 + 1
           const color = PALETTE[colorIdx % PALETTE.length]
@@ -946,15 +1114,26 @@ export class MitosisMeiosisScreenView extends ScreenView {
     const stageIdx = model.stageProperty.value
     const n = model.chromosomeCountProperty.value
     const phase = phaseKindFor(mode, stageIdx)
-    const progress = smoothstep(clamp(this.stageElapsed / STAGE_ANIM_SECONDS, 0, 1))
+    const sizeScale = model.cellSizeProperty.value
+    const condensation = model.condensationProperty.value
+    const progress = smoothstep(clamp(model.stageBlendProperty.value, 0, 1))
+    const R = this.cellR * sizeScale
+    const cx = this.cx
+    const cy = this.cy
+    const leftCellCenter = { x: cx - this.cellR * 1.35 * sizeScale, y: cy }
+    const rightCellCenter = { x: cx + this.cellR * 1.35 * sizeScale, y: cy }
+    const gameteCenters = [0, 1, 2, 3].map((i) => ({
+      x: cx + (i - 1.5) * this.cellR * 1.15 * sizeScale,
+      y: cy,
+    }))
 
     this.stageNameText.string = model.getStageNames()[stageIdx] ?? ''
-    this.stageNameText.centerX = this.cx
+    this.stageNameText.centerX = cx
 
-    const units = this.computeUnits(phase, mode, n, progress)
+    const units = this.computeUnitsScaled(phase, mode, n, progress, R, cx, cy, leftCellCenter, rightCellCenter, gameteCenters)
     for (let i = 0; i < this.chromosomePool.length; i++) {
       if (i < units.length) {
-        this.chromosomePool[i].apply(units[i])
+        this.chromosomePool[i].apply(units[i], condensation)
       }
       else {
         this.chromosomePool[i].hide()
@@ -970,8 +1149,21 @@ export class MitosisMeiosisScreenView extends ScreenView {
     const showSpindle = model.showSpindleProperty.value
     const showEnvelope = model.showEnvelopeProperty.value
     const showCentrioles = model.showCentriolesProperty.value
+    const showCytoplasm = model.showCytoplasmProperty.value
+    const showCrossingOver = model.showCrossingOverProperty.value
+
+    const drawCytoplasm = (center: Pt, rx: number, ry: number, opacity = 1) => {
+      if (!showCytoplasm || opacity <= 0.02) return
+      this.membraneLayer.addChild(
+        new Path(Shape.ellipse(center.x, center.y, rx * 0.92, ry * 0.92, 0), {
+          fill: HeredityColors.cytoplasm,
+          opacity,
+        }),
+      )
+    }
 
     const drawMembrane = (center: Pt, rx: number, ry: number, opacity = 1) => {
+      drawCytoplasm(center, rx, ry, opacity)
       this.membraneLayer.addChild(
         new Path(Shape.ellipse(center.x, center.y, rx + 4, ry + 4, 0), {
           fill: 'rgba(15,23,42,0.12)',
@@ -1015,28 +1207,54 @@ export class MitosisMeiosisScreenView extends ScreenView {
       for (const t of targets) {
         this.spindleLayer.addChild(
           new Line(poleTop.x, poleTop.y, t.x, t.y, {
-            stroke: `rgba(149,165,166,${0.35 + 0.15 * pulse})`,
+            stroke: `rgba(148,163,184,${0.35 + 0.15 * pulse})`,
             lineWidth: 1,
           }),
         )
         this.spindleLayer.addChild(
           new Line(poleBottom.x, poleBottom.y, t.x, t.y, {
-            stroke: `rgba(149,165,166,${0.35 + 0.15 * pulse})`,
+            stroke: `rgba(148,163,184,${0.35 + 0.15 * pulse})`,
             lineWidth: 1,
           }),
         )
       }
     }
 
-    const cx = this.cx
-    const cy = this.cy
-    const R = this.cellR
+    const drawCrossingOver = (pairCenters: Pt[]) => {
+      if (!showCrossingOver || mode !== 'meiosis' || phase !== 'prophase') return
+      for (const center of pairCenters) {
+        const s = 8 * condensation
+        this.spindleLayer.addChild(
+          new Line(center.x - s, center.y - s, center.x + s, center.y + s, {
+            stroke: HeredityColors.accent,
+            lineWidth: 2,
+            opacity: 0.75 + 0.2 * progress,
+          }),
+        )
+        this.spindleLayer.addChild(
+          new Line(center.x + s, center.y - s, center.x - s, center.y + s, {
+            stroke: HeredityColors.accent,
+            lineWidth: 2,
+            opacity: 0.75 + 0.2 * progress,
+          }),
+        )
+      }
+    }
 
     if (phase === 'prophase' || phase === 'metaphase' || phase === 'anaphase') {
       const stretch = phase === 'anaphase' ? 1 + 0.18 * progress : 1
       drawMembrane({ x: cx, y: cy }, R / stretch, R * stretch)
       if (phase === 'prophase') {
         drawEnvelope({ x: cx, y: cy }, R * 0.7, Math.max(0, 1 - progress * 1.3))
+        if (mode === 'meiosis') {
+          const numPairs = Math.max(1, Math.floor(n / 2))
+          const pairCenters: Pt[] = []
+          for (let p = 0; p < numPairs; p++) {
+            const pj = seededJitter(p + 50)
+            pairCenters.push({ x: cx + pj.dx * R * 0.35, y: cy + pj.dy * R * 0.35 })
+          }
+          drawCrossingOver(pairCenters)
+        }
       }
       if (phase === 'metaphase' || phase === 'anaphase') {
         const poleTop = { x: cx, y: cy - R * 1.35 }
@@ -1068,8 +1286,8 @@ export class MitosisMeiosisScreenView extends ScreenView {
     }
     else if (phase === 'telophase') {
       const pinchT = progress
-      const leftC = { x: lerp(cx, this.leftCellCenter.x, pinchT), y: lerp(cy, this.leftCellCenter.y, pinchT) }
-      const rightC = { x: lerp(cx, this.rightCellCenter.x, pinchT), y: lerp(cy, this.rightCellCenter.y, pinchT) }
+      const leftC = { x: lerp(cx, leftCellCenter.x, pinchT), y: lerp(cy, leftCellCenter.y, pinchT) }
+      const rightC = { x: lerp(cx, rightCellCenter.x, pinchT), y: lerp(cy, rightCellCenter.y, pinchT) }
       const r = lerp(R, R * 0.72, pinchT)
       drawMembrane(leftC, r, r)
       drawMembrane(rightC, r, r)
@@ -1092,7 +1310,7 @@ export class MitosisMeiosisScreenView extends ScreenView {
     else if (phase === 'divisionII') {
       const r = R * 0.72
       const splitProgress = clamp((progress - 0.5) * 2, 0, 1)
-      for (const center of [this.leftCellCenter, this.rightCellCenter]) {
+      for (const center of [leftCellCenter, rightCellCenter]) {
         drawMembrane(center, r, r)
         if (showSpindle) {
           const poleTop = { x: center.x, y: center.y - r * 0.85 }
@@ -1125,7 +1343,7 @@ export class MitosisMeiosisScreenView extends ScreenView {
       // result
       if (mode === 'mitosis') {
         const r = R * 0.72
-        for (const center of [this.leftCellCenter, this.rightCellCenter]) {
+        for (const center of [leftCellCenter, rightCellCenter]) {
           drawMembrane(center, r, r)
           drawEnvelope(center, r * 0.6, 1)
           if (showLabels) {
@@ -1142,7 +1360,7 @@ export class MitosisMeiosisScreenView extends ScreenView {
       }
       else {
         const r = R * 0.5
-        this.gameteCenters.forEach((center, i) => {
+        gameteCenters.forEach((center, i) => {
           drawMembrane(center, r, r)
           drawEnvelope(center, r * 0.55, 1)
           if (showLabels) {
@@ -1275,7 +1493,6 @@ export class MitosisMeiosisScreenView extends ScreenView {
   public override step(dt: number): void {
     this.model.step(dt)
     this.time += dt
-    this.stageElapsed += dt * Math.max(0.25, this.model.simSpeedProperty.value)
     this.particles.step(dt)
 
     if (this.tipTimer > 0) {

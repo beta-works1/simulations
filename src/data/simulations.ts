@@ -407,6 +407,8 @@ export const simulations: Simulation[] = [
     color: '#922b21',
     accent: '#5dade2',
     image: '/covers/mitosis-meiosis.svg',
+    sceneryHtml: '/downloads/mitosis-meiosis-offline.html',
+    offlineHtml: '/downloads/mitosis-meiosis-offline.html',
   },
   {
     id: 'dna-chromosome-gene',
@@ -423,6 +425,8 @@ export const simulations: Simulation[] = [
     color: '#7b241c',
     accent: '#58d68d',
     image: '/covers/dna-chromosome-gene.svg',
+    sceneryHtml: '/downloads/dna-chromosome-gene-offline.html',
+    offlineHtml: '/downloads/dna-chromosome-gene-offline.html',
   },
   {
     id: 'punnett-square',
@@ -439,6 +443,8 @@ export const simulations: Simulation[] = [
     color: '#a04000',
     accent: '#f39c12',
     image: '/covers/punnett-square.svg',
+    sceneryHtml: '/downloads/punnett-square-offline.html',
+    offlineHtml: '/downloads/punnett-square-offline.html',
   },
 
   // Grade 8 — Ch 4 Biotechnology

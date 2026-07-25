@@ -54,8 +54,22 @@ export class MitosisMeiosisModel implements TModel {
   public readonly starsProperty: NumberProperty
   public readonly statusProperty: StringProperty
   public readonly cycleCountProperty: NumberProperty
+  /** 0..1 progress within the current stage (drives in-stage animation). */
+  public readonly stageBlendProperty: NumberProperty
+  /** Visual scale of the cell membrane (0.7–1.3). */
+  public readonly cellSizeProperty: NumberProperty
+  /** Chromosome thickness / compactness (0.4–1.4). */
+  public readonly condensationProperty: NumberProperty
+  public readonly showCytoplasmProperty: BooleanProperty
+  /** Meiosis-only crossing-over X marks at prophase I. */
+  public readonly showCrossingOverProperty: BooleanProperty
+  /** Multiplier for celebration / stage particle bursts (0–2). */
+  public readonly particleIntensityProperty: NumberProperty
+  /** When true, auto-advance stops on the final stage instead of looping. */
+  public readonly pauseAtEndProperty: BooleanProperty
+  /** When false, reaching the last stage stops instead of restarting. */
+  public readonly loopProperty: BooleanProperty
 
-  private stageTimer = 0
   private cycleStarAwarded = false
 
   public constructor() {
@@ -75,6 +89,14 @@ export class MitosisMeiosisModel implements TModel {
     this.starsProperty = new NumberProperty(0)
     this.statusProperty = new StringProperty('Explore how mitosis and meiosis divide a cell.')
     this.cycleCountProperty = new NumberProperty(0)
+    this.stageBlendProperty = new NumberProperty(0)
+    this.cellSizeProperty = new NumberProperty(1)
+    this.condensationProperty = new NumberProperty(1)
+    this.showCytoplasmProperty = new BooleanProperty(true)
+    this.showCrossingOverProperty = new BooleanProperty(true)
+    this.particleIntensityProperty = new NumberProperty(1)
+    this.pauseAtEndProperty = new BooleanProperty(false)
+    this.loopProperty = new BooleanProperty(true)
 
     this.chromosomeCountProperty.lazyLink((n) => {
       const snapped = snapEven(n, 2, 6)
@@ -83,10 +105,13 @@ export class MitosisMeiosisModel implements TModel {
       }
     })
 
-    this.stageProperty.lazyLink((n) => {
+    this.stageProperty.lazyLink((n, oldN) => {
       const snapped = snapInt(n, 0, this.stagesCount() - 1)
       if (snapped !== n) {
         this.stageProperty.value = snapped
+      }
+      if (oldN !== undefined && snapped !== oldN) {
+        this.stageBlendProperty.value = 0
       }
     })
 
@@ -110,7 +135,7 @@ export class MitosisMeiosisModel implements TModel {
     }
     this.modeProperty.value = mode
     this.stageProperty.value = 0
-    this.stageTimer = 0
+    this.stageBlendProperty.value = 0
     this.cycleStarAwarded = false
     this.statusProperty.value =
       mode === 'mitosis'
@@ -135,20 +160,29 @@ export class MitosisMeiosisModel implements TModel {
 
   public setStage(index: number): void {
     this.stageProperty.value = snapInt(index, 0, this.stagesCount() - 1)
-    this.stageTimer = 0
+    this.stageBlendProperty.value = 0
   }
 
   public nextStage(): void {
     const stages = this.stagesCount()
     const next = this.stageProperty.value + 1
-    this.stageTimer = 0
+    this.stageBlendProperty.value = 0
     if (next >= stages) {
-      this.stageProperty.value = 0
       this.cycleCountProperty.value += 1
       if (!this.cycleStarAwarded) {
         this.cycleStarAwarded = true
         this.starsProperty.value += 1
       }
+      if (this.pauseAtEndProperty.value || !this.loopProperty.value) {
+        this.stageProperty.value = stages - 1
+        this.runningProperty.value = false
+        this.statusProperty.value =
+          this.modeProperty.value === 'mitosis'
+            ? 'Cycle complete! Two identical cells — paused at the final stage.'
+            : 'Cycle complete! Four unique gametes — paused at the final stage.'
+        return
+      }
+      this.stageProperty.value = 0
       this.statusProperty.value =
         this.modeProperty.value === 'mitosis'
           ? 'Cycle complete! Two identical cells — restarting from Prophase.'
@@ -161,7 +195,7 @@ export class MitosisMeiosisModel implements TModel {
   }
 
   public prevStage(): void {
-    this.stageTimer = 0
+    this.stageBlendProperty.value = 0
     if (this.stageProperty.value <= 0) {
       this.statusProperty.value = 'Already at the first stage.'
       return
@@ -193,13 +227,26 @@ export class MitosisMeiosisModel implements TModel {
   }
 
   public step(dt: number): void {
-    if (!this.runningProperty.value || !this.autoAdvanceProperty.value) {
+    if (!this.runningProperty.value) {
       return
     }
-    this.stageTimer += dt
-    const interval = AUTO_ADVANCE_SECONDS / Math.max(0.25, this.simSpeedProperty.value)
-    if (this.stageTimer >= interval) {
-      this.stageTimer -= interval
+    const speed = Math.max(0.25, this.simSpeedProperty.value)
+    const interval = AUTO_ADVANCE_SECONDS / speed
+    this.stageBlendProperty.value = Math.min(
+      1,
+      this.stageBlendProperty.value + dt / interval,
+    )
+    if (!this.autoAdvanceProperty.value) {
+      return
+    }
+    if (this.stageBlendProperty.value >= 1) {
+      const atLast = this.stageProperty.value >= this.stagesCount() - 1
+      if (atLast && this.pauseAtEndProperty.value) {
+        this.runningProperty.value = false
+        this.stageBlendProperty.value = 1
+        this.statusProperty.value = 'Paused at the final stage — press Play or Step to continue.'
+        return
+      }
       this.nextStage()
     }
   }
@@ -221,7 +268,14 @@ export class MitosisMeiosisModel implements TModel {
     this.starsProperty.reset()
     this.statusProperty.value = 'Explore how mitosis and meiosis divide a cell.'
     this.cycleCountProperty.reset()
-    this.stageTimer = 0
+    this.stageBlendProperty.reset()
+    this.cellSizeProperty.reset()
+    this.condensationProperty.reset()
+    this.showCytoplasmProperty.reset()
+    this.showCrossingOverProperty.reset()
+    this.particleIntensityProperty.reset()
+    this.pauseAtEndProperty.reset()
+    this.loopProperty.reset()
     this.cycleStarAwarded = false
   }
 }

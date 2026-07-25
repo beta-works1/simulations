@@ -15,11 +15,6 @@ console.log('Typechecking…')
 execSync('npx tsc --noEmit', { cwd: root, stdio: 'inherit' })
 
 for (const sim of SIMS) {
-  if (!existsSync(join(root, `src/sims/${sim}/main.ts`))) {
-    console.log(`\nSkipping ${sim} — src/sims/${sim}/main.ts not built yet.`)
-    continue
-  }
-
   console.log(`\nBuilding ${sim}…`)
   execSync(`npx vite build`, {
     cwd: root,

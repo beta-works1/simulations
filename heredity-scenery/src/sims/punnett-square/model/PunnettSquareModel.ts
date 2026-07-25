@@ -99,6 +99,12 @@ export class PunnettSquareModel implements TModel {
   public readonly animateFillProperty: BooleanProperty
   public readonly fillProgressProperty: NumberProperty
   public readonly fillSpeedProperty: NumberProperty
+  public readonly generationLimitProperty: NumberProperty
+  public readonly showFractionsProperty: BooleanProperty
+  public readonly highlightHeterozygoteProperty: BooleanProperty
+  public readonly autoRepeatProperty: BooleanProperty
+  public readonly lethalityAaProperty: BooleanProperty
+  public readonly trialCountProperty: NumberProperty
   public readonly fillingProperty: BooleanProperty
   public readonly soundEnabledProperty: BooleanProperty
   public readonly starsProperty: NumberProperty
@@ -113,6 +119,8 @@ export class PunnettSquareModel implements TModel {
 
   private firstFillDone = false
   private quizShown = false
+  private autoRepeatTimer = 0
+  private static readonly AUTO_REPEAT_DELAY = 1.4
 
   public constructor() {
     this.traitProperty = new Property<TraitId>('seedColor')
@@ -124,6 +132,12 @@ export class PunnettSquareModel implements TModel {
     this.animateFillProperty = new BooleanProperty(true)
     this.fillProgressProperty = new NumberProperty(0)
     this.fillSpeedProperty = new NumberProperty(1)
+    this.generationLimitProperty = new NumberProperty(3)
+    this.showFractionsProperty = new BooleanProperty(false)
+    this.highlightHeterozygoteProperty = new BooleanProperty(false)
+    this.autoRepeatProperty = new BooleanProperty(false)
+    this.lethalityAaProperty = new BooleanProperty(false)
+    this.trialCountProperty = new NumberProperty(0)
     this.fillingProperty = new BooleanProperty(false)
     this.soundEnabledProperty = new BooleanProperty(true)
     this.starsProperty = new NumberProperty(0)
@@ -150,6 +164,14 @@ export class PunnettSquareModel implements TModel {
 
   public setFatherGenotype(g: Genotype): void {
     this.fatherGenotypeProperty.value = g
+  }
+
+  /** Pick random genotypes for both parents (teaching exploration). */
+  public randomizeParents(): void {
+    const pool: Genotype[] = ['AA', 'Aa', 'aa']
+    this.motherGenotypeProperty.value = pool[Math.floor(Math.random() * 3)]
+    this.fatherGenotypeProperty.value = pool[Math.floor(Math.random() * 3)]
+    this.statusProperty.value = 'Parents randomized — tap Cross to see the new offspring mix.'
   }
 
   public toggleMotherAllele(i: 0 | 1): void {
@@ -181,6 +203,28 @@ export class PunnettSquareModel implements TModel {
     return n
   }
 
+  /** Count living offspring (Aa lethal when lethalityAaProperty is on). */
+  public viableCount(): number {
+    if (!this.lethalityAaProperty.value) return 4
+    let n = 0
+    for (const row of this.computeGrid()) {
+      for (const cell of row) {
+        if (cell.genotype !== 'Aa') n++
+      }
+    }
+    return n
+  }
+
+  public heterozygoteCount(): number {
+    let n = 0
+    for (const row of this.computeGrid()) {
+      for (const cell of row) {
+        if (cell.genotype === 'Aa') n++
+      }
+    }
+    return n
+  }
+
   /** Starts (or instantly finishes) the fill animation, depending on animateFillProperty. */
   public fillAnimate(): void {
     if (this.fillingProperty.value) return
@@ -204,19 +248,31 @@ export class PunnettSquareModel implements TModel {
   }
 
   public step(dt: number): void {
-    if (!this.fillingProperty.value) return
-    const rate = 0.85 * Math.max(0.4, this.fillSpeedProperty.value)
-    const next = Math.min(1, this.fillProgressProperty.value + dt * rate)
-    this.fillProgressProperty.value = next
+    if (this.fillingProperty.value) {
+      const rate = 0.85 * Math.max(0.4, this.fillSpeedProperty.value)
+      const next = Math.min(1, this.fillProgressProperty.value + dt * rate)
+      this.fillProgressProperty.value = next
 
-    const revealed = Math.min(4, Math.floor(next * 4 + 1e-6))
-    if (revealed > this.cellRevealProperty.value) {
-      this.cellRevealProperty.value = revealed
+      const revealed = Math.min(4, Math.floor(next * 4 + 1e-6))
+      if (revealed > this.cellRevealProperty.value) {
+        this.cellRevealProperty.value = revealed
+      }
+
+      if (next >= 1) {
+        this.fillingProperty.value = false
+        this.completeFill()
+      }
+      return
     }
 
-    if (next >= 1) {
-      this.fillingProperty.value = false
-      this.completeFill()
+    if (this.autoRepeatTimer > 0) {
+      this.autoRepeatTimer -= dt
+      if (this.autoRepeatTimer <= 0) {
+        this.autoRepeatTimer = 0
+        if (this.autoRepeatProperty.value && this.generationProperty.value < this.generationLimitProperty.value) {
+          this.fillAnimate()
+        }
+      }
     }
   }
 
@@ -245,15 +301,22 @@ export class PunnettSquareModel implements TModel {
   private completeFill(): void {
     this.cellRevealProperty.value = 4
     this.generationProperty.value += 1
+    this.trialCountProperty.value += 1
     this.historyPushProperty.value += 1
 
     const dom = this.dominantCount()
+    const het = this.heterozygoteCount()
+    const viable = this.viableCount()
     const trait = this.traitProperty.value
     const domLabel = phenotypeLabel(trait, true)
     const recLabel = phenotypeLabel(trait, false)
     const pct = Math.round((dom / 4) * 100)
 
-    if (dom === 4 || dom === 0) {
+    if (this.lethalityAaProperty.value && het > 0) {
+      this.statusProperty.value =
+        `Cross complete! Lethal Aa: ${het} heterozygote(s) did not survive — ${viable}/4 viable offspring.`
+    }
+    else if (dom === 4 || dom === 0) {
       this.statusProperty.value = `Cross complete! All 4 offspring are ${dom === 4 ? domLabel : recLabel}.`
     }
     else {
@@ -268,6 +331,13 @@ export class PunnettSquareModel implements TModel {
     if (!this.quizShown && dom > 0 && dom < 4) {
       this.quizShown = true
       this.quizPromptsProperty.value += 1
+    }
+
+    if (
+      this.autoRepeatProperty.value &&
+      this.generationProperty.value < this.generationLimitProperty.value
+    ) {
+      this.autoRepeatTimer = PunnettSquareModel.AUTO_REPEAT_DELAY
     }
   }
 
@@ -287,6 +357,12 @@ export class PunnettSquareModel implements TModel {
     this.animateFillProperty.reset()
     this.fillProgressProperty.reset()
     this.fillSpeedProperty.reset()
+    this.generationLimitProperty.reset()
+    this.showFractionsProperty.reset()
+    this.highlightHeterozygoteProperty.reset()
+    this.autoRepeatProperty.reset()
+    this.lethalityAaProperty.reset()
+    this.trialCountProperty.reset()
     this.fillingProperty.reset()
     this.soundEnabledProperty.reset()
     this.starsProperty.reset()
@@ -296,6 +372,7 @@ export class PunnettSquareModel implements TModel {
     this.historyPushProperty.reset()
     this.firstFillDone = false
     this.quizShown = false
+    this.autoRepeatTimer = 0
     this.updateStatusForParents()
   }
 }

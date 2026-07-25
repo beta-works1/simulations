@@ -15,7 +15,8 @@
     "build:carbon-offline": "npm --prefix ph-carbon-oxygen-scenery run build",
     "build:pyramid-offline": "npm --prefix ph-ecological-pyramid-scenery run build",
     "build:predator-offline": "npm --prefix ph-predator-prey-scenery run build",
-    "build:nervous-offline": "npm --prefix nervous-scenery run build"
+    "build:nervous-offline": "npm --prefix nervous-scenery run build",
+    "build:heredity-offline": "npm --prefix heredity-scenery run build"
   },
   "dependencies": {
     "@fontsource/roboto": "^5.2.10",

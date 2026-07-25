@@ -58,6 +58,9 @@ export class PunnettSquareScreenView extends ScreenView {
   private readonly traitButtons: SoftButton[] = []
   private readonly motherButtons: SoftButton[] = []
   private readonly fatherButtons: SoftButton[] = []
+  private readonly cellFractionTexts: Text[] = []
+  private readonly cellHighlightRects: Rectangle[] = []
+  private readonly trialCountText: Text
 
   public constructor(model: PunnettSquareModel, providedOptions?: Options) {
     super(providedOptions)
@@ -115,28 +118,8 @@ export class PunnettSquareScreenView extends ScreenView {
     historyLegend.top = this.historyChart.bottom + 6
     leftCard.content.addChild(historyLegend)
 
-    this.soundBtn = new SoftButton(
-      model.soundEnabledProperty.value
-        ? PunnettSquareStrings.soundOnStringProperty.value
-        : PunnettSquareStrings.soundOffStringProperty.value,
-      () => {
-        sounds.unlock()
-        const on = !model.soundEnabledProperty.value
-        model.soundEnabledProperty.value = on
-        sounds.toggle(on)
-        if (on) sounds.button()
-        this.soundBtn.setLabel(
-          on ? PunnettSquareStrings.soundOnStringProperty.value : PunnettSquareStrings.soundOffStringProperty.value,
-        )
-      },
-      { width: leftW - 24, height: 32, fill: '#64748b', fontSize: 12 },
-    )
-    this.soundBtn.left = 12
-    this.soundBtn.top = historyLegend.bottom + 12
-    leftCard.content.addChild(this.soundBtn)
-
     this.addChild(
-      new StageBackdrop(stageLeft, stageTop, stageW, stageH, { top: '#f6e6c2', bottom: '#fffaf0' }),
+      new StageBackdrop(stageLeft, stageTop, stageW, stageH, { top: '#b8d4e8', bottom: '#dce7f0' }),
     )
 
     // ── Punnett square geometry ────────────────────────────────────────────
@@ -192,8 +175,8 @@ export class PunnettSquareScreenView extends ScreenView {
       for (let c = 0; c < 2; c++) {
         this.addChild(
           new Rectangle(gridLeft + c * cellSize, gridTop + r * cellSize, cellSize, cellSize, {
-            fill: 'rgba(255,255,255,0.82)',
-            stroke: 'rgba(43,29,14,0.28)',
+            fill: 'rgba(255,255,255,0.88)',
+            stroke: 'rgba(124,160,190,0.35)',
             lineWidth: 1,
             pickable: false,
           }),
@@ -215,14 +198,33 @@ export class PunnettSquareScreenView extends ScreenView {
           centerX: 0,
           top: cellSize * 0.06,
         })
+        const fractionText = new Text('', {
+          font: new PhetFont({ size: 11, weight: 'bold' }),
+          fill: HeredityColors.muted,
+          centerX: 0,
+          top: cellSize * 0.28,
+          visible: false,
+        })
+        const highlightRect = new Rectangle(-cellSize * 0.42, -cellSize * 0.42, cellSize * 0.84, cellSize * 0.84, {
+          cornerRadius: 8,
+          fill: 'rgba(13,148,136,0.18)',
+          stroke: HeredityColors.accent,
+          lineWidth: 2,
+          visible: false,
+          pickable: false,
+        })
+        group.addChild(highlightRect)
         group.addChild(icon)
         group.addChild(genotypeText)
+        group.addChild(fractionText)
         group.opacity = 0
         group.setScaleMagnitude(0.5)
         this.addChild(group)
         this.cellGroups.push(group)
         this.cellIcons.push(icon)
         this.cellGenotypeTexts.push(genotypeText)
+        this.cellFractionTexts.push(fractionText)
+        this.cellHighlightRects.push(highlightRect)
       }
     }
     this.addChild(
@@ -436,8 +438,73 @@ export class PunnettSquareScreenView extends ScreenView {
     })
     panelContent.addChild(animateBtn)
 
-    const timingHeader = controlSection(PunnettSquareStrings.sectionTimingStringProperty.value, contentW)
-    panelContent.addChild(timingHeader)
+    const fractionsBtn = new SoftButton(PunnettSquareStrings.fractionsOnStringProperty.value, () => {
+      model.showFractionsProperty.value = !model.showFractionsProperty.value
+    }, {
+      width: halfW,
+      height: btnH,
+      fill: HeredityColors.accent,
+      selected: model.showFractionsProperty.value,
+      fontSize: 11,
+      onSound: () => sounds.softClick(),
+    })
+    panelContent.addChild(fractionsBtn)
+
+    const highlightAaBtn = new SoftButton(PunnettSquareStrings.highlightHeterozygoteOnStringProperty.value, () => {
+      model.highlightHeterozygoteProperty.value = !model.highlightHeterozygoteProperty.value
+    }, {
+      width: halfW,
+      height: btnH,
+      fill: '#0ea5e9',
+      selected: model.highlightHeterozygoteProperty.value,
+      fontSize: 11,
+      onSound: () => sounds.softClick(),
+    })
+    panelContent.addChild(highlightAaBtn)
+
+    const envHeader = controlSection(PunnettSquareStrings.sectionEnvironmentStringProperty.value, contentW)
+    panelContent.addChild(envHeader)
+
+    const autoRepeatBtn = new SoftButton(PunnettSquareStrings.autoRepeatOffStringProperty.value, () => {
+      model.autoRepeatProperty.value = !model.autoRepeatProperty.value
+    }, {
+      width: contentW,
+      height: btnH,
+      fill: '#10b981',
+      selected: model.autoRepeatProperty.value,
+      fontSize: 11,
+      onSound: () => sounds.softClick(),
+    })
+    panelContent.addChild(autoRepeatBtn)
+
+    const randomParentsBtn = new SoftButton(PunnettSquareStrings.randomParentsStringProperty.value, () => {
+      sounds.modeChange(true)
+      model.randomizeParents()
+    }, {
+      width: halfW,
+      height: btnH,
+      fill: '#64748b',
+      fontSize: 11,
+    })
+    panelContent.addChild(randomParentsBtn)
+
+    const lethalAaBtn = new SoftButton(PunnettSquareStrings.lethalAaOffStringProperty.value, () => {
+      model.lethalityAaProperty.value = !model.lethalityAaProperty.value
+    }, {
+      width: halfW,
+      height: btnH,
+      fill: '#475569',
+      selected: model.lethalityAaProperty.value,
+      fontSize: 10,
+      onSound: () => sounds.softClick(),
+    })
+    panelContent.addChild(lethalAaBtn)
+
+    const lethalHint = controlHint(PunnettSquareStrings.lethalAaHintStringProperty.value, contentW)
+    panelContent.addChild(lethalHint)
+
+    const playbackHeader = controlSection(PunnettSquareStrings.sectionSoundPlaybackStringProperty.value, contentW)
+    panelContent.addChild(playbackHeader)
 
     const fillSpeedSlider = new DepthSlider(model.fillSpeedProperty, {
       min: 0.5,
@@ -449,6 +516,35 @@ export class PunnettSquareScreenView extends ScreenView {
       onTick: () => sounds.sliderTick(),
     })
     panelContent.addChild(fillSpeedSlider)
+
+    const generationLimitSlider = new DepthSlider(model.generationLimitProperty, {
+      min: 1,
+      max: 5,
+      width: contentW,
+      label: PunnettSquareStrings.generationLimitStringProperty.value,
+      format: (n) => String(Math.round(n)),
+      fill: '#7c3aed',
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(generationLimitSlider)
+
+    this.soundBtn = new SoftButton(
+      model.soundEnabledProperty.value
+        ? PunnettSquareStrings.soundOnStringProperty.value
+        : PunnettSquareStrings.soundOffStringProperty.value,
+      () => {
+        sounds.unlock()
+        const on = !model.soundEnabledProperty.value
+        model.soundEnabledProperty.value = on
+        sounds.toggle(on)
+        if (on) sounds.button()
+        this.soundBtn.setLabel(
+          on ? PunnettSquareStrings.soundOnStringProperty.value : PunnettSquareStrings.soundOffStringProperty.value,
+        )
+      },
+      { width: contentW, height: btnH, fill: '#64748b', fontSize: 12 },
+    )
+    panelContent.addChild(this.soundBtn)
 
     const crossHeader = controlSection(PunnettSquareStrings.sectionCrossStringProperty.value, contentW)
     panelContent.addChild(crossHeader)
@@ -475,11 +571,20 @@ export class PunnettSquareScreenView extends ScreenView {
     })
     panelContent.addChild(clearBtn)
 
+    const statusHeader = controlSection(PunnettSquareStrings.sectionStatusStringProperty.value, contentW)
+    panelContent.addChild(statusHeader)
+
     this.generationText = new Text('', {
       font: new PhetFont({ size: 12, weight: 'bold' }),
       fill: HeredityColors.panelMuted,
     })
     panelContent.addChild(this.generationText)
+
+    this.trialCountText = new Text('', {
+      font: new PhetFont({ size: 12, weight: 'bold' }),
+      fill: HeredityColors.panelMuted,
+    })
+    panelContent.addChild(this.trialCountText)
 
     this.starsText = new Text('', {
       font: new PhetFont({ size: 15, weight: 'bold' }),
@@ -557,14 +662,40 @@ export class PunnettSquareScreenView extends ScreenView {
       py = probsBtn.bottom + gridGap
       animateBtn.left = 0
       animateBtn.top = py
-      py = animateBtn.bottom + 12
+      py = animateBtn.bottom + gridGap
+      fractionsBtn.left = 0
+      fractionsBtn.top = py
+      highlightAaBtn.left = halfW + 8
+      highlightAaBtn.top = py
+      py = fractionsBtn.bottom + 12
 
-      timingHeader.left = 0
-      timingHeader.top = py
-      py = timingHeader.bottom + 6
+      envHeader.left = 0
+      envHeader.top = py
+      py = envHeader.bottom + 6
+      autoRepeatBtn.left = 0
+      autoRepeatBtn.top = py
+      py = autoRepeatBtn.bottom + gridGap
+      randomParentsBtn.left = 0
+      randomParentsBtn.top = py
+      lethalAaBtn.left = halfW + 8
+      lethalAaBtn.top = py
+      py = randomParentsBtn.bottom + 4
+      lethalHint.left = 0
+      lethalHint.top = py
+      py = lethalHint.bottom + 12
+
+      playbackHeader.left = 0
+      playbackHeader.top = py
+      py = playbackHeader.bottom + 6
       fillSpeedSlider.left = 0
       fillSpeedSlider.top = py
-      py = fillSpeedSlider.bottom + 12
+      py = fillSpeedSlider.bottom + 8
+      generationLimitSlider.left = 0
+      generationLimitSlider.top = py
+      py = generationLimitSlider.bottom + 8
+      this.soundBtn.left = 0
+      this.soundBtn.top = py
+      py = this.soundBtn.bottom + 12
 
       crossHeader.left = 0
       crossHeader.top = py
@@ -574,9 +705,15 @@ export class PunnettSquareScreenView extends ScreenView {
       clearBtn.left = halfW + 8
       clearBtn.top = py
       py = crossBtn.bottom + 6
+      statusHeader.left = 0
+      statusHeader.top = py
+      py = statusHeader.bottom + 6
       this.generationText.left = 0
       this.generationText.top = py
-      py = this.generationText.bottom + 10
+      py = this.generationText.bottom + 4
+      this.trialCountText.left = 0
+      this.trialCountText.top = py
+      py = this.trialCountText.bottom + 8
 
       this.starsText.left = 0
       this.starsText.top = py
@@ -621,13 +758,37 @@ export class PunnettSquareScreenView extends ScreenView {
     const syncGridContent = () => {
       const grid = model.computeGrid()
       const trait = model.traitProperty.value
+      const lethal = model.lethalityAaProperty.value
+      const showFrac = model.showFractionsProperty.value && model.cellRevealProperty.value >= 4
+      const highlightHet = model.highlightHeterozygoteProperty.value && model.cellRevealProperty.value >= 4
+      const genotypeCounts = new Map<Genotype, number>()
+      for (const row of grid) {
+        for (const cell of row) {
+          genotypeCounts.set(cell.genotype, (genotypeCounts.get(cell.genotype) ?? 0) + 1)
+        }
+      }
+
       for (let r = 0; r < 2; r++) {
         for (let c = 0; c < 2; c++) {
           const i = r * 2 + c
           const cell = grid[r][c]
+          const isLethal = lethal && cell.genotype === 'Aa'
           this.cellGenotypeTexts[i].string = cell.genotype
           this.cellGenotypeTexts[i].centerX = 0
-          this.cellIcons[i].fill = phenotypeColor(trait, cell.dominant)
+          this.cellIcons[i].fill = isLethal ? '#94a3b8' : phenotypeColor(trait, cell.dominant)
+          this.cellIcons[i].opacity = isLethal ? 0.35 : 1
+          this.cellGenotypeTexts[i].opacity = isLethal ? 0.45 : 1
+
+          if (showFrac) {
+            const count = genotypeCounts.get(cell.genotype) ?? 0
+            this.cellFractionTexts[i].string = count > 1 ? `${count}/4` : '1/4'
+            this.cellFractionTexts[i].visible = true
+          }
+          else {
+            this.cellFractionTexts[i].visible = false
+          }
+
+          this.cellHighlightRects[i].visible = highlightHet && cell.genotype === 'Aa' && !isLethal
         }
       }
       syncAxisLetters()
@@ -647,9 +808,21 @@ export class PunnettSquareScreenView extends ScreenView {
       const dom = model.dominantCount()
       const domLabel = phenotypeLabel(trait, true)
       const recLabel = phenotypeLabel(trait, false)
-      this.probsText.string =
-        `${domLabel}: ${dom}/4 (${Math.round((dom / 4) * 100)}%)<br>${recLabel}: ${4 - dom}/4 ` +
-        `(${Math.round(((4 - dom) / 4) * 100)}%)`
+      if (model.showFractionsProperty.value) {
+        this.probsText.string =
+          `${domLabel}: ${dom}/4 · ${recLabel}: ${4 - dom}/4` +
+          (model.lethalityAaProperty.value && model.heterozygoteCount() > 0
+            ? `<br>Viable: ${model.viableCount()}/4`
+            : '')
+      }
+      else {
+        this.probsText.string =
+          `${domLabel}: ${dom}/4 (${Math.round((dom / 4) * 100)}%)<br>${recLabel}: ${4 - dom}/4 ` +
+          `(${Math.round(((4 - dom) / 4) * 100)}%)` +
+          (model.lethalityAaProperty.value && model.heterozygoteCount() > 0
+            ? `<br>Viable offspring: ${model.viableCount()}/4`
+            : '')
+      }
     }
 
     const syncSelections = () => {
@@ -710,6 +883,37 @@ export class PunnettSquareScreenView extends ScreenView {
       )
       animateBtn.setSelected(on)
     })
+    model.showFractionsProperty.link((on) => {
+      syncGridContent()
+      syncProbabilities()
+      fractionsBtn.setLabel(
+        on ? PunnettSquareStrings.fractionsOnStringProperty.value : PunnettSquareStrings.fractionsOffStringProperty.value,
+      )
+      fractionsBtn.setSelected(on)
+    })
+    model.highlightHeterozygoteProperty.link((on) => {
+      syncGridContent()
+      highlightAaBtn.setLabel(
+        on
+          ? PunnettSquareStrings.highlightHeterozygoteOnStringProperty.value
+          : PunnettSquareStrings.highlightHeterozygoteOffStringProperty.value,
+      )
+      highlightAaBtn.setSelected(on)
+    })
+    model.autoRepeatProperty.link((on) => {
+      autoRepeatBtn.setLabel(
+        on ? PunnettSquareStrings.autoRepeatOnStringProperty.value : PunnettSquareStrings.autoRepeatOffStringProperty.value,
+      )
+      autoRepeatBtn.setSelected(on)
+    })
+    model.lethalityAaProperty.link((on) => {
+      syncGridContent()
+      syncProbabilities()
+      lethalAaBtn.setLabel(
+        on ? PunnettSquareStrings.lethalAaOnStringProperty.value : PunnettSquareStrings.lethalAaOffStringProperty.value,
+      )
+      lethalAaBtn.setSelected(on)
+    })
 
     model.cellRevealProperty.link((count, oldCountRaw) => {
       const oldCount = oldCountRaw ?? 0
@@ -725,6 +929,7 @@ export class PunnettSquareScreenView extends ScreenView {
       }
       if (count === 4 && oldCount < 4) {
         sounds.celebrate()
+        syncGridContent()
       }
       syncProbabilities()
     })
@@ -735,10 +940,18 @@ export class PunnettSquareScreenView extends ScreenView {
     model.generationProperty.link((n) => {
       this.generationText.string = `${PunnettSquareStrings.generationLabelStringProperty.value}: ${n}`
     })
+    model.trialCountProperty.link((n) => {
+      this.trialCountText.string = `${PunnettSquareStrings.trialCountLabelStringProperty.value}: ${n}`
+    })
     model.statusProperty.link((status) => {
       this.statusText.string = status
     })
-    model.soundEnabledProperty.link((on) => sounds.setEnabled(on))
+    model.soundEnabledProperty.link((on) => {
+      sounds.setEnabled(on)
+      this.soundBtn.setLabel(
+        on ? PunnettSquareStrings.soundOnStringProperty.value : PunnettSquareStrings.soundOffStringProperty.value,
+      )
+    })
     model.fillingProperty.link(() => this.updateGuidance())
 
     model.quizPromptsProperty.lazyLink(() => this.showQuiz())
