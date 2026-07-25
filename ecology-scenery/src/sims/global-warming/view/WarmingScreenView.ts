@@ -58,7 +58,6 @@ export class WarmingScreenView extends ScreenView {
   private readonly soil: Rectangle
   private readonly soilUnderGrass: Rectangle
   private readonly grass: Rectangle
-  private readonly grassPatches: Rectangle[] = []
   private readonly grassBlades: { node: Node; phase: number; amp: number; baseRot: number }[] = []
   private readonly groundScene: Node
   private readonly ambientLayer: Node
@@ -552,167 +551,146 @@ export class WarmingScreenView extends ScreenView {
     parent.addChild(icon)
   }
 
-  /** Soft pebbles, cracks, and mounds across the soil (low-key texture). */
+  /** Soft soil mottling + irregular shaded rocks (no crack lines or circle-dots). */
   private buildSoilDetails(sceneLeft: number, sceneW: number, groundH: number): void {
     const details = new Node({ pickable: false })
-    // Subtle mottling patches
     const mottles = [
-      { x: 0.12, y: 0.35, rx: 18, ry: 6, c: 'rgba(120, 53, 15, 0.35)' },
-      { x: 0.28, y: 0.55, rx: 22, ry: 7, c: 'rgba(146, 64, 14, 0.3)' },
-      { x: 0.45, y: 0.4, rx: 16, ry: 5, c: 'rgba(90, 40, 10, 0.32)' },
-      { x: 0.62, y: 0.6, rx: 20, ry: 6, c: 'rgba(120, 53, 15, 0.28)' },
-      { x: 0.78, y: 0.38, rx: 24, ry: 7, c: 'rgba(146, 64, 14, 0.28)' },
-      { x: 0.9, y: 0.58, rx: 14, ry: 5, c: 'rgba(90, 40, 10, 0.3)' },
+      { x: 0.1, y: 0.4, rx: 20, ry: 6, c: 'rgba(120, 53, 15, 0.28)' },
+      { x: 0.3, y: 0.55, rx: 24, ry: 7, c: 'rgba(146, 64, 14, 0.24)' },
+      { x: 0.5, y: 0.45, rx: 18, ry: 5, c: 'rgba(90, 40, 10, 0.26)' },
+      { x: 0.7, y: 0.58, rx: 22, ry: 6, c: 'rgba(120, 53, 15, 0.24)' },
+      { x: 0.88, y: 0.42, rx: 16, ry: 5, c: 'rgba(146, 64, 14, 0.22)' },
     ]
     for (const m of mottles) {
       const oval = this.makeOval(m.rx, m.ry, m.c)
       oval.centerX = sceneLeft + sceneW * m.x
-      oval.centerY = this.groundTop + 18 + m.y * (groundH - 22)
+      oval.centerY = this.groundTop + 20 + m.y * (groundH - 26)
       details.addChild(oval)
     }
-    // Dirt crack lines
-    const cracks: { x0: number; y0: number; x1: number; y1: number }[] = [
-      { x0: 0.18, y0: 0.42, x1: 0.26, y1: 0.62 },
-      { x0: 0.4, y0: 0.5, x1: 0.48, y1: 0.72 },
-      { x0: 0.72, y0: 0.38, x1: 0.8, y1: 0.55 },
-    ]
-    for (const c of cracks) {
-      details.addChild(
-        new Path(
-          new Shape()
-            .moveTo(sceneLeft + sceneW * c.x0, this.groundTop + 20 + c.y0 * (groundH - 24))
-            .lineTo(sceneLeft + sceneW * c.x1, this.groundTop + 20 + c.y1 * (groundH - 24)),
-          {
-            stroke: 'rgba(55, 25, 8, 0.4)',
-            lineWidth: 1.2,
-            lineCap: 'round',
-            pickable: false,
-          },
-        ),
-      )
-    }
-    // Rocks with shadows
-    const rocks = [
-      { x: 0.22, y: 0.48, r: 5 },
-      { x: 0.38, y: 0.65, r: 4 },
-      { x: 0.5, y: 0.42, r: 6 },
-      { x: 0.65, y: 0.7, r: 4.5 },
-      { x: 0.84, y: 0.5, r: 5.5 },
-    ]
-    for (const r of rocks) {
-      const cx = sceneLeft + sceneW * r.x
-      const cy = this.groundTop + 22 + r.y * (groundH - 28)
-      const shadow = this.makeOval(r.r * 1.4, r.r * 0.45, 'rgba(15,23,42,0.3)')
-      shadow.centerX = cx
-      shadow.centerY = cy + r.r * 0.55
-      details.addChild(shadow)
-      details.addChild(
-        new Circle(r.r, {
-          fill: '#78716c',
-          stroke: '#57534e',
-          lineWidth: 0.8,
-          centerX: cx,
-          centerY: cy,
-          pickable: false,
-        }),
-      )
-      details.addChild(
-        new Circle(r.r * 0.35, {
-          fill: 'rgba(214, 211, 209, 0.35)',
-          centerX: cx - r.r * 0.25,
-          centerY: cy - r.r * 0.25,
-          pickable: false,
-        }),
-      )
-    }
+
+    // Evenly spaced rocks across the soil band (below icon centers)
+    const rockXs = [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95]
+    rockXs.forEach((fx, i) => {
+      const scale = 0.7 + (i % 3) * 0.18
+      const rot = ((i * 37) % 50 - 25) * (Math.PI / 180)
+      const rock = this.makeRock(scale, rot)
+      rock.centerX = sceneLeft + sceneW * fx
+      rock.centerY = this.groundTop + 38 + (i % 3) * 6
+      details.addChild(rock)
+    })
     this.addChild(details)
   }
 
-  /** Multi-shade grass patches + individual blades that sway. */
-  private buildGrassTexture(sceneLeft: number, sceneW: number): void {
-    const greens = ['rgba(34, 197, 94, 0.45)', 'rgba(22, 163, 74, 0.4)', 'rgba(74, 222, 128, 0.35)', 'rgba(21, 128, 61, 0.4)']
-    for (let i = 0; i < 8; i++) {
-      const w = 28 + (i % 4) * 10
-      const patch = new Rectangle(0, 0, w, 10 + (i % 3), {
-        fill: greens[i % greens.length],
-        cornerRadius: 3,
-        pickable: false,
-      })
-      patch.left = sceneLeft + 8 + i * (sceneW / 8.5) + (i % 2) * 6
-      patch.top = this.groundTop + 2 + (i % 3)
-      this.grassPatches.push(patch)
-      this.addChild(patch)
+  /**
+   * Flat-design rock: irregular polygon + two-tone shade (light from upper-right).
+   */
+  private makeRock(scale: number, rotation: number): Node {
+    const s = 7 * scale
+    // Uneven 6-vertex blob (not a circle)
+    const verts = [
+      { x: -s * 0.95, y: -s * 0.15 },
+      { x: -s * 0.35, y: -s * 0.85 },
+      { x: s * 0.55, y: -s * 0.7 },
+      { x: s * 1.05, y: s * 0.05 },
+      { x: s * 0.4, y: s * 0.75 },
+      { x: -s * 0.5, y: s * 0.65 },
+    ]
+    const baseShape = new Shape()
+    baseShape.moveTo(verts[0]!.x, verts[0]!.y)
+    for (let i = 1; i < verts.length; i++) {
+      baseShape.lineTo(verts[i]!.x, verts[i]!.y)
     }
+    baseShape.close()
 
-    const bladeCount = 36
+    const wrap = new Node({ pickable: false })
+    const shadow = this.makeOval(s * 1.15, s * 0.38, 'rgba(15,23,42,0.32)')
+    shadow.centerY = s * 0.55
+    wrap.addChild(shadow)
+
+    wrap.addChild(
+      new Path(baseShape, {
+        fill: '#6b6560',
+        stroke: '#4a4541',
+        lineWidth: 0.9,
+        pickable: false,
+      }),
+    )
+    // Lighter face toward upper-right (sun direction)
+    const hi = new Shape()
+    hi.moveTo(-s * 0.15, -s * 0.55)
+    hi.lineTo(s * 0.45, -s * 0.55)
+    hi.lineTo(s * 0.75, -s * 0.05)
+    hi.lineTo(s * 0.15, s * 0.15)
+    hi.close()
+    wrap.addChild(
+      new Path(hi, {
+        fill: 'rgba(168, 162, 158, 0.85)',
+        pickable: false,
+      }),
+    )
+    wrap.rotation = rotation
+    return wrap
+  }
+
+  /** Thin tapered curved blade (flat-design, not a blob). */
+  private makeBlade(height: number, lean: number, color: string): Path {
+    const base = Math.max(1.1, height * 0.12)
+    const shape = new Shape()
+    shape.moveTo(-base, 0)
+    shape.quadraticCurveTo(lean * 0.35 - base * 0.2, -height * 0.45, lean, -height)
+    shape.quadraticCurveTo(lean * 0.5 + base * 0.15, -height * 0.4, base, 0)
+    shape.close()
+    return new Path(shape, { fill: color, pickable: false })
+  }
+
+  /** Clump of 3–5 thin blades with soft ground shadow. */
+  private makeGrassTuft(baseH: number, seed: number): Node {
+    const greens = ['#86efac', '#4ade80', '#22c55e']
+    const tuft = new Node({ pickable: false })
+    const bladeCount = 3 + (seed % 3)
+    const shadow = this.makeOval(5 + bladeCount, 1.6, 'rgba(15,23,42,0.28)')
+    shadow.centerY = 1.2
+    tuft.addChild(shadow)
     for (let i = 0; i < bladeCount; i++) {
-      const h = 7 + (i % 5) * 1.6
-      const w = 1.6 + (i % 3) * 0.4
-      const shade = i % 3 === 0 ? '#86efac' : i % 3 === 1 ? '#4ade80' : '#16a34a'
-      const blade = new Path(
-        new Shape().moveTo(0, 0).lineTo(-w, -h).lineTo(w * 0.35, -h * 0.85).close(),
-        { fill: shade, pickable: false },
-      )
-      const wrap = new Node({ children: [blade], pickable: false })
-      // Soft shadow under each tuft
-      const shadow = this.makeOval(3.5, 1.2, 'rgba(15,23,42,0.22)')
-      shadow.centerY = 1
-      wrap.addChild(shadow)
-      wrap.moveChildToBack(shadow)
+      const h = baseH * (0.6 + ((seed + i * 3) % 5) * 0.08)
+      const lean = ((i - (bladeCount - 1) / 2) * 2.2) + ((seed + i) % 3 - 1) * 0.6
+      const blade = this.makeBlade(h, lean, greens[(seed + i) % greens.length]!)
+      tuft.addChild(blade)
+    }
+    return tuft
+  }
 
-      const x = sceneLeft + 10 + (i / bladeCount) * (sceneW - 20) + Math.sin(i * 2.1) * 4
-      const y = this.groundTop + 14
-      wrap.x = x
-      wrap.y = y
-      const baseRot = ((i % 7) - 3) * 0.04
-      wrap.rotation = baseRot
+  /** Even grass-strip clumps: thin tapered blades only. */
+  private buildGrassTexture(sceneLeft: number, sceneW: number): void {
+    const clumpCount = 11
+    for (let i = 0; i < clumpCount; i++) {
+      const baseH = 9 + (i % 4)
+      const tuft = this.makeGrassTuft(baseH, i * 5)
+      const x = sceneLeft + 14 + (i / (clumpCount - 1)) * (sceneW - 28)
+      tuft.x = x
+      tuft.y = this.groundTop + 14
+      const baseRot = ((i % 5) - 2) * 0.03
+      tuft.rotation = baseRot
       this.grassBlades.push({
-        node: wrap,
-        phase: i * 0.7,
-        amp: 0.05 + (i % 4) * 0.012,
+        node: tuft,
+        phase: i * 0.85,
+        amp: 0.035 + (i % 3) * 0.01,
         baseRot,
       })
-      this.addChild(wrap)
+      this.addChild(tuft)
     }
   }
 
-  /** Low-key bushes/rocks between the main clusters — not scenario-driven. */
+  /** Even ambient grass tufts across open ground — no hybrid flower dots. */
   private buildAmbientGround(sceneLeft: number, sceneW: number): void {
-    const cy = this.groundTop + 30
-    // Small bushes / grass tufts in the open middle
-    const bushes = [
-      { x: 0.38, size: 22 },
-      { x: 0.44, size: 18 },
-      { x: 0.5, size: 24 },
-      { x: 0.54, size: 20 },
-    ]
-    for (const b of bushes) {
-      this.addGroundIcon(this.ambientLayer, 'grass', b.size, sceneLeft + sceneW * b.x, cy + 6)
-    }
-    // Extra low rocks with shadows
-    const rocks = [
-      { x: 0.41, y: 12, r: 4 },
-      { x: 0.47, y: 18, r: 3.5 },
-      { x: 0.53, y: 10, r: 5 },
-    ]
-    for (const r of rocks) {
-      const cx = sceneLeft + sceneW * r.x
-      const ry = this.groundTop + 20 + r.y
-      const shadow = this.makeOval(r.r * 1.5, r.r * 0.5, 'rgba(15,23,42,0.3)')
-      shadow.centerX = cx
-      shadow.centerY = ry + r.r * 0.5
-      this.ambientLayer.addChild(shadow)
-      this.ambientLayer.addChild(
-        new Circle(r.r, {
-          fill: '#a8a29e',
-          stroke: '#78716c',
-          lineWidth: 0.7,
-          centerX: cx,
-          centerY: ry,
-          pickable: false,
-        }),
-      )
-    }
+    // Place tufts in open bands: before trees, mid gap, after factories
+    const tuftXs = [0.03, 0.38, 0.43, 0.48, 0.53, 0.63, 0.97]
+    tuftXs.forEach((fx, i) => {
+      const tuft = this.makeGrassTuft(11 + (i % 3), i * 7 + 2)
+      tuft.centerX = sceneLeft + sceneW * fx
+      tuft.y = this.groundTop + 26 + (i % 2) * 3
+      this.ambientLayer.addChild(tuft)
+    })
   }
 
   private updateGrassSway(): void {
