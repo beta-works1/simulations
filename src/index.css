@@ -1,4 +1,50 @@
 :root {
+  /*
+   * Palette lifted straight from the simulation art (ecology / greenhouse sims):
+   * dusk = control-panel navy, sun = the amber sun, terra = soil layers,
+   * sage = grass, coral = heat + CO2, gas = the greenhouse band.
+   */
+  --dusk-950: #050d18;
+  --dusk-900: #0b1628;
+  --dusk-800: #142438;
+  --dusk-700: #1e3450;
+  --dusk-600: #2b4864;
+
+  --sun-500: #fbbf24;
+  --sun-400: #facc15;
+  --sun-200: #fde68a;
+
+  --terra-400: #d98c4a;
+  --terra-600: #b45309;
+  --terra-700: #92400e;
+  --terra-800: #78350f;
+
+  --sage-300: #86efac;
+  --sage-500: #22c55e;
+  --sage-600: #15803d;
+  --moss-600: #4d7c0f;
+
+  --coral-400: #f87171;
+  --coral-500: #ef4444;
+  --ember-400: #fb923c;
+
+  --gas-300: #7dd3fc;
+  --gas-500: #0ea5e9;
+
+  /* darker siblings of the accents, for accent-coloured text on light backgrounds */
+  --gas-ink: #075985;
+  --sage-ink: #166534;
+  --ember-ink: #9a3412;
+  --sun-ink: #a16207;
+  --terra-ink: #92400e;
+
+  /* warm-tinted neutrals — no pure black, no pure white */
+  --paper: #f8f1e6;
+  --paper-dim: #e8dcca;
+  --on-dusk: #f4ece0;
+  --on-dusk-muted: #a3b4c6;
+  --hairline: rgba(244, 236, 224, 0.14);
+
   --color-ink: #07131f;
   --color-ink-soft: #132433;
   --color-brand: #0f766e;
@@ -28,8 +74,9 @@
   --text-lg: 1.25rem;
   --text-xl: 1.75rem;
   --text-2xl: 2.5rem;
-  --font-display: 'Space Grotesk', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-display: 'Fraunces Variable', 'Fraunces', 'Iowan Old Style', Georgia, serif;
   --font-body: 'Space Grotesk', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-ui: 'Space Grotesk', 'Avenir Next', 'Segoe UI', sans-serif;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --header-h: 64px;
 }
@@ -63,9 +110,9 @@ body {
   font-size: 16px;
   color: var(--color-text);
   background:
-    radial-gradient(ellipse 80% 50% at 100% -10%, rgba(20, 184, 166, 0.12), transparent 50%),
-    radial-gradient(ellipse 60% 40% at -10% 20%, rgba(56, 189, 198, 0.08), transparent 45%),
-    #eef3f7;
+    radial-gradient(ellipse 80% 50% at 100% -10%, rgba(251, 191, 36, 0.12), transparent 55%),
+    radial-gradient(ellipse 60% 40% at -10% 18%, rgba(180, 83, 9, 0.06), transparent 50%),
+    var(--paper);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
@@ -86,7 +133,7 @@ h5,
 h6 {
   font-family: var(--font-display);
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 
 button,

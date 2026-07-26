@@ -5,9 +5,10 @@
 }
 
 .simulation-grid-title {
+  font-family: var(--font-display);
   font-size: clamp(1.4rem, 3vw, 1.85rem);
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--dusk-900);
   margin: 0 0 var(--space-lg);
   text-align: center;
   letter-spacing: -0.03em;
@@ -47,7 +48,7 @@
 }
 
 .simulation-link:hover .simulation-list-title {
-  color: var(--color-brand);
+  color: var(--terra-ink);
 }
 
 .simulation-link:focus-visible {
@@ -128,8 +129,8 @@
 }
 
 .simulation-card-tags .tag:not(.tag-grade) {
-  background: rgba(15, 118, 110, 0.1);
-  color: var(--color-brand);
+  background: rgba(180, 83, 9, 0.1);
+  color: var(--terra-ink);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,201 +1,325 @@
 .hero {
-  --hero-ink: #07131f;
-  --hero-mist: #9eb6c8;
-  --hero-accent: #2dd4bf;
-  --hero-font: var(--font-display);
-
   position: relative;
   isolation: isolate;
-  min-height: min(calc(100svh - var(--header-h)), 860px);
-  display: grid;
-  align-items: end;
   overflow: hidden;
-  background: transparent;
-  color: #fff;
+  /* slide up under the fixed header so the dusk sky runs behind the nav */
+  margin-top: calc(-1 * var(--header-h));
+  padding: calc(var(--header-h) + clamp(2.25rem, 7vw, 4.5rem)) 0 clamp(3rem, 8vw, 5rem);
+  color: var(--paper);
+  /* the sims' dusk sky: navy overhead down to terracotta at the horizon */
+  background: linear-gradient(
+    180deg,
+    #071322 0%,
+    #0b1628 30%,
+    #14243a 58%,
+    #3a2a2d 86%,
+    #5d3722 100%
+  );
 }
 
-.hero-wash {
+/* soft haze so the dusk sky hands off to the warm page below without a hard seam */
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: clamp(60px, 9vw, 120px);
+  background: linear-gradient(180deg, rgba(248, 241, 230, 0) 0%, var(--paper) 100%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.hero-sky {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 0;
   pointer-events: none;
-  background:
-    linear-gradient(90deg, rgba(4, 16, 24, 0.78) 0%, rgba(4, 16, 24, 0.3) 48%, transparent 80%),
-    linear-gradient(180deg, transparent 30%, rgba(4, 16, 24, 0.62) 100%);
 }
 
-.hero-content {
+/* sunlight coming in from the top left, the same direction as in the sims */
+.hero-ray {
+  position: absolute;
+  top: -30%;
+  left: -10%;
+  width: 34%;
+  height: 120%;
+  background: linear-gradient(
+    180deg,
+    rgba(253, 230, 138, 0.13) 0%,
+    rgba(251, 146, 60, 0.05) 45%,
+    rgba(251, 146, 60, 0) 75%
+  );
+  transform: rotate(16deg);
+  filter: blur(28px);
+}
+
+.hero-ray-2 {
+  left: 14%;
+  width: 16%;
+  height: 95%;
+  background: linear-gradient(180deg, rgba(253, 230, 138, 0.1), rgba(253, 230, 138, 0) 70%);
+  transform: rotate(10deg);
+  filter: blur(22px);
+}
+
+.hero-mote {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--gas-300);
+  opacity: 0.2;
+  will-change: transform, opacity;
+  animation-name: hero-mote-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes hero-mote-drift {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.14;
+  }
+  50% {
+    transform: translateY(var(--mote-drift, -28px));
+    opacity: 0.5;
+  }
+}
+
+.hero-inner {
   position: relative;
   z-index: 2;
-  width: min(740px, 100%);
-  padding: clamp(4.5rem, 12vh, 7rem) clamp(1.25rem, 4vw, 3.5rem) clamp(3rem, 8vh, 5rem);
+  width: min(1200px, 100%);
+  margin-inline: auto;
+  padding-inline: clamp(1.15rem, 4vw, 3rem);
+  display: grid;
+  gap: clamp(2rem, 5vw, 3.5rem);
+  align-items: center;
 }
 
-.hero-brand {
-  font-family: var(--hero-font);
-  font-size: clamp(3.4rem, 12vw, 6.75rem);
-  font-weight: 700;
-  letter-spacing: -0.045em;
-  line-height: 0.92;
-  margin: 0 0 1.35rem;
+.hero-eyebrow {
+  margin: 0 0 clamp(0.9rem, 2vw, 1.35rem);
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(253, 230, 138, 0.85);
 }
-
-.hero-brand span {
-  display: inline-block;
-}
-
-.hero-brand .c-s { color: #fb923c; }
-.hero-brand .c-i { color: #38bdf8; }
-.hero-brand .c-m { color: #34d399; }
-.hero-brand .c-l { color: #67e8f9; }
-.hero-brand .c-a { color: #f87171; }
-.hero-brand .c-b { color: #fbbf24; }
 
 .hero-headline {
-  font-family: var(--hero-font);
-  font-size: clamp(1.4rem, 3.4vw, 2.15rem);
-  font-weight: 500;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
-  color: rgba(255, 255, 255, 0.95);
-  margin: 0 0 0.9rem;
-  max-width: 16ch;
+  margin: 0 0 clamp(0.85rem, 2vw, 1.2rem);
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 6.4vw, 4.2rem);
+  font-weight: 600;
+  line-height: 1.03;
+  letter-spacing: -0.02em;
+  color: var(--paper);
   text-wrap: balance;
 }
 
+.hero-headline-mark {
+  color: var(--sun-400);
+}
+
 .hero-lede {
-  font-family: var(--hero-font);
-  font-size: clamp(0.98rem, 1.7vw, 1.15rem);
-  font-weight: 400;
-  line-height: 1.55;
-  color: var(--hero-mist);
-  margin: 0 0 1.85rem;
-  max-width: 34ch;
+  margin: 0 0 clamp(1.5rem, 3.5vw, 2.1rem);
+  font-family: var(--font-body);
+  font-size: clamp(1rem, 1.5vw, 1.12rem);
+  line-height: 1.6;
+  color: var(--on-dusk-muted);
+  max-width: 48ch;
   text-wrap: pretty;
 }
 
-.hero-ctas {
+.hero-grades-label {
+  margin: 0 0 0.7rem;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(163, 180, 198, 0.85);
+}
+
+/* tidy 4x2 block on phones, single row once there is width for it */
+.hero-grade-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  max-width: 22rem;
+}
+
+.hero-grade-chips > li {
+  display: flex;
+}
+
+.hero-grade-chips a {
+  flex: 1;
+}
+
+.hero-grade-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0.4rem 0.55rem;
+  border-radius: 14px;
+  border: 1px solid rgba(244, 236, 224, 0.16);
+  background: rgba(20, 36, 58, 0.9);
+  text-decoration: none;
+  transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out),
+    box-shadow 0.2s var(--ease-out);
+}
+
+.hero-grade-num {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--paper);
+}
+
+.hero-grade-meta {
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  color: rgba(163, 180, 198, 0.8);
+}
+
+.hero-grade-chip:hover {
+  background: rgba(251, 191, 36, 0.14);
+  border-color: rgba(251, 191, 36, 0.55);
+  box-shadow: 0 8px 24px -10px rgba(251, 191, 36, 0.5);
+}
+
+.hero-grade-chip:hover .hero-grade-num {
+  color: var(--sun-200);
+}
+
+.hero-grade-chip:focus-visible {
+  outline: 3px solid var(--sun-400);
+  outline-offset: 3px;
+}
+
+.hero-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 0.9rem 1.5rem;
+  margin-top: clamp(1.5rem, 3.5vw, 2rem);
 }
 
 .hero-cta {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
   min-height: 3rem;
-  padding: 0.75rem 1.4rem;
+  padding: 0.8rem 1.5rem;
   border-radius: 999px;
-  font-family: var(--hero-font);
+  background: var(--sun-500);
+  color: #24160a;
+  font-family: var(--font-ui);
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.01em;
   text-decoration: none;
-  transition: transform 0.2s var(--ease-out), background 0.2s, border-color 0.2s;
+  box-shadow: 0 14px 30px -14px rgba(251, 191, 36, 0.7);
+  transition: background 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+}
+
+.hero-cta:hover {
+  background: var(--sun-400);
+  box-shadow: 0 18px 38px -14px rgba(251, 191, 36, 0.85);
 }
 
 .hero-cta:focus-visible {
-  outline: 3px solid var(--hero-accent);
+  outline: 3px solid var(--sun-200);
   outline-offset: 3px;
 }
 
-.hero-cta-primary {
-  background: #fff;
-  color: var(--hero-ink);
-}
-
-.hero-cta-primary:hover {
-  background: #e6fffb;
-  color: var(--hero-ink);
-  transform: translateY(-2px);
-}
-
-.hero-cta-secondary {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  backdrop-filter: blur(8px);
-}
-
-.hero-cta-secondary:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.5);
-  color: #fff;
-  transform: translateY(-2px);
-}
-
 .hero-cta-arrow {
-  display: inline-block;
   transition: transform 0.2s var(--ease-out);
 }
 
-.hero-cta-primary:hover .hero-cta-arrow {
+.hero-cta:hover .hero-cta-arrow {
   transform: translateX(4px);
 }
 
-.hero-scroll-hint {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  margin: 2.75rem 0 0;
-  font-family: var(--hero-font);
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(158, 182, 200, 0.8);
+.hero-jump {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--on-dusk);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(244, 236, 224, 0.3);
+  padding-bottom: 2px;
+  transition: color 0.2s, border-color 0.2s;
 }
 
-.hero-scroll-line {
-  width: 1px;
-  height: 2.4rem;
-  background: linear-gradient(180deg, var(--hero-accent), transparent);
-  animation: scroll-pulse 1.8s ease-in-out infinite;
-  transform-origin: top;
+.hero-jump:hover {
+  color: var(--sun-200);
+  border-color: var(--sun-400);
 }
 
-@keyframes scroll-pulse {
-  0%,
-  100% {
-    transform: scaleY(0.45);
-    opacity: 0.4;
-  }
-  50% {
-    transform: scaleY(1);
-    opacity: 1;
-  }
+.hero-stage {
+  width: min(100%, 560px);
+  margin-inline: auto;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 560px) {
   .hero {
-    min-height: min(calc(100svh - var(--header-h)), 720px);
+    padding-top: calc(var(--header-h) + 1.5rem);
   }
 
-  .hero-wash {
-    background:
-      linear-gradient(180deg, rgba(4, 16, 24, 0.18) 0%, rgba(4, 16, 24, 0.5) 42%, rgba(4, 16, 24, 0.88) 100%);
+  .hero-lede {
+    margin-bottom: 1.25rem;
   }
 
-  .hero-content {
+  .hero-actions {
+    margin-top: 1.25rem;
+  }
+}
+
+@media (min-width: 560px) {
+  .hero-grade-chips {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    max-width: 30rem;
+  }
+}
+
+@media (min-width: 980px) {
+  .hero {
+    display: grid;
+    align-items: center;
+    min-height: min(100svh, 940px);
+  }
+
+  .hero-inner {
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr);
+    gap: clamp(2.5rem, 5vw, 4.5rem);
+  }
+
+  .hero-stage {
     width: 100%;
-  }
-
-  .hero-ctas {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .hero-cta {
-    width: 100%;
+    max-width: 600px;
+    justify-self: end;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-cta,
   .hero-cta-arrow,
-  .hero-scroll-line {
+  .hero-grade-chip,
+  .hero-jump {
     transition: none;
+  }
+
+  .hero-mote {
     animation: none;
   }
 }

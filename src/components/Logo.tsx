@@ -13,10 +13,10 @@ export function Logo({ className }: { className?: string }) {
       <text x="28" y="42" fontFamily="Space Grotesk, sans-serif" fontSize="42" fontWeight="700" fill="#38bdf8">
         i
       </text>
-      <text x="44" y="42" fontFamily="Space Grotesk, sans-serif" fontSize="42" fontWeight="700" fill="#34d399">
+      <text x="44" y="42" fontFamily="Space Grotesk, sans-serif" fontSize="42" fontWeight="700" fill="#22c55e">
         m
       </text>
-      <text x="88" y="42" fontFamily="Space Grotesk, sans-serif" fontSize="42" fontWeight="700" fill="#67e8f9">
+      <text x="88" y="42" fontFamily="Space Grotesk, sans-serif" fontSize="42" fontWeight="700" fill="#7dd3fc">
         L
       </text>
       <text x="118" y="42" fontFamily="Space Grotesk, sans-serif" fontSize="42" fontWeight="700" fill="#f87171">

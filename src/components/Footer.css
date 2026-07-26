@@ -5,8 +5,8 @@
 }
 
 .footer-band {
-  background: linear-gradient(135deg, #07131f 0%, #0f2a3a 55%, #134e4a 100%);
-  color: #fff;
+  background: linear-gradient(160deg, var(--dusk-900) 0%, var(--dusk-800) 58%, #3a2a2d 100%);
+  color: var(--paper);
   text-align: center;
   padding: clamp(2.5rem, 6vw, 4rem) var(--space-md);
 }
@@ -15,26 +15,23 @@
   margin: 0 0 0.75rem;
   font-family: var(--font-display);
   font-size: clamp(2rem, 5vw, 3rem);
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  background: linear-gradient(90deg, #fb923c, #38bdf8, #34d399, #fbbf24);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--sun-200);
 }
 
 .footer-tagline {
   margin: 0 auto;
   max-width: 36rem;
-  color: rgba(226, 232, 240, 0.82);
+  color: var(--on-dusk-muted);
   font-size: 1rem;
   line-height: 1.65;
 }
 
 .main-footer {
-  background: #fff;
+  background: var(--paper);
   padding: var(--space-xl) var(--space-md);
-  border-top: 1px solid rgba(7, 19, 31, 0.06);
+  border-top: 1px solid rgba(11, 22, 40, 0.08);
 }
 
 .footer-content {
@@ -62,8 +59,8 @@
 }
 
 .footer-links a:hover {
-  color: var(--color-brand);
-  background: rgba(20, 184, 166, 0.08);
+  color: var(--terra-ink);
+  background: rgba(180, 83, 9, 0.08);
 }
 
 .footer-copyright {

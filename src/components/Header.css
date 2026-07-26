@@ -47,7 +47,7 @@
 }
 
 #site-header.is-solid {
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(248, 241, 230, 0.88);
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
   border-bottom: 1px solid rgba(7, 19, 31, 0.08);
@@ -61,7 +61,7 @@
 
 #site-header.on-home.is-transparent .nav-link:hover,
 #site-header.on-home.is-transparent .nav-link.is-active {
-  color: #5eead4;
+  color: var(--sun-200);
 }
 
 #site-header.on-home.is-transparent .brand-link {
