@@ -82,21 +82,24 @@ export class PeriodicTableScreenView extends ScreenView {
     // ── Stage sub-layout: title strip, table (left), Bohr model (right), legend ──
     const titleTop = stageTop + 8
     const tableTop = titleTop + 46
-    const legendH = 34
     const tableX0 = stageLeft + 12
     const tableAreaW = stageW * 0.5
-    const tableAreaH = stageH - (tableTop - stageTop) - legendH - 14
     const cols = 8
     const rows = 3
     const cellW = tableAreaW / cols
-    const cellH = tableAreaH / rows
+    // Cap tile height so the 8×3 short-form grid stays chunky/near-square instead
+    // of stretching into tall thin bars when the stage has lots of spare height.
+    const cellH = Math.min(cellW * 1.35, (stageTop + stageH - tableTop - 60) / rows)
+    const tableBlockH = cellH * rows
     const tilePad = 3
+    const legendTop = tableTop + tableBlockH + 12
 
     const bohrX0 = tableX0 + tableAreaW + 26
     const bohrAreaW = stageLeft + stageW - 12 - bohrX0
+    const bohrAreaH = stageTop + stageH - tableTop - 12
     this.bohrCx = bohrX0 + bohrAreaW / 2
-    this.bohrCy = tableTop + tableAreaH / 2
-    this.bohrMaxR = Math.min(bohrAreaW, tableAreaH) * 0.42
+    this.bohrCy = tableTop + bohrAreaH / 2
+    this.bohrMaxR = Math.min(bohrAreaW, bohrAreaH) * 0.42
 
     // ── Guidance banner ──────────────────────────────────────────────────────
     this.guide = new GuidanceBanner(lb.width - m * 2, {
@@ -189,7 +192,7 @@ export class PeriodicTableScreenView extends ScreenView {
     this.addChild(tableLayer)
 
     // ── Category color legend ─────────────────────────────────────────────────
-    const legendLayer = new Node({ pickable: false, left: tableX0, top: tableTop + tableAreaH + 10 })
+    const legendLayer = new Node({ pickable: false, left: tableX0, top: legendTop })
     const legendEntries = Object.entries(CATEGORY_LABELS) as [keyof typeof CATEGORY_LABELS, string][]
     const legendColW = tableAreaW / 4
     legendEntries.forEach(([cat, label], i) => {
@@ -245,7 +248,7 @@ export class PeriodicTableScreenView extends ScreenView {
     // ── Mini quiz overlay ────────────────────────────────────────────────────
     this.miniQuiz = new MiniQuiz(260)
     this.miniQuiz.centerX = this.stageCenterX
-    this.miniQuiz.centerY = tableTop + tableAreaH * 0.5
+    this.miniQuiz.centerY = tableTop + tableBlockH * 0.5
     this.addChild(this.miniQuiz)
 
     // ── Right column: dense scrollable control panel ────────────────────────
@@ -335,8 +338,10 @@ export class PeriodicTableScreenView extends ScreenView {
 
     const makeQuickRow = (elements: readonly ElementInfo[]): SoftButton[] => {
       const n = elements.length
-      const rowGap = 4
-      const w = (contentW - (n - 1) * rowGap) / n
+      // Two-element rows reuse the shared halfW/gridGap so they line up with the
+      // Prev/Next and Display button rows above; longer rows pack tightly instead.
+      const rowGap = n === 2 ? 8 : 4
+      const w = n === 2 ? halfW : (contentW - (n - 1) * rowGap) / n
       return elements.map((el) => {
         const btn = new SoftButton(el.symbol, () => {
           sounds.select()

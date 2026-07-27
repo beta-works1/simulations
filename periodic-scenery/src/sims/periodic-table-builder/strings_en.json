@@ -41,8 +41,8 @@
   "learnMore": "Every shell holds a limited number of electrons — 2 in the first shell, 8 in the second and third (for these 18 elements).",
   "tipTitle": "Did you know?",
   "quizQuestion": "In the Bohr model, where are an atom's electrons found?",
-  "quizCorrect": "In fixed shells (orbits) around the nucleus",
-  "quizWrong": "Scattered randomly inside the nucleus",
+  "quizCorrect": "In fixed shells (orbits)",
+  "quizWrong": "Scattered inside the nucleus",
   "labelNucleus": "Nucleus",
   "labelShell": "Shell",
   "atomicNumberShort": "Z"
