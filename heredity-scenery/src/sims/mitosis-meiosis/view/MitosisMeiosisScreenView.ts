@@ -328,7 +328,7 @@ export class MitosisMeiosisScreenView extends ScreenView {
     this.addChild(card)
 
     const panelContent = new Node()
-    const contentW = rightW - 32
+    const contentW = rightW - 42
     const halfW = (contentW - 8) / 2
     const gridGap = 6
     const btnH = 32
@@ -388,7 +388,11 @@ export class MitosisMeiosisScreenView extends ScreenView {
       label: MitosisMeiosisStrings.stageSliderStringProperty.value,
       format: (n) => {
         const names = model.getStageNames()
-        return names[clamp(Math.round(n), 0, names.length - 1)]
+        const full = names[clamp(Math.round(n), 0, names.length - 1)] ?? ''
+        // Short readout so DepthSlider value is not clipped (full name is on stage).
+        if (full.length <= 8) return full
+        const word = full.split(/[\s/]/)[0]
+        return word.length <= 8 ? word : `${word.slice(0, 7)}…`
       },
       fill: '#7c3aed',
       onTick: () => sounds.sliderTick(),
@@ -691,7 +695,7 @@ export class MitosisMeiosisScreenView extends ScreenView {
     }
     relayoutPanel()
 
-    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 24)
+    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 72)
     scroller.left = 12
     scroller.top = 12
     card.content.addChild(scroller)
@@ -713,6 +717,7 @@ export class MitosisMeiosisScreenView extends ScreenView {
     }
     const syncStatus = () => {
       this.statusText.string = model.statusProperty.value
+      relayoutPanel()
     }
     const syncScenario = () => {
       const s = model.scenarioProperty.value

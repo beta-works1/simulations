@@ -306,7 +306,7 @@ export class PunnettSquareScreenView extends ScreenView {
     this.addChild(card)
 
     const panelContent = new Node()
-    const contentW = rightW - 32
+    const contentW = rightW - 42
     const halfW = (contentW - 8) / 2
     const thirdW = (contentW - 16) / 3
     const gridGap = 6
@@ -729,7 +729,7 @@ export class PunnettSquareScreenView extends ScreenView {
     }
     relayoutPanel()
 
-    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 56)
+    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 72)
     scroller.left = 12
     scroller.top = 38
     card.content.addChild(scroller)
@@ -945,6 +945,7 @@ export class PunnettSquareScreenView extends ScreenView {
     })
     model.statusProperty.link((status) => {
       this.statusText.string = status
+      relayoutPanel()
     })
     model.soundEnabledProperty.link((on) => {
       sounds.setEnabled(on)

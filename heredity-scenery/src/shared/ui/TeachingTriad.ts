@@ -33,6 +33,13 @@ export class TeachingTriad extends Node {
     this.resize(this.why)
     this.resize(this.next)
     this.stack()
+    // RichText can settle height a frame later — remeasure so cards don't clip.
+    setTimeout(() => {
+      this.resize(this.now)
+      this.resize(this.why)
+      this.resize(this.next)
+      this.stack()
+    }, 0)
   }
 
   private makeCard(label: string, accent: string, width: number): Card {
@@ -49,10 +56,10 @@ export class TeachingTriad extends Node {
       top: 6,
     })
     const body = new RichText('', {
-      font: new PhetFont(13),
+      font: new PhetFont(11),
       fill: HeredityColors.ink,
       lineWrap: width - 20,
-      leading: 3,
+      leading: 2,
       left: 10,
       top: 22,
     })
@@ -60,12 +67,14 @@ export class TeachingTriad extends Node {
   }
 
   private resize(card: Card): void {
-    card.bg.setRectHeight(Math.max(48, card.body.bottom + 10))
+    // RichText height can lag one frame — pad generously so cards don't overlap.
+    const h = Math.max(48, card.body.bottom + 12)
+    card.bg.setRectHeight(h)
   }
 
   private stack(): void {
     this.now.root.top = 0
-    this.why.root.top = this.now.root.bottom + 6
-    this.next.root.top = this.why.root.bottom + 6
+    this.why.root.top = this.now.root.bottom + 8
+    this.next.root.top = this.why.root.bottom + 8
   }
 }

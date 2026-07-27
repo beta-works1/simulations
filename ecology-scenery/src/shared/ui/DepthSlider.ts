@@ -6,7 +6,7 @@ import { clamp } from '../EcologyColors.js'
 import { EcologyColors } from '../EcologyColors.js'
 import { forwardWheelToScrollParent } from './ScrollableNode.js'
 
-/** Horizontal slider with draggable thumb and depth (ecology-style). */
+/** Horizontal slider — value readout reserved so it is not clipped by the scrollbar. */
 export class DepthSlider extends Node {
   public constructor(
     property: NumberProperty,
@@ -22,32 +22,35 @@ export class DepthSlider extends Node {
   ) {
     super()
     const w = options.width ?? 180
+    const valueW = 54
+    const trackW = Math.max(40, w - 4)
     const trackY = 28
     const format = options.format ?? ((n: number) => `${Math.round(n)}`)
     const accent = options.fill ?? EcologyColors.accent
     let lastValue = property.value
 
     const label = new Text(options.label, {
-      font: new PhetFont({ size: 12, weight: 'bold' }),
+      font: new PhetFont({ size: 11, weight: 'bold' }),
       fill: EcologyColors.panelMuted,
       left: 0,
       top: 0,
-      maxWidth: w - 56,
+      maxWidth: Math.max(40, w - valueW - 6),
     })
     const valueText = new Text(format(property.value), {
-      font: new PhetFont({ size: 12, weight: 'bold' }),
+      font: new PhetFont({ size: 11, weight: 'bold' }),
       fill: accent,
-      right: w,
+      maxWidth: valueW,
+      right: w - 2,
       top: 0,
     })
 
     this.addChild(
-      new Rectangle(0, trackY + 2, w, 8, {
+      new Rectangle(0, trackY + 2, trackW, 8, {
         cornerRadius: 4,
         fill: 'rgba(0,0,0,0.35)',
       }),
     )
-    const track = new Rectangle(0, trackY, w, 8, {
+    const track = new Rectangle(0, trackY, trackW, 8, {
       cornerRadius: 4,
       fill: 'rgba(148,163,184,0.35)',
       cursor: 'pointer',
@@ -76,11 +79,11 @@ export class DepthSlider extends Node {
 
     const sync = () => {
       const t = (property.value - options.min) / (options.max - options.min)
-      const x = clamp(t, 0, 1) * w
+      const x = clamp(t, 0, 1) * trackW
       fillBar.setRectWidth(Math.max(8, x))
       thumb.x = x
       valueText.string = format(property.value)
-      valueText.right = w
+      valueText.right = w - 2
       if (property.value !== lastValue) {
         lastValue = property.value
         options.onTick?.()
@@ -89,7 +92,7 @@ export class DepthSlider extends Node {
     property.link(sync)
 
     const setFromX = (localX: number) => {
-      const t = clamp(localX / w, 0, 1)
+      const t = clamp(localX / trackW, 0, 1)
       property.value = options.min + t * (options.max - options.min)
     }
 

@@ -14,7 +14,8 @@ export function createPanelTip(
     bold?: boolean
   },
 ): RichText {
-  const fontSize = options.fontSize ?? 18
+  // Default 12 — large tips (18+) caused overlapping text in dense scroll panels.
+  const fontSize = options.fontSize ?? 12
   return new RichText(string, {
     font: new PhetFont({ size: fontSize, weight: options.bold ? 'bold' : 'normal' }),
     fill: options.fill ?? '#e2e8f0',

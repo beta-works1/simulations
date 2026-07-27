@@ -33,6 +33,13 @@ export class TeachingTriad extends Node {
     this.resize(this.why)
     this.resize(this.next)
     this.stack()
+    // RichText can settle height a frame later — remeasure so cards don't clip.
+    setTimeout(() => {
+      this.resize(this.now)
+      this.resize(this.why)
+      this.resize(this.next)
+      this.stack()
+    }, 0)
   }
 
   private makeCard(label: string, accent: string, width: number): Card {

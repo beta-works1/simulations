@@ -363,8 +363,9 @@ export class CarbonOxygenScreenView extends ScreenView {
       new Text('CO₂ (red) & O₂ (green) over time', {
         font: new PhetFont(10),
         fill: '#bdc3c7',
-        left: this.chartBounds.left + 10,
+        left: this.chartBounds.left + 40,
         top: this.chartBounds.top + 5,
+        maxWidth: this.chartBounds.width - 50,
       }),
     )
 

@@ -25,7 +25,8 @@ export class CarbonControlPanel extends Node {
     const card = new DepthCard(width, height, { title: CarbonStrings.controlsStringProperty.value })
     this.addChild(card)
 
-    const contentW = width - 32
+    // Leave room for ScrollableNode scrollbar so slider values are not clipped.
+    const contentW = width - 42
     const halfW = (contentW - 8) / 2
     const btnH = 32
     const gap = 8

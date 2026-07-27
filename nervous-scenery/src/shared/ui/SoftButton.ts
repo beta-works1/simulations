@@ -1,6 +1,8 @@
 import { Node, Rectangle, Text } from 'scenerystack/scenery'
+import type { SceneryEvent } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
 import { NervousColors } from '../NervousColors.js'
+import { forwardWheelToScrollParent } from './ScrollableNode.js'
 
 /** Compact depth button — ecology carbon-panel density. */
 export class SoftButton extends Node {
@@ -82,6 +84,9 @@ export class SoftButton extends Node {
         }
       },
       exit: () => this.applySelectedStyle(),
+      wheel: (event: SceneryEvent<WheelEvent>) => {
+        forwardWheelToScrollParent(this, event)
+      },
     })
   }
 

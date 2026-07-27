@@ -467,13 +467,15 @@ export class ReflexArcScreenView extends ScreenView {
       ReflexArcStrings.stepBrainStringProperty.value,
       ReflexArcStrings.stepEffectorStringProperty.value,
     ]
-    const labelGap = (stageW - 32) / (stepNames.length - 1)
+    const labelGap = (stageW - 40) / Math.max(1, stepNames.length - 1)
+    const labelMax = Math.min(110, labelGap - 8)
     stepNames.forEach((name, i) => {
       const t = new Text(name, {
-        font: new PhetFont({ size: 12, weight: 'bold' }),
+        font: new PhetFont({ size: 11, weight: 'bold' }),
         fill: NervousColors.muted,
-        left: stageLeft + 16 + i * labelGap,
-        top: stageTop + 14,
+        centerX: stageLeft + 20 + i * labelGap,
+        top: stageTop + 22,
+        maxWidth: labelMax,
         pickable: false,
       })
       this.stepLabels.push(t)
@@ -550,7 +552,7 @@ export class ReflexArcScreenView extends ScreenView {
     this.addChild(card)
 
     const panelContent = new Node()
-    const contentW = rightW - 32
+    const contentW = rightW - 42
     const halfW = (contentW - 8) / 2
     const gridGap = 6
     const btnH = 32
@@ -829,7 +831,7 @@ export class ReflexArcScreenView extends ScreenView {
     panelContent.addChild(this.starsText)
 
     this.statusText = new Text(model.statusProperty.value, {
-      font: new PhetFont({ size: 13, weight: 'bold' }),
+      font: new PhetFont({ size: 12, weight: 'bold' }),
       fill: NervousColors.panelText,
       maxWidth: contentW,
     })
@@ -968,7 +970,7 @@ export class ReflexArcScreenView extends ScreenView {
     }
     relayoutPanel()
 
-    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 56)
+    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 72)
     scroller.left = 12
     scroller.top = 38
     card.content.addChild(scroller)
@@ -1158,6 +1160,7 @@ export class ReflexArcScreenView extends ScreenView {
     model.effectorTypeProperty.link(syncEffector)
     model.statusProperty.link((status) => {
       this.statusText.string = status
+      relayoutPanel()
     })
     model.spinalTrialsProperty.link(syncTrials)
     model.brainTrialsProperty.link(syncTrials)

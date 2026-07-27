@@ -252,7 +252,7 @@ export class DnaZoomScreenView extends ScreenView {
     this.addChild(card)
 
     const panelContent = new Node()
-    const contentW = rightW - 32
+    const contentW = rightW - 42
     const halfW = (contentW - 8) / 2
     const btnH = 32
     const gridGap = 6
@@ -628,7 +628,7 @@ export class DnaZoomScreenView extends ScreenView {
     }
     relayoutPanel()
 
-    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 20)
+    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 72)
     scroller.left = 12
     scroller.top = 12
     card.content.addChild(scroller)
@@ -746,6 +746,7 @@ export class DnaZoomScreenView extends ScreenView {
     model.starsProperty.link(syncStars)
     model.statusProperty.link((status) => {
       this.statusText.string = status
+      relayoutPanel()
     })
     model.tipsProperty.lazyLink(() => this.showTipCard(model.tipTextProperty.value))
     model.quizPromptsProperty.lazyLink(() => this.showQuiz())

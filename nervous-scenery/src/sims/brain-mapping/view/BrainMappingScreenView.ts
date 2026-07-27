@@ -537,12 +537,12 @@ export class BrainMappingScreenView extends ScreenView {
     })
     this.detailBody = createPanelTip('', {
       width: tipWidth,
-      fontSize: 17,
+      fontSize: 12,
     })
     this.detailBody.left = 4
     this.detailExamples = createPanelTip('', {
       width: tipWidth,
-      fontSize: 16,
+      fontSize: 12,
     })
     this.detailExamples.left = 4
     panelContent.addChild(this.detailTitle)
@@ -573,7 +573,7 @@ export class BrainMappingScreenView extends ScreenView {
 
     const learnTip = createPanelTip(BrainMappingStrings.learnMoreStringProperty.value, {
       width: tipWidth,
-      fontSize: 17,
+      fontSize: 12,
     })
     learnTip.left = 4
     panelContent.addChild(learnTip)

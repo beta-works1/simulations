@@ -726,13 +726,13 @@ export class NeuronSignalScreenView extends ScreenView {
 
     const tapTip = createPanelTip(NeuronSignalStrings.tapNodeStringProperty.value, {
       width: contentW,
-      fontSize: 15,
+      fontSize: 12,
     })
     panelContent.addChild(tapTip)
 
     const learnTip = createPanelTip(NeuronSignalStrings.learnMoreStringProperty.value, {
       width: contentW,
-      fontSize: 15,
+      fontSize: 12,
     })
     panelContent.addChild(learnTip)
 
@@ -888,7 +888,7 @@ export class NeuronSignalScreenView extends ScreenView {
     }
     this.relayoutPanel()
 
-    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 56)
+    const scroller = new ScrollableNode(panelContent, rightW - 24, stageH - 72)
     scroller.left = 12
     scroller.top = 38
     card.content.addChild(scroller)
