@@ -502,6 +502,8 @@ export const simulations: Simulation[] = [
     color: '#1a5276',
     accent: '#58d68d',
     image: '/covers/periodic-table-builder.svg',
+    sceneryHtml: '/downloads/periodic-table-builder-offline.html',
+    offlineHtml: '/downloads/periodic-table-builder-offline.html',
   },
   {
     id: 'metal-nonmetal',
