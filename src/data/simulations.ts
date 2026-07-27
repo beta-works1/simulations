@@ -542,6 +542,8 @@ export const simulations: Simulation[] = [
     color: '#0e6655',
     accent: '#f39c12',
     image: '/covers/balance-equations.svg',
+    sceneryHtml: '/downloads/balance-equations-offline.html',
+    offlineHtml: '/downloads/balance-equations-offline.html',
   },
   {
     id: 'exo-endo-thermic',
@@ -559,6 +561,8 @@ export const simulations: Simulation[] = [
     color: '#922b21',
     accent: '#3498db',
     image: '/covers/exo-endo-thermic.svg',
+    sceneryHtml: '/downloads/exo-endo-thermic-offline.html',
+    offlineHtml: '/downloads/exo-endo-thermic-offline.html',
   },
   {
     id: 'ionic-covalent-bonds',
@@ -576,6 +580,8 @@ export const simulations: Simulation[] = [
     color: '#5b2c6f',
     accent: '#f4d03f',
     image: '/covers/ionic-covalent-bonds.svg',
+    sceneryHtml: '/downloads/ionic-covalent-bonds-offline.html',
+    offlineHtml: '/downloads/ionic-covalent-bonds-offline.html',
   },
   {
     id: 'conservation-of-mass',
