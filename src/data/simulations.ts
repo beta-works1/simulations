@@ -708,6 +708,8 @@ export const simulations: Simulation[] = [
     color: '#1a5276',
     accent: '#e74c3c',
     image: '/covers/balanced-unbalanced-forces.svg',
+    sceneryHtml: '/downloads/balanced-unbalanced-forces-offline.html',
+    offlineHtml: '/downloads/balanced-unbalanced-forces-offline.html',
   },
   {
     id: 'floating-sinking',
@@ -725,6 +727,8 @@ export const simulations: Simulation[] = [
     color: '#1a5276',
     accent: '#5dade2',
     image: '/covers/floating-sinking.svg',
+    sceneryHtml: '/downloads/floating-sinking-offline.html',
+    offlineHtml: '/downloads/floating-sinking-offline.html',
   },
   {
     id: 'pressure-force-area',
@@ -742,6 +746,8 @@ export const simulations: Simulation[] = [
     color: '#7e5109',
     accent: '#f39c12',
     image: '/covers/pressure-force-area.svg',
+    sceneryHtml: '/downloads/pressure-force-area-offline.html',
+    offlineHtml: '/downloads/pressure-force-area-offline.html',
   },
   {
     id: 'hydraulic-lift',
@@ -759,6 +765,8 @@ export const simulations: Simulation[] = [
     color: '#1a252f',
     accent: '#3498db',
     image: '/covers/hydraulic-lift.svg',
+    sceneryHtml: '/downloads/hydraulic-lift-offline.html',
+    offlineHtml: '/downloads/hydraulic-lift-offline.html',
   },
   {
     id: 'water-pressure-depth',
@@ -776,6 +784,8 @@ export const simulations: Simulation[] = [
     color: '#154360',
     accent: '#5dade2',
     image: '/covers/water-pressure-depth.svg',
+    sceneryHtml: '/downloads/water-pressure-depth-offline.html',
+    offlineHtml: '/downloads/water-pressure-depth-offline.html',
   },
 
   // Grade 8 — Ch 9 Light: Reflection & Refraction

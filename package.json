@@ -20,7 +20,8 @@
     "build:biotech-offline": "npm --prefix biotech-scenery run build",
     "build:periodic-offline": "npm --prefix periodic-scenery run build",
     "build:reactions-offline": "npm --prefix reactions-scenery run build",
-    "build:acids-offline": "npm --prefix acids-scenery run build"
+    "build:acids-offline": "npm --prefix acids-scenery run build",
+    "build:forces-offline": "npm --prefix forces-scenery run build"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",
