@@ -1,0 +1,25 @@
+{
+  "name": "reactions-scenery",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "title": "Chemical Reactions Simulations",
+  "author": "SimLab",
+  "scripts": {
+    "dev": "REACTIONS_SIM=balance-equations vite",
+    "dev:balance": "REACTIONS_SIM=balance-equations vite",
+    "dev:exo": "REACTIONS_SIM=exo-endo-thermic vite",
+    "dev:bonds": "REACTIONS_SIM=ionic-covalent-bonds vite",
+    "dev:mass": "REACTIONS_SIM=conservation-of-mass vite",
+    "build": "node ./scripts/build-all.mjs",
+    "build:one": "tsc --noEmit && vite build && node ./scripts/copy-one.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": { "scenerystack": "^3.0.0" },
+  "devDependencies": {
+    "typescript": "~5.7.2",
+    "vite": "^5.4.10",
+    "vite-plugin-singlefile": "^2.1.0",
+    "vite-raw-plugin": "^1.0.2"
+  }
+}
