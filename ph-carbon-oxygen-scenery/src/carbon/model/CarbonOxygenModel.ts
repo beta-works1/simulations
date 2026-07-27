@@ -94,6 +94,7 @@ export class CarbonOxygenModel implements TModel {
   public readonly balanceProperty: StringProperty
   public readonly activeProcessProperty: StringProperty
   public readonly scenarioKindProperty: StringProperty
+  public readonly soundEnabledProperty: BooleanProperty
 
   private time = 0
   private scenarioFrom: { plants: number; factories: number; animals: number } | null = null
@@ -129,6 +130,7 @@ export class CarbonOxygenModel implements TModel {
     this.balanceProperty = new StringProperty('Balanced')
     this.activeProcessProperty = new StringProperty('photosynthesis')
     this.scenarioKindProperty = new StringProperty('none')
+    this.soundEnabledProperty = new BooleanProperty(true)
     this.wireUserInputListeners()
     this.wireRateSliderListeners()
     this.refreshDerived()
@@ -296,6 +298,7 @@ export class CarbonOxygenModel implements TModel {
     this.takeawayProperty.value = ''
     this.time = 0
     this.clearScenario()
+    this.soundEnabledProperty.reset()
     this.refreshDerived()
   }
 

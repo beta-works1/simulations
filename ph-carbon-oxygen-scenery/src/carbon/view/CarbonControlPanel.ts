@@ -1,56 +1,45 @@
-import { Range, Dimension2 } from 'scenerystack/dot'
-import { optionize } from 'scenerystack/phet-core'
-import { HSlider, Panel, PanelOptions, RectangularPushButton, ToggleSwitch } from 'scenerystack/sun'
-import { HBox, Text, VBox } from 'scenerystack/scenery'
+import { Node, Text } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
-import { NumberProperty } from 'scenerystack/axon'
-import { CarbonColors, CarbonConstants } from '../../common/CarbonColors.js'
+import { CarbonConstants } from '../../common/CarbonColors.js'
+import { SimTheme } from '../../common/SimTheme.js'
+import { DepthCard } from '../../common/ui/DepthCard.js'
+import { DepthSlider } from '../../common/ui/DepthSlider.js'
+import { SoftButton } from '../../common/ui/SoftButton.js'
+import { ScrollableNode } from '../../common/ui/ScrollableNode.js'
+import { controlHint, controlSection } from '../../common/ui/controlPanelBits.js'
 import { CarbonStrings } from '../../CarbonStrings.js'
 import { CarbonOxygenModel } from '../model/CarbonOxygenModel.js'
 import { CarbonSounds } from './CarbonSounds.js'
-import { ScrollableNode } from './ScrollableNode.js'
 
-type SelfOptions = {
-  panelMaxHeight?: number
-}
+/**
+ * Ch2 SoftButton teaching-shell control panel — dark DepthCard with a
+ * ScrollableNode of SoftButtons + DepthSliders (nervous reflex-arc parity).
+ */
+export class CarbonControlPanel extends Node {
+  public readonly soundBtn: SoftButton
+  public readonly playPauseBtn: SoftButton
 
-type Options = SelfOptions & PanelOptions
+  public constructor(model: CarbonOxygenModel, sounds: CarbonSounds, width: number, height: number) {
+    super()
 
-export class CarbonControlPanel extends Panel {
-  public constructor(model: CarbonOxygenModel, sounds: CarbonSounds, providedOptions: Options) {
-    const w = (providedOptions.maxWidth as number | undefined) ?? 260
-    const panelMaxHeight = providedOptions.panelMaxHeight ?? 420
-    const options = optionize<Options, SelfOptions, PanelOptions>()(
-      {
-        panelMaxHeight: 420,
-        xMargin: 10,
-        yMargin: 10,
-        stroke: CarbonColors.panelBorderProperty,
-        lineWidth: 2,
-        fill: 'rgba(11, 22, 40, 0.92)',
-      },
-      providedOptions,
-    )
+    const card = new DepthCard(width, height, { title: CarbonStrings.controlsStringProperty.value })
+    this.addChild(card)
 
-    const mkBtn = (label: string, fn: () => void, baseColor: typeof CarbonColors.buttonProperty) =>
-      new RectangularPushButton({
-        content: new Text(label, { font: new PhetFont(10), fill: 'white', maxWidth: w - 24 }),
-        baseColor,
-        xMargin: 6,
-        yMargin: 4,
-        listener: fn,
-        minWidth: w - 8,
-      })
+    const contentW = width - 32
+    const halfW = (contentW - 8) / 2
+    const btnH = 32
+    const gap = 8
 
-    const section = (t: string) =>
-      new Text(t, { font: new PhetFont({ size: 11, weight: 'bold' }), fill: '#7cb068', maxWidth: w })
+    const panelContent = new Node()
 
-    const netText = new Text('', { font: new PhetFont(11), fill: '#ecf0f1', maxWidth: w })
+    const netText = new Text('', { font: new PhetFont(11), fill: '#ecf0f1', maxWidth: contentW })
     const balText = new Text(model.balanceProperty, {
       font: new PhetFont({ size: 12, weight: 'bold' }),
       fill: '#a7f3d0',
-      maxWidth: w,
+      maxWidth: contentW,
     })
+    panelContent.addChild(netText)
+    panelContent.addChild(balText)
 
     const syncNet = () => {
       const netCo2 = model.netCo2RateProperty.value
@@ -62,223 +51,299 @@ export class CarbonControlPanel extends Panel {
     model.netCo2RateProperty.link(syncNet)
     model.netO2RateProperty.link(syncNet)
     model.balanceProperty.link((s) => {
-      balText.fill =
-        s === 'Balanced' ? '#a7f3d0' : s === 'CO₂ rising' ? '#fca5a5' : '#86efac'
+      balText.fill = s === 'Balanced' ? '#a7f3d0' : s === 'CO₂ rising' ? '#fca5a5' : '#86efac'
     })
 
-    const tickSlider = (property: NumberProperty) => {
-      let last = property.value
-      property.lazyLink((v) => {
-        if (Math.abs(v - last) > 0.05) sounds.sliderTick()
-        last = v
-      })
-    }
+    const ratesHeader = controlSection('Process rates', contentW)
+    panelContent.addChild(ratesHeader)
+    const ratesHint = controlHint('Sliders ↔ environment (plants, animals, factories…)', contentW)
+    panelContent.addChild(ratesHint)
 
-    /** Same look as the old rate bars, but interactive — linked to Environment. */
-    const rateSlider = (label: string, property: NumberProperty, range: Range, color: string) => {
-      tickSlider(property)
-      const readout = new Text('', { font: new PhetFont(9), fill: '#ecf0f1', maxWidth: 40 })
-      property.link((v) => {
-        readout.string = v.toFixed(1)
-      })
-      return new VBox({
-        align: 'left',
-        spacing: 2,
-        children: [
-          new HBox({
-            spacing: 6,
-            children: [
-              new Text(label, { font: new PhetFont(9), fill: '#bdc3c7', maxWidth: w - 50 }),
-              readout,
-            ],
-          }),
-          new HSlider(property, range, {
-            trackSize: new Dimension2(w - 28, 6),
-            thumbSize: new Dimension2(14, 20),
-            trackFillEnabled: color,
-            thumbFill: color,
-            thumbFillHighlighted: color,
-            majorTickLength: 0,
-            minorTickLength: 0,
-          }),
-        ],
-      })
-    }
-
-    const sliderRow = (label: string, property: NumberProperty, range: Range) => {
-      tickSlider(property)
-      const readout = new Text('', { font: new PhetFont(10), fill: '#ecf0f1', maxWidth: 36 })
-      property.link((v) => {
-        readout.string = String(Math.round(v * (range.max <= 3 ? 10 : 1)) / (range.max <= 3 ? 10 : 1))
-      })
-      return new VBox({
-        align: 'left',
-        spacing: 2,
-        children: [
-          new HBox({
-            spacing: 6,
-            children: [
-              new Text(label, { font: new PhetFont(10), fill: '#bdc3c7', maxWidth: w - 50 }),
-              readout,
-            ],
-          }),
-          new HSlider(property, range, {
-            trackSize: new Dimension2(w - 32, 5),
-            thumbSize: new Dimension2(14, 22),
-            majorTickLength: 0,
-            minorTickLength: 0,
-          }),
-        ],
-      })
-    }
-
-    const playPauseLabel = new Text(model.runningProperty.value ? 'Pause' : 'Play', {
-      font: new PhetFont(10),
-      fill: 'white',
-      maxWidth: w - 24,
+    const photoSlider = new DepthSlider(model.photosynthesisRateProperty, {
+      min: 0,
+      max: CarbonConstants.RATE_PHOTO_MAX,
+      width: contentW,
+      label: 'Photosynthesis',
+      format: (n) => n.toFixed(1),
+      fill: '#2ecc71',
+      onTick: () => sounds.sliderTick(),
     })
-    const playPauseBtn = new RectangularPushButton({
-      content: playPauseLabel,
-      baseColor: CarbonColors.playbackButtonProperty,
-      xMargin: 6,
-      yMargin: 4,
-      listener: () => {
+    panelContent.addChild(photoSlider)
+
+    const respSlider = new DepthSlider(model.respirationRateProperty, {
+      min: 0,
+      max: CarbonConstants.RATE_RESP_MAX,
+      width: contentW,
+      label: 'Respiration',
+      format: (n) => n.toFixed(1),
+      fill: '#e67e22',
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(respSlider)
+
+    const decompSlider = new DepthSlider(model.decompositionRateProperty, {
+      min: 0,
+      max: CarbonConstants.RATE_DECOMP_MAX,
+      width: contentW,
+      label: 'Decomposition',
+      format: (n) => n.toFixed(1),
+      fill: '#d4a017',
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(decompSlider)
+
+    const burnSlider = new DepthSlider(model.combustionRateProperty, {
+      min: 0,
+      max: CarbonConstants.RATE_BURN_MAX,
+      width: contentW,
+      label: 'Combustion',
+      format: (n) => n.toFixed(1),
+      fill: '#e74c3c',
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(burnSlider)
+
+    const envHeader = controlSection('Environment', contentW)
+    panelContent.addChild(envHeader)
+
+    const dayBtn = new SoftButton(
+      model.isDayProperty.value ? 'Day: On' : 'Day: Off',
+      () => model.toggleDay(),
+      {
+        width: halfW,
+        height: btnH,
+        fill: '#f4d03f',
+        textFill: '#1c1500',
+        selected: model.isDayProperty.value,
+        fontSize: 11,
+      },
+    )
+    panelContent.addChild(dayBtn)
+
+    const autoBtn = new SoftButton(
+      model.autoDayNightProperty.value ? 'Auto: On' : 'Auto: Off',
+      () => model.toggleAutoDayNight(),
+      {
+        width: halfW,
+        height: btnH,
+        fill: '#0ea5e9',
+        selected: model.autoDayNightProperty.value,
+        fontSize: 11,
+      },
+    )
+    panelContent.addChild(autoBtn)
+
+    const sunlightSlider = new DepthSlider(model.sunlightProperty, {
+      min: 0,
+      max: 100,
+      width: contentW,
+      label: 'Sunlight %',
+      format: (n) => `${Math.round(n)}`,
+      fill: '#f4d03f',
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(sunlightSlider)
+
+    const plantsSlider = new DepthSlider(model.plantCountProperty, {
+      min: 0,
+      max: 20,
+      width: contentW,
+      label: 'Plants',
+      format: (n) => `${Math.round(n)}`,
+      fill: '#2ecc71',
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(plantsSlider)
+
+    const animalsSlider = new DepthSlider(model.animalCountProperty, {
+      min: 0,
+      max: 12,
+      width: contentW,
+      label: 'Animals',
+      format: (n) => `${Math.round(n)}`,
+      fill: '#e67e22',
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(animalsSlider)
+
+    const factoriesSlider = new DepthSlider(model.factoryCountProperty, {
+      min: 0,
+      max: 20,
+      width: contentW,
+      label: 'Factories',
+      format: (n) => `${Math.round(n)}`,
+      fill: '#e74c3c',
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(factoriesSlider)
+
+    const speedSlider = new DepthSlider(model.simSpeedProperty, {
+      min: 0.25,
+      max: 3,
+      width: contentW,
+      label: 'Speed ×',
+      format: (n) => `${n.toFixed(2)}×`,
+      fill: SimTheme.accent,
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(speedSlider)
+
+    const simHeader = controlSection('Simulation', contentW)
+    panelContent.addChild(simHeader)
+
+    this.soundBtn = new SoftButton(
+      model.soundEnabledProperty.value ? 'Sound: On' : 'Sound: Off',
+      () => {
+        sounds.unlock()
+        const on = !model.soundEnabledProperty.value
+        model.soundEnabledProperty.value = on
+      },
+      { width: contentW, height: btnH, fill: '#64748b', fontSize: 12, selected: model.soundEnabledProperty.value },
+    )
+    panelContent.addChild(this.soundBtn)
+
+    this.playPauseBtn = new SoftButton(
+      model.runningProperty.value ? 'Pause' : 'Play',
+      () => {
         model.runningProperty.value = !model.runningProperty.value
         sounds.playPause(model.runningProperty.value)
       },
-      minWidth: w - 8,
-    })
-    model.runningProperty.link((running) => {
-      playPauseLabel.string = running ? 'Pause' : 'Play'
-    })
+      { width: halfW, height: btnH + 6, fill: '#2980b9', fontSize: 12 },
+    )
+    panelContent.addChild(this.playPauseBtn)
 
-    let soundOn = true
-    const soundLabel = new Text('Sound: On', {
-      font: new PhetFont(10),
-      fill: 'white',
-      maxWidth: w - 24,
-    })
-    const soundBtn = new RectangularPushButton({
-      content: soundLabel,
-      baseColor: CarbonColors.buttonProperty,
-      xMargin: 6,
-      yMargin: 4,
-      listener: () => {
-        soundOn = !soundOn
-        sounds.setEnabled(soundOn)
-        soundLabel.string = soundOn ? 'Sound: On' : 'Sound: Off'
-        if (soundOn) sounds.button()
-      },
-      minWidth: w - 8,
-    })
+    const stepOnceBtn = new SoftButton(
+      'Step once',
+      () => model.stepOnce(),
+      { width: halfW, height: btnH + 6, fill: '#475569', fontSize: 11, onSound: () => sounds.button() },
+    )
+    panelContent.addChild(stepOnceBtn)
 
+    const resetBtn = new SoftButton(
+      'Reset',
+      () => model.reset(),
+      { width: contentW, height: btnH, fill: '#2980b9', fontSize: 12, onSound: () => sounds.resetAll() },
+    )
+    panelContent.addChild(resetBtn)
+
+    const scenarioHeader = controlSection('Scenarios', contentW)
+    panelContent.addChild(scenarioHeader)
+
+    const deforestBtn = new SoftButton(
+      'Deforestation + industry',
+      () => model.startDeforestationScenario(),
+      { width: contentW, height: btnH + 4, fill: '#c0392b', fontSize: 11, onSound: () => sounds.scenario() },
+    )
+    panelContent.addChild(deforestBtn)
+
+    const reforestBtn = new SoftButton(
+      'Reforestation recovery',
+      () => model.startReforestationScenario(),
+      { width: contentW, height: btnH + 4, fill: '#16a34a', fontSize: 11, onSound: () => sounds.scenario() },
+    )
+    panelContent.addChild(reforestBtn)
+
+    const relayoutPanel = () => {
+      let py = 0
+      netText.left = 0
+      netText.top = py
+      py = netText.bottom + 2
+      balText.left = 0
+      balText.top = py
+      py = balText.bottom + 10
+
+      ratesHeader.left = 0
+      ratesHeader.top = py
+      py = ratesHeader.bottom + 4
+      ratesHint.left = 0
+      ratesHint.top = py
+      py = ratesHint.bottom + 8
+      photoSlider.left = 0
+      photoSlider.top = py
+      py = photoSlider.bottom + 8
+      respSlider.left = 0
+      respSlider.top = py
+      py = respSlider.bottom + 8
+      decompSlider.left = 0
+      decompSlider.top = py
+      py = decompSlider.bottom + 8
+      burnSlider.left = 0
+      burnSlider.top = py
+      py = burnSlider.bottom + 12
+
+      envHeader.left = 0
+      envHeader.top = py
+      py = envHeader.bottom + 6
+      dayBtn.left = 0
+      dayBtn.top = py
+      autoBtn.left = halfW + 8
+      autoBtn.top = py
+      py = dayBtn.bottom + gap
+      sunlightSlider.left = 0
+      sunlightSlider.top = py
+      py = sunlightSlider.bottom + 8
+      plantsSlider.left = 0
+      plantsSlider.top = py
+      py = plantsSlider.bottom + 8
+      animalsSlider.left = 0
+      animalsSlider.top = py
+      py = animalsSlider.bottom + 8
+      factoriesSlider.left = 0
+      factoriesSlider.top = py
+      py = factoriesSlider.bottom + 8
+      speedSlider.left = 0
+      speedSlider.top = py
+      py = speedSlider.bottom + 12
+
+      simHeader.left = 0
+      simHeader.top = py
+      py = simHeader.bottom + 6
+      this.soundBtn.left = 0
+      this.soundBtn.top = py
+      py = this.soundBtn.bottom + gap
+      this.playPauseBtn.left = 0
+      this.playPauseBtn.top = py
+      stepOnceBtn.left = halfW + 8
+      stepOnceBtn.top = py
+      py = this.playPauseBtn.bottom + gap
+      resetBtn.left = 0
+      resetBtn.top = py
+      py = resetBtn.bottom + 12
+
+      scenarioHeader.left = 0
+      scenarioHeader.top = py
+      py = scenarioHeader.bottom + 6
+      deforestBtn.left = 0
+      deforestBtn.top = py
+      py = deforestBtn.bottom + gap
+      reforestBtn.left = 0
+      reforestBtn.top = py
+      py = reforestBtn.bottom + 4
+    }
+    relayoutPanel()
+
+    model.isDayProperty.link((isDay) => {
+      dayBtn.setLabel(isDay ? 'Day: On' : 'Day: Off')
+      dayBtn.setSelected(isDay)
+    })
+    model.autoDayNightProperty.link((on) => {
+      autoBtn.setLabel(on ? 'Auto: On' : 'Auto: Off')
+      autoBtn.setSelected(on)
+    })
     model.isDayProperty.lazyLink((isDay) => sounds.dayNight(isDay))
     model.autoDayNightProperty.lazyLink((on) => sounds.toggle(on))
-
-    const content = new VBox({
-      align: 'left',
-      spacing: 5,
-      children: [
-        new Text(CarbonStrings.controlsStringProperty, {
-          font: new PhetFont({ size: 15, weight: 'bold' }),
-          fill: 'white',
-          maxWidth: w,
-        }),
-        netText,
-        balText,
-        section('Process rates'),
-        new Text('Sliders ↔ environment (plants, animals, factories…)', {
-          font: new PhetFont(8),
-          fill: '#95a5a6',
-          maxWidth: w,
-        }),
-        rateSlider(
-          'Photosynthesis',
-          model.photosynthesisRateProperty,
-          new Range(0, CarbonConstants.RATE_PHOTO_MAX),
-          '#2ecc71',
-        ),
-        rateSlider(
-          'Respiration',
-          model.respirationRateProperty,
-          new Range(0, CarbonConstants.RATE_RESP_MAX),
-          '#e67e22',
-        ),
-        rateSlider(
-          'Decomposition',
-          model.decompositionRateProperty,
-          new Range(0, CarbonConstants.RATE_DECOMP_MAX),
-          '#d4a017',
-        ),
-        rateSlider(
-          'Combustion',
-          model.combustionRateProperty,
-          new Range(0, CarbonConstants.RATE_BURN_MAX),
-          '#e74c3c',
-        ),
-        section('Environment'),
-        new HBox({
-          spacing: 8,
-          children: [
-            new Text('Day', { font: new PhetFont(10), fill: '#bdc3c7' }),
-            new ToggleSwitch(model.isDayProperty, false, true, { scale: 0.55 }),
-          ],
-        }),
-        new HBox({
-          spacing: 8,
-          children: [
-            new Text('Auto cycle', { font: new PhetFont(10), fill: '#bdc3c7', maxWidth: 70 }),
-            new ToggleSwitch(model.autoDayNightProperty, false, true, { scale: 0.55 }),
-          ],
-        }),
-        sliderRow('Sunlight %', model.sunlightProperty, new Range(0, 100)),
-        sliderRow('Plants', model.plantCountProperty, new Range(0, 20)),
-        sliderRow('Animals', model.animalCountProperty, new Range(0, 12)),
-        sliderRow('Factories', model.factoryCountProperty, new Range(0, 20)),
-        sliderRow('Speed ×', model.simSpeedProperty, new Range(0.25, 3)),
-        section('Simulation Controls'),
-        soundBtn,
-        playPauseBtn,
-        mkBtn(
-          'Step once',
-          () => {
-            model.stepOnce()
-            sounds.button()
-          },
-          CarbonColors.playbackButtonProperty,
-        ),
-        mkBtn(
-          'Reset',
-          () => {
-            model.reset()
-            sounds.resetAll()
-          },
-          CarbonColors.playbackButtonProperty,
-        ),
-        section('Scenarios'),
-        mkBtn(
-          'Deforestation + industry',
-          () => {
-            model.startDeforestationScenario()
-            sounds.scenario()
-          },
-          CarbonColors.buttonProperty,
-        ),
-        mkBtn(
-          'Reforestation recovery',
-          () => {
-            model.startReforestationScenario()
-            sounds.scenario()
-          },
-          CarbonColors.buttonProperty,
-        ),
-      ],
+    model.runningProperty.link((running) => {
+      this.playPauseBtn.setLabel(running ? 'Pause' : 'Play')
+    })
+    model.soundEnabledProperty.link((on) => {
+      sounds.setEnabled(on)
+      this.soundBtn.setLabel(on ? 'Sound: On' : 'Sound: Off')
+      this.soundBtn.setSelected(on)
     })
 
-    const scrollInnerWidth = w - 4
-    const scrollViewport = Math.max(180, panelMaxHeight - 20)
-    const scrollable = new ScrollableNode(content, scrollInnerWidth, scrollViewport)
-
-    super(scrollable, options)
+    const scroller = new ScrollableNode(panelContent, width - 24, height - 56)
+    scroller.left = 12
+    scroller.top = 38
+    card.content.addChild(scroller)
   }
 }

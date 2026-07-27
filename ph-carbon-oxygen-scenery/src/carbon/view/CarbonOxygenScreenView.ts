@@ -9,6 +9,12 @@ import { CarbonOxygenModel } from '../model/CarbonOxygenModel.js'
 import { CarbonControlPanel } from './CarbonControlPanel.js'
 import { CarbonSounds } from './CarbonSounds.js'
 import { createEcologyIcon } from '../../common/EcologyArt.js'
+import { DepthCard } from '../../common/ui/DepthCard.js'
+import { SoftButton } from '../../common/ui/SoftButton.js'
+import { GuidanceBanner } from '../../common/ui/GuidanceBanner.js'
+import { TeachingTriad } from '../../common/ui/TeachingTriad.js'
+import { MiniQuiz } from '../../common/ui/MiniQuiz.js'
+import { ParticleBurst } from '../../common/ui/ParticleBurst.js'
 import {
   CarbonCloudLayer,
   CarbonParticleLayer,
@@ -67,8 +73,17 @@ export class CarbonOxygenScreenView extends ScreenView {
   private readonly runningText: Text
   private readonly scenarioBadge: Rectangle
   private readonly scenarioText: Text
+  private readonly guide: GuidanceBanner
+  private readonly teachingTriad: TeachingTriad
+  private readonly soundBtnLeft: SoftButton
+  private readonly particles: ParticleBurst
+  private readonly miniQuiz: MiniQuiz
   private readonly sceneBounds: { left: number; top: number; width: number; height: number }
   private readonly chartBounds: { left: number; top: number; width: number; height: number }
+  private readonly sceneCenterX: number
+  private readonly sceneCenterY: number
+  private readonly gaugeCenterX: number
+  private readonly gaugeCenterY: number
   private skyBlend = 1
   private hoverZone: 'trees' | 'animals' | 'factory' | 'soil' | null = null
 
@@ -76,37 +91,76 @@ export class CarbonOxygenScreenView extends ScreenView {
     super(providedOptions)
     this.model = model
     this.sounds = new CarbonSounds()
+    this.addInputListener({ down: () => this.sounds.unlock() })
 
-    const margin = 12
-    const panelW = 268
-    const statusH = 36
+    const m = 12
+    const my = 12
     const b = this.layoutBounds
+    const leftW = 190
+    const rightW = 270
+    const gap = 14
 
-    const sceneLeft = b.left + margin
-    const sceneTop = b.top + statusH + margin
-    const sceneW = b.width - panelW - margin * 3
-    const sceneH = (b.height - statusH - margin * 2) * 0.52
+    const stageLeft = m + leftW + gap
+    const stageTop = my + 78
+    const stageW = b.width - m * 2 - leftW - gap - rightW - gap
+    const stageH = b.height - my * 2 - 78
+
+    // ── Top: guidance banner across the full width ───────────────────────────
+    this.guide = new GuidanceBanner(b.width - m * 2, {
+      title: 'Carbon–Oxygen Cycle',
+      body: DEFAULT_STATUS,
+    })
+    this.guide.left = m
+    this.guide.top = my
+    this.addChild(this.guide)
+
+    // ── Left column: teaching triad + sound toggle ────────────────────────────
+    const leftCard = new DepthCard(leftW, stageH)
+    leftCard.left = m
+    leftCard.top = stageTop
+    this.addChild(leftCard)
+
+    this.teachingTriad = new TeachingTriad(leftW - 24)
+    this.teachingTriad.left = 12
+    this.teachingTriad.top = 12
+    leftCard.content.addChild(this.teachingTriad)
+
+    this.soundBtnLeft = new SoftButton(
+      model.soundEnabledProperty.value ? 'Sound: On' : 'Sound: Off',
+      () => {
+        this.sounds.unlock()
+        model.soundEnabledProperty.value = !model.soundEnabledProperty.value
+      },
+      { width: leftW - 24, height: 32, fill: '#64748b', fontSize: 12, selected: model.soundEnabledProperty.value },
+    )
+    this.soundBtnLeft.left = 12
+    leftCard.content.addChild(this.soundBtnLeft)
+
+    const relayoutLeftColumn = () => {
+      this.soundBtnLeft.top = this.teachingTriad.bottom + 16
+    }
+    relayoutLeftColumn()
+
+    model.soundEnabledProperty.link((on) => {
+      this.sounds.setEnabled(on)
+      this.soundBtnLeft.setLabel(on ? 'Sound: On' : 'Sound: Off')
+      this.soundBtnLeft.setSelected(on)
+    })
+
+    // ── Center: landscape scene + history chart (shrunk to fit new columns) ──
+    const sceneLeft = stageLeft
+    const sceneTop = stageTop
+    const sceneW = stageW
+    const sceneH = stageH * 0.52
     this.sceneBounds = { left: sceneLeft, top: sceneTop, width: sceneW, height: sceneH }
+    this.sceneCenterX = sceneLeft + sceneW / 2
+    this.sceneCenterY = sceneTop + sceneH / 2
 
     const chartTop = sceneTop + sceneH + 8
-    const chartH = b.bottom - margin - chartTop
+    const chartH = stageH - sceneH - 8
     this.chartBounds = { left: sceneLeft, top: chartTop, width: sceneW, height: chartH }
 
-    const statusBg = new Rectangle(b.left + margin, b.top + 6, b.width - margin * 2, statusH, {
-      cornerRadius: 10,
-      fill: 'rgba(15, 23, 42, 0.92)',
-    })
-    const statusText = new Text(DEFAULT_STATUS, {
-      font: new PhetFont(11),
-      fill: '#ecfeff',
-      maxWidth: b.width - margin * 4,
-      centerX: b.centerX,
-      centerY: statusBg.centerY,
-    })
-    this.addChild(statusBg)
-    this.addChild(statusText)
-
-    this.takeawayBg = new Rectangle(b.left + margin, b.top + 48, Math.min(sceneW, b.width - margin * 2 - panelW - 20), 28, {
+    this.takeawayBg = new Rectangle(sceneLeft, sceneTop - 34, Math.min(sceneW, sceneW - 20), 28, {
       cornerRadius: 8,
       fill: 'rgba(192, 57, 43, 0.92)',
       visible: false,
@@ -174,10 +228,8 @@ export class CarbonOxygenScreenView extends ScreenView {
         this.tipBodyText.string = tipBody(t)
         this.tipCard.visible = true
         if (wasHidden) this.sounds.tipOpen()
-        statusText.string = 'Tap ✕ to close the tip, or tap another part of the scene.'
       } else {
         this.tipCard.visible = false
-        statusText.string = t.length > 0 ? t : DEFAULT_STATUS
       }
     })
 
@@ -221,6 +273,8 @@ export class CarbonOxygenScreenView extends ScreenView {
     this.addChild(clippedSkyLayer)
 
     const gaugeW = Math.min(140, sceneW * 0.32)
+    this.gaugeCenterX = sceneLeft + 8 + (gaugeW + 8) / 2
+    this.gaugeCenterY = sceneTop + 8 + 31
     this.addChild(makeAtmosphereGauge(model, sceneLeft + 8, sceneTop + 8, gaugeW))
 
     // Running / scenario pills — fixed under Atmosphere, clear of tree animation
@@ -314,14 +368,20 @@ export class CarbonOxygenScreenView extends ScreenView {
       }),
     )
 
-    this.addChild(
-      new CarbonControlPanel(model, this.sounds, {
-        right: b.right - margin,
-        top: sceneTop,
-        maxWidth: panelW,
-        panelMaxHeight: b.bottom - sceneTop - margin,
-      }),
-    )
+    // ── Right: control panel (Ch2 SoftButton chrome) ──────────────────────────
+    const controlPanel = new CarbonControlPanel(model, this.sounds, rightW, stageH)
+    controlPanel.left = sceneLeft + sceneW + gap
+    controlPanel.top = stageTop
+    this.addChild(controlPanel)
+
+    // ── Particle bursts + mini quiz overlay ───────────────────────────────────
+    this.particles = new ParticleBurst(70)
+    this.addChild(this.particles)
+
+    this.miniQuiz = new MiniQuiz(230)
+    this.miniQuiz.centerX = this.sceneCenterX
+    this.miniQuiz.centerY = this.sceneCenterY
+    this.addChild(this.miniQuiz)
 
     model.plantCountProperty.link(() => this.rebuildTrees())
     model.animalCountProperty.link(() => this.rebuildAnimals())
@@ -331,6 +391,36 @@ export class CarbonOxygenScreenView extends ScreenView {
     model.historyProperty.link(() => this.updateChart())
     model.ratesProperty.link(() => this.updateProcessChips())
 
+    model.balanceProperty.link(() => this.updateGuidance())
+    model.scenarioProgressProperty.link(() => this.updateGuidance())
+
+    model.balanceProperty.lazyLink((s) => {
+      const color = s === 'CO₂ rising' ? '#e74c3c' : s === 'O₂ rising' ? '#2ecc71' : '#0d9488'
+      this.particles.burst(this.gaugeCenterX, this.gaugeCenterY, {
+        count: 18,
+        color,
+        speed: 65,
+        life: 0.55,
+        radius: 3,
+      })
+    })
+
+    model.scenarioKindProperty.lazyLink((kind) => {
+      if (kind === 'none') return
+      this.particles.burst(this.sceneCenterX, this.sceneCenterY, {
+        count: 22,
+        color: kind === 'deforestation' ? '#c0392b' : '#16a34a',
+        speed: 85,
+        life: 0.6,
+        radius: 3.5,
+      })
+    })
+    model.scenarioProgressProperty.lazyLink((p, oldP) => {
+      if (p < 0 && oldP !== null && oldP >= 0.999) {
+        this.onScenarioComplete(model.scenarioKindProperty.value)
+      }
+    })
+
     this.rebuildTrees()
     this.rebuildAnimals()
     this.rebuildFactories()
@@ -338,6 +428,84 @@ export class CarbonOxygenScreenView extends ScreenView {
     this.updateChart()
     this.updateProcessChips()
     this.updateHills()
+    this.updateGuidance()
+  }
+
+  private onScenarioComplete(kind: string): void {
+    this.particles.burst(this.sceneCenterX, this.sceneCenterY, {
+      count: 32,
+      color: kind === 'deforestation' ? '#c0392b' : '#16a34a',
+      speed: 110,
+      life: 0.75,
+      radius: 4,
+    })
+    this.sounds.celebrate()
+    this.miniQuiz.showQuiz(
+      'What raises CO₂ the most?',
+      [
+        { label: 'Combustion', correct: true },
+        { label: 'Photosynthesis', correct: false },
+      ],
+      (correct) => {
+        correct ? this.sounds.correct() : this.sounds.wrong()
+      },
+    )
+  }
+
+  private updateGuidance(): void {
+    if (this.model.scenarioActive) {
+      const kind = this.model.scenarioKindProperty.value
+      const pct = Math.round(this.model.scenarioProgressProperty.value * 100)
+      if (kind === 'deforestation') {
+        this.guide.setGuidance(
+          'Deforestation + industry — running',
+          `${pct}% — cutting down trees and adding factories.`,
+        )
+        this.teachingTriad.setTriad(
+          `Deforestation scenario — ${pct}%`,
+          'Fewer trees mean less photosynthesis; more factories mean more combustion.',
+          'Watch CO₂ climb and O₂ fall on the chart below.',
+        )
+      } else if (kind === 'reforestation') {
+        this.guide.setGuidance(
+          'Reforestation recovery — running',
+          `${pct}% — planting trees and cutting emissions.`,
+        )
+        this.teachingTriad.setTriad(
+          `Reforestation scenario — ${pct}%`,
+          'More trees add photosynthesis; fewer factories cut combustion.',
+          'Watch CO₂ fall and O₂ rise on the chart below.',
+        )
+      }
+      return
+    }
+
+    const balance = this.model.balanceProperty.value
+    if (balance === 'CO₂ rising') {
+      this.guide.setGuidance(
+        'CO₂ is rising',
+        'Combustion, respiration, and decomposition are outpacing photosynthesis.',
+      )
+      this.teachingTriad.setTriad(
+        'CO₂ is rising.',
+        'Factories, animals, and soil release more CO₂ than the plants can soak up right now.',
+        'Raise Plants or Sunlight, or lower Factories, to pull CO₂ back down.',
+      )
+    } else if (balance === 'O₂ rising') {
+      this.guide.setGuidance('O₂ is rising', 'Photosynthesis is outpacing respiration and combustion.')
+      this.teachingTriad.setTriad(
+        'O₂ is rising.',
+        'Plants are making more oxygen than animals, soil, and factories are using up.',
+        'Try the Deforestation scenario to see how this can reverse.',
+      )
+    } else {
+      this.guide.setGuidance('Balanced', 'CO₂ and O₂ are holding roughly steady.')
+      this.teachingTriad.setTriad(
+        'The cycle is balanced.',
+        'Photosynthesis roughly matches respiration + decomposition + combustion.',
+        'Tap trees, animals, factory, or soil to see each process. Try a scenario to break the balance.',
+      )
+    }
   }
 
   private drawChartGrid(): void {
@@ -593,6 +761,7 @@ export class CarbonOxygenScreenView extends ScreenView {
   public override step(dt: number): void {
     const capped = Math.min(dt, 0.05)
     this.model.step(capped)
+    this.particles.step(capped)
 
     const day = this.model.isDayProperty.value
     const sun = this.model.sunlightProperty.value
