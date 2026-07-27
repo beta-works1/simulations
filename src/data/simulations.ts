@@ -649,6 +649,8 @@ export const simulations: Simulation[] = [
     color: '#6c3483',
     accent: '#e67e22',
     image: '/covers/acids-ph-scale.svg',
+    sceneryHtml: '/downloads/acids-ph-scale-offline.html',
+    offlineHtml: '/downloads/acids-ph-scale-offline.html',
   },
   {
     id: 'acid-base-neutralization',
@@ -666,6 +668,8 @@ export const simulations: Simulation[] = [
     color: '#1e8449',
     accent: '#e74c3c',
     image: '/covers/acid-base-neutralization.svg',
+    sceneryHtml: '/downloads/acid-base-neutralization-offline.html',
+    offlineHtml: '/downloads/acid-base-neutralization-offline.html',
   },
   {
     id: 'natural-indicator',
@@ -683,6 +687,8 @@ export const simulations: Simulation[] = [
     color: '#7d3c98',
     accent: '#58d68d',
     image: '/covers/natural-indicator.svg',
+    sceneryHtml: '/downloads/natural-indicator-offline.html',
+    offlineHtml: '/downloads/natural-indicator-offline.html',
   },
 
   // Grade 8 — Ch 8 Force and Pressure
