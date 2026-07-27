@@ -593,6 +593,8 @@ export const simulations: Simulation[] = [
     color: '#1a252f',
     accent: '#58d68d',
     image: '/covers/conservation-of-mass.svg',
+    sceneryHtml: '/downloads/conservation-of-mass-offline.html',
+    offlineHtml: '/downloads/conservation-of-mass-offline.html',
   },
 
   // Grade 8 — Ch 7 Acids, Bases, Salts
