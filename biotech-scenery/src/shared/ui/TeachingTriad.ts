@@ -25,7 +25,7 @@ export class TeachingTriad extends Node {
     this.stack()
   }
 
-  public setTriad(now: string, why: string, next: string): void {
+  public setTriad(now: string, why: string, next: string, onLaidOut?: () => void): void {
     this.now.body.string = now
     this.why.body.string = why
     this.next.body.string = next
@@ -33,12 +33,14 @@ export class TeachingTriad extends Node {
     this.resize(this.why)
     this.resize(this.next)
     this.stack()
+    onLaidOut?.()
     // RichText can settle height a frame later — remeasure so cards don't clip.
     setTimeout(() => {
       this.resize(this.now)
       this.resize(this.why)
       this.resize(this.next)
       this.stack()
+      onLaidOut?.()
     }, 0)
   }
 

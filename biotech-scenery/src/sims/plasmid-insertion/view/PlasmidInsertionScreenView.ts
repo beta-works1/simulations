@@ -65,6 +65,7 @@ export class PlasmidInsertionScreenView extends ScreenView {
   private readonly particles: ParticleBurst
   private readonly guide: GuidanceBanner
   private readonly teachingTriad: TeachingTriad
+  private readonly leftLearnTip: Node
   private readonly miniQuiz: MiniQuiz
   private readonly tipCard: DepthCard
   private readonly tipBodyText: RichText
@@ -139,14 +140,14 @@ export class PlasmidInsertionScreenView extends ScreenView {
     this.teachingTriad.top = 12
     leftCard.content.addChild(this.teachingTriad)
 
-    const learnFact = createPanelTip(PlasmidInsertionStrings.learnMoreStringProperty.value, {
+    this.leftLearnTip = createPanelTip(PlasmidInsertionStrings.learnMoreStringProperty.value, {
       width: leftW - 24,
       fontSize: 11,
       fill: BiotechColors.panelMuted,
     })
-    learnFact.left = 12
-    learnFact.top = this.teachingTriad.bottom + 16
-    leftCard.content.addChild(learnFact)
+    this.leftLearnTip.left = 12
+    this.leftLearnTip.top = this.teachingTriad.bottom + 16
+    leftCard.content.addChild(this.leftLearnTip)
 
     // ── Center stage ─────────────────────────────────────────────────────────
     this.addChild(
@@ -600,7 +601,9 @@ export class PlasmidInsertionScreenView extends ScreenView {
     )
 
     const triad = STAGE_TRIADS[stage] ?? STAGE_TRIADS[0]
-    this.teachingTriad.setTriad(triad[0], triad[1], triad[2])
+    this.teachingTriad.setTriad(triad[0], triad[1], triad[2], () => {
+      this.leftLearnTip.top = this.teachingTriad.bottom + 16
+    })
   }
 
   private showTipCard(text: string): void {

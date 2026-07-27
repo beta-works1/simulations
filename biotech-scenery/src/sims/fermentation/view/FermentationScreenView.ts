@@ -77,6 +77,7 @@ export class FermentationScreenView extends ScreenView {
   private readonly particles: ParticleBurst
   private readonly guide: GuidanceBanner
   private readonly teachingTriad: TeachingTriad
+  private readonly leftLearnTip: Node
   private readonly miniQuiz: MiniQuiz
   private readonly tipCard: DepthCard
   private readonly tipBodyText: RichText
@@ -162,14 +163,14 @@ export class FermentationScreenView extends ScreenView {
     this.teachingTriad.top = 12
     leftCard.content.addChild(this.teachingTriad)
 
-    const fact = createPanelTip(FermentationStrings.learnMoreStringProperty.value, {
+    this.leftLearnTip = createPanelTip(FermentationStrings.learnMoreStringProperty.value, {
       width: leftW - 24,
       fontSize: 11,
       fill: BiotechColors.panelMuted,
     })
-    fact.left = 12
-    fact.top = this.teachingTriad.bottom + 16
-    leftCard.content.addChild(fact)
+    this.leftLearnTip.left = 12
+    this.leftLearnTip.top = this.teachingTriad.bottom + 16
+    leftCard.content.addChild(this.leftLearnTip)
 
     // ── Center stage ─────────────────────────────────────────────────────────
     this.addChild(new StageBackdrop(stageLeft, stageTop, stageW, stageH, { top: '#bfe0d8', bottom: '#e6f3ee' }))
@@ -659,7 +660,9 @@ export class FermentationScreenView extends ScreenView {
         scenarioButtons[s].setSelected(s === scenario)
       }
       this.guide.setGuidance(FermentationStrings.guideTitleStringProperty.value, SCENARIO_GUIDE[scenario])
-      this.teachingTriad.setTriad(...SCENARIO_TRIAD[scenario])
+      this.teachingTriad.setTriad(...SCENARIO_TRIAD[scenario], () => {
+        this.leftLearnTip.top = this.teachingTriad.bottom + 16
+      })
     }
     const syncBubbles = () => {
       this.bubblesBtn.setSelected(model.showBubblesProperty.value)

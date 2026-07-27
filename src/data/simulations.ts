@@ -463,6 +463,8 @@ export const simulations: Simulation[] = [
     color: '#0e6655',
     accent: '#f4d03f',
     image: '/covers/plasmid-insertion.svg',
+    sceneryHtml: '/downloads/plasmid-insertion-offline.html',
+    offlineHtml: '/downloads/plasmid-insertion-offline.html',
   },
   {
     id: 'fermentation',
@@ -479,6 +481,8 @@ export const simulations: Simulation[] = [
     color: '#7e5109',
     accent: '#f1c40f',
     image: '/covers/fermentation.svg',
+    sceneryHtml: '/downloads/fermentation-offline.html',
+    offlineHtml: '/downloads/fermentation-offline.html',
   },
 
   // Grade 8 — Ch 5 Periodic Table
