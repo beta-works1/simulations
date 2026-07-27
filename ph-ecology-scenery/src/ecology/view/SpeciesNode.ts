@@ -111,6 +111,14 @@ export class SpeciesNode extends Node {
     this.energyLabel.centerX = 0
   }
 
+  public setLabelVisible(visible: boolean): void {
+    this.label.visible = visible
+  }
+
+  public setEnergyVisible(visible: boolean): void {
+    this.energyLabel.visible = visible
+  }
+
   public setPositionNorm(x: number, y: number, areaWidth: number, areaHeight: number, ox: number, oy: number): void {
     // Place local origin (avatar center) on the band — do NOT use centerX/centerY,
     // which would shift by the label below the avatar.

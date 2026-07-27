@@ -4,13 +4,21 @@ import { ScreenView, ScreenViewOptions } from 'scenerystack/sim'
 import { Circle, Line, Node, Path, Rectangle, Text } from 'scenerystack/scenery'
 import { Shape } from 'scenerystack/kite'
 import { PhetFont } from 'scenerystack/scenery-phet'
+import { DepthCard } from '../../common/ui/DepthCard.js'
+import { GuidanceBanner } from '../../common/ui/GuidanceBanner.js'
+import { MiniQuiz } from '../../common/ui/MiniQuiz.js'
+import { ParticleBurst } from '../../common/ui/ParticleBurst.js'
+import { TeachingTriad } from '../../common/ui/TeachingTriad.js'
 import {
   computeNodeEnergy,
   FoodWebModel,
   formatEnergy,
+  grasslandWeb,
+  starterWeb,
   TROPHIC_BANDS,
   webStability,
   type FoodNode,
+  type FoodWebSnapshot,
   type TrophicLevel,
 } from '../model/FoodWebModel.js'
 import { EcologyControlPanel } from './EcologyControlPanel.js'
@@ -22,6 +30,14 @@ type Options = EmptySelfOptions & ScreenViewOptions
 
 const BAND_ORDER: TrophicLevel[] = ['carnivore', 'herbivore', 'producer', 'decomposer']
 
+/** Node ids present when the grassland web scenario is loaded (drives the mini-quiz trigger). */
+const GRASSLAND_IDS = new Set(grasslandWeb().nodes.map((n) => n.id))
+const STARTER_IDS = new Set(starterWeb().nodes.map((n) => n.id))
+
+function sameIds(nodes: FoodNode[], ids: Set<string>): boolean {
+  return nodes.length === ids.size && nodes.every((n) => ids.has(n.id))
+}
+
 export class FoodWebScreenView extends ScreenView {
   private readonly model: FoodWebModel
   private readonly sounds: EcologySounds
@@ -29,26 +45,48 @@ export class FoodWebScreenView extends ScreenView {
   private readonly linkLayer: Node
   private readonly speciesLayer: Node
   private readonly ghostLayer: Node
+  private readonly particleBurst: ParticleBurst
+  private readonly leftColW: number
   private readonly speciesNodes = new Map<string, SpeciesNode>()
   private readonly areaBounds: Rectangle
   private readonly dropHighlight: Rectangle
   private readonly sunNode: Node
+  private readonly guidanceBanner: GuidanceBanner
+  private readonly teachingTriad: TeachingTriad
+  private readonly teachingCard: DepthCard
+  private readonly miniQuiz: MiniQuiz
+  private readonly energyCaption: Text
   private pulseLine = 0
+  private previousLinkKeys = new Set<string>()
+  private quizShown = false
 
   public constructor(model: FoodWebModel, providedOptions?: Options) {
     super(providedOptions)
     this.model = model
     this.sounds = new EcologySounds()
 
+    this.addInputListener({ down: () => this.sounds.unlock() })
+
     const margin = 14
+    const leftColW = 196
+    this.leftColW = leftColW
     const panelW = 248
-    const statusH = 42
     const bounds = this.layoutBounds
 
-    const areaLeft = bounds.left + margin
-    const areaTop = bounds.top + statusH + margin
-    const areaWidth = bounds.width - panelW - margin * 3
-    const areaHeight = bounds.height - statusH - margin * 2
+    this.guidanceBanner = new GuidanceBanner(bounds.width - margin * 2, {
+      title: 'Build the food web',
+      body: '',
+    })
+    this.guidanceBanner.left = bounds.left + margin
+    this.guidanceBanner.top = bounds.top + 6
+    this.addChild(this.guidanceBanner)
+
+    const stageTop = this.guidanceBanner.bottom + margin
+    const leftColLeft = bounds.left + margin
+    const areaLeft = leftColLeft + leftColW + margin
+    const areaTop = stageTop
+    const areaWidth = bounds.width - leftColW - panelW - margin * 4
+    const areaHeight = bounds.height - stageTop - margin
 
     this.areaBounds = new Rectangle(areaLeft, areaTop, areaWidth, areaHeight, {
       fill: '#0d1f28',
@@ -112,21 +150,6 @@ export class FoodWebScreenView extends ScreenView {
     this.sunNode.centerY = areaTop + 44
     this.addChild(this.sunNode)
 
-    const statusBg = new Rectangle(bounds.left + margin, bounds.top + 6, bounds.width - margin * 2, statusH, {
-      cornerRadius: 10,
-      fill: 'rgba(15, 23, 42, 0.94)',
-    })
-    this.addChild(statusBg)
-    this.addChild(
-      new Text(model.statusProperty, {
-        font: new PhetFont(12),
-        fill: '#ecfeff',
-        maxWidth: bounds.width - margin * 4,
-        centerX: bounds.centerX,
-        centerY: statusBg.centerY,
-      }),
-    )
-
     this.webLayer = new Node()
     this.linkLayer = new Node()
     this.speciesLayer = new Node()
@@ -135,14 +158,16 @@ export class FoodWebScreenView extends ScreenView {
     this.webLayer.addChild(this.linkLayer)
     this.webLayer.addChild(this.speciesLayer)
 
-    this.addChild(
-      new Text('Energy flows ↑ along arrows  ·  about 10% kept each step', {
-        font: new PhetFont(11),
-        fill: '#fde68a',
-        right: areaLeft + areaWidth - 14,
-        top: areaTop + 10,
-      }),
-    )
+    this.particleBurst = new ParticleBurst(60)
+    this.addChild(this.particleBurst)
+
+    this.energyCaption = new Text('', {
+      font: new PhetFont(11),
+      fill: '#fde68a',
+      right: areaLeft + areaWidth - 14,
+      top: areaTop + 10,
+    })
+    this.addChild(this.energyCaption)
 
     const dropTarget = {
       containsGlobalPoint: (gx: number, gy: number) => {
@@ -174,6 +199,21 @@ export class FoodWebScreenView extends ScreenView {
       },
     }
 
+    // --- Left teaching column: NOW/WHY/NEXT card + mini-quiz -------------------
+    this.teachingCard = new DepthCard(leftColW, 220, { title: 'Energy flow' })
+    this.teachingCard.left = leftColLeft
+    this.teachingCard.top = areaTop
+    this.teachingTriad = new TeachingTriad(leftColW - 24)
+    this.teachingTriad.left = 12
+    this.teachingTriad.top = 38
+    this.teachingCard.content.addChild(this.teachingTriad)
+    this.addChild(this.teachingCard)
+
+    this.miniQuiz = new MiniQuiz(leftColW)
+    this.miniQuiz.left = leftColLeft
+    this.miniQuiz.top = this.teachingCard.bottom + 12
+    this.addChild(this.miniQuiz)
+
     this.addChild(
       new EcologyControlPanel(
         model,
@@ -193,7 +233,14 @@ export class FoodWebScreenView extends ScreenView {
 
     this.addChild(this.ghostLayer)
 
-    model.webProperty.link(() => this.syncSpeciesNodes())
+    // Seed with the starting links so the initial web doesn't spawn bursts on load.
+    this.previousLinkKeys = new Set(model.webProperty.value.links.map((l) => `${l.from}>${l.to}`))
+
+    model.webProperty.link((snap) => {
+      this.syncSpeciesNodes()
+      this.detectNewLinks(snap)
+      this.checkMiniQuiz(snap)
+    })
     model.selectedIdProperty.link(() => this.updateSelection())
     model.linkFromIdProperty.link(() => this.updateSelection())
     model.energyPulseProperty.link((p) => {
@@ -204,8 +251,92 @@ export class FoodWebScreenView extends ScreenView {
       this.drawLinks()
       this.updateEnergyLabels()
     })
+    model.energyTransferPercentProperty.link(() => {
+      this.drawLinks()
+      this.updateEnergyLabels()
+      this.refreshTeachingTriad()
+      this.refreshEnergyCaption()
+    })
+    model.showLabelsProperty.link(() => this.refreshVisibility())
+    model.showPopulationsProperty.link(() => this.refreshVisibility())
+    model.soundEnabledProperty.link((on) => this.sounds.setEnabled(on))
+    model.statusProperty.link((status) => this.guidanceBanner.setGuidance('Tip', status))
 
+    this.refreshTeachingTriad()
+    this.refreshEnergyCaption()
     this.syncSpeciesNodes()
+  }
+
+  private refreshTeachingTriad(): void {
+    const pct = this.model.energyTransferPercentProperty.value
+    this.teachingTriad.setTriad(
+      `About <b>${pct}%</b> of the energy an organism eats moves up to the next link.`,
+      `The rest is used for breathing, moving and growing — it does not pass on, so energy shrinks at every step.`,
+      `Add a link or species, then watch the yellow beads travel along the arrows.`,
+    )
+    this.teachingCard.setCardSize(this.leftColW, Math.max(200, this.teachingTriad.bottom + 50))
+    this.miniQuiz.top = this.teachingCard.bottom + 12
+  }
+
+  private refreshEnergyCaption(): void {
+    const pct = this.model.energyTransferPercentProperty.value
+    this.energyCaption.string = `Energy flows ↑ along arrows  ·  about ${pct}% kept each step`
+  }
+
+  private refreshVisibility(): void {
+    const showLabels = this.model.showLabelsProperty.value
+    const showPopulations = this.model.showPopulationsProperty.value
+    for (const node of this.speciesNodes.values()) {
+      node.setLabelVisible(showLabels)
+      node.setEnergyVisible(showPopulations)
+    }
+  }
+
+  private detectNewLinks(snap: FoodWebSnapshot): void {
+    const keys = new Set(snap.links.map((l) => `${l.from}>${l.to}`))
+    for (const key of keys) {
+      if (this.previousLinkKeys.has(key)) continue
+      const [fromId, toId] = key.split('>')
+      const a = snap.nodes.find((n) => n.id === fromId)
+      const b = snap.nodes.find((n) => n.id === toId)
+      if (a && b) {
+        const bnd = this.areaBounds
+        const mx = bnd.left + ((a.x + b.x) / 2) * bnd.width
+        const my = bnd.top + ((a.y + b.y) / 2) * bnd.height
+        this.particleBurst.burst(mx, my, { color: '#fde047', count: 12, speed: 60, life: 0.45, radius: 2.6 })
+      }
+    }
+    this.previousLinkKeys = keys
+  }
+
+  private checkMiniQuiz(snap: FoodWebSnapshot): void {
+    if (sameIds(snap.nodes, STARTER_IDS)) {
+      this.quizShown = false
+      this.miniQuiz.hideQuiz()
+      return
+    }
+    if (this.quizShown) return
+    const isGrassland = sameIds(snap.nodes, GRASSLAND_IDS)
+    const stability = webStability(snap).score
+    if (isGrassland || stability > 85) {
+      this.quizShown = true
+      this.miniQuiz.showQuiz(
+        'Which trophic level starts the food web?',
+        [
+          { label: 'Producer', correct: true },
+          { label: 'Carnivore', correct: false },
+        ],
+        (correct) => {
+          if (correct) {
+            this.model.starsProperty.value += 1
+            this.sounds.loadExample()
+          }
+          else {
+            this.sounds.remove()
+          }
+        },
+      )
+    }
   }
 
   private syncSpeciesNodes(): void {
@@ -221,6 +352,8 @@ export class FoodWebScreenView extends ScreenView {
 
     const b = this.areaBounds
     const r = Math.min(30, b.width * 0.042)
+    const showLabels = this.model.showLabelsProperty.value
+    const showPopulations = this.model.showPopulationsProperty.value
 
     for (const n of snap.nodes) {
       let view = this.speciesNodes.get(n.id)
@@ -249,6 +382,8 @@ export class FoodWebScreenView extends ScreenView {
           },
           this.sounds,
         )
+        view.setLabelVisible(showLabels)
+        view.setEnergyVisible(showPopulations)
         this.speciesNodes.set(n.id, view)
         this.speciesLayer.addChild(view)
       }
@@ -261,7 +396,11 @@ export class FoodWebScreenView extends ScreenView {
 
   private updateEnergyLabels(): void {
     const snap = this.model.webProperty.value
-    const energies = computeNodeEnergy(snap, this.model.baseEnergyProperty.value)
+    const energies = computeNodeEnergy(
+      snap,
+      this.model.baseEnergyProperty.value,
+      this.model.energyTransferPercentProperty.value / 100,
+    )
     for (const [id, node] of this.speciesNodes) {
       const e = energies.get(id)
       node.setEnergy(e !== undefined && e > 0 ? formatEnergy(e) : '')
@@ -281,7 +420,11 @@ export class FoodWebScreenView extends ScreenView {
     this.linkLayer.removeAllChildren()
     const snap = this.model.webProperty.value
     const b = this.areaBounds
-    const energies = computeNodeEnergy(snap, this.model.baseEnergyProperty.value)
+    const energies = computeNodeEnergy(
+      snap,
+      this.model.baseEnergyProperty.value,
+      this.model.energyTransferPercentProperty.value / 100,
+    )
     const maxE = this.model.baseEnergyProperty.value
     const p = (this.pulseLine % 2.2) / 2.2
 
@@ -344,6 +487,7 @@ export class FoodWebScreenView extends ScreenView {
     this.model.step(dt)
     const pulse = this.model.energyPulseProperty.value
     this.sunNode.opacity = 0.88 + Math.sin(pulse * 1.5) * 0.08
+    this.particleBurst.step(dt)
     if (!this.ghostLayer.hasChildren()) {
       this.dropHighlight.visible = false
     }

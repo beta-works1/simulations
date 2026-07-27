@@ -15,6 +15,7 @@ export class EcologySounds {
   private readonly toggleOff: TSoundPlayer
   private readonly collect: TSoundPlayer
   private lastSliderAt = 0
+  private unlocked = false
 
   public constructor() {
     this.click = sharedSoundPlayers.get('pushButton')
@@ -31,7 +32,28 @@ export class EcologySounds {
   }
 
   public setEnabled(on: boolean): void {
-    soundManager.enabledProperty.value = on
+    try {
+      soundManager.enabledProperty.value = on
+    }
+    catch {
+      /* sound manager not ready yet; ignore */
+    }
+  }
+
+  /** Call from the first pointer-down so the underlying audio context unlocks. */
+  public unlock(): void {
+    if (this.unlocked) return
+    this.unlocked = true
+    try {
+      soundManager.enabledProperty.value = soundManager.enabledProperty.value
+    }
+    catch {
+      /* sound manager not ready yet; ignore */
+    }
+  }
+
+  public toggle(on: boolean): void {
+    this.linkToggle(on)
   }
 
   public button(): void {

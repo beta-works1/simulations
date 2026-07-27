@@ -1,4 +1,4 @@
-import { NumberProperty, Property, StringProperty } from 'scenerystack/axon'
+import { BooleanProperty, NumberProperty, Property, StringProperty } from 'scenerystack/axon'
 import { TModel } from 'scenerystack/joist'
 import { EcologyConstants } from '../../common/EcologyConstants.js'
 
@@ -130,7 +130,7 @@ export function canLink(from: FoodNode, to: FoodNode): boolean {
   return false
 }
 
-function starterWeb(): FoodWebSnapshot {
+export function starterWeb(): FoodWebSnapshot {
   return {
     nodes: [
       { id: 'grass', name: 'Grass', level: 'producer', x: 0.22, y: bandCenterY('producer') },
@@ -205,7 +205,11 @@ function consumerLinks(snapshot: FoodWebSnapshot): FoodLink[] {
   })
 }
 
-export function computeNodeEnergy(snapshot: FoodWebSnapshot, base = EcologyConstants.BASE_ENERGY): Map<string, number> {
+export function computeNodeEnergy(
+  snapshot: FoodWebSnapshot,
+  base = EcologyConstants.BASE_ENERGY,
+  transferRate = EcologyConstants.ENERGY_TRANSFER,
+): Map<string, number> {
   const energy = new Map<string, number>()
   const producers = snapshot.nodes.filter((n) => n.level === 'producer')
   if (producers.length === 0) return energy
@@ -218,7 +222,7 @@ export function computeNodeEnergy(snapshot: FoodWebSnapshot, base = EcologyConst
       const incoming = links.filter((l) => l.to === node.id)
       if (incoming.length === 0) continue
       let sum = 0
-      for (const l of incoming) sum += (energy.get(l.from) ?? 0) * EcologyConstants.ENERGY_TRANSFER
+      for (const l of incoming) sum += (energy.get(l.from) ?? 0) * transferRate
       energy.set(node.id, sum)
     }
   }
@@ -298,6 +302,15 @@ export class FoodWebModel implements TModel {
   public readonly stabilityMessageProperty: StringProperty
   public readonly takeawayProperty: StringProperty
 
+  /** Percent of energy passed up each link (Ch2/Ch3 density controls). */
+  public readonly energyTransferPercentProperty: NumberProperty
+  public readonly showLabelsProperty: BooleanProperty
+  public readonly showPopulationsProperty: BooleanProperty
+  public readonly simSpeedProperty: NumberProperty
+  public readonly autoLayoutProperty: BooleanProperty
+  public readonly soundEnabledProperty: BooleanProperty
+  public readonly starsProperty: NumberProperty
+
   public constructor() {
     this.webProperty = new Property(starterWeb())
     this.selectedIdProperty = new Property<string | null>(null)
@@ -311,6 +324,15 @@ export class FoodWebModel implements TModel {
     this.stabilityScoreProperty = new NumberProperty(0)
     this.stabilityMessageProperty = new StringProperty('')
     this.takeawayProperty = new StringProperty('')
+
+    this.energyTransferPercentProperty = new NumberProperty(10)
+    this.showLabelsProperty = new BooleanProperty(true)
+    this.showPopulationsProperty = new BooleanProperty(true)
+    this.simSpeedProperty = new NumberProperty(1)
+    this.autoLayoutProperty = new BooleanProperty(false)
+    this.soundEnabledProperty = new BooleanProperty(true)
+    this.starsProperty = new NumberProperty(0)
+
     this.refreshStability()
     this.webProperty.link(this.refreshStability.bind(this))
   }
@@ -331,11 +353,67 @@ export class FoodWebModel implements TModel {
     this.statusProperty.value =
       'Drag palette chips onto the scene · drag species to rearrange · Link mode to connect who eats whom.'
     this.takeawayProperty.value = ''
+    this.energyTransferPercentProperty.reset()
+    this.showLabelsProperty.reset()
+    this.showPopulationsProperty.reset()
+    this.simSpeedProperty.reset()
+    this.autoLayoutProperty.reset()
+    this.soundEnabledProperty.reset()
+    this.starsProperty.reset()
     this.refreshStability()
   }
 
   public step(dt: number): void {
-    if (dt > 0) this.energyPulseProperty.value += dt
+    if (dt > 0) this.energyPulseProperty.value += dt * this.simSpeedProperty.value
+  }
+
+  /** Clear every species and link so students can build a web from scratch. */
+  public clearWeb(): void {
+    this.webProperty.value = { nodes: [], links: [] }
+    this.selectedIdProperty.value = null
+    this.linkFromIdProperty.value = null
+    this.statusProperty.value = 'Web cleared — drag palette chips or tap Add species to start again.'
+    this.takeawayProperty.value = ''
+  }
+
+  public loadFoodChain(): void {
+    this.load(grasslandChain())
+    this.statusProperty.value = 'Loaded a simple food chain — one path from grass to eagle.'
+  }
+
+  public loadGrassland(): void {
+    this.load(grasslandWeb())
+    this.statusProperty.value = 'Loaded a grassland web — many paths keep it stable.'
+  }
+
+  /** Tidy overlapping species into even rows within their trophic band. */
+  public randomizeLayout(silent = false): void {
+    const snap = this.webProperty.value
+    const byLevel = new Map<TrophicLevel, FoodNode[]>()
+    for (const n of snap.nodes) {
+      const arr = byLevel.get(n.level) ?? []
+      arr.push(n)
+      byLevel.set(n.level, arr)
+    }
+    const nodes: FoodNode[] = []
+    for (const [level, peers] of byLevel) {
+      const count = peers.length
+      peers.forEach((n, i) => {
+        const t = count <= 1 ? 0.5 : i / (count - 1)
+        nodes.push({ ...n, x: 0.12 + t * 0.76, y: bandCenterY(level) })
+      })
+    }
+    this.webProperty.value = { ...snap, nodes }
+    if (!silent) this.statusProperty.value = 'Auto-layout tidied the web into even rows.'
+  }
+
+  /** Manual single pulse of the energy animation (used by step controls). */
+  public stepOnce(): void {
+    this.energyPulseProperty.value += 0.5 * this.simSpeedProperty.value
+  }
+
+  public toggleSound(): void {
+    this.soundEnabledProperty.value = !this.soundEnabledProperty.value
   }
 
   public load(snapshot: FoodWebSnapshot): void {
@@ -411,7 +489,12 @@ export class FoodWebModel implements TModel {
     this.selectedIdProperty.value = id
     const node = this.webProperty.value.nodes.find((n) => n.id === id)
     if (node) {
-      const e = computeNodeEnergy(this.webProperty.value, this.baseEnergyProperty.value).get(id) ?? 0
+      const e =
+        computeNodeEnergy(
+          this.webProperty.value,
+          this.baseEnergyProperty.value,
+          this.energyTransferPercentProperty.value / 100,
+        ).get(id) ?? 0
       const impact = removalImpact(this.webProperty.value, id)
       this.statusProperty.value = `${node.name} · ${node.level} · energy ${formatEnergy(e)}`
       this.takeawayProperty.value = impact.brokenLinks > 0 ? impact.message : ''
@@ -462,5 +545,6 @@ export class FoodWebModel implements TModel {
         ? `Added ${node.name}. Link mode to connect who eats it.`
         : `Added ${node.name}${prey ? ` (auto-linked to ${prey.name})` : ''}.`
     this.takeawayProperty.value = ''
+    if (this.autoLayoutProperty.value) this.randomizeLayout(true)
   }
 }
