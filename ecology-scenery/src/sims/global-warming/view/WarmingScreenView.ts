@@ -13,11 +13,16 @@ import {
 } from 'scenerystack/scenery'
 import { Shape } from 'scenerystack/kite'
 import { PhetFont } from 'scenerystack/scenery-phet'
-import { WarmingModel } from '../model/WarmingModel.js'
-import { clamp, damp, lerp } from '../../../shared/EcologyConstants.js'
+import { WarmingModel, WARMING_SCENARIOS } from '../model/WarmingModel.js'
+import { EcologyConstants, clamp, damp, lerp } from '../../../shared/EcologyConstants.js'
 import { createEcologyIcon } from '../../../shared/EcologyArt.js'
 import { WarmingControlPanel } from './WarmingControlPanel.js'
 import { WarmingSounds } from './WarmingSounds.js'
+import { DepthCard } from '../../../shared/ui/DepthCard.js'
+import { GuidanceBanner } from '../../../shared/ui/GuidanceBanner.js'
+import { TeachingTriad } from '../../../shared/ui/TeachingTriad.js'
+import { MiniQuiz } from '../../../shared/ui/MiniQuiz.js'
+import { ParticleBurst } from '../../../shared/ui/ParticleBurst.js'
 
 type SelfOptions = EmptySelfOptions
 type Options = SelfOptions & ScreenViewOptions
@@ -27,8 +32,10 @@ const HEAT_DOT_COUNT = 4
 const CLOUD_COUNT = 3
 
 /**
- * Visual depth + polish on top of the clarity pass.
- * Model physics and clarity UX (one tip, one temp, legend) stay intact.
+ * Ch2 SoftButton teaching shell: guidance banner + left NOW/WHY/NEXT triad,
+ * dense scrollable SoftButton/DepthSlider control panel, mini quiz, and
+ * particle bursts on temperature spikes — layered on top of the original
+ * clarity-pass scene (model physics + one-tip/one-temp/legend UX stay intact).
  */
 export class WarmingScreenView extends ScreenView {
   private readonly model: WarmingModel
@@ -70,6 +77,8 @@ export class WarmingScreenView extends ScreenView {
   private readonly nowCard: Node
   private readonly nowText: Text
   private readonly nowBg: Rectangle
+  private readonly nightOverlay: Rectangle
+  private readonly captionLayer: Node
   private readonly sceneBounds: { left: number; top: number; width: number; height: number }
   private readonly sunOriginX: number
   private readonly sunOriginY: number
@@ -80,12 +89,19 @@ export class WarmingScreenView extends ScreenView {
   private readonly groundTop: number
   private readonly beamTargets: { x: number; y: number }[]
 
+  private readonly guide: GuidanceBanner
+  private readonly teachingTriad: TeachingTriad
+  private readonly miniQuiz: MiniQuiz
+  private readonly particles: ParticleBurst
+
   private visualHeat = 0.2
   private visualCo2 = 0.4
   private animTime = 0
   private syncingCo2 = false
   private lastBandSound = 0
   private lastSkyHeat = -1
+  private lastBurstTemp = 15
+  private quizShown = false
 
   public constructor(model: WarmingModel, providedOptions?: Options) {
     super(providedOptions)
@@ -94,16 +110,43 @@ export class WarmingScreenView extends ScreenView {
     this.sounds.warm()
     this.sounds.setEnabled(model.soundEnabledProperty.value)
     model.soundEnabledProperty.link(on => this.sounds.setEnabled(on))
+    this.addInputListener({ down: () => this.sounds.unlock() })
 
-    const margin = 10
+    const margin = EcologyConstants.SCREEN_VIEW_X_MARGIN
+    const leftW = 190
     const panelW = 250
+    const gap = 14
     const b = this.layoutBounds
 
-    const sceneLeft = b.left + margin
-    const sceneTop = b.top + margin
-    const sceneW = b.width - panelW - margin * 3
-    const sceneH = b.height - margin * 2
+    // ── Top guidance banner ─────────────────────────────────────────────────
+    this.guide = new GuidanceBanner(b.width - margin * 2, {
+      title: 'Explore the greenhouse effect',
+      body: 'Drag the gas blanket, or try a story below, to see how CO₂ changes Earth’s temperature.',
+    })
+    this.guide.left = b.left + margin
+    this.guide.top = b.top + margin
+    this.addChild(this.guide)
+
+    const stageTop = this.guide.bottom + gap
+
+    const sceneLeft = b.left + margin + leftW + gap
+    const sceneTop = stageTop
+    const sceneW = b.width - margin * 2 - leftW - gap - panelW - gap
+    const sceneH = b.bottom - margin - stageTop
     this.sceneBounds = { left: sceneLeft, top: sceneTop, width: sceneW, height: sceneH }
+
+    // ── Left column: teaching triad ─────────────────────────────────────────
+    const leftCard = new DepthCard(leftW, sceneH)
+    leftCard.left = b.left + margin
+    leftCard.top = stageTop
+    this.addChild(leftCard)
+
+    this.teachingTriad = new TeachingTriad(leftW - 24)
+    this.teachingTriad.left = 12
+    this.teachingTriad.top = 12
+    leftCard.content.addChild(this.teachingTriad)
+
+    this.captionLayer = new Node({ pickable: false })
 
     this.sky = new Rectangle(sceneLeft, sceneTop, sceneW, sceneH, {
       fill: '#38bdf8',
@@ -113,7 +156,7 @@ export class WarmingScreenView extends ScreenView {
     })
     this.addChild(this.sky)
 
-    // Drifting clouds (ambient motion)
+    // Drifting clouds (ambient motion, density driven by the Cloud cover slider)
     for (let i = 0; i < CLOUD_COUNT; i++) {
       const cloud = this.makeCloud(70 + i * 18)
       const baseX = sceneLeft + 40 + i * (sceneW * 0.28)
@@ -205,8 +248,8 @@ export class WarmingScreenView extends ScreenView {
     sunChip.centerX = this.sunOriginX
     sunChip.bottom = this.sunOriginY - this.sunNode.height * 0.5 - 6
     sunLabel.center = sunChip.center
-    this.addChild(sunChip)
-    this.addChild(sunLabel)
+    this.captionLayer.addChild(sunChip)
+    this.captionLayer.addChild(sunLabel)
 
     // Atmospheric gas blanket (haze fill + subtle outline)
     this.ghgBand = new Rectangle(this.bandLeft, this.bandMinTop, this.bandWidth, 40, {
@@ -238,8 +281,8 @@ export class WarmingScreenView extends ScreenView {
       fill: 'rgba(15,23,42,0.55)',
       pickable: false,
     })
-    this.addChild(this.ghgPill)
-    this.addChild(this.ghgLabel)
+    this.captionLayer.addChild(this.ghgPill)
+    this.captionLayer.addChild(this.ghgLabel)
 
     // Vertical slider thumb on the RIGHT edge of the blanket (out of ray paths)
     this.ghgHandle = new Node({ cursor: 'ns-resize' })
@@ -298,7 +341,7 @@ export class WarmingScreenView extends ScreenView {
       pickable: false,
       visible: false,
     })
-    this.addChild(this.escapeLabel)
+    this.captionLayer.addChild(this.escapeLabel)
 
     for (let i = 0; i < HEAT_DOT_COUNT; i++) {
       const dot = new Circle(5, {
@@ -358,7 +401,7 @@ export class WarmingScreenView extends ScreenView {
       this.addChild(puff)
     }
 
-    this.addChild(
+    this.captionLayer.addChild(
       new Text('Heat radiating ↑', {
         font: new PhetFont({ size: 12, weight: 'bold' }),
         fill: '#fecaca',
@@ -375,7 +418,7 @@ export class WarmingScreenView extends ScreenView {
       top: this.bandMinTop - 24,
       pickable: false,
     })
-    this.addChild(this.trapValueLabel)
+    this.captionLayer.addChild(this.trapValueLabel)
 
     // Temperature + Earth sit on the RIGHT so center ray paths stay clear
     const tempRight = sceneLeft + sceneW - 12
@@ -432,7 +475,20 @@ export class WarmingScreenView extends ScreenView {
     model.tipProperty.link(refreshNow)
     model.showTipsProperty.link(refreshNow)
 
-    this.addChild(this.buildLegend(sceneLeft + 10, this.groundTop - 78))
+    this.captionLayer.addChild(this.buildLegend(sceneLeft + 10, this.groundTop - 78))
+    this.addChild(this.captionLayer)
+    model.showLabelsProperty.link(on => {
+      this.captionLayer.visible = on
+    })
+
+    // Day/night dimming overlay, driven by the Auto day toggle
+    this.nightOverlay = new Rectangle(sceneLeft, sceneTop, sceneW, sceneH, {
+      cornerRadius: 14,
+      fill: 'rgba(5,10,25,1)',
+      opacity: 0,
+      pickable: false,
+    })
+    this.addChild(this.nightOverlay)
 
     const applyBandFromCo2 = (co2: number) => {
       const maxThick = this.bandMaxBottom - this.bandMinTop
@@ -503,17 +559,41 @@ export class WarmingScreenView extends ScreenView {
     model.scenarioIdProperty.link(() => this.applyScenarioGround())
     this.applyScenarioGround()
 
-    this.addChild(
-      new WarmingControlPanel(model, this.sounds, {
-        right: b.right - margin,
-        top: sceneTop,
-        maxWidth: panelW,
-        panelMaxHeight: sceneH,
-      }),
-    )
+    // ── Right column: dense scrollable control panel ───────────────────────
+    const controlPanel = new WarmingControlPanel(model, this.sounds, {
+      width: panelW,
+      height: sceneH,
+      onQuickCheck: () => this.showQuiz(),
+    })
+    controlPanel.right = b.right - margin
+    controlPanel.top = sceneTop
+    this.addChild(controlPanel)
+
+    // ── Mini quiz overlay, centered over the scene ──────────────────────────
+    this.miniQuiz = new MiniQuiz(Math.min(280, sceneW - 40))
+    this.miniQuiz.centerX = sceneLeft + sceneW / 2
+    this.miniQuiz.centerY = sceneTop + sceneH / 2
+    this.addChild(this.miniQuiz)
+
+    this.particles = new ParticleBurst(90)
+    this.addChild(this.particles)
+
+    model.scenarioIdProperty.lazyLink(() => {
+      if (!this.quizShown) {
+        this.quizShown = true
+        this.showQuiz()
+      }
+    })
+
+    const refreshGuidance = () => this.updateGuidance()
+    model.co2LevelProperty.link(refreshGuidance)
+    model.scenarioIdProperty.link(refreshGuidance)
+    model.cloudCoverProperty.link(refreshGuidance)
+    model.albedoProperty.link(refreshGuidance)
 
     this.visualHeat = (model.temperatureProperty.value - 10) / 28
     this.visualCo2 = model.co2LevelProperty.value
+    this.lastBurstTemp = model.temperatureProperty.value
     this.updateSky(true)
   }
 
@@ -886,11 +966,43 @@ export class WarmingScreenView extends ScreenView {
     this.risePath.opacity = 0.55 + co2 * 0.35
   }
 
+  private updateGuidance(): void {
+    const m = this.model
+    const co2 = m.co2LevelProperty.value
+    const scenario = WARMING_SCENARIOS.find(s => s.id === m.scenarioIdProperty.value)
+    this.guide.setGuidance(
+      'Explore the greenhouse effect',
+      scenario
+        ? scenario.blurb
+        : 'Drag the gas blanket, or try a story below, to see how CO₂ changes Earth’s temperature.',
+    )
+    const reflectPct = Math.round(m.getReflection() * 100)
+    this.teachingTriad.setTriad(
+      `Gas blanket is ${Math.round(co2 * 100)}% thick — ${reflectPct}% of sunlight is reflected by clouds/albedo.`,
+      m.tipProperty.value,
+      co2 < 0.5
+        ? 'Try “Burn fossil fuels” to watch CO₂ and temperature climb.'
+        : 'Try “Cleaner air”, or raise cloud cover, to help Earth cool back down.',
+    )
+  }
+
+  private showQuiz(): void {
+    this.miniQuiz.showQuiz(
+      'Which gas is the main greenhouse gas warming Earth today?',
+      [
+        { label: 'Carbon dioxide (CO₂)', correct: true },
+        { label: 'Oxygen (O₂)', correct: false },
+        { label: 'Nitrogen (N₂)', correct: false },
+      ],
+      correct => (correct ? this.sounds.correct() : this.sounds.wrong()),
+    )
+  }
+
   public override step(dt: number): void {
     this.model.step(dt)
     const running = this.model.runningProperty.value
     if (running && dt > 0) {
-      this.animTime += dt
+      this.animTime += dt * this.model.simSpeedProperty.value
     }
 
     const targetHeat = clamp((this.model.temperatureProperty.value - 10) / 28, 0, 1)
@@ -898,6 +1010,10 @@ export class WarmingScreenView extends ScreenView {
     this.visualCo2 = damp(this.visualCo2, this.model.co2LevelProperty.value, 6, dt)
 
     this.updateSky(false)
+    this.updateReflection()
+    this.updateNightOverlay(dt)
+    this.updateTemperatureSpike()
+    this.particles.step(dt)
     if (running) {
       this.updateHeatDots()
       this.updateGasDrift()
@@ -905,6 +1021,47 @@ export class WarmingScreenView extends ScreenView {
       this.updateClouds()
       this.updateGrassSway()
       this.sunGlow.opacity = 0.45 + 0.2 * Math.sin(this.animTime * 1.2)
+    }
+  }
+
+  /** Clouds/albedo reflect sunlight away — dim the beams so the knobs feel connected to the scene. */
+  private updateReflection(): void {
+    const reflection = this.model.getReflection()
+    const rayOpacity = clamp(0.65 - reflection * 0.35, 0.15, 0.65)
+    for (const ray of this.sunRays) {
+      ray.opacity = rayOpacity
+    }
+  }
+
+  /** Auto day toggle dims the whole scene on a slow day/night cycle. */
+  private updateNightOverlay(dt: number): void {
+    if (!this.model.autoDayProperty.value) {
+      this.nightOverlay.opacity = damp(this.nightOverlay.opacity, 0, 6, Math.max(dt, 0.001))
+      return
+    }
+    const dayPhase = 0.5 + 0.5 * Math.sin(this.model.timeProperty.value * 0.6)
+    this.nightOverlay.opacity = (1 - dayPhase) * 0.4
+  }
+
+  /** Burst warm particles near the temperature chip whenever Earth heats up quickly. */
+  private updateTemperatureSpike(): void {
+    const temp = this.model.temperatureProperty.value
+    if (temp - this.lastBurstTemp >= 2.5) {
+      this.lastBurstTemp = temp
+      const intensity = Math.max(0, this.model.particleIntensityProperty.value)
+      if (intensity > 0) {
+        this.particles.burst(this.tempBg.centerX, this.tempBg.top, {
+          count: Math.round(14 * intensity),
+          color: '#f87171',
+          speed: 90,
+          life: 0.6,
+          radius: 3.5,
+        })
+      }
+      this.sounds.softClick()
+    }
+    else if (temp < this.lastBurstTemp - 0.5) {
+      this.lastBurstTemp = temp
     }
   }
 
@@ -999,12 +1156,13 @@ export class WarmingScreenView extends ScreenView {
 
   private updateClouds(): void {
     const s = this.sceneBounds
+    const coverage = this.model.cloudCoverProperty.value
     for (let i = 0; i < this.clouds.length; i++) {
       const cloud = this.clouds[i]!
       const base = this.cloudBaseX[i]!
       const drift = ((this.animTime * (4 + i * 1.5) + i * 40) % (s.width + 80)) - 40
       cloud.centerX = s.left + ((base - s.left + drift) % (s.width + 60))
-      cloud.opacity = 0.28 + 0.08 * Math.sin(this.animTime * 0.4 + i)
+      cloud.opacity = (0.16 + coverage * 0.62) * (0.85 + 0.15 * Math.sin(this.animTime * 0.4 + i))
     }
   }
 

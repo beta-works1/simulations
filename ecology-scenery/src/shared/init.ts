@@ -10,4 +10,5 @@ init({
   availableLocales: ['en'],
   splashDataURI: madeWithSceneryStackSplashDataURI,
   allowLocaleSwitching: false,
+  supportsSound: true,
 })

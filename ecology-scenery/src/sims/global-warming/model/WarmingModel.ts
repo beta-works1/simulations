@@ -47,11 +47,17 @@ export const WARMING_SCENARIOS: WarmingScenario[] = [
  */
 export class WarmingModel implements TModel {
   public readonly co2LevelProperty: NumberProperty
+  public readonly cloudCoverProperty: NumberProperty
+  public readonly albedoProperty: NumberProperty
+  public readonly simSpeedProperty: NumberProperty
+  public readonly particleIntensityProperty: NumberProperty
   public readonly temperatureProperty: NumberProperty
   public readonly timeProperty: NumberProperty
   public readonly runningProperty: BooleanProperty
   public readonly soundEnabledProperty: BooleanProperty
   public readonly showTipsProperty: BooleanProperty
+  public readonly showLabelsProperty: BooleanProperty
+  public readonly autoDayProperty: BooleanProperty
   public readonly showAdvancedProperty: BooleanProperty
   public readonly statusProperty: StringProperty
   /** Single live scene explanation (Grade 8, one idea per line). */
@@ -63,11 +69,17 @@ export class WarmingModel implements TModel {
 
   public constructor() {
     this.co2LevelProperty = new NumberProperty(0.4)
+    this.cloudCoverProperty = new NumberProperty(0.3)
+    this.albedoProperty = new NumberProperty(0.3)
+    this.simSpeedProperty = new NumberProperty(1)
+    this.particleIntensityProperty = new NumberProperty(1)
     this.temperatureProperty = new NumberProperty(15)
     this.timeProperty = new NumberProperty(0)
     this.runningProperty = new BooleanProperty(true)
     this.soundEnabledProperty = new BooleanProperty(true)
     this.showTipsProperty = new BooleanProperty(true)
+    this.showLabelsProperty = new BooleanProperty(true)
+    this.autoDayProperty = new BooleanProperty(false)
     this.showAdvancedProperty = new BooleanProperty(false)
     this.statusProperty = new StringProperty('')
     this.tipProperty = new StringProperty(
@@ -96,22 +108,42 @@ export class WarmingModel implements TModel {
     this.updateTeachingCopy()
   }
 
+  /** How much incoming sunlight is bounced away before it can warm Earth (0..~1.4). */
+  public getReflection(): number {
+    return clamp(this.albedoProperty.value + this.cloudCoverProperty.value * 0.6, 0, 1.4)
+  }
+
+  /** Day/night brightness multiplier on incoming sunlight when the auto-day cycle is on. */
+  public getSolarFactor(): number {
+    if (!this.autoDayProperty.value) return 1
+    return 0.85 + 0.3 * (0.5 + 0.5 * Math.sin(this.timeProperty.value * 0.6))
+  }
+
   public step(dt: number): void {
     if (!this.runningProperty.value || dt <= 0) {
       return
     }
-    const target = 10 + this.co2LevelProperty.value * 28
+    const scaledDt = dt * this.simSpeedProperty.value
+    this.timeProperty.value += scaledDt
+    const solarFactor = this.getSolarFactor()
+    const reflection = this.getReflection()
+    const target = 10 + this.co2LevelProperty.value * 28 * solarFactor - reflection * 5
     const t = this.temperatureProperty.value
-    this.temperatureProperty.value = t + (target - t) * Math.min(1, dt * 0.35)
-    this.timeProperty.value += dt
+    this.temperatureProperty.value = t + (target - t) * Math.min(1, scaledDt * 0.35)
   }
 
   public reset(): void {
     this.co2LevelProperty.value = 0.4
+    this.cloudCoverProperty.value = 0.3
+    this.albedoProperty.value = 0.3
+    this.simSpeedProperty.value = 1
+    this.particleIntensityProperty.value = 1
     this.temperatureProperty.value = 15
     this.timeProperty.value = 0
     this.runningProperty.value = true
     this.showTipsProperty.value = true
+    this.showLabelsProperty.value = true
+    this.autoDayProperty.value = false
     this.showAdvancedProperty.value = false
     this.scenarioIdProperty.value = 'today'
     this.updateTeachingCopy()

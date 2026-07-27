@@ -13,7 +13,10 @@ export class WarmingSounds {
   private readonly step: TSoundPlayer
   private readonly toggleOn: TSoundPlayer
   private readonly toggleOff: TSoundPlayer
+  private readonly open: TSoundPlayer
+  private readonly close: TSoundPlayer
   private lastSliderAt = 0
+  private unlocked = false
 
   public constructor() {
     this.click = sharedSoundPlayers.get('pushButton')
@@ -26,6 +29,8 @@ export class WarmingSounds {
     this.step = sharedSoundPlayers.get('stepForward')
     this.toggleOn = sharedSoundPlayers.get('toggleOn')
     this.toggleOff = sharedSoundPlayers.get('toggleOff')
+    this.open = sharedSoundPlayers.get('generalOpen')
+    this.close = sharedSoundPlayers.get('generalClose')
   }
 
   public warm(): void {
@@ -35,6 +40,21 @@ export class WarmingSounds {
 
   public setEnabled(on: boolean): void {
     soundManager.enabledProperty.value = on
+  }
+
+  /** Call from the first pointer-down so the browser's audio gate opens. */
+  public unlock(): void {
+    if (this.unlocked) return
+    this.unlocked = true
+    soundManager.enabledProperty.value = true
+  }
+
+  public correct(): void {
+    this.open.play()
+  }
+
+  public wrong(): void {
+    this.close.play()
   }
 
   public button(): void {

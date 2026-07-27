@@ -1,10 +1,12 @@
 import { Node, Rectangle, Text, DragListener } from 'scenerystack/scenery'
+import type { SceneryEvent } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
 import { NumberProperty } from 'scenerystack/axon'
-import { clamp } from '../EcologyConstants.js'
+import { clamp } from '../EcologyColors.js'
 import { EcologyColors } from '../EcologyColors.js'
+import { forwardWheelToScrollParent } from './ScrollableNode.js'
 
-/** Horizontal slider with draggable thumb and depth. */
+/** Horizontal slider with draggable thumb and depth (ecology-style). */
 export class DepthSlider extends Node {
   public constructor(
     property: NumberProperty,
@@ -14,41 +16,48 @@ export class DepthSlider extends Node {
       width?: number
       label: string
       format?: (n: number) => string
+      fill?: string
+      onTick?: () => void
     },
   ) {
     super()
     const w = options.width ?? 180
     const trackY = 28
     const format = options.format ?? ((n: number) => `${Math.round(n)}`)
+    const accent = options.fill ?? EcologyColors.accent
+    let lastValue = property.value
 
     const label = new Text(options.label, {
-      font: new PhetFont({ size: 11, weight: 'bold' }),
-      fill: EcologyColors.muted,
+      font: new PhetFont({ size: 12, weight: 'bold' }),
+      fill: EcologyColors.panelMuted,
       left: 0,
       top: 0,
-      maxWidth: w - 50,
+      maxWidth: w - 56,
     })
     const valueText = new Text(format(property.value), {
-      font: new PhetFont({ size: 11, weight: 'bold' }),
-      fill: EcologyColors.accent,
+      font: new PhetFont({ size: 12, weight: 'bold' }),
+      fill: accent,
       right: w,
       top: 0,
     })
 
-    const trackShadow = new Rectangle(0, trackY + 2, w, 8, {
-      cornerRadius: 4,
-      fill: 'rgba(15,23,42,0.12)',
-    })
+    this.addChild(
+      new Rectangle(0, trackY + 2, w, 8, {
+        cornerRadius: 4,
+        fill: 'rgba(0,0,0,0.35)',
+      }),
+    )
     const track = new Rectangle(0, trackY, w, 8, {
       cornerRadius: 4,
-      fill: 'rgba(148,163,184,0.45)',
+      fill: 'rgba(148,163,184,0.35)',
+      cursor: 'pointer',
     })
-    const fill = new Rectangle(0, trackY, 40, 8, {
+    const fillBar = new Rectangle(0, trackY, 40, 8, {
       cornerRadius: 4,
-      fill: EcologyColors.accent,
+      fill: accent,
     })
 
-    const thumb = new Node()
+    const thumb = new Node({ cursor: 'pointer' })
     thumb.addChild(
       new Rectangle(-9, -9, 18, 18, {
         cornerRadius: 9,
@@ -59,9 +68,8 @@ export class DepthSlider extends Node {
       new Rectangle(-8, -10, 16, 16, {
         cornerRadius: 8,
         fill: '#fff',
-        stroke: EcologyColors.accent,
+        stroke: accent,
         lineWidth: 2.5,
-        cursor: 'pointer',
       }),
     )
     thumb.y = trackY + 4
@@ -69,10 +77,14 @@ export class DepthSlider extends Node {
     const sync = () => {
       const t = (property.value - options.min) / (options.max - options.min)
       const x = clamp(t, 0, 1) * w
-      fill.setRectWidth(Math.max(8, x))
+      fillBar.setRectWidth(Math.max(8, x))
       thumb.x = x
       valueText.string = format(property.value)
       valueText.right = w
+      if (property.value !== lastValue) {
+        lastValue = property.value
+        options.onTick?.()
+      }
     }
     property.link(sync)
 
@@ -83,7 +95,7 @@ export class DepthSlider extends Node {
 
     track.addInputListener({
       down: (event) => {
-        const pt = track.globalToLocalPoint(event.pointer.point)
+        const pt = this.globalToLocalPoint(event.pointer.point)
         setFromX(pt.x)
       },
     })
@@ -99,9 +111,14 @@ export class DepthSlider extends Node {
 
     this.addChild(label)
     this.addChild(valueText)
-    this.addChild(trackShadow)
     this.addChild(track)
-    this.addChild(fill)
+    this.addChild(fillBar)
     this.addChild(thumb)
+
+    this.addInputListener({
+      wheel: (event: SceneryEvent<WheelEvent>) => {
+        forwardWheelToScrollParent(this, event)
+      },
+    })
   }
 }
