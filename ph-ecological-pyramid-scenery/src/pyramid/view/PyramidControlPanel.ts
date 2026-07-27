@@ -1,10 +1,13 @@
-import { Range, Dimension2 } from 'scenerystack/dot'
 import { EmptySelfOptions, optionize } from 'scenerystack/phet-core'
-import { HSlider, Panel, PanelOptions, RectangularPushButton } from 'scenerystack/sun'
+import { Panel, PanelOptions } from 'scenerystack/sun'
 import { HBox, Text, VBox } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
 import { PyramidColors, PyramidConstants } from '../../common/PyramidColors.js'
 import { PyramidStrings } from '../../PyramidStrings.js'
+import { SimTheme } from '../../common/SimTheme.js'
+import { SoftButton } from '../../common/ui/SoftButton.js'
+import { DepthSlider } from '../../common/ui/DepthSlider.js'
+import { MiniQuiz } from '../../common/ui/MiniQuiz.js'
 import {
   EcologicalPyramidModel,
   formatTierValue,
@@ -24,6 +27,12 @@ type SelfOptions = {
 
 type Options = SelfOptions & EmptySelfOptions & PanelOptions
 
+/** Plain hex mirrors of PyramidColors defaults — SoftButton wants a CSS string, not a Color/Property. */
+const GREEN = '#27ae60'
+const BLUE = '#2980b9'
+const YELLOW = '#f4d03f'
+const RED = '#c0392b'
+
 export class PyramidControlPanel extends Panel {
   public constructor(model: EcologicalPyramidModel, sounds: PyramidSounds, providedOptions: Options) {
     const w = (providedOptions.maxWidth as number | undefined) ?? 250
@@ -35,20 +44,13 @@ export class PyramidControlPanel extends Panel {
         yMargin: 10,
         stroke: PyramidColors.panelBorderProperty,
         lineWidth: 2,
-        fill: 'rgba(11, 22, 40, 0.94)',
+        fill: SimTheme.panelDark,
       },
       providedOptions,
     )
 
-    const mkBtn = (label: string, fn: () => void, baseColor = PyramidColors.buttonProperty) =>
-      new RectangularPushButton({
-        content: new Text(label, { font: new PhetFont(13), fill: 'white', maxWidth: w - 28 }),
-        baseColor,
-        xMargin: 8,
-        yMargin: 6,
-        listener: fn,
-        minWidth: w - 16,
-      })
+    const mkBtn = (label: string, fn: () => void, fill = SimTheme.accent, width = w - 16) =>
+      new SoftButton(label, fn, { width, height: 34, fill, fontSize: 13 })
 
     const section = (t: string) =>
       new Text(t, { font: new PhetFont({ size: 13, weight: 'bold' }), fill: '#7dcea0', maxWidth: w })
@@ -59,22 +61,9 @@ export class PyramidControlPanel extends Panel {
     const modeReadout = new Text('', { font: new PhetFont(13), fill: '#ecf0f1', maxWidth: w })
     const detailBox = new VBox({ align: 'left', spacing: 4 })
     const compareBox = new VBox({ align: 'left', spacing: 3 })
-    const baseReadout = new Text('', { font: new PhetFont(13), fill: '#ecf0f1', maxWidth: 100 })
-    const transferReadout = new Text('', { font: new PhetFont(13), fill: '#fecaca', maxWidth: w })
-    const tipReadout = new Text(model.tipProperty, {
-      font: new PhetFont({ size: 13, weight: 'bold' }),
-      fill: '#fde68a',
-      maxWidth: w,
-    })
-    const whyReadout = new Text(model.whyProperty, {
-      font: new PhetFont(12),
-      fill: '#a7f3d0',
-      maxWidth: w,
-    })
-    const quizPrompt = new Text('', { font: new PhetFont(12), fill: '#e2e8f0', maxWidth: w - 8 })
-    const quizFeedback = new Text('', { font: new PhetFont(12), fill: '#a8d4a0', maxWidth: w - 8 })
+    const quizExplain = new Text('', { font: new PhetFont(12), fill: '#a8d4a0', maxWidth: w - 8 })
     const quizScore = new Text('', { font: new PhetFont(13), fill: '#f4d03f', maxWidth: w })
-    const quizChoices = new VBox({ align: 'left', spacing: 4 })
+    const miniQuiz = new MiniQuiz(w - 4)
     const advancedBox = new VBox({ align: 'left', spacing: 6 })
 
     const refreshDetail = () => {
@@ -83,7 +72,6 @@ export class PyramidControlPanel extends Panel {
       const base = model.baseEnergyProperty.value
       const transfer = model.transferProperty.value
       modeReadout.string = `Showing: ${modeUnit(mode)}`
-      transferReadout.string = `Keep ${(transfer * 100).toFixed(0)}% · lose ~${((1 - transfer) * 100).toFixed(0)}%`
 
       if (tier < 0 || model.decomposerFocusProperty.value) {
         detailBox.children = [
@@ -132,25 +120,23 @@ export class PyramidControlPanel extends Panel {
           maxWidth: w,
         })
       })
-
-      baseReadout.string = formatTierValue(base, mode === 'energy' ? 'energy' : mode)
     }
 
     const refreshQuiz = () => {
       const q = QUIZ_BANK[model.quizIndexProperty.value % QUIZ_BANK.length]!
-      quizPrompt.string = q.prompt
       quizScore.string = `Score: ${model.quizScoreProperty.value}`
-      quizFeedback.string = model.quizFeedbackProperty.value
-      quizChoices.children = q.choices.map((c, i) =>
-        mkBtn(
-          c,
-          () => {
-            model.answerQuiz(i)
-            if (i === q.correct) sounds.quizCorrect()
-            else sounds.quizWrong()
-          },
-          PyramidColors.playbackButtonProperty,
-        ),
+      quizExplain.string = ''
+      miniQuiz.showQuiz(
+        q.prompt,
+        q.choices.map((c, i) => ({ label: c, correct: i === q.correct })),
+        correct => {
+          // MiniQuiz only reports correct/wrong; model.answerQuiz just needs an index
+          // that matches (correct) or does not match (wrong) the answer key.
+          model.answerQuiz(correct ? q.correct : (q.correct + 1) % q.choices.length)
+          if (correct) sounds.quizCorrect()
+          else sounds.quizWrong()
+          quizExplain.string = model.quizFeedbackProperty.value
+        },
       )
     }
 
@@ -160,8 +146,9 @@ export class PyramidControlPanel extends Panel {
     model.selectedTierProperty.link(refreshDetail)
     model.decomposerFocusProperty.link(refreshDetail)
     model.quizIndexProperty.link(refreshQuiz)
-    model.quizScoreProperty.link(refreshQuiz)
-    model.quizFeedbackProperty.link(refreshQuiz)
+    model.quizScoreProperty.link(() => {
+      quizScore.string = `Score: ${model.quizScoreProperty.value}`
+    })
     refreshQuiz()
 
     const modes: PyramidMode[] = ['energy', 'biomass', 'numbers']
@@ -172,45 +159,32 @@ export class PyramidControlPanel extends Panel {
       sounds.modeChange(next >= prev)
     }
 
-    const playPauseLabel = new Text(model.runningProperty.value ? 'Pause' : 'Play', {
-      font: new PhetFont(13),
-      fill: 'white',
-      maxWidth: w - 24,
-    })
-    const playPauseBtn = new RectangularPushButton({
-      content: playPauseLabel,
-      baseColor: PyramidColors.playbackButtonProperty,
-      xMargin: 8,
-      yMargin: 6,
-      listener: () => {
+    const playPauseBtn = new SoftButton(
+      model.runningProperty.value ? 'Pause' : 'Play',
+      () => {
         model.runningProperty.value = !model.runningProperty.value
         sounds.playPause(model.runningProperty.value)
       },
-      minWidth: w - 16,
-    })
+      { width: w - 16, height: 36, fill: SimTheme.accent, fontSize: 13, selected: true },
+    )
     model.runningProperty.link(running => {
-      playPauseLabel.string = running ? 'Pause' : 'Play'
+      playPauseBtn.setLabel(running ? 'Pause' : 'Play')
+      playPauseBtn.setSelected(running)
     })
 
-    const soundLabel = new Text(model.soundEnabledProperty.value ? 'Sound: On' : 'Sound: Off', {
-      font: new PhetFont(13),
-      fill: 'white',
-      maxWidth: w - 24,
-    })
-    const soundBtn = new RectangularPushButton({
-      content: soundLabel,
-      baseColor: PyramidColors.accentProperty,
-      xMargin: 8,
-      yMargin: 6,
-      listener: () => {
+    const soundBtn = new SoftButton(
+      model.soundEnabledProperty.value ? 'Sound: On' : 'Sound: Off',
+      () => {
+        sounds.unlock()
         model.soundEnabledProperty.value = !model.soundEnabledProperty.value
         sounds.setEnabled(model.soundEnabledProperty.value)
         if (model.soundEnabledProperty.value) sounds.button()
       },
-      minWidth: w - 16,
-    })
+      { width: w - 16, height: 34, fill: '#0f766e', fontSize: 13, selected: true },
+    )
     model.soundEnabledProperty.link(on => {
-      soundLabel.string = on ? 'Sound: On' : 'Sound: Off'
+      soundBtn.setLabel(on ? 'Sound: On' : 'Sound: Off')
+      soundBtn.setSelected(on)
     })
 
     let lastTransfer = model.transferProperty.value
@@ -227,68 +201,64 @@ export class PyramidControlPanel extends Panel {
       advancedBox.children = [
         help('Use these after you understand Plants → Rabbits → Foxes → Eagles.'),
         section('Plant energy (base)'),
-        new HBox({
-          spacing: 8,
-          children: [new Text('Base', { font: new PhetFont(13), fill: '#bdc3c7' }), baseReadout],
-        }),
-        new HSlider(model.baseEnergyProperty, new Range(PyramidConstants.BASE_MIN, PyramidConstants.BASE_MAX), {
-          trackSize: new Dimension2(w - 28, 6),
-          thumbSize: new Dimension2(16, 24),
-          majorTickLength: 0,
-          minorTickLength: 0,
+        new DepthSlider(model.baseEnergyProperty, {
+          min: PyramidConstants.BASE_MIN,
+          max: PyramidConstants.BASE_MAX,
+          width: w - 28,
+          label: 'Producer energy',
+          format: n => formatTierValue(n, 'energy'),
+          fill: '#38bdf8',
+          onTick: () => sounds.sliderTick(),
         }),
         section('How much moves up?'),
-        transferReadout,
-        new HSlider(
-          model.transferProperty,
-          new Range(PyramidConstants.TRANSFER_MIN, PyramidConstants.TRANSFER_MAX),
-          {
-            trackSize: new Dimension2(w - 28, 6),
-            thumbSize: new Dimension2(16, 24),
-            majorTickLength: 0,
-            minorTickLength: 0,
-          },
-        ),
+        new DepthSlider(model.transferProperty, {
+          min: PyramidConstants.TRANSFER_MIN,
+          max: PyramidConstants.TRANSFER_MAX,
+          width: w - 28,
+          label: 'Transfer efficiency',
+          format: n => `${(n * 100).toFixed(0)}%`,
+          fill: '#f97316',
+          onTick: () => sounds.sliderTick(),
+        }),
         section('Try a place'),
         ...SCENARIOS.map(s =>
-          mkBtn(s.name, () => {
-            model.applyScenario(s.id)
-            sounds.scenario()
-          }),
+          mkBtn(
+            s.name,
+            () => {
+              model.applyScenario(s.id)
+              sounds.scenario()
+            },
+            GREEN,
+          ),
         ),
         section('All levels'),
         compareBox,
         section('Quick check'),
         quizScore,
-        quizPrompt,
-        quizChoices,
-        quizFeedback,
-        mkBtn('Next question', () => {
-          model.nextQuiz()
-          sounds.button()
-        }, PyramidColors.playbackButtonProperty),
+        miniQuiz,
+        quizExplain,
+        mkBtn(
+          'Next question',
+          () => {
+            model.nextQuiz()
+            sounds.button()
+          },
+          BLUE,
+        ),
       ]
     }
     model.showAdvancedProperty.link(buildAdvanced)
 
-    const advancedLabel = new Text('Show more options', {
-      font: new PhetFont(13),
-      fill: 'white',
-      maxWidth: w - 24,
-    })
-    const advancedBtn = new RectangularPushButton({
-      content: advancedLabel,
-      baseColor: PyramidColors.playbackButtonProperty,
-      xMargin: 8,
-      yMargin: 6,
-      listener: () => {
+    const advancedBtn = new SoftButton(
+      'Show more options',
+      () => {
         model.showAdvancedProperty.value = !model.showAdvancedProperty.value
         sounds.button()
       },
-      minWidth: w - 16,
-    })
+      { width: w - 16, height: 34, fill: BLUE, fontSize: 13 },
+    )
     model.showAdvancedProperty.link(on => {
-      advancedLabel.string = on ? 'Hide extra options' : 'Show more options'
+      advancedBtn.setLabel(on ? 'Hide extra options' : 'Show more options')
     })
 
     const content = new VBox({
@@ -300,38 +270,21 @@ export class PyramidControlPanel extends Panel {
           fill: 'white',
           maxWidth: w,
         }),
-        help('Tap a level on the pyramid. Read NOW / Why. Then play the cascade.'),
-        section('What is happening'),
-        tipReadout,
-        whyReadout,
+        help('Read NOW / Why / Next on the left. Tap a level, then play the cascade.'),
         section('This level'),
         detailBox,
         section('Move between levels'),
         new HBox({
           spacing: 8,
           children: [
-            new RectangularPushButton({
-              content: new Text('◀ Prev', { font: new PhetFont(13), fill: 'white' }),
-              baseColor: PyramidColors.playbackButtonProperty,
-              xMargin: 10,
-              yMargin: 6,
-              listener: () => {
-                model.nudgeTier(-1)
-                sounds.tierSelect()
-              },
-              minWidth: (w - 24) / 2,
-            }),
-            new RectangularPushButton({
-              content: new Text('Next ▶', { font: new PhetFont(13), fill: 'white' }),
-              baseColor: PyramidColors.playbackButtonProperty,
-              xMargin: 10,
-              yMargin: 6,
-              listener: () => {
-                model.nudgeTier(1)
-                sounds.tierSelect()
-              },
-              minWidth: (w - 24) / 2,
-            }),
+            mkBtn('◀ Prev', () => {
+              model.nudgeTier(-1)
+              sounds.tierSelect()
+            }, BLUE, (w - 24) / 2),
+            mkBtn('Next ▶', () => {
+              model.nudgeTier(1)
+              sounds.tierSelect()
+            }, BLUE, (w - 24) / 2),
           ],
         }),
         mkBtn(
@@ -340,7 +293,7 @@ export class PyramidControlPanel extends Panel {
             model.startCascadeDemo()
             sounds.scenario()
           },
-          PyramidColors.accentProperty,
+          YELLOW,
         ),
         mkBtn(
           'Compare next level',
@@ -348,7 +301,7 @@ export class PyramidControlPanel extends Panel {
             model.toggleCompareNext()
             sounds.button()
           },
-          PyramidColors.playbackButtonProperty,
+          BLUE,
         ),
         section('Pyramid type'),
         modeReadout,
@@ -366,7 +319,7 @@ export class PyramidControlPanel extends Panel {
             model.reset()
             sounds.resetAll()
           },
-          PyramidColors.dangerProperty,
+          RED,
         ),
       ],
     })

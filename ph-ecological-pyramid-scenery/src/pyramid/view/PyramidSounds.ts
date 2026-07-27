@@ -20,6 +20,7 @@ export class PyramidSounds {
   private readonly erase: TSoundPlayer
   private readonly step: TSoundPlayer
   private lastSliderAt = 0
+  private unlocked = false
 
   public constructor() {
     this.click = sharedSoundPlayers.get('pushButton')
@@ -48,6 +49,17 @@ export class PyramidSounds {
 
   public get enabled(): boolean {
     return soundManager.enabledProperty.value
+  }
+
+  /** Call from the first pointer-down so tambo/AudioContext unlock in the browser. */
+  public unlock(): void {
+    if (this.unlocked) return
+    this.unlocked = true
+    try {
+      soundManager.enabledProperty.value = this.enabled
+    } catch {
+      /* ignore until init finishes */
+    }
   }
 
   public tierSelect(): void {

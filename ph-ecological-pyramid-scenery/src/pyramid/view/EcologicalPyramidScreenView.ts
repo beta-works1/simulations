@@ -15,6 +15,10 @@ import {
 import { PyramidControlPanel } from './PyramidControlPanel.js'
 import { PyramidSounds } from './PyramidSounds.js'
 import { createEcologyIcon } from '../../common/EcologyArt.js'
+import { GuidanceBanner } from '../../common/ui/GuidanceBanner.js'
+import { DepthCard } from '../../common/ui/DepthCard.js'
+import { TeachingTriad } from '../../common/ui/TeachingTriad.js'
+import { ParticleBurst } from '../../common/ui/ParticleBurst.js'
 
 type Options = EmptySelfOptions & ScreenViewOptions
 
@@ -26,10 +30,9 @@ export class EcologicalPyramidScreenView extends ScreenView {
   private readonly sceneryLayer: Node
   private readonly pyramidLayer: Node
   private readonly particleLayer: Node
-  private readonly tipCard: Node
-  private readonly tipText: Text
-  private readonly whyCard: Node
-  private readonly whyText: Text
+  private readonly particles: ParticleBurst
+  private readonly guide: GuidanceBanner
+  private readonly teachingTriad: TeachingTriad
   private readonly sun: Circle
   private readonly sunGlow: Circle
   private readonly sunLabel: Text
@@ -40,7 +43,6 @@ export class EcologicalPyramidScreenView extends ScreenView {
   private baseHandle: Node | null = null
   private lastHeatSound = 0
   private lastCascadeTier = -1
-  private heatParticles: { x: number; y: number; vx: number; vy: number; life: number; r: number }[] = []
   private birds: { x: number; y: number; speed: number; phase: number }[] = []
 
   public constructor(model: EcologicalPyramidModel, providedOptions?: Options) {
@@ -48,34 +50,45 @@ export class EcologicalPyramidScreenView extends ScreenView {
     this.model = model
     this.sounds = new PyramidSounds()
     this.sounds.warm()
+    this.addInputListener({ down: () => this.sounds.unlock() })
 
     const margin = 10
     const panelW = 268
-    const statusH = 42
+    const leftCardW = 200
     const b = this.layoutBounds
 
-    const sceneLeft = b.left + margin
-    const sceneTop = b.top + statusH + margin
-    const sceneW = b.width - panelW - margin * 3
-    const sceneH = b.height - statusH - margin * 2
+    this.guide = new GuidanceBanner(b.width - margin * 2, {
+      title: 'Ecological Pyramid',
+      body: model.statusProperty.value,
+    })
+    this.guide.left = b.left + margin
+    this.guide.top = b.top + margin
+    this.addChild(this.guide)
+
+    const sceneTop = this.guide.bottom + margin
+    const sceneLeft = b.left + margin * 2 + leftCardW
+    const sceneW = b.width - panelW - leftCardW - margin * 4
+    const sceneH = b.bottom - margin - sceneTop
     this.sceneBounds = { left: sceneLeft, top: sceneTop, width: sceneW, height: sceneH }
 
-    const statusBg = new Rectangle(b.left + margin, b.top + 4, b.width - margin * 2, statusH, {
-      cornerRadius: 10,
-      fill: 'rgba(15, 23, 42, 0.94)',
-      stroke: 'rgba(168, 212, 160, 0.35)',
-      lineWidth: 1,
-    })
-    this.addChild(statusBg)
-    this.addChild(
-      new Text(model.statusProperty, {
-        font: new PhetFont(14),
-        fill: '#ecfeff',
-        maxWidth: b.width - margin * 4,
-        centerX: b.centerX,
-        centerY: statusBg.centerY,
-      }),
-    )
+    // Left guidance card — NOW / WHY / NEXT teaching triad
+    const leftCard = new DepthCard(leftCardW, sceneH, { title: 'What & why' })
+    leftCard.left = b.left + margin
+    leftCard.top = sceneTop
+    this.addChild(leftCard)
+    this.teachingTriad = new TeachingTriad(leftCardW - 24)
+    this.teachingTriad.left = 12
+    this.teachingTriad.top = 40
+    leftCard.content.addChild(this.teachingTriad)
+
+    const syncTriad = () => {
+      leftCard.visible = model.showTipsProperty.value
+      this.teachingTriad.setTriad(model.tipProperty.value, model.whyProperty.value, model.nextProperty.value)
+    }
+    model.tipProperty.link(syncTriad)
+    model.whyProperty.link(syncTriad)
+    model.nextProperty.link(syncTriad)
+    model.showTipsProperty.link(syncTriad)
 
     // Scene backdrop
     const sceneClip = new Rectangle(sceneLeft, sceneTop, sceneW, sceneH, {
@@ -108,7 +121,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
     const sunHit = () => {
       model.pulseSunBurst()
       this.sounds.button()
-      this.spawnHeatBurst(this.sun.centerX, this.sun.centerY + 30, 8)
+      this.burst(this.sun.centerX, this.sun.centerY + 30, 8)
     }
     this.sun.addInputListener({ up: sunHit })
     this.sunGlow.addInputListener({ up: sunHit })
@@ -137,59 +150,10 @@ export class EcologicalPyramidScreenView extends ScreenView {
 
     this.pyramidLayer = new Node()
     this.particleLayer = new Node({ pickable: false })
+    this.particles = new ParticleBurst(120)
     this.addChild(this.pyramidLayer)
     this.addChild(this.particleLayer)
-
-    this.tipText = new Text('', {
-      font: new PhetFont({ size: 14, weight: 'bold' }),
-      fill: '#fde68a',
-      maxWidth: sceneW * 0.42,
-    })
-    const tipBg = new Rectangle(0, 0, 20, 20, {
-      fill: 'rgba(8, 18, 32, 0.92)',
-      cornerRadius: 8,
-      stroke: 'rgba(250, 204, 21, 0.5)',
-      lineWidth: 1.5,
-    })
-    this.tipCard = new Node({ children: [tipBg, this.tipText], pickable: false })
-    this.addChild(this.tipCard)
-
-    this.whyText = new Text('', {
-      font: new PhetFont(13),
-      fill: '#a7f3d0',
-      maxWidth: sceneW * 0.42,
-    })
-    const whyBg = new Rectangle(0, 0, 20, 20, {
-      fill: 'rgba(6, 40, 28, 0.92)',
-      cornerRadius: 8,
-      stroke: 'rgba(134, 239, 172, 0.4)',
-      lineWidth: 1,
-    })
-    this.whyCard = new Node({ children: [whyBg, this.whyText], pickable: false })
-    this.addChild(this.whyCard)
-
-    const refreshTip = () => {
-      const show = model.showTipsProperty.value
-      const captionMax = sceneW * 0.44
-      this.whyText.string = model.whyProperty.value
-      whyBg.rectWidth = Math.min(captionMax, this.whyText.width + 18)
-      whyBg.rectHeight = this.whyText.height + 14
-      this.whyText.center = whyBg.center
-      this.whyCard.left = sceneLeft + 10
-      this.whyCard.top = sceneTop + 8
-      this.whyCard.visible = show
-
-      this.tipText.string = model.tipProperty.value
-      tipBg.rectWidth = Math.min(captionMax, this.tipText.width + 18)
-      tipBg.rectHeight = this.tipText.height + 14
-      this.tipText.center = tipBg.center
-      this.tipCard.left = sceneLeft + 10
-      this.tipCard.top = this.whyCard.bottom + 6
-      this.tipCard.visible = show
-    }
-    model.tipProperty.link(refreshTip)
-    model.whyProperty.link(refreshTip)
-    model.showTipsProperty.link(refreshTip)
+    this.addChild(this.particles)
 
     this.addChild(
       new PyramidControlPanel(model, this.sounds, {
@@ -212,6 +176,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
         this.rebuildPyramid()
       }
     })
+    model.statusProperty.link(status => this.guide.setGuidance('Ecological Pyramid', status))
     model.soundEnabledProperty.link(on => this.sounds.setEnabled(on))
 
     let lastBase = model.baseEnergyProperty.value
@@ -362,7 +327,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
         up: () => {
           this.model.selectTier(tier)
           this.sounds.tierSelect()
-          this.spawnHeatBurst(cx, y + h / 2, 5)
+          this.burst(cx, y + h / 2, 5)
         },
       })
       this.pyramidLayer.addChild(band)
@@ -533,7 +498,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
       up: () => {
         this.model.selectDecomposers()
         this.sounds.decomposer()
-        this.spawnHeatBurst(cx, decY + 18, 6)
+        this.burst(cx, decY + 18, 6)
       },
     })
     this.pyramidLayer.addChild(dec)
@@ -606,17 +571,15 @@ export class EcologicalPyramidScreenView extends ScreenView {
     }
   }
 
-  private spawnHeatBurst(x: number, y: number, n: number): void {
-    for (let i = 0; i < n; i++) {
-      this.heatParticles.push({
-        x: x + (Math.random() - 0.5) * 20,
-        y: y + (Math.random() - 0.5) * 10,
-        vx: (Math.random() - 0.5) * 40,
-        vy: -30 - Math.random() * 50,
-        life: 0.6 + Math.random() * 0.5,
-        r: 2 + Math.random() * 3,
-      })
-    }
+  /** Shared ParticleBurst pool — used for tier-tap, sun-tap, decomposer-tap and cascade events. */
+  private burst(x: number, y: number, count: number): void {
+    this.particles.burst(x, y, {
+      count,
+      color: 'rgba(251, 146, 60, 0.9)',
+      speed: 70,
+      life: 0.75,
+      radius: 3,
+    })
   }
 
   public override step(dt: number): void {
@@ -673,7 +636,7 @@ export class EcologicalPyramidScreenView extends ScreenView {
         this.lastCascadeTier = tier
         this.sounds.tierSelect()
         const g = this.tierGeoms[tier]
-        if (g) this.spawnHeatBurst(g.cx, g.cy, 10)
+        if (g) this.burst(g.cx, g.cy, 14)
       }
       const g = this.tierGeoms[tier]
       if (g) {
@@ -723,25 +686,8 @@ export class EcologicalPyramidScreenView extends ScreenView {
       }
     }
 
-    // Burst particles
-    for (let i = this.heatParticles.length - 1; i >= 0; i--) {
-      const p = this.heatParticles[i]!
-      p.life -= capped
-      p.x += p.vx * capped
-      p.y += p.vy * capped
-      p.vy += 20 * capped
-      if (p.life <= 0) {
-        this.heatParticles.splice(i, 1)
-        continue
-      }
-      this.particleLayer.addChild(
-        new Circle(p.r * Math.max(0.2, p.life), {
-          fill: `rgba(251, 146, 60, ${Math.min(0.9, p.life)})`,
-          centerX: p.x,
-          centerY: p.y,
-        }),
-      )
-    }
+    // Burst particles (tier-tap, sun-tap, decomposer-tap, cascade)
+    this.particles.step(capped, 20)
 
     // Nutrient recycle dots when decomposers focused
     if (this.model.decomposerFocusProperty.value && this.model.runningProperty.value) {

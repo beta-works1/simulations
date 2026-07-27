@@ -18,6 +18,7 @@ export class PreySounds {
   private readonly step: TSoundPlayer
   private lastSliderAt = 0
   private lastHuntAt = 0
+  private unlocked = false
 
   public constructor() {
     this.click = sharedSoundPlayers.get('pushButton')
@@ -37,6 +38,17 @@ export class PreySounds {
 
   public setEnabled(on: boolean): void {
     soundManager.enabledProperty.value = on
+  }
+
+  /** Call from the first pointer-down so tambo/AudioContext unlock in the browser. */
+  public unlock(): void {
+    if (this.unlocked) return
+    this.unlocked = true
+    try {
+      soundManager.enabledProperty.value = soundManager.enabledProperty.value
+    } catch {
+      /* ignore until init finishes */
+    }
   }
 
   public button(): void {

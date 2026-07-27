@@ -214,6 +214,8 @@ export class EcologicalPyramidModel implements TModel {
   public readonly tipProperty: StringProperty
   /** Plain “why it happens” line for Class 8. */
   public readonly whyProperty: StringProperty
+  /** What to try/look at next (TeachingTriad NEXT). */
+  public readonly nextProperty: StringProperty
   public readonly quizIndexProperty: NumberProperty
   public readonly quizScoreProperty: NumberProperty
   public readonly quizFeedbackProperty: StringProperty
@@ -244,6 +246,7 @@ export class EcologicalPyramidModel implements TModel {
     this.whyProperty = new StringProperty(
       'Why: only about 10% moves up each step. The rest is used or lost as heat.',
     )
+    this.nextProperty = new StringProperty('Next: tap Rabbits to follow the energy up one level.')
     this.quizIndexProperty = new NumberProperty(0)
     this.quizScoreProperty = new NumberProperty(0)
     this.quizFeedbackProperty = new StringProperty('Answer to check the 10% rule.')
@@ -270,6 +273,7 @@ export class EcologicalPyramidModel implements TModel {
       'NOW: Plants make food from sunlight — that wide base holds the most energy.'
     this.whyProperty.value =
       'Why: only about 10% moves up each step. The rest is used or lost as heat.'
+    this.nextProperty.value = 'Next: tap Rabbits to follow the energy up one level.'
     this.quizIndexProperty.value = 0
     this.quizScoreProperty.value = 0
     this.quizFeedbackProperty.value = 'Answer to check the 10% rule.'
@@ -303,6 +307,7 @@ export class EcologicalPyramidModel implements TModel {
       if (this.cascadeProgressProperty.value >= 4) {
         this.cascadeProgressProperty.value = 0
         this.statusProperty.value = 'Cascade complete — most energy was lost as heat along the way.'
+        this.nextProperty.value = 'Next: try the quiz to check the 10% rule.'
       }
       return
     }
@@ -317,6 +322,7 @@ export class EcologicalPyramidModel implements TModel {
     this.modeProperty.value = mode
     const unit = modeUnit(mode)
     this.statusProperty.value = `Showing ${unit} pyramid — each level keeps about ${(this.transferProperty.value * 100).toFixed(0)}% of the level below.`
+    this.nextProperty.value = `Next: tap a level to see its ${unit} value.`
     this.updateTipForSelection()
   }
 
@@ -341,6 +347,7 @@ export class EcologicalPyramidModel implements TModel {
     this.statusProperty.value = 'Decomposers recycle dead matter back into nutrients for plants.'
     this.tipProperty.value = 'NOW: Decomposers break down dead plants and animals.'
     this.whyProperty.value = 'Why: nutrients return to soil so plants can grow again.'
+    this.nextProperty.value = 'Next: tap a pyramid level to see how nutrients reach Plants.'
   }
 
   public setBaseEnergy(v: number): void {
@@ -351,6 +358,7 @@ export class EcologicalPyramidModel implements TModel {
     this.transferProperty.value = clamp(v, PyramidConstants.TRANSFER_MIN, PyramidConstants.TRANSFER_MAX)
     this.statusProperty.value = `Keep ${(this.transferProperty.value * 100).toFixed(0)}% each step — watch the pyramid reshape.`
     this.highlightTransferProperty.value = 1.2
+    this.nextProperty.value = 'Next: tap a level to see its new value.'
     this.updateTipForSelection()
   }
 
@@ -363,6 +371,7 @@ export class EcologicalPyramidModel implements TModel {
     this.selectTier(0)
     this.statusProperty.value = `${s.name}: ${s.blurb}`
     this.whyProperty.value = `Why: ${s.blurb}`
+    this.nextProperty.value = 'Next: tap each level to compare how this place changed the pyramid.'
   }
 
   public answerQuiz(choiceIndex: number): void {
@@ -392,6 +401,7 @@ export class EcologicalPyramidModel implements TModel {
     this.statusProperty.value = 'Sunlight fuels Plants — energy enters the pyramid here.'
     this.tipProperty.value = 'NOW: Sunlight hits Plants — that is where energy starts.'
     this.whyProperty.value = 'Why: photosynthesis stores light energy in plant food.'
+    this.nextProperty.value = 'Next: tap Rabbits to follow the energy up one level.'
   }
 
   public startCascadeDemo(): void {
@@ -404,6 +414,7 @@ export class EcologicalPyramidModel implements TModel {
     this.statusProperty.value = 'Watch energy climb — only about 10% survives each step.'
     this.tipProperty.value = 'NOW: Energy is climbing Plants → Rabbits → Foxes → Eagles.'
     this.whyProperty.value = 'Why: most energy is used to live or lost as heat along the way.'
+    this.nextProperty.value = 'Next: watch which level ends up with the least energy.'
     this.highlightTransferProperty.value = 2
   }
 
@@ -413,6 +424,7 @@ export class EcologicalPyramidModel implements TModel {
     this.compareTierProperty.value = next
     if (next < 0) {
       this.statusProperty.value = 'Compare cleared.'
+      this.nextProperty.value = 'Next: tap Compare next level to compare two tiers again.'
       this.updateTipForSelection()
       return
     }
@@ -424,6 +436,10 @@ export class EcologicalPyramidModel implements TModel {
     this.statusProperty.value = `Compare: ${a.label} (${formatTierValue(a.energy, mode)}) vs ${b.label} (${formatTierValue(b.energy, mode)})`
     this.tipProperty.value = `NOW: Comparing ${PYRAMID_SHORT[cur]} with ${PYRAMID_SHORT[next]}.`
     this.whyProperty.value = `Why: ${PYRAMID_SHORT[next]} keeps only ~${(transfer * 100).toFixed(0)}% of ${PYRAMID_SHORT[cur]}.`
+    this.nextProperty.value =
+      next < 3
+        ? 'Next: tap Compare next level again to keep moving up.'
+        : 'Next: try the quiz to check the 10% rule.'
   }
 
   private updateTipForSelection(): void {
@@ -442,7 +458,14 @@ export class EcologicalPyramidModel implements TModel {
       `Why: foxes also burn energy moving and growing — more heat loss.`,
       'Why: so little energy reaches the top that food chains stay short.',
     ]
+    const next = [
+      'Next: tap Rabbits to follow the energy up one level.',
+      'Next: tap Foxes to keep following the energy.',
+      'Next: tap Eagles to reach the top of the pyramid.',
+      'Next: try Play 10% cascade to watch it happen automatically.',
+    ]
     this.tipProperty.value = now[tier] ?? now[0]!
     this.whyProperty.value = why[tier] ?? why[0]!
+    this.nextProperty.value = next[tier] ?? next[0]!
   }
 }

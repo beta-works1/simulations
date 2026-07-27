@@ -1,11 +1,15 @@
-import { Range, Dimension2 } from 'scenerystack/dot'
+import { Range } from 'scenerystack/dot'
 import { EmptySelfOptions, optionize } from 'scenerystack/phet-core'
-import { HSlider, Panel, PanelOptions, RectangularPushButton, ToggleSwitch } from 'scenerystack/sun'
+import { Panel, PanelOptions, ToggleSwitch } from 'scenerystack/sun'
 import { HBox, Text, VBox } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
 import { NumberProperty } from 'scenerystack/axon'
 import { PreyColors, PreyConstants } from '../../common/PreyColors.js'
 import { PreyStrings } from '../../PreyStrings.js'
+import { SimTheme } from '../../common/SimTheme.js'
+import { SoftButton } from '../../common/ui/SoftButton.js'
+import { DepthSlider } from '../../common/ui/DepthSlider.js'
+import { MiniQuiz } from '../../common/ui/MiniQuiz.js'
 import {
   ADVANCED_SCENARIOS,
   CYCLE_STEPS,
@@ -25,6 +29,14 @@ type Options = SelfOptions & EmptySelfOptions & PanelOptions
 
 const MODES: InteractionMode[] = ['predation', 'competition', 'mutualism']
 
+/** Plain hex mirrors of PreyColors defaults — SoftButton wants a CSS string, not a Color/Property. */
+const GREEN = '#16a085'
+const BLUE = '#2980b9'
+const PREY_GREEN = '#27ae60'
+const PRED_RED = '#e74c3c'
+const YELLOW = '#f1c40f'
+const RED = '#c0392b'
+
 export class PreyControlPanel extends Panel {
   public constructor(model: PredatorPreyModel, sounds: PreySounds, providedOptions: Options) {
     const w = (providedOptions.maxWidth as number | undefined) ?? 250
@@ -36,20 +48,13 @@ export class PreyControlPanel extends Panel {
         yMargin: 10,
         stroke: PreyColors.panelBorderProperty,
         lineWidth: 2,
-        fill: 'rgba(11, 28, 40, 0.94)',
+        fill: SimTheme.panelDark,
       },
       providedOptions,
     )
 
-    const mkBtn = (label: string, fn: () => void, baseColor = PreyColors.buttonProperty) =>
-      new RectangularPushButton({
-        content: new Text(label, { font: new PhetFont(11), fill: 'white', maxWidth: w - 28 }),
-        baseColor,
-        xMargin: 8,
-        yMargin: 5,
-        listener: fn,
-        minWidth: w - 16,
-      })
+    const mkBtn = (label: string, fn: () => void, fill = SimTheme.accent, width = w - 16) =>
+      new SoftButton(label, fn, { width, height: 34, fill, fontSize: 12 })
 
     const section = (t: string) =>
       new Text(t, { font: new PhetFont({ size: 12, weight: 'bold' }), fill: '#7dcea0', maxWidth: w })
@@ -59,21 +64,6 @@ export class PreyControlPanel extends Panel {
 
     const preyReadout = new Text('', { font: new PhetFont({ size: 14, weight: 'bold' }), fill: '#2ecc71', maxWidth: w })
     const predReadout = new Text('', { font: new PhetFont({ size: 14, weight: 'bold' }), fill: '#e74c3c', maxWidth: w })
-    const nowReadout = new Text(model.phaseLabelProperty, {
-      font: new PhetFont({ size: 12, weight: 'bold' }),
-      fill: '#fde68a',
-      maxWidth: w,
-    })
-    const whyReadout = new Text(model.whyProperty, {
-      font: new PhetFont(11),
-      fill: '#a7f3d0',
-      maxWidth: w,
-    })
-    const nextReadout = new Text(model.nextHintProperty, {
-      font: new PhetFont(11),
-      fill: '#e2e8f0',
-      maxWidth: w,
-    })
     const tipReadout = new Text(model.tipProperty, {
       font: new PhetFont(11),
       fill: '#bae6fd',
@@ -85,10 +75,9 @@ export class PreyControlPanel extends Panel {
       maxWidth: w,
     })
 
-    const quizPrompt = new Text('', { font: new PhetFont(11), fill: '#e2e8f0', maxWidth: w - 8 })
-    const quizFeedback = new Text('', { font: new PhetFont(10), fill: '#a8d4a0', maxWidth: w - 8 })
+    const quizExplain = new Text('', { font: new PhetFont(11), fill: '#a8d4a0', maxWidth: w - 8 })
     const quizScore = new Text('', { font: new PhetFont(11), fill: '#f4d03f', maxWidth: w })
-    const quizChoices = new VBox({ align: 'left', spacing: 4 })
+    const miniQuiz = new MiniQuiz(w - 4)
     const advancedBox = new VBox({ align: 'left', spacing: 5 })
 
     const refresh = () => {
@@ -107,24 +96,25 @@ export class PreyControlPanel extends Panel {
 
     const refreshQuiz = () => {
       const q = QUIZ_BANK[model.quizIndexProperty.value % QUIZ_BANK.length]!
-      quizPrompt.string = q.prompt
       quizScore.string = `Score: ${model.quizScoreProperty.value}`
-      quizFeedback.string = model.quizFeedbackProperty.value
-      quizChoices.children = q.choices.map((c, i) =>
-        mkBtn(
-          c,
-          () => {
-            model.answerQuiz(i)
-            if (i === q.correct) sounds.cyclePeak()
-            else sounds.softClick()
-          },
-          PreyColors.playbackButtonProperty,
-        ),
+      quizExplain.string = ''
+      miniQuiz.showQuiz(
+        q.prompt,
+        q.choices.map((c, i) => ({ label: c, correct: i === q.correct })),
+        correct => {
+          // MiniQuiz only reports correct/wrong; model.answerQuiz just needs an index
+          // that matches (correct) or does not match (wrong) the answer key.
+          model.answerQuiz(correct ? q.correct : (q.correct + 1) % q.choices.length)
+          if (correct) sounds.cyclePeak()
+          else sounds.softClick()
+          quizExplain.string = model.quizFeedbackProperty.value
+        },
       )
     }
     model.quizIndexProperty.link(refreshQuiz)
-    model.quizScoreProperty.link(refreshQuiz)
-    model.quizFeedbackProperty.link(refreshQuiz)
+    model.quizScoreProperty.link(() => {
+      quizScore.string = `Score: ${model.quizScoreProperty.value}`
+    })
     refreshQuiz()
 
     const tick = (property: NumberProperty, thresh = 0.01) => {
@@ -141,31 +131,22 @@ export class PreyControlPanel extends Panel {
     tick(model.deathProperty, 0.03)
     tick(model.carryingCapacityProperty, 2)
 
-    const sliderRow = (label: string, property: NumberProperty, range: Range, digits = 2) => {
-      const readout = new Text('', { font: new PhetFont(11), fill: '#ecf0f1', maxWidth: 48 })
-      property.link(v => {
-        readout.string = v.toFixed(digits)
+    const depthSliderRow = (
+      label: string,
+      property: NumberProperty,
+      range: Range,
+      digits = 2,
+      fill = '#38bdf8',
+    ) =>
+      new DepthSlider(property, {
+        min: range.min,
+        max: range.max,
+        width: w - 28,
+        label,
+        format: n => n.toFixed(digits),
+        fill,
+        onTick: () => sounds.sliderTick(),
       })
-      return new VBox({
-        align: 'left',
-        spacing: 3,
-        children: [
-          new HBox({
-            spacing: 6,
-            children: [
-              new Text(label, { font: new PhetFont(11), fill: '#bdc3c7', maxWidth: w - 60 }),
-              readout,
-            ],
-          }),
-          new HSlider(property, range, {
-            trackSize: new Dimension2(w - 28, 6),
-            thumbSize: new Dimension2(16, 24),
-            majorTickLength: 0,
-            minorTickLength: 0,
-          }),
-        ],
-      })
-    }
 
     const setMode = (mode: InteractionMode) => () => {
       const prev = MODES.indexOf(model.modeProperty.value)
@@ -174,49 +155,55 @@ export class PreyControlPanel extends Panel {
       sounds.modeChange(next >= prev)
     }
 
-    const playPauseLabel = new Text(model.runningProperty.value ? 'Pause' : 'Play', {
-      font: new PhetFont(11),
-      fill: 'white',
-      maxWidth: w - 24,
-    })
-    const playPauseBtn = new RectangularPushButton({
-      content: playPauseLabel,
-      baseColor: PreyColors.playbackButtonProperty,
-      xMargin: 8,
-      yMargin: 5,
-      listener: () => {
+    const playPauseBtn = new SoftButton(
+      model.runningProperty.value ? 'Pause' : 'Play',
+      () => {
         model.runningProperty.value = !model.runningProperty.value
         sounds.playPause(model.runningProperty.value)
       },
-      minWidth: w - 16,
-    })
+      { width: w - 16, height: 36, fill: SimTheme.accent, fontSize: 13, selected: true },
+    )
     model.runningProperty.link(running => {
-      playPauseLabel.string = running ? 'Pause' : 'Play'
+      playPauseBtn.setLabel(running ? 'Pause' : 'Play')
+      playPauseBtn.setSelected(running)
+    })
+
+    const soundBtn = new SoftButton(
+      model.soundEnabledProperty.value ? 'Sound: On' : 'Sound: Off',
+      () => {
+        sounds.unlock()
+        model.soundEnabledProperty.value = !model.soundEnabledProperty.value
+        sounds.setEnabled(model.soundEnabledProperty.value)
+        if (model.soundEnabledProperty.value) sounds.button()
+      },
+      { width: w - 16, height: 34, fill: '#0f766e', fontSize: 12, selected: true },
+    )
+    model.soundEnabledProperty.link(on => {
+      soundBtn.setLabel(on ? 'Sound: On' : 'Sound: Off')
+      soundBtn.setSelected(on)
     })
 
     const buildAdvanced = () => {
       if (!model.showAdvancedProperty.value) {
-        advancedBox.children = [
-          help('Extra tools stay hidden. Learn the 4 steps first.'),
-        ]
+        advancedBox.children = [help('Extra tools stay hidden. Learn the 4 steps first.')]
         return
       }
       advancedBox.children = [
         help('Use these after you can explain the 4 hunt steps.'),
         section('Other lessons (compare)'),
-        mkBtn('Both fight for same food', setMode('competition')),
-        mkBtn('Both help each other', setMode('mutualism')),
+        mkBtn('Both fight for same food', setMode('competition'), GREEN),
+        mkBtn('Both help each other', setMode('mutualism'), GREEN),
         section('Other starting stories'),
         ...SCENARIOS.filter(s => s.id !== 'classic').map(s =>
           mkBtn(s.name, () => {
             model.applyScenario(s.id)
             sounds.scenario()
-          }),
+          }, GREEN),
         ),
-        sliderRow('How often foxes catch rabbits', model.predationRateProperty, new Range(0.01, 0.05), 3),
-        sliderRow('How fast foxes have babies', model.predatorGrowthProperty, new Range(0.01, 0.04), 3),
-        sliderRow('How fast foxes die', model.deathProperty, new Range(0.35, 1.0)),
-        sliderRow('Food / space limit', model.carryingCapacityProperty, new Range(50, 120), 0),
+        depthSliderRow('How often foxes catch rabbits', model.predationRateProperty, new Range(0.01, 0.05), 3, '#38bdf8'),
+        depthSliderRow('How fast foxes have babies', model.predatorGrowthProperty, new Range(0.01, 0.04), 3, '#f97316'),
+        depthSliderRow('How fast foxes die', model.deathProperty, new Range(0.35, 1.0), 2, '#a78bfa'),
+        depthSliderRow('Food / space limit', model.carryingCapacityProperty, new Range(50, 120), 0, '#facc15'),
         new HBox({
           spacing: 8,
           children: [
@@ -242,57 +229,47 @@ export class PreyControlPanel extends Panel {
         mkBtn('Drought (rabbits grow slower)', () => {
           model.triggerEvent('drought')
           sounds.scenario()
-        }, PreyColors.dangerProperty),
+        }, RED),
         mkBtn('Fox disease', () => {
           model.triggerEvent('disease')
           sounds.scenario()
-        }, PreyColors.predatorProperty),
+        }, PRED_RED),
         mkBtn('Plant bloom (+ rabbits)', () => {
           model.triggerEvent('bloom')
           sounds.spawnPrey()
-        }, PreyColors.preyProperty),
+        }, PREY_GREEN),
         ...ADVANCED_SCENARIOS.map(s =>
           mkBtn(s.name, () => {
             model.applyScenario(s.id)
             sounds.scenario()
-          }),
+          }, GREEN),
         ),
         section('Quick check'),
         quizScore,
-        quizPrompt,
-        quizChoices,
-        quizFeedback,
+        miniQuiz,
+        quizExplain,
         mkBtn('Next question', () => {
           model.nextQuiz()
           sounds.button()
-        }, PreyColors.playbackButtonProperty),
+        }, BLUE),
         mkBtn('Clear graph', () => {
           model.clearHistory()
           sounds.softClick()
-        }, PreyColors.playbackButtonProperty),
+        }, BLUE),
       ]
     }
     model.showAdvancedProperty.link(buildAdvanced)
 
-    const advancedLabel = new Text('Show more options', {
-      font: new PhetFont(11),
-      fill: 'white',
-      maxWidth: w - 24,
-    })
-    const advancedBtn = new RectangularPushButton({
-      content: advancedLabel,
-      baseColor: PreyColors.playbackButtonProperty,
-      xMargin: 8,
-      yMargin: 5,
-      listener: () => {
+    const advancedBtn = new SoftButton(
+      'Show more options',
+      () => {
         model.showAdvancedProperty.value = !model.showAdvancedProperty.value
-        advancedLabel.string = model.showAdvancedProperty.value ? 'Hide extra options' : 'Show more options'
         sounds.button()
       },
-      minWidth: w - 16,
-    })
+      { width: w - 16, height: 34, fill: BLUE, fontSize: 12 },
+    )
     model.showAdvancedProperty.link(on => {
-      advancedLabel.string = on ? 'Hide extra options' : 'Show more options'
+      advancedBtn.setLabel(on ? 'Hide extra options' : 'Show more options')
     })
 
     const content = new VBox({
@@ -308,50 +285,33 @@ export class PreyControlPanel extends Panel {
         section('The 4 steps (main lesson)'),
         tipReadout,
         stepMap,
-        section('NOW happening'),
-        nowReadout,
-        whyReadout,
-        nextReadout,
         section('How many animals?'),
         preyReadout,
         predReadout,
         section('Main lesson'),
-        mkBtn('Foxes eat rabbits (start here)', setMode('predation'), PreyColors.accentProperty),
+        mkBtn('Foxes eat rabbits (start here)', setMode('predation'), YELLOW),
         mkBtn('Restart classic cycle', () => {
           model.applyScenario('classic')
           sounds.scenario()
-        }),
+        }, GREEN),
         section('Add animals'),
         help('Or tap the meadow: left = rabbits, right = foxes.'),
         new HBox({
           spacing: 6,
           children: [
-            new RectangularPushButton({
-              content: new Text('+ Rabbits', { font: new PhetFont(12), fill: 'white' }),
-              baseColor: PreyColors.preyProperty,
-              xMargin: 10,
-              yMargin: 5,
-              listener: () => {
-                model.addPrey()
-                sounds.spawnPrey()
-              },
-              minWidth: (w - 22) / 2,
-            }),
-            new RectangularPushButton({
-              content: new Text('+ Foxes', { font: new PhetFont(12), fill: 'white' }),
-              baseColor: PreyColors.predatorProperty,
-              xMargin: 10,
-              yMargin: 5,
-              listener: () => {
-                model.addPredators()
-                sounds.spawnPredator()
-              },
-              minWidth: (w - 22) / 2,
-            }),
+            mkBtn('+ Rabbits', () => {
+              model.addPrey()
+              sounds.spawnPrey()
+            }, PREY_GREEN, (w - 22) / 2),
+            mkBtn('+ Foxes', () => {
+              model.addPredators()
+              sounds.spawnPredator()
+            }, PRED_RED, (w - 22) / 2),
           ],
         }),
         section('Simple controls'),
-        sliderRow('Watching speed (slower = easier)', model.simSpeedProperty, new Range(PreyConstants.SPEED_MIN, PreyConstants.SPEED_MAX)),
+        depthSliderRow('Watching speed (slower = easier)', model.simSpeedProperty, new Range(PreyConstants.SPEED_MIN, PreyConstants.SPEED_MAX), 2, SimTheme.accent),
+        soundBtn,
         playPauseBtn,
         mkBtn(
           'Reset to start',
@@ -359,7 +319,7 @@ export class PreyControlPanel extends Panel {
             model.reset()
             sounds.resetAll()
           },
-          PreyColors.dangerProperty,
+          RED,
         ),
         advancedBtn,
         advancedBox,

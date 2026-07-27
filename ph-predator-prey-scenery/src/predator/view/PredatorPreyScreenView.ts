@@ -3,10 +3,14 @@ import { ScreenView, ScreenViewOptions } from 'scenerystack/sim'
 import { Circle, DragListener, Node, Path, Rectangle, Text } from 'scenerystack/scenery'
 import { Shape } from 'scenerystack/kite'
 import { PhetFont } from 'scenerystack/scenery-phet'
-import { CYCLE_STEPS, PredatorPreyModel, REFUGE } from '../model/PredatorPreyModel.js'
+import { PredatorPreyModel, REFUGE } from '../model/PredatorPreyModel.js'
 import { PreyControlPanel } from './PreyControlPanel.js'
 import { PreySounds } from './PreySounds.js'
 import { AnimatedMeadowCreature, createCreatureLegendIcon } from './AnimatedMeadowCreature.js'
+import { GuidanceBanner } from '../../common/ui/GuidanceBanner.js'
+import { DepthCard } from '../../common/ui/DepthCard.js'
+import { TeachingTriad } from '../../common/ui/TeachingTriad.js'
+import { ParticleBurst } from '../../common/ui/ParticleBurst.js'
 
 type Options = EmptySelfOptions & ScreenViewOptions
 
@@ -24,8 +28,9 @@ export class PredatorPreyScreenView extends ScreenView {
   private readonly predPath: Path
   private readonly preyFill: Path
   private readonly phasePath: Path
-  private readonly tipCard: Node
-  private readonly tipText: Text
+  private readonly particles: ParticleBurst
+  private readonly guide: GuidanceBanner
+  private readonly teachingTriad: TeachingTriad
   private readonly phaseBadge: Text
   private readonly modeBadge: Text
   private readonly chartCaption: Text
@@ -49,38 +54,50 @@ export class PredatorPreyScreenView extends ScreenView {
     super(providedOptions)
     this.model = model
     this.sounds = new PreySounds()
+    this.addInputListener({ down: () => this.sounds.unlock() })
 
     const margin = 10
     const panelW = 268
-    const statusH = 36
+    const leftCardW = 200
     const b = this.layoutBounds
 
-    const sceneLeft = b.left + margin
-    const sceneTop = b.top + statusH + margin
-    const sceneW = b.width - panelW - margin * 3
-    const sceneH = (b.height - statusH - margin * 2) * 0.56
+    this.guide = new GuidanceBanner(b.width - margin * 2, {
+      title: 'Predator–Prey Dynamics',
+      body: model.statusProperty.value,
+    })
+    this.guide.left = b.left + margin
+    this.guide.top = b.top + margin
+    this.addChild(this.guide)
+    model.statusProperty.link(status => this.guide.setGuidance('Predator–Prey Dynamics', status))
+
+    const sceneTop = this.guide.bottom + margin
+    const sceneLeft = b.left + margin * 2 + leftCardW
+    const sceneW = b.width - panelW - leftCardW - margin * 4
+    const sceneH = (b.bottom - margin - sceneTop) * 0.56
     this.fieldBounds = { left: sceneLeft, top: sceneTop, width: sceneW, height: sceneH }
 
     const chartTop = sceneTop + sceneH + 10
     const chartH = b.bottom - margin - chartTop
     this.chartBounds = { left: sceneLeft, top: chartTop, width: sceneW, height: chartH }
 
-    const statusBg = new Rectangle(b.left + margin, b.top + 4, b.width - margin * 2, statusH, {
-      cornerRadius: 10,
-      fill: 'rgba(15, 23, 42, 0.94)',
-      stroke: 'rgba(125, 211, 252, 0.3)',
-      lineWidth: 1,
-    })
-    this.addChild(statusBg)
-    this.addChild(
-      new Text(model.statusProperty, {
-        font: new PhetFont(13),
-        fill: '#ecfeff',
-        maxWidth: b.width - margin * 4,
-        centerX: b.centerX,
-        centerY: statusBg.centerY,
-      }),
-    )
+    // Left guidance card — NOW / WHY / NEXT teaching triad
+    const leftCard = new DepthCard(leftCardW, b.bottom - margin - sceneTop, { title: 'What & why' })
+    leftCard.left = b.left + margin
+    leftCard.top = sceneTop
+    this.addChild(leftCard)
+    this.teachingTriad = new TeachingTriad(leftCardW - 24)
+    this.teachingTriad.left = 12
+    this.teachingTriad.top = 40
+    leftCard.content.addChild(this.teachingTriad)
+
+    const syncTriad = () => {
+      leftCard.visible = model.showTipsProperty.value
+      this.teachingTriad.setTriad(model.phaseLabelProperty.value, model.whyProperty.value, model.nextHintProperty.value)
+    }
+    model.phaseLabelProperty.link(syncTriad)
+    model.whyProperty.link(syncTriad)
+    model.nextHintProperty.link(syncTriad)
+    model.showTipsProperty.link(syncTriad)
 
     const field = new Rectangle(sceneLeft, sceneTop, sceneW, sceneH, {
       fill: '#1a5c38',
@@ -309,6 +326,20 @@ export class PredatorPreyScreenView extends ScreenView {
     })
     this.addChild(this.huntPulse)
 
+    this.particles = new ParticleBurst(140)
+    this.addChild(this.particles)
+
+    let lastStoryStep = model.storyStepProperty.value
+    model.storyStepProperty.link(step => {
+      // Population crash: rabbits (Step 3) or foxes (Step 4) start falling.
+      if ((step === 3 || step === 4) && step !== lastStoryStep) {
+        const cx = sceneLeft + sceneW * 0.5
+        const cy = sceneTop + sceneH * 0.5
+        this.burst(cx, cy, step === 3 ? 'rgba(46, 204, 113, 0.85)' : 'rgba(231, 76, 60, 0.85)')
+      }
+      lastStoryStep = step
+    })
+
     const leftZone = new Rectangle(sceneLeft, sceneTop, sceneW * 0.5, sceneH, {
       fill: 'rgba(0,0,0,0)',
       cursor: 'pointer',
@@ -321,7 +352,10 @@ export class PredatorPreyScreenView extends ScreenView {
       up: event => {
         if (this.draggingId !== null) return
         const local = leftZone.globalToLocalPoint(event.pointer.point)
-        this.flashAt(sceneLeft + local.x, sceneTop + local.y, '#2ecc71')
+        const x = sceneLeft + local.x
+        const y = sceneTop + local.y
+        this.flashAt(x, y, '#2ecc71')
+        this.burst(x, y, 'rgba(46, 204, 113, 0.85)', 10)
         model.addPrey()
         this.sounds.spawnPrey()
       },
@@ -330,7 +364,10 @@ export class PredatorPreyScreenView extends ScreenView {
       up: event => {
         if (this.draggingId !== null) return
         const local = rightZone.globalToLocalPoint(event.pointer.point)
-        this.flashAt(sceneLeft + sceneW * 0.5 + local.x, sceneTop + local.y, '#e74c3c')
+        const x = sceneLeft + sceneW * 0.5 + local.x
+        const y = sceneTop + local.y
+        this.flashAt(x, y, '#e74c3c')
+        this.burst(x, y, 'rgba(231, 76, 60, 0.85)', 10)
         model.addPredators()
         this.sounds.spawnPredator()
       },
@@ -390,42 +427,6 @@ export class PredatorPreyScreenView extends ScreenView {
     model.storyStepProperty.link(refreshStepBadge)
     refreshModeBadge()
     refreshStepBadge()
-
-    // One meadow strip only (Why / Next live in the side panel)
-    this.tipText = new Text('', {
-      font: new PhetFont({ size: 13, weight: 'bold' }),
-      fill: '#fde68a',
-      maxWidth: sceneW * 0.7,
-    })
-    const tipBg = new Rectangle(0, 0, 20, 20, {
-      fill: 'rgba(8, 18, 32, 0.92)',
-      cornerRadius: 8,
-      stroke: 'rgba(250, 204, 21, 0.55)',
-      lineWidth: 1.5,
-    })
-    this.tipCard = new Node({ children: [tipBg, this.tipText], pickable: false })
-    this.addChild(this.tipCard)
-
-    const refreshTip = () => {
-      const show = model.showTipsProperty.value
-      const step = model.storyStepProperty.value
-      if (step >= 1 && step <= 4) {
-        const s = CYCLE_STEPS[step - 1]!
-        this.tipText.string = `NOW: ${s.short}  ·  ${s.next.replace(/^Next:\s*/i, 'Next: ')}`
-      } else {
-        this.tipText.string = `NOW: ${model.phaseLabelProperty.value}`
-      }
-      tipBg.rectWidth = Math.min(sceneW * 0.72, this.tipText.width + 18)
-      tipBg.rectHeight = this.tipText.height + 12
-      this.tipText.center = tipBg.center
-      this.tipCard.left = sceneLeft + 10
-      this.tipCard.bottom = sceneTop + sceneH - 28
-      this.tipCard.visible = show
-    }
-    model.phaseLabelProperty.link(refreshTip)
-    model.nextHintProperty.link(refreshTip)
-    model.storyStepProperty.link(refreshTip)
-    model.showTipsProperty.link(refreshTip)
 
     // Chart card
     const chartBg = new Rectangle(sceneLeft, chartTop, sceneW, chartH, {
@@ -519,6 +520,10 @@ export class PredatorPreyScreenView extends ScreenView {
     this.huntPulse.visible = true
     this.huntPulse.opacity = 1
     this.huntPulse.radius = 18
+  }
+
+  private burst(x: number, y: number, color: string, count = 16): void {
+    this.particles.burst(x, y, { count, color, speed: 75, life: 0.7, radius: 3 })
   }
 
   private redrawChart(): void {
@@ -716,8 +721,13 @@ export class PredatorPreyScreenView extends ScreenView {
       const preds = this.model.agents.filter(a => a.kind === 'predator')
       if (preds.length && !this.huntPulse.visible) {
         const p = preds[Math.floor(Math.random() * preds.length)]!
-        this.flashAt(fb.left + p.x * fb.width, fb.top + p.y * fb.height, 'rgba(248,113,113,0.7)')
+        const hx = fb.left + p.x * fb.width
+        const hy = fb.top + p.y * fb.height
+        this.flashAt(hx, hy, 'rgba(248,113,113,0.7)')
+        this.burst(hx, hy, 'rgba(248, 113, 113, 0.85)', 12)
       }
     }
+
+    this.particles.step(capped, 20)
   }
 }
