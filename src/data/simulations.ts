@@ -519,6 +519,8 @@ export const simulations: Simulation[] = [
     color: '#7b241c',
     accent: '#5dade2',
     image: '/covers/metal-nonmetal.svg',
+    sceneryHtml: '/downloads/metal-nonmetal-offline.html',
+    offlineHtml: '/downloads/metal-nonmetal-offline.html',
   },
 
   // Grade 8 — Ch 6 Chemical Reactions
