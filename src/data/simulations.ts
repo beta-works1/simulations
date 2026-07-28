@@ -805,6 +805,8 @@ export const simulations: Simulation[] = [
     color: '#1a5276',
     accent: '#f4d03f',
     image: '/covers/laws-of-reflection.svg',
+    sceneryHtml: '/downloads/laws-of-reflection-offline.html',
+    offlineHtml: '/downloads/laws-of-reflection-offline.html',
   },
   {
     id: 'regular-vs-diffuse',
@@ -822,6 +824,8 @@ export const simulations: Simulation[] = [
     color: '#154360',
     accent: '#85c1e9',
     image: '/covers/regular-vs-diffuse.svg',
+    sceneryHtml: '/downloads/regular-vs-diffuse-offline.html',
+    offlineHtml: '/downloads/regular-vs-diffuse-offline.html',
   },
   {
     id: 'plane-mirror-periscope',
@@ -839,6 +843,8 @@ export const simulations: Simulation[] = [
     color: '#1b4f72',
     accent: '#48c9b0',
     image: '/covers/plane-mirror-periscope.svg',
+    sceneryHtml: '/downloads/plane-mirror-periscope-offline.html',
+    offlineHtml: '/downloads/plane-mirror-periscope-offline.html',
   },
   {
     id: 'refraction-media',
@@ -856,6 +862,8 @@ export const simulations: Simulation[] = [
     color: '#0e6655',
     accent: '#5dade2',
     image: '/covers/refraction-media.svg',
+    sceneryHtml: '/downloads/refraction-media-offline.html',
+    offlineHtml: '/downloads/refraction-media-offline.html',
   },
   {
     id: 'rainbow-dispersion',
@@ -873,6 +881,8 @@ export const simulations: Simulation[] = [
     color: '#6c3483',
     accent: '#f5b041',
     image: '/covers/rainbow-dispersion.svg',
+    sceneryHtml: '/downloads/rainbow-dispersion-offline.html',
+    offlineHtml: '/downloads/rainbow-dispersion-offline.html',
   },
   {
     id: 'curved-mirrors',
@@ -890,6 +900,8 @@ export const simulations: Simulation[] = [
     color: '#1a5276',
     accent: '#e74c3c',
     image: '/covers/curved-mirrors.svg',
+    sceneryHtml: '/downloads/curved-mirrors-offline.html',
+    offlineHtml: '/downloads/curved-mirrors-offline.html',
   },
 
   // Grade 8 — Ch 10 Electricity & Magnetism
