@@ -42,6 +42,13 @@ export class TeachingTriad extends Node {
       this.stack()
       onLaidOut?.()
     }, 0)
+    setTimeout(() => {
+      this.resize(this.now)
+      this.resize(this.why)
+      this.resize(this.next)
+      this.stack()
+      onLaidOut?.()
+    }, 50)
   }
 
   private makeCard(label: string, accent: string, width: number): Card {
@@ -70,13 +77,13 @@ export class TeachingTriad extends Node {
 
   private resize(card: Card): void {
     // RichText height can lag one frame — pad generously so cards don't overlap.
-    const h = Math.max(48, card.body.bottom + 12)
+    const h = Math.max(52, card.body.bottom + 14)
     card.bg.setRectHeight(h)
   }
 
   private stack(): void {
     this.now.root.top = 0
-    this.why.root.top = this.now.root.bottom + 8
-    this.next.root.top = this.why.root.bottom + 8
+    this.why.root.top = this.now.root.bottom + 10
+    this.next.root.top = this.why.root.bottom + 10
   }
 }

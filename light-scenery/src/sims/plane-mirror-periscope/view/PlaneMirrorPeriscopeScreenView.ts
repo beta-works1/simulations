@@ -130,7 +130,7 @@ export class PlaneMirrorPeriscopeScreenView extends ScreenView {
     leftCard.left = m; leftCard.top = this.stageTop; this.addChild(leftCard)
     this.teachingTriad = new TeachingTriad(leftW - 24); this.teachingTriad.left = 12; this.teachingTriad.top = 12; leftCard.content.addChild(this.teachingTriad)
     this.leftLearnTip = createPanelTip(PlaneMirrorPeriscopeStrings.learnMoreStringProperty.value, { width: leftW - 24, fontSize: 11, fill: LightColors.panelMuted })
-    this.leftLearnTip.left = 12; this.leftLearnTip.top = this.teachingTriad.bottom + 16; leftCard.content.addChild(this.leftLearnTip)
+    this.leftLearnTip.left = 12; this.leftLearnTip.top = this.teachingTriad.bottom + 22; leftCard.content.addChild(this.leftLearnTip)
 
     this.addChild(new StageBackdrop(this.stageLeft, this.stageTop, this.stageW, this.stageH, { top: '#c7d2e0', bottom: '#eef2f7' }))
     this.titleText = new Text(PlaneMirrorPeriscopeStrings.stageTitleStringProperty.value, { font: new PhetFont({ size: 18, weight: 'bold' }), fill: '#0f172a', centerX: this.stageCenterX, top: this.stageTop + 10 })
@@ -176,7 +176,8 @@ export class PlaneMirrorPeriscopeScreenView extends ScreenView {
     panelContent.addChild(distSlider)
     const heightSlider = new DepthSlider(model.objectHeightProperty, { min: 0.1, max: 0.4, width: contentW, label: PlaneMirrorPeriscopeStrings.objectHeightSliderStringProperty.value, format: (n) => `${(n * 100).toFixed(0)}%`, fill: RAY_CYAN, onTick: () => sounds.sliderTick() })
     panelContent.addChild(heightSlider)
-    panelContent.addChild(controlHint(PlaneMirrorPeriscopeStrings.conditionsHintStringProperty.value, contentW))
+    const conditionsHint = controlHint(PlaneMirrorPeriscopeStrings.conditionsHintStringProperty.value, contentW)
+    panelContent.addChild(conditionsHint)
 
     const displayHeader = controlSection(PlaneMirrorPeriscopeStrings.sectionDisplayStringProperty.value, contentW); panelContent.addChild(displayHeader)
     this.labelsBtn = new SoftButton(PlaneMirrorPeriscopeStrings.labelsOnStringProperty.value, () => { sounds.softClick(); model.showLabelsProperty.value = !model.showLabelsProperty.value }, { width: halfW, height: btnH, fill: '#64748b', fontSize: 11, selected: true })
@@ -205,7 +206,8 @@ export class PlaneMirrorPeriscopeScreenView extends ScreenView {
       py += 6; conditionsHeader.left = 0; conditionsHeader.top = py; py = conditionsHeader.bottom + 6
       this.runningToggleBtn.left = 0; this.runningToggleBtn.top = py; py = this.runningToggleBtn.bottom + gridGap
       distSlider.left = 0; distSlider.top = py; py = distSlider.bottom + gridGap
-      heightSlider.left = 0; heightSlider.top = py; py = heightSlider.bottom + 12
+      heightSlider.left = 0; heightSlider.top = py; py = heightSlider.bottom + 6
+      conditionsHint.left = 0; conditionsHint.top = py; py = conditionsHint.bottom + 12
       displayHeader.left = 0; displayHeader.top = py; py = displayHeader.bottom + 6
       this.labelsBtn.left = 0; this.labelsBtn.top = py; this.raysBtn.left = halfW + 8; this.raysBtn.top = py; py = this.labelsBtn.bottom + gridGap
       this.imageBtn.left = 0; this.imageBtn.top = py; py = this.imageBtn.bottom + 12
@@ -227,7 +229,7 @@ export class PlaneMirrorPeriscopeScreenView extends ScreenView {
     model.scenarioProperty.link(() => {
       for (const s of SCENARIOS) this.scenarioButtons[s].setSelected(model.scenarioProperty.value === s)
       this.guide.setGuidance(PlaneMirrorPeriscopeStrings.guideTitleStringProperty.value, SCENARIO_GUIDE[model.scenarioProperty.value])
-      this.teachingTriad.setTriad(...SCENARIO_TRIAD[model.scenarioProperty.value], () => { this.leftLearnTip.top = this.teachingTriad.bottom + 16 })
+      this.teachingTriad.setTriad(...SCENARIO_TRIAD[model.scenarioProperty.value], () => { this.leftLearnTip.top = this.teachingTriad.bottom + 22 })
       sync()
     })
     model.modeProperty.link(() => { for (const m of MODES) this.modeButtons[m].setSelected(model.modeProperty.value === m); sync() })
@@ -266,9 +268,12 @@ export class PlaneMirrorPeriscopeScreenView extends ScreenView {
       this.raysLayer.addChild(makeRay(objMid, normalize({ x: mirrorMid.x - objMid.x, y: mirrorMid.y - objMid.y }), Math.hypot(mirrorMid.x - objMid.x, mirrorMid.y - objMid.y), RAY_YELLOW, 2))
       this.raysLayer.addChild(makeRay(mirrorMid, normalize({ x: imgMid.x - mirrorMid.x, y: imgMid.y - mirrorMid.y }), Math.hypot(imgMid.x - mirrorMid.x, imgMid.y - mirrorMid.y), RAY_YELLOW, 2))
       this.raysLayer.addChild(makeDashedLine(objMid, imgMid, RAY_WHITE))
-      this.labelsLayer.addChild(makeLabel('Mirror', mirrorX + 28, oy + h * 0.4))
-      this.labelsLayer.addChild(makeLabel('Object', objX - 20, objTop - 8))
-      this.labelsLayer.addChild(makeLabel('Virtual image', imgX + 8, imgTop - 8))
+      this.labelsLayer.addChild(makeLabel('Mirror', mirrorX + 12, oy + h * 0.22))
+      this.labelsLayer.addChild(makeLabel('Object', objX, objTop - 14, true))
+      const imgLabel = makeLabel('Virtual image', imgX, imgTop - 14, true, { maxWidth: 88 })
+      if (imgLabel.right > ox + w - 8) imgLabel.right = ox + w - 8
+      if (imgLabel.left < ox + 8) imgLabel.left = ox + 8
+      this.labelsLayer.addChild(imgLabel)
       this.captionText.string = 'Plane mirror — virtual image behind mirror'
     } else {
       const topMirror: Vec2 = { x: ox + w * 0.38, y: oy + h * 0.22 }

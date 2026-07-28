@@ -1,3 +1,5 @@
+import { Bounds2 } from 'scenerystack/dot'
+import { Shape } from 'scenerystack/kite'
 import { Node, Rectangle, Text } from 'scenerystack/scenery'
 import { PhetFont } from 'scenerystack/scenery-phet'
 import { LightColors } from '../LightColors.js'
@@ -58,7 +60,10 @@ export class DepthCard extends Node {
       }),
     )
 
-    this.content = new Node()
+    // Clip so tip / triad text cannot bleed into the stage.
+    this.content = new Node({
+      clipArea: Shape.bounds(new Bounds2(0, 0, width, height)),
+    })
     this.addChild(this.content)
 
     if (options.title) {
@@ -75,5 +80,6 @@ export class DepthCard extends Node {
 
   public setCardSize(width: number, height: number): void {
     this.bg.setRect(0, 0, width, height)
+    this.content.clipArea = Shape.bounds(new Bounds2(0, 0, width, height))
   }
 }

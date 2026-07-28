@@ -23,7 +23,7 @@ export class DepthSlider extends Node {
     super()
     const w = options.width ?? 180
     const valueW = 54
-    const trackW = Math.max(40, w - 4)
+    const trackW = Math.max(40, w - valueW)
     const trackY = 28
     const format = options.format ?? ((n: number) => `${Math.round(n)}`)
     const accent = options.fill ?? LightColors.accent

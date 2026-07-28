@@ -20,6 +20,7 @@ export function createPanelTip(
     font: new PhetFont({ size: fontSize, weight: options.bold ? 'bold' : 'normal' }),
     fill: options.fill ?? '#e2e8f0',
     lineWrap: options.width,
+    maxWidth: options.width,
     leading: Math.round(fontSize * 0.35),
   })
 }

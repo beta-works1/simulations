@@ -150,7 +150,7 @@ export class LawsOfReflectionScreenView extends ScreenView {
       fill: LightColors.panelMuted,
     })
     this.leftLearnTip.left = 12
-    this.leftLearnTip.top = this.teachingTriad.bottom + 16
+    this.leftLearnTip.top = this.teachingTriad.bottom + 22
     leftCard.content.addChild(this.leftLearnTip)
 
     this.addChild(new StageBackdrop(this.stageLeft, this.stageTop, this.stageW, this.stageH, {
@@ -455,7 +455,7 @@ export class LawsOfReflectionScreenView extends ScreenView {
       for (const s of SCENARIOS) this.scenarioButtons[s].setSelected(s === scenario)
       this.guide.setGuidance(LawsOfReflectionStrings.guideTitleStringProperty.value, SCENARIO_GUIDE[scenario])
       this.teachingTriad.setTriad(...SCENARIO_TRIAD[scenario], () => {
-        this.leftLearnTip.top = this.teachingTriad.bottom + 16
+        this.leftLearnTip.top = this.teachingTriad.bottom + 22
       })
     }
     const syncLabels = () => {
@@ -555,15 +555,17 @@ export class LawsOfReflectionScreenView extends ScreenView {
     this.stageLayer.addChild(makeLightSource(source.x, source.y))
 
     this.anglesLayer.addChild(
-      makeAngleArc(hit, -Math.PI / 2 - incidenceRad, -Math.PI / 2, 36, `∠i = ${iDeg}°`, RAY_YELLOW),
+      makeAngleArc(hit, -Math.PI / 2 - incidenceRad, -Math.PI / 2, 44, `∠i ${iDeg}°`, RAY_YELLOW),
     )
     this.anglesLayer.addChild(
-      makeAngleArc(hit, -Math.PI / 2, -Math.PI / 2 + incidenceRad, 48, `∠r = ${iDeg}°`, RAY_CYAN),
+      makeAngleArc(hit, -Math.PI / 2, -Math.PI / 2 + incidenceRad, 58, `∠r ${iDeg}°`, RAY_CYAN),
     )
 
-    this.labelsLayer.addChild(makeLabel('Normal', hit.x + 36, hit.y - rayLen * 0.3))
-    this.labelsLayer.addChild(makeLabel('Mirror', (mirrorX1 + mirrorX2) / 2, mirrorY + 22, true))
-    this.labelsLayer.addChild(makeLabel('Light source', source.x, source.y - 22, true))
+    this.labelsLayer.addChild(makeLabel('Normal', hit.x, normalTop.y - 12, true))
+    this.labelsLayer.addChild(makeLabel('Mirror', (mirrorX1 + mirrorX2) / 2, mirrorY + 28, true))
+    const sourceLabel = makeLabel('Light source', source.x, source.y - 24, true)
+    if (sourceLabel.bottom > oy + h - 6) sourceLabel.bottom = oy + h - 6
+    this.labelsLayer.addChild(sourceLabel)
 
     this.captionText.string = `∠i = ${iDeg}° · ∠r = ${iDeg}° — equal angles`
     this.captionText.centerX = this.stageCenterX

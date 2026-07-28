@@ -1,4 +1,4 @@
-import { Circle, Node, Path, Text } from 'scenerystack/scenery'
+import { Circle, Node, Path, Rectangle, Text } from 'scenerystack/scenery'
 import { Shape } from 'scenerystack/kite'
 import { PhetFont } from 'scenerystack/scenery-phet'
 
@@ -52,17 +52,45 @@ export function makeDashedLine(a: Vec2, b: Vec2, color: string): Path {
   })
 }
 
-export function makeLabel(text: string, x: number, y: number, center = false): Text {
+/** Stage label with a soft pill so it stays readable over rays / mirrors. */
+export function makeLabel(
+  text: string,
+  x: number,
+  y: number,
+  center = false,
+  options: { maxWidth?: number; fill?: string } = {},
+): Node {
   const t = new Text(text, {
     font: new PhetFont({ size: 11, weight: 'bold' }),
-    fill: '#0f172a',
-    x,
-    y,
+    fill: options.fill ?? '#0f172a',
+    maxWidth: options.maxWidth,
   })
-  if (center) t.centerX = x
-  return t
+  const padX = 5
+  const padY = 2
+  const bg = new Rectangle(-padX, -padY, t.width + padX * 2, t.height + padY * 2, {
+    cornerRadius: 4,
+    fill: 'rgba(248, 250, 252, 0.92)',
+    stroke: 'rgba(15, 23, 42, 0.12)',
+    lineWidth: 1,
+  })
+  const root = new Node({ children: [bg, t], pickable: false })
+  t.left = 0
+  t.top = 0
+  if (center) {
+    root.centerX = x
+    root.centerY = y
+  }
+  else {
+    root.left = x
+    root.top = y
+  }
+  return root
 }
 
+/**
+ * Angle arc with the readout placed well outside the arc so ∠i / ∠r
+ * (and the normal) do not stack on top of each other.
+ */
 export function makeAngleArc(
   hit: Vec2,
   startAngle: number,
@@ -76,15 +104,30 @@ export function makeAngleArc(
     lineWidth: 2,
   })
   const mid = (startAngle + endAngle) / 2
-  const lx = hit.x + (radius + 14) * Math.cos(mid)
-  const ly = hit.y + (radius + 14) * Math.sin(mid)
+  // Place readout outside the arc, and push it horizontally away from the
+  // vertical so it does not collide with the normal label / line.
+  const labelR = radius + 30
+  const rawX = hit.x + labelR * Math.cos(mid)
+  const rawY = hit.y + labelR * Math.sin(mid)
+  const away = Math.cos(mid) >= 0 ? 1 : -1
+  const lx = hit.x + away * Math.max(Math.abs(rawX - hit.x), 52)
+  const ly = rawY
   const labelNode = new Text(label, {
     font: new PhetFont({ size: 10, weight: 'bold' }),
     fill: color,
-    centerX: lx,
-    centerY: ly,
   })
-  return new Node({ children: [arc, labelNode], pickable: false })
+  const padX = 4
+  const padY = 1
+  const bg = new Rectangle(-padX, -padY, labelNode.width + padX * 2, labelNode.height + padY * 2, {
+    cornerRadius: 4,
+    fill: 'rgba(15, 23, 42, 0.78)',
+  })
+  const labelGroup = new Node({ children: [bg, labelNode], pickable: false })
+  labelNode.left = 0
+  labelNode.top = 0
+  labelGroup.centerX = lx
+  labelGroup.centerY = ly
+  return new Node({ children: [arc, labelGroup], pickable: false })
 }
 
 export function makeArrowObject(base: Vec2, height: number, color: string, dashed = false): Node {

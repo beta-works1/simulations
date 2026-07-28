@@ -133,7 +133,7 @@ export class RegularVsDiffuseScreenView extends ScreenView {
       width: leftW - 24, fontSize: 11, fill: LightColors.panelMuted,
     })
     this.leftLearnTip.left = 12
-    this.leftLearnTip.top = this.teachingTriad.bottom + 16
+    this.leftLearnTip.top = this.teachingTriad.bottom + 22
     leftCard.content.addChild(this.leftLearnTip)
 
     this.addChild(new StageBackdrop(this.stageLeft, this.stageTop, this.stageW, this.stageH, { top: '#c7d2e0', bottom: '#eef2f7' }))
@@ -294,7 +294,7 @@ export class RegularVsDiffuseScreenView extends ScreenView {
     const syncScenario = () => {
       for (const s of SCENARIOS) this.scenarioButtons[s].setSelected(model.scenarioProperty.value === s)
       this.guide.setGuidance(RegularVsDiffuseStrings.guideTitleStringProperty.value, SCENARIO_GUIDE[model.scenarioProperty.value])
-      this.teachingTriad.setTriad(...SCENARIO_TRIAD[model.scenarioProperty.value], () => { this.leftLearnTip.top = this.teachingTriad.bottom + 16 })
+      this.teachingTriad.setTriad(...SCENARIO_TRIAD[model.scenarioProperty.value], () => { this.leftLearnTip.top = this.teachingTriad.bottom + 22 })
     }
     const syncLabels = () => {
       this.labelsBtn.setSelected(model.showLabelsProperty.value)

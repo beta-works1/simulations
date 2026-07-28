@@ -111,7 +111,7 @@ export class RefractionMediaScreenView extends ScreenView {
     leftCard.left = m; leftCard.top = this.stageTop; this.addChild(leftCard)
     this.teachingTriad = new TeachingTriad(leftW - 24); this.teachingTriad.left = 12; this.teachingTriad.top = 12; leftCard.content.addChild(this.teachingTriad)
     this.leftLearnTip = createPanelTip(RefractionMediaStrings.learnMoreStringProperty.value, { width: leftW - 24, fontSize: 11, fill: LightColors.panelMuted })
-    this.leftLearnTip.left = 12; this.leftLearnTip.top = this.teachingTriad.bottom + 16; leftCard.content.addChild(this.leftLearnTip)
+    this.leftLearnTip.left = 12; this.leftLearnTip.top = this.teachingTriad.bottom + 22; leftCard.content.addChild(this.leftLearnTip)
 
     this.addChild(new StageBackdrop(this.stageLeft, this.stageTop, this.stageW, this.stageH, { top: '#c7d2e0', bottom: '#eef2f7' }))
     this.titleText = new Text(RefractionMediaStrings.stageTitleStringProperty.value, { font: new PhetFont({ size: 18, weight: 'bold' }), fill: '#0f172a', centerX: this.stageCenterX, top: this.stageTop + 10 })
@@ -155,7 +155,8 @@ export class RefractionMediaScreenView extends ScreenView {
     panelContent.addChild(this.runningToggleBtn)
     const incidenceSlider = new DepthSlider(model.incidenceDegProperty, { min: 0, max: 85, width: contentW, label: RefractionMediaStrings.incidenceSliderStringProperty.value, format: (n) => `${n.toFixed(0)}°`, fill: RAY_YELLOW, onTick: () => sounds.sliderTick() })
     panelContent.addChild(incidenceSlider)
-    panelContent.addChild(controlHint(RefractionMediaStrings.conditionsHintStringProperty.value, contentW))
+    const conditionsHint = controlHint(RefractionMediaStrings.conditionsHintStringProperty.value, contentW)
+    panelContent.addChild(conditionsHint)
 
     const displayHeader = controlSection(RefractionMediaStrings.sectionDisplayStringProperty.value, contentW); panelContent.addChild(displayHeader)
     this.labelsBtn = new SoftButton(RefractionMediaStrings.labelsOnStringProperty.value, () => { sounds.softClick(); model.showLabelsProperty.value = !model.showLabelsProperty.value }, { width: halfW, height: btnH, fill: '#64748b', fontSize: 11, selected: true })
@@ -172,7 +173,8 @@ export class RefractionMediaScreenView extends ScreenView {
     const statusHeader = controlSection(RefractionMediaStrings.sectionStatusStringProperty.value, contentW); panelContent.addChild(statusHeader)
     this.starsText = new Text('', { font: new PhetFont({ size: 15, weight: 'bold' }), fill: '#d97706' }); panelContent.addChild(this.starsText)
     this.statusText = new RichText(model.statusProperty.value, { font: new PhetFont({ size: 12, weight: 'bold' }), fill: LightColors.panelText, lineWrap: contentW, leading: 3 }); panelContent.addChild(this.statusText)
-    panelContent.addChild(createPanelTip(RefractionMediaStrings.learnMoreStringProperty.value, { width: contentW, fontSize: 11 }))
+    const learnTip = createPanelTip(RefractionMediaStrings.learnMoreStringProperty.value, { width: contentW, fontSize: 11 })
+    panelContent.addChild(learnTip)
     const bottomPad = new Rectangle(0, 0, contentW, 20, { fill: 'rgba(255,255,255,0)', pickable: false }); panelContent.addChild(bottomPad)
 
     const relayoutPanel = () => {
@@ -184,7 +186,8 @@ export class RefractionMediaScreenView extends ScreenView {
       for (const s of SCENARIOS) { const btn = this.scenarioButtons[s]; btn.left = 0; btn.top = py; py = btn.bottom + gridGap }
       py += 6; conditionsHeader.left = 0; conditionsHeader.top = py; py = conditionsHeader.bottom + 6
       this.runningToggleBtn.left = 0; this.runningToggleBtn.top = py; py = this.runningToggleBtn.bottom + gridGap
-      incidenceSlider.left = 0; incidenceSlider.top = py; py = incidenceSlider.bottom + 12
+      incidenceSlider.left = 0; incidenceSlider.top = py; py = incidenceSlider.bottom + 6
+      conditionsHint.left = 0; conditionsHint.top = py; py = conditionsHint.bottom + 12
       displayHeader.left = 0; displayHeader.top = py; py = displayHeader.bottom + 6
       this.labelsBtn.left = 0; this.labelsBtn.top = py; this.normalBtn.left = halfW + 8; this.normalBtn.top = py; py = this.labelsBtn.bottom + gridGap
       this.anglesBtn.left = 0; this.anglesBtn.top = py; py = this.anglesBtn.bottom + 12
@@ -194,7 +197,8 @@ export class RefractionMediaScreenView extends ScreenView {
       this.soundBtn.left = 0; this.soundBtn.top = py; py = this.soundBtn.bottom + 12
       statusHeader.left = 0; statusHeader.top = py; py = statusHeader.bottom + 6
       this.starsText.left = 0; this.starsText.top = py; py = this.starsText.bottom + 6
-      this.statusText.left = 0; this.statusText.top = py; bottomPad.top = this.statusText.bottom + 10
+      this.statusText.left = 0; this.statusText.top = py; py = this.statusText.bottom + 10
+      learnTip.left = 0; learnTip.top = py; bottomPad.top = learnTip.bottom + 4
     }
     relayoutPanel()
     const scroller = new ScrollableNode(panelContent, rightW - 24, this.stageH - 72); scroller.left = 12; scroller.top = 12; card.content.addChild(scroller)
@@ -206,7 +210,7 @@ export class RefractionMediaScreenView extends ScreenView {
     model.scenarioProperty.link(() => {
       for (const s of SCENARIOS) this.scenarioButtons[s].setSelected(model.scenarioProperty.value === s)
       this.guide.setGuidance(RefractionMediaStrings.guideTitleStringProperty.value, SCENARIO_GUIDE[model.scenarioProperty.value])
-      this.teachingTriad.setTriad(...SCENARIO_TRIAD[model.scenarioProperty.value], () => { this.leftLearnTip.top = this.teachingTriad.bottom + 16 })
+      this.teachingTriad.setTriad(...SCENARIO_TRIAD[model.scenarioProperty.value], () => { this.leftLearnTip.top = this.teachingTriad.bottom + 22 })
       syncStage()
     })
     model.runningProperty.link(() => {
@@ -251,13 +255,13 @@ export class RefractionMediaScreenView extends ScreenView {
     const normalBottom: Vec2 = { x: hit.x, y: hit.y + rayLen * 0.45 }
     this.normalLayer.addChild(makeDashedLine(hit, normalTop, RAY_WHITE))
     this.normalLayer.addChild(makeDashedLine(hit, normalBottom, RAY_WHITE))
-    this.anglesLayer.addChild(makeAngleArc(hit, -Math.PI / 2 - iRad, -Math.PI / 2, 34, `∠i = ${state.incidenceDeg}°`, RAY_YELLOW))
+    this.anglesLayer.addChild(makeAngleArc(hit, -Math.PI / 2 - iRad, -Math.PI / 2, 42, `∠i ${state.incidenceDeg}°`, RAY_YELLOW))
 
     if (refractedDeg !== null) {
       const rRad = refractedDeg * DEG2RAD
       const refractedDir = normalize({ x: Math.sin(rRad), y: Math.cos(rRad) })
       this.raysLayer.addChild(makeRay(hit, refractedDir, rayLen, RAY_CYAN))
-      this.anglesLayer.addChild(makeAngleArc(hit, Math.PI / 2, Math.PI / 2 + rRad, 46, `∠r = ${Math.round(refractedDeg)}°`, RAY_CYAN))
+      this.anglesLayer.addChild(makeAngleArc(hit, Math.PI / 2, Math.PI / 2 + rRad, 56, `∠r ${Math.round(refractedDeg)}°`, RAY_CYAN))
       this.captionText.string = `n₁ sin ∠i = n₂ sin ∠r (${medium.label.split('(')[0]?.trim()})`
     } else {
       const reflectedDir = normalize({ x: Math.sin(iRad), y: -Math.cos(iRad) })
@@ -265,9 +269,9 @@ export class RefractionMediaScreenView extends ScreenView {
       this.captionText.string = 'Total internal reflection!'
     }
 
-    this.labelsLayer.addChild(makeLabel(`Air (n ≈ ${N_AIR.toFixed(3)})`, ox + w * 0.14, oy + (boundaryY - oy) * 0.35))
-    this.labelsLayer.addChild(makeLabel(medium.label.split('(')[0]?.trim() ?? medium.id, ox + w * 0.14, boundaryY + (oy + h - boundaryY) * 0.35))
-    this.labelsLayer.addChild(makeLabel('Normal', hit.x + 32, hit.y - rayLen * 0.25))
+    this.labelsLayer.addChild(makeLabel(`Air (n ≈ ${N_AIR.toFixed(3)})`, ox + w * 0.08, oy + (boundaryY - oy) * 0.28))
+    this.labelsLayer.addChild(makeLabel(medium.label.split('(')[0]?.trim() ?? medium.id, ox + w * 0.08, boundaryY + (oy + h - boundaryY) * 0.28))
+    this.labelsLayer.addChild(makeLabel('Normal', hit.x, normalTop.y - 12, true))
     this.captionText.centerX = this.stageCenterX
   }
 
