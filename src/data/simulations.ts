@@ -921,6 +921,8 @@ export const simulations: Simulation[] = [
     color: '#922b21',
     accent: '#f4d03f',
     image: '/covers/ohm-law-circuit.svg',
+    sceneryHtml: '/downloads/ohm-law-circuit-offline.html',
+    offlineHtml: '/downloads/ohm-law-circuit-offline.html',
   },
   {
     id: 'series-parallel',
@@ -938,6 +940,8 @@ export const simulations: Simulation[] = [
     color: '#7b241c',
     accent: '#f39c12',
     image: '/covers/series-parallel.svg',
+    sceneryHtml: '/downloads/series-parallel-offline.html',
+    offlineHtml: '/downloads/series-parallel-offline.html',
   },
   {
     id: 'short-circuit-fuse',
@@ -955,6 +959,8 @@ export const simulations: Simulation[] = [
     color: '#641e16',
     accent: '#ec7063',
     image: '/covers/short-circuit-fuse.svg',
+    sceneryHtml: '/downloads/short-circuit-fuse-offline.html',
+    offlineHtml: '/downloads/short-circuit-fuse-offline.html',
   },
   {
     id: 'electric-motor',
@@ -972,6 +978,8 @@ export const simulations: Simulation[] = [
     color: '#1a5276',
     accent: '#e67e22',
     image: '/covers/electric-motor.svg',
+    sceneryHtml: '/downloads/electric-motor-offline.html',
+    offlineHtml: '/downloads/electric-motor-offline.html',
   },
   {
     id: 'speaker-mechanism',
@@ -989,6 +997,8 @@ export const simulations: Simulation[] = [
     color: '#4a235a',
     accent: '#5dade2',
     image: '/covers/speaker-mechanism.svg',
+    sceneryHtml: '/downloads/speaker-mechanism-offline.html',
+    offlineHtml: '/downloads/speaker-mechanism-offline.html',
   },
 
   // Grade 8 — Ch 11 Technology in Everyday Life
