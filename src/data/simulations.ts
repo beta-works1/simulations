@@ -1018,6 +1018,8 @@ export const simulations: Simulation[] = [
     color: '#b9770e',
     accent: '#f9e79f',
     image: '/covers/solar-cooker.svg',
+    sceneryHtml: '/downloads/solar-cooker-offline.html',
+    offlineHtml: '/downloads/solar-cooker-offline.html',
   },
   {
     id: 'wind-turbine',
@@ -1035,6 +1037,8 @@ export const simulations: Simulation[] = [
     color: '#1e8449',
     accent: '#85c1e9',
     image: '/covers/wind-turbine.svg',
+    sceneryHtml: '/downloads/wind-turbine-offline.html',
+    offlineHtml: '/downloads/wind-turbine-offline.html',
   },
 
   // Grade 8 — Ch 12 Our Universe

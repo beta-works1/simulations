@@ -23,7 +23,8 @@
     "build:acids-offline": "npm --prefix acids-scenery run build",
     "build:forces-offline": "npm --prefix forces-scenery run build",
     "build:light-offline": "npm --prefix light-scenery run build",
-    "build:electricity-offline": "npm --prefix electricity-scenery run build"
+    "build:electricity-offline": "npm --prefix electricity-scenery run build",
+    "build:tech-offline": "npm --prefix tech-scenery run build"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",
