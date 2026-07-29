@@ -1058,6 +1058,8 @@ export const simulations: Simulation[] = [
     color: '#1a252f',
     accent: '#f5b041',
     image: '/covers/star-life-cycle.svg',
+    sceneryHtml: '/downloads/star-life-cycle-offline.html',
+    offlineHtml: '/downloads/star-life-cycle-offline.html',
   },
   {
     id: 'galaxy-types',
@@ -1074,6 +1076,8 @@ export const simulations: Simulation[] = [
     color: '#0b5345',
     accent: '#a569bd',
     image: '/covers/galaxy-types.svg',
+    sceneryHtml: '/downloads/galaxy-types-offline.html',
+    offlineHtml: '/downloads/galaxy-types-offline.html',
   },
   {
     id: 'black-hole',
@@ -1091,6 +1095,8 @@ export const simulations: Simulation[] = [
     color: '#0d0d0d',
     accent: '#5dade2',
     image: '/covers/black-hole.svg',
+    sceneryHtml: '/downloads/black-hole-offline.html',
+    offlineHtml: '/downloads/black-hole-offline.html',
   },
   {
     id: 'solar-system-timeline',
@@ -1108,6 +1114,8 @@ export const simulations: Simulation[] = [
     color: '#1a252f',
     accent: '#58d68d',
     image: '/covers/solar-system-timeline.svg',
+    sceneryHtml: '/downloads/solar-system-timeline-offline.html',
+    offlineHtml: '/downloads/solar-system-timeline-offline.html',
   },
 ]
 
