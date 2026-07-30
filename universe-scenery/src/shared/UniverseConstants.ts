@@ -1,6 +1,8 @@
+import { TeachingShellLayout } from './TeachingShellLayout.js'
+
 export const UniverseConstants = {
-  SCREEN_VIEW_X_MARGIN: 16,
-  SCREEN_VIEW_Y_MARGIN: 12,
+  SCREEN_VIEW_X_MARGIN: TeachingShellLayout.SCREEN_VIEW_X_MARGIN,
+  SCREEN_VIEW_Y_MARGIN: TeachingShellLayout.SCREEN_VIEW_Y_MARGIN,
   SCREEN_OPTIONS: {
     showUnselectedHomeScreenIconFrame: true,
     showScreenIconFrameForNavigationBarFill: 'black',

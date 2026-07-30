@@ -1,15 +1,18 @@
 import { Namespace } from 'scenerystack/phet-core'
 import { ProfileColorProperty } from 'scenerystack/scenery'
+import { TeachingShellLayout } from './TeachingShellLayout.js'
 
 const namespace = new Namespace('universe-scenery')
 
 /**
  * Ch1 carbon-oxygen + Ch2 nervous parity: cool lab backdrop, dark control panels,
- * teal accent — not warm parchment.
+ * teal accent — not warm parchment. Letterbox uses TeachingShellLayout.SCREEN_BACKGROUND
+ * so gutters read as full-bleed rather than light side borders.
  */
 export const UniverseColors = {
+  /** Dark lab letterbox so side gutters read as full-bleed, not grey borders. */
   screenBackgroundColorProperty: new ProfileColorProperty(namespace, 'background', {
-    default: '#dce7f0',
+    default: TeachingShellLayout.SCREEN_BACKGROUND,
   }),
   panelFill: 'rgba(255,255,255,0.94)',
   panelStroke: 'rgba(71, 85, 105, 0.28)',

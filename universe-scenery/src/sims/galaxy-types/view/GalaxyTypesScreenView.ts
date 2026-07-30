@@ -83,7 +83,7 @@ export class GalaxyTypesScreenView extends ScreenView {
     this.leftLearnTip = createPanelTip(GalaxyTypesStrings.learnMoreStringProperty.value, { width: leftW - 24, fontSize: 11, fill: UniverseColors.panelMuted })
     this.leftLearnTip.left = 12; this.leftLearnTip.top = this.teachingTriad.bottom + 22; leftCard.content.addChild(this.leftLearnTip)
 
-    this.addChild(new StageBackdrop(this.stageLeft, this.stageTop, this.stageW, this.stageH, { top: '#070b18', bottom: '#12102a' }))
+    this.addChild(new StageBackdrop(this.stageLeft, this.stageTop, this.stageW, this.stageH, { top: '#070b18', bottom: '#12102a', gloss: false }))
     this.titleText = new Text(GalaxyTypesStrings.stageTitleStringProperty.value, { font: new PhetFont({ size: 18, weight: 'bold' }), fill: '#f8fafc', centerX: this.stageCenterX, top: this.stageTop + 10 }); this.addChild(this.titleText)
     this.captionText = new Text('', { font: new PhetFont({ size: 14, weight: 'bold' }), fill: '#c4b5fd', centerX: this.stageCenterX, top: this.titleText.bottom + 4 }); this.addChild(this.captionText)
     this.stageLayer = new Node({ pickable: false }); this.labelsLayer = new Node({ pickable: false })

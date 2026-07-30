@@ -1,0 +1,24 @@
+---
+description: SceneryStack teaching-shell layout metric (full-bleed stage, no overlaps, offline download)
+globs: "**/*-scenery/**/*.ts,**/SimulationGrid.*,**/simulations.ts"
+alwaysApply: false
+---
+
+# SceneryStack teaching-shell layout metric
+
+Use this checklist for every SoftButton teaching-shell sim (Ch 12 Our Universe first; reuse for other chapters).
+
+Source of truth: `universe-scenery/src/shared/TeachingShellLayout.ts`.
+
+## Must pass
+
+1. **No top gloss/hairline on dark stages** — `StageBackdrop(..., { gloss: false })`. The white highlight bar reads as a transparent line over titles on cosmic/dark stages.
+2. **Reserved title band** — Title + caption own `STAGE_TITLE_BAND` (~58px). Era/status pills go **top-right** or **bottom-left**, never centered over the caption.
+3. **Full-bleed letterbox** — Screen background matches the lab/stage (`SCREEN_BACKGROUND`), not light grey side gutters.
+4. **Clip the stage** — Scene + labels use `stageClipShape(...)` so orbits, rays, and particles cannot spill past the rounded frame.
+5. **Scale diagrams to the stage** — Orbit / diagram radius ≤ `MAX_ORBIT_FRAC × min(sceneW, sceneH)` (default 0.36).
+6. **Offline download is discoverable** — Catalog cards show “Download offline HTML” when `offlineHtml` is set; detail page keeps the button. After package changes, rebuild (`npm run build:universe-offline` or the chapter’s `build:*-offline`) so `public/downloads/*` stays in sync.
+
+## Open behavior
+
+Catalog cards still open `sceneryHtml` in a new tab (PhET Color Vision style). Download is a sibling control on the card, not only on the detail page.

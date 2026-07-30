@@ -81,6 +81,16 @@ export function SimulationGrid({
             return (
               <li key={sim.id} className="simulation-list-item">
                 {card}
+                {sim.offlineHtml ? (
+                  <a
+                    className="simulation-download"
+                    href={sim.offlineHtml}
+                    download={`${sim.id}-offline.html`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Download offline HTML
+                  </a>
+                ) : null}
               </li>
             )
           }
@@ -96,6 +106,16 @@ export function SimulationGrid({
               whileHover={reduce ? undefined : { y: -6, transition: { duration: 0.2 } }}
             >
               {card}
+              {sim.offlineHtml ? (
+                <a
+                  className="simulation-download"
+                  href={sim.offlineHtml}
+                  download={`${sim.id}-offline.html`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Download offline HTML
+                </a>
+              ) : null}
             </motion.li>
           )
         })}

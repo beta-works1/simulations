@@ -82,7 +82,7 @@ export class BlackHoleScreenView extends ScreenView {
     this.leftLearnTip = createPanelTip(BlackHoleStrings.learnMoreStringProperty.value, { width: leftW - 24, fontSize: 11, fill: UniverseColors.panelMuted })
     this.leftLearnTip.left = 12; this.leftLearnTip.top = this.teachingTriad.bottom + 22; leftCard.content.addChild(this.leftLearnTip)
 
-    this.addChild(new StageBackdrop(this.stageLeft, this.stageTop, this.stageW, this.stageH, { top: '#050508', bottom: '#1a0a20' }))
+    this.addChild(new StageBackdrop(this.stageLeft, this.stageTop, this.stageW, this.stageH, { top: '#050508', bottom: '#1a0a20', gloss: false }))
     this.titleText = new Text(BlackHoleStrings.stageTitleStringProperty.value, { font: new PhetFont({ size: 18, weight: 'bold' }), fill: '#f8fafc', centerX: this.stageCenterX, top: this.stageTop + 10 }); this.addChild(this.titleText)
     this.captionText = new Text('', { font: new PhetFont({ size: 14, weight: 'bold' }), fill: '#7dd3fc', centerX: this.stageCenterX, top: this.titleText.bottom + 4 }); this.addChild(this.captionText)
     this.stageLayer = new Node({ pickable: false }); this.raysLayer = new Node({ pickable: false }); this.labelsLayer = new Node({ pickable: false })
@@ -211,8 +211,14 @@ export class BlackHoleScreenView extends ScreenView {
       this.stageLayer.addChild(new Circle(ehR + 2, { stroke: '#7dd3fc', lineWidth: 2, centerX: cx, centerY: cy }))
     }
     if (this.model.showLabelsProperty.value) {
-      this.labelsLayer.addChild(makePillLabel(this.model.phaseLabelText, cx, oy + 48))
-      if (this.model.phaseProperty.value === 'bending') this.labelsLayer.addChild(makePillLabel('Event horizon', cx, cy + eventHorizonRadius() + 18))
+      // Keep status pill clear of the caption band (TeachingShellLayout metric #2).
+      const phasePill = makePillLabel(this.model.phaseLabelText, 0, 0, false)
+      phasePill.right = ox + w - 14
+      phasePill.top = oy + 12
+      this.labelsLayer.addChild(phasePill)
+      if (this.model.phaseProperty.value === 'bending') {
+        this.labelsLayer.addChild(makePillLabel('Event horizon', cx, cy + eventHorizonRadius() + 18))
+      }
     }
     this.captionText.string = this.model.phaseLabelText
     this.captionText.centerX = this.stageCenterX
