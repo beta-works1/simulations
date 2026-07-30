@@ -122,11 +122,11 @@ export function SimulationDetailPage() {
         </button>
         {sim.offlineHtml ? (
           <a
-            className="btn btn-secondary"
+            className="btn btn-primary"
             href={sim.offlineHtml}
             download={`${sim.id}-offline.html`}
           >
-            Download HTML (offline)
+            ↓ Download offline HTML
           </a>
         ) : null}
         <Link to={gradePath} className="btn btn-secondary">

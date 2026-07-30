@@ -88,7 +88,7 @@ export function SimulationGrid({
                     download={`${sim.id}-offline.html`}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    Download offline HTML
+                    ↓ Download offline HTML
                   </a>
                 ) : null}
               </li>
@@ -113,7 +113,7 @@ export function SimulationGrid({
                   download={`${sim.id}-offline.html`}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  Download offline HTML
+                  ↓ Download offline HTML
                 </a>
               ) : null}
             </motion.li>

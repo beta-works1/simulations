@@ -134,18 +134,28 @@
 }
 
 .simulation-download {
-  display: inline-block;
-  margin-top: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.55rem;
+  padding: 0.4rem 0.7rem;
+  width: 100%;
+  max-width: 200px;
+  box-sizing: border-box;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.01em;
-  color: var(--gas-ink);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  color: var(--paper, #f8f1e6);
+  background: var(--dusk-800, #142438);
+  border: 1px solid rgba(125, 211, 252, 0.35);
+  border-radius: 999px;
+  text-decoration: none;
 }
 
 .simulation-download:hover {
-  color: var(--terra-ink);
+  color: var(--paper, #f8f1e6);
+  background: var(--dusk-700, #1e3450);
+  border-color: var(--sun-400, #facc15);
 }
 
 @media (prefers-reduced-motion: reduce) {
