@@ -135,7 +135,8 @@ export class SolarSystemTimelineScreenView extends ScreenView {
 
     this.addChild(
       new StageBackdrop(stageLeft, stageTop, stageW, stageH, {
-        top: '#070b18',
+        // Match letterbox so the stage top edge does not read as a hairline seam.
+        top: TeachingShellLayout.SCREEN_BACKGROUND,
         bottom: '#102038',
         stroke: 'rgba(0,0,0,0)',
         gloss: false,

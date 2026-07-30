@@ -1,3 +1,4 @@
+import { Bounds2 } from 'scenerystack/dot'
 import { Shape } from 'scenerystack/kite'
 
 /**
@@ -28,7 +29,12 @@ export const TeachingShellLayout = {
   STAGE_SCENE_PAD: 18,
   STAGE_CORNER_RADIUS: 18,
   /** Max elliptical orbit / diagram radius as a fraction of the shorter stage side. */
-  MAX_ORBIT_FRAC: 0.36,
+  MAX_ORBIT_FRAC: 0.28,
+  /**
+   * Horizontal orbit clamp — ellipses must stay inside sceneWidth.
+   * Use with: Math.min(maxOrbitR, sceneWidth * MAX_ORBIT_WIDTH_FRAC).
+   */
+  MAX_ORBIT_WIDTH_FRAC: 0.42,
   /** Dark lab backdrop — letterbox gutters blend into the sim instead of light side borders. */
   SCREEN_BACKGROUND: '#0b1628',
 } as const
@@ -72,7 +78,10 @@ export function computeTeachingShellStage(
   const sceneTop = top + titleBand
   const sceneWidth = Math.max(40, width - pad * 2)
   const sceneHeight = Math.max(40, height - titleBand - pad)
-  const maxOrbitR = Math.min(sceneWidth, sceneHeight) * TeachingShellLayout.MAX_ORBIT_FRAC
+  const maxOrbitR = Math.min(
+    Math.min(sceneWidth, sceneHeight) * TeachingShellLayout.MAX_ORBIT_FRAC,
+    sceneWidth * TeachingShellLayout.MAX_ORBIT_WIDTH_FRAC,
+  )
 
   return {
     left,
@@ -91,8 +100,7 @@ export function computeTeachingShellStage(
   }
 }
 
-/** Clip mask matching StageBackdrop's rounded frame. */
+/** Clip mask for the stage frame (rect — reliable across SVG/WebGL backends). */
 export function stageClipShape(left: number, top: number, width: number, height: number): Shape {
-  const r = TeachingShellLayout.STAGE_CORNER_RADIUS
-  return Shape.roundRect(left, top, width, height, r, r)
+  return Shape.bounds(new Bounds2(left, top, left + width, top + height))
 }
