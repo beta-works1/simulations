@@ -3,8 +3,9 @@ import { TeachingShellLayout } from '../TeachingShellLayout.js'
 
 /**
  * Layered scenic stage frame.
- * Dark cosmic stages must pass `{ gloss: false }` — the top highlight bar
+ * Dark cosmic stages must pass `{ gloss: false }` — the white highlight bar
  * otherwise reads as a transparent hairline over the title (TeachingShellLayout metric #1).
+ * When gloss is off, stroke and top highlight are both suppressed.
  */
 export class StageBackdrop extends Node {
   public constructor(
@@ -17,22 +18,24 @@ export class StageBackdrop extends Node {
     super({ pickable: false })
     const top = options.top ?? '#9ec5e8'
     const bottom = options.bottom ?? '#e8f0f6'
-    const stroke = options.stroke ?? 'rgba(15,23,42,0.22)'
     const gloss = options.gloss ?? true
+    const stroke = options.stroke ?? (gloss ? 'rgba(15,23,42,0.22)' : 'rgba(0,0,0,0)')
     const r = TeachingShellLayout.STAGE_CORNER_RADIUS
 
-    this.addChild(
-      new Rectangle(x + 5, y + 8, w, h, {
-        cornerRadius: r,
-        fill: 'rgba(15,23,42,0.22)',
-      }),
-    )
+    if (gloss) {
+      this.addChild(
+        new Rectangle(x + 5, y + 8, w, h, {
+          cornerRadius: r,
+          fill: 'rgba(15,23,42,0.22)',
+        }),
+      )
+    }
     this.addChild(
       new Rectangle(x, y, w, h, {
         cornerRadius: r,
         fill: new LinearGradient(0, y, 0, y + h).addColorStop(0, top).addColorStop(1, bottom),
         stroke,
-        lineWidth: 1.5,
+        lineWidth: gloss ? 1.5 : 0,
       }),
     )
     if (gloss) {
@@ -42,13 +45,13 @@ export class StageBackdrop extends Node {
           fill: 'rgba(255,255,255,0.45)',
         }),
       )
+      // Soft vignette / depth band at bottom — light stages only
+      this.addChild(
+        new Rectangle(x + 10, y + h - 28, w - 20, 18, {
+          cornerRadius: 8,
+          fill: 'rgba(15,23,42,0.08)',
+        }),
+      )
     }
-    // Soft vignette / depth band at bottom
-    this.addChild(
-      new Rectangle(x + 10, y + h - 28, w - 20, 18, {
-        cornerRadius: 8,
-        fill: 'rgba(15,23,42,0.08)',
-      }),
-    )
   }
 }

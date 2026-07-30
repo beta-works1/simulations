@@ -130,14 +130,14 @@ export class SolarSystemTimelineScreenView extends ScreenView {
       fill: UniverseColors.panelMuted,
     })
     this.leftLearnTip.left = 12
-    this.leftLearnTip.top = this.teachingTriad.bottom + 22
+    this.leftLearnTip.top = this.teachingTriad.bottom + 28
     leftCard.content.addChild(this.leftLearnTip)
 
     this.addChild(
       new StageBackdrop(stageLeft, stageTop, stageW, stageH, {
         top: '#070b18',
         bottom: '#102038',
-        stroke: 'rgba(148,163,184,0.18)',
+        stroke: 'rgba(0,0,0,0)',
         gloss: false,
       }),
     )
@@ -392,7 +392,7 @@ export class SolarSystemTimelineScreenView extends ScreenView {
         SCENARIO_GUIDE[model.scenarioProperty.value],
       )
       this.teachingTriad.setTriad(...SCENARIO_TRIAD[model.scenarioProperty.value], () => {
-        this.leftLearnTip.top = this.teachingTriad.bottom + 22
+        this.leftLearnTip.top = this.teachingTriad.bottom + 28
       })
       sync()
     })
@@ -433,7 +433,7 @@ export class SolarSystemTimelineScreenView extends ScreenView {
       if (old !== undefined && stars > old) sounds.celebrate()
     })
     this.teachingTriad.setTriad(...SCENARIO_TRIAD.explore, () => {
-      this.leftLearnTip.top = this.teachingTriad.bottom + 22
+      this.leftLearnTip.top = this.teachingTriad.bottom + 28
     })
     sync()
   }
