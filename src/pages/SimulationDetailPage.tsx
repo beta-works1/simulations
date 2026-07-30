@@ -9,6 +9,7 @@ import {
   getSimulationById,
   gradeLabel,
 } from '../data/simulations'
+import { downloadOfflineHtml } from '../lib/downloadOfflineHtml'
 import './SimulationDetailPage.css'
 
 const SimulationViewer = lazy(() =>
@@ -19,6 +20,7 @@ export function SimulationDetailPage() {
   const { id } = useParams<{ id: string }>()
   const sim = id ? getSimulationById(id) : undefined
   const [fullscreen, setFullscreen] = useState(false)
+  const [downloadStatus, setDownloadStatus] = useState<'idle' | 'busy' | 'done' | 'error'>('idle')
 
   useEffect(() => {
     if (!fullscreen) return
@@ -121,13 +123,31 @@ export function SimulationDetailPage() {
           Open fullscreen here
         </button>
         {sim.offlineHtml ? (
-          <a
+          <button
+            type="button"
             className="btn btn-primary"
-            href={sim.offlineHtml}
-            download={`${sim.id}-offline.html`}
+            disabled={downloadStatus === 'busy'}
+            onClick={async () => {
+              if (!sim.offlineHtml || downloadStatus === 'busy') return
+              setDownloadStatus('busy')
+              try {
+                await downloadOfflineHtml(sim.offlineHtml, `${sim.id}-offline.html`)
+                setDownloadStatus('done')
+                window.setTimeout(() => setDownloadStatus('idle'), 1400)
+              } catch {
+                setDownloadStatus('error')
+                window.setTimeout(() => setDownloadStatus('idle'), 1800)
+              }
+            }}
           >
-            ↓ Download offline HTML
-          </a>
+            {downloadStatus === 'busy'
+              ? 'Downloading…'
+              : downloadStatus === 'done'
+                ? 'Saved ✓'
+                : downloadStatus === 'error'
+                  ? 'Download failed'
+                  : '↓ Download offline HTML'}
+          </button>
         ) : null}
         <Link to={gradePath} className="btn btn-secondary">
           More {gradeLabel(sim.grade)}

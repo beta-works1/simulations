@@ -16,19 +16,31 @@
 
 .simulation-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 1.25rem 1rem;
   list-style: none;
   margin: 0;
   padding: 0;
+  align-items: start;
   justify-items: center;
 }
 
 .simulation-list-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.55rem;
   text-align: center;
   width: 100%;
   max-width: 200px;
   position: relative;
+  /* Prevent hover lift from covering the next row's download button */
+  z-index: 0;
+}
+
+.simulation-list-item:hover,
+.simulation-list-item:focus-within {
+  z-index: 1;
 }
 
 .simulation-link {
@@ -40,7 +52,8 @@
   color: var(--color-muted);
   border-radius: var(--radius-md);
   padding: 0.35rem;
-  height: 100%;
+  /* Do NOT use height:100% — that made the open-link overlay the download button */
+  flex: 0 0 auto;
 }
 
 .simulation-link:hover {
@@ -104,6 +117,8 @@
   letter-spacing: -0.02em;
   transition: color 0.2s;
   margin-bottom: 8px;
+  /* Keep download buttons aligned across a row when titles wrap */
+  min-height: calc(1.35em * 2);
 }
 
 .simulation-card-tags {
@@ -137,11 +152,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: 0.55rem;
-  padding: 0.4rem 0.7rem;
+  margin: 0;
+  padding: 0.45rem 0.7rem;
   width: 100%;
-  max-width: 200px;
   box-sizing: border-box;
+  font: inherit;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -150,12 +165,24 @@
   border: 1px solid rgba(125, 211, 252, 0.35);
   border-radius: 999px;
   text-decoration: none;
+  cursor: pointer;
+  appearance: none;
 }
 
-.simulation-download:hover {
+.simulation-download:hover:not(:disabled) {
   color: var(--paper, #f8f1e6);
   background: var(--dusk-700, #1e3450);
   border-color: var(--sun-400, #facc15);
+}
+
+.simulation-download:disabled {
+  opacity: 0.75;
+  cursor: wait;
+}
+
+.simulation-download:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
