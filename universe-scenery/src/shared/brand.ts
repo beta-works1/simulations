@@ -1,7 +1,6 @@
 import './splash.js'
 import { brand, madeWithSceneryStackOnLight, madeWithSceneryStackOnDark } from 'scenerystack/brand'
 import type { TBrand } from 'scenerystack/brand'
-import { installOfflineDownloadChip } from './offlineDownloadChip.js'
 
 const Brand: TBrand = {
   id: 'made-with-scenerystack',
@@ -13,4 +12,3 @@ const Brand: TBrand = {
 }
 
 brand.register('Brand', Brand)
-installOfflineDownloadChip()
