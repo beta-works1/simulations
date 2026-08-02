@@ -16,6 +16,15 @@ import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import { useCanvasPointer } from '../../shared/useCanvasPointer'
 import {
+  createEmitAcc,
+  drawAgent,
+  drawLandscape,
+  emitGases,
+  makeClouds,
+  stepAndDrawParticles,
+  type GasParticle,
+} from './carbonOxygenGraphics'
+import {
   AGENT_LIMITS,
   CYCLE_STEPS,
   addAgent,
@@ -36,15 +45,6 @@ import {
   type CarbonOxygenState,
 } from './carbonOxygenModel'
 import './CarbonOxygenCycleSim.css'
-
-type GasParticle = {
-  x: number
-  y: number
-  vx: number
-  vy: number
-  life: number
-  kind: 'co2' | 'o2'
-}
 
 type LandGeom = { left: number; top: number; width: number; height: number }
 
@@ -74,80 +74,12 @@ function inLand(land: LandGeom, x: number, y: number) {
   )
 }
 
-function drawTree(ctx: CanvasRenderingContext2D, x: number, y: number, glow: boolean) {
-  if (glow) {
-    ctx.beginPath()
-    ctx.arc(x, y - 18, 28, 0, Math.PI * 2)
-    ctx.fillStyle = 'rgba(46,204,113,0.22)'
-    ctx.fill()
-  }
-  ctx.fillStyle = '#92400e'
-  ctx.fillRect(x - 4, y - 8, 8, 22)
-  ctx.beginPath()
-  ctx.arc(x, y - 22, 18, 0, Math.PI * 2)
-  ctx.fillStyle = '#16a34a'
-  ctx.fill()
-  ctx.beginPath()
-  ctx.arc(x - 10, y - 16, 10, 0, Math.PI * 2)
-  ctx.fillStyle = '#15803d'
-  ctx.fill()
-  ctx.beginPath()
-  ctx.arc(x + 10, y - 18, 11, 0, Math.PI * 2)
-  ctx.fillStyle = '#22c55e'
-  ctx.fill()
-}
-
-function drawAnimal(ctx: CanvasRenderingContext2D, x: number, y: number, deer: boolean) {
-  if (deer) {
-    ctx.fillStyle = '#b45309'
-    ctx.beginPath()
-    ctx.ellipse(x, y - 6, 16, 10, 0, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.fillRect(x + 8, y - 16, 10, 8)
-    ctx.strokeStyle = '#78350f'
-    ctx.lineWidth = 2
-    ctx.beginPath()
-    ctx.moveTo(x + 10, y - 16)
-    ctx.lineTo(x + 6, y - 26)
-    ctx.moveTo(x + 14, y - 16)
-    ctx.lineTo(x + 18, y - 26)
-    ctx.stroke()
-  } else {
-    ctx.fillStyle = '#f5f5f5'
-    ctx.beginPath()
-    ctx.ellipse(x, y - 6, 14, 10, 0, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.fillStyle = '#1e293b'
-    ctx.fillRect(x - 10, y - 12, 6, 8)
-    ctx.fillRect(x + 4, y - 12, 6, 8)
-    ctx.beginPath()
-    ctx.arc(x + 12, y - 10, 5, 0, Math.PI * 2)
-    ctx.fillStyle = '#e2e8f0'
-    ctx.fill()
-  }
-}
-
-function drawFactory(ctx: CanvasRenderingContext2D, x: number, y: number, smoke: number) {
-  ctx.fillStyle = '#64748b'
-  ctx.fillRect(x - 18, y - 28, 36, 36)
-  ctx.fillStyle = '#475569'
-  ctx.fillRect(x - 8, y - 48, 8, 20)
-  ctx.fillRect(x + 6, y - 42, 8, 14)
-  if (smoke > 0.15) {
-    const puffs = Math.min(3, 1 + Math.floor(smoke))
-    for (let p = 0; p < puffs; p++) {
-      ctx.beginPath()
-      ctx.arc(x - 4 + p * 6, y - 58 - p * 10, 5 + p * 2, 0, Math.PI * 2)
-      ctx.fillStyle = `rgba(70,70,70,${Math.min(0.5, 0.15 + smoke * 0.08)})`
-      ctx.fill()
-    }
-  }
-}
-
 export function CarbonOxygenCycleSim() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef<CarbonOxygenState>(createCarbonOxygenState())
   const particlesRef = useRef<GasParticle[]>([])
+  const emitAccRef = useRef(createEmitAcc())
+  const cloudsRef = useRef(makeClouds())
   const lastDragPt = useRef<{ x: number; y: number } | null>(null)
   const [running, setRunning] = useState(true)
   const [tick, setTick] = useState(0)
@@ -171,6 +103,7 @@ export function CarbonOxygenCycleSim() {
   const reset = useCallback(() => {
     stateRef.current = createCarbonOxygenState()
     particlesRef.current = []
+    emitAccRef.current = createEmitAcc()
     setPlaceKind(null)
     setRunning(true)
     bump()
@@ -178,194 +111,98 @@ export function CarbonOxygenCycleSim() {
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, dt: number) => {
+      const clampedDt = Math.min(dt, 0.05)
       const s = stateRef.current
       if (running) {
-        stateRef.current = stepCarbonOxygen(s, Math.min(dt, 0.05))
+        stateRef.current = stepCarbonOxygen(s, clampedDt)
       }
       const st = stateRef.current
       const rates = computeRates(st)
       const land = landGeom(w, h)
       const groundY = h * 0.68
       const oceanW = w * 0.22
+      const time = st.time
 
-      const blend = st.isDay ? 0.35 + (st.sunlightIntensity / 100) * 0.65 : 0
-      const r = Math.round(11 + (110 - 11) * blend)
-      const g = Math.round(22 + (182 - 22) * blend)
-      const b = Math.round(40 + (224 - 40) * blend)
-      ctx.fillStyle = `rgb(${r},${g},${b})`
-      ctx.fillRect(0, 0, w, h)
-
-      ctx.fillStyle = st.isDay ? '#0ea5e9' : '#0369a1'
-      ctx.fillRect(0, h * 0.62, oceanW, h * 0.38)
-
-      ctx.fillStyle = st.isDay ? '#5a8f3d' : '#3d5c32'
-      ctx.fillRect(oceanW - 10, groundY, w - oceanW + 10, h - groundY)
-
-      ctx.fillStyle = st.isDay ? 'rgba(106,143,120,0.55)' : 'rgba(45,74,58,0.65)'
-      ctx.beginPath()
-      ctx.moveTo(0, groundY)
-      ctx.quadraticCurveTo(w * 0.2, groundY - 48, w * 0.4, groundY - 28)
-      ctx.quadraticCurveTo(w * 0.6, groundY - 64, w * 0.8, groundY - 30)
-      ctx.quadraticCurveTo(w * 0.95, groundY - 40, w, groundY - 20)
-      ctx.lineTo(w, groundY)
-      ctx.closePath()
-      ctx.fill()
-
-      if (st.isDay) {
-        ctx.beginPath()
-        ctx.arc(w * 0.42, h * 0.14, 28, 0, Math.PI * 2)
-        ctx.fillStyle = '#f4d03f'
-        ctx.fill()
-      } else {
-        ctx.beginPath()
-        ctx.arc(w * 0.42, h * 0.14, 14, 0, Math.PI * 2)
-        ctx.fillStyle = '#e8eef8'
-        ctx.fill()
-      }
+      drawLandscape(
+        ctx,
+        w,
+        h,
+        time,
+        st.isDay,
+        st.sunlightIntensity,
+        cloudsRef.current,
+        oceanW,
+        groundY,
+      )
 
       if (placeKind) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.55)'
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)'
         ctx.lineWidth = 2
-        ctx.setLineDash([6, 4])
+        ctx.setLineDash([7, 5])
         ctx.strokeRect(land.left, land.top, land.width, land.height)
         ctx.setLineDash([])
-        ctx.fillStyle = 'rgba(255,255,255,0.08)'
+        ctx.fillStyle = 'rgba(255,255,255,0.1)'
         ctx.fillRect(land.left, land.top, land.width, land.height)
+        const pulse = 0.5 + 0.5 * Math.sin(time * 4)
+        ctx.strokeStyle = `rgba(74,222,128,${0.35 + pulse * 0.4})`
+        ctx.lineWidth = 2.5
+        ctx.strokeRect(land.left + 4, land.top + 4, land.width - 8, land.height - 8)
       }
 
-      const glowPhoto = rates.photosynthesis > 0.3 && st.isDay
       for (const a of st.agents) {
         const p = toLocal(land, a)
-        if (a.kind === 'plant') drawTree(ctx, p.x, p.y, glowPhoto)
-        else if (a.kind === 'animal') drawAnimal(ctx, p.x, p.y, a.id.length % 2 === 0)
-        else drawFactory(ctx, p.x, p.y, rates.combustion)
+        drawAgent(ctx, a.kind, p.x, p.y, time, a.id, rates, st.isDay)
       }
 
-      const particles = particlesRef.current
-      const pick = <T,>(arr: T[]) => (arr.length ? arr[Math.floor(Math.random() * arr.length)] : null)
       const plants = st.agents.filter((a) => a.kind === 'plant').map((a) => toLocal(land, a))
       const animals = st.agents.filter((a) => a.kind === 'animal').map((a) => toLocal(land, a))
       const factories = st.agents.filter((a) => a.kind === 'factory').map((a) => toLocal(land, a))
-      const budget = Math.min(10, 2 + Math.floor(dt * 60))
+      const particles = particlesRef.current
 
       if (running) {
-        if (st.isDay && rates.photosynthesis > 0.1 && plants.length) {
-          for (let i = 0; i < budget && Math.random() < rates.photosynthesis * 0.1; i++) {
-            const src = pick(plants)
-            if (!src) break
-            particles.push({
-              x: src.x,
-              y: src.y - 24,
-              vx: (Math.random() - 0.5) * 10,
-              vy: -22 - Math.random() * 24,
-              life: 1,
-              kind: 'o2',
-            })
-          }
-        }
-        if (rates.respiration > 0.1 && animals.length) {
-          for (let i = 0; i < budget && Math.random() < rates.respiration * 0.12; i++) {
-            const src = pick(animals)
-            if (!src) break
-            particles.push({
-              x: src.x,
-              y: src.y - 14,
-              vx: (Math.random() - 0.5) * 8,
-              vy: -12 - Math.random() * 16,
-              life: 1,
-              kind: 'co2',
-            })
-          }
-        }
-        if (rates.decomposition > 0.12) {
-          for (let i = 0; i < 2 && Math.random() < rates.decomposition * 0.25; i++) {
-            particles.push({
-              x: w * (0.4 + Math.random() * 0.25),
-              y: h * 0.88,
-              vx: (Math.random() - 0.5) * 6,
-              vy: -8 - Math.random() * 10,
-              life: 1,
-              kind: 'co2',
-            })
-          }
-        }
-        if (rates.combustion > 0.15 && factories.length) {
-          for (let i = 0; i < budget && Math.random() < rates.combustion * 0.1; i++) {
-            const src = pick(factories)
-            if (!src) break
-            particles.push({
-              x: src.x + 4,
-              y: src.y - 48,
-              vx: (Math.random() - 0.5) * 10,
-              vy: -18 - Math.random() * 20,
-              life: 1.1,
-              kind: 'co2',
-            })
-          }
-        }
-        if (rates.oceanAbsorb > 0.15) {
-          for (let i = 0; i < budget && Math.random() < rates.oceanAbsorb * 0.3; i++) {
-            particles.push({
-              x: oceanW * Math.random(),
-              y: h * 0.2 + Math.random() * 40,
-              vx: (Math.random() - 0.5) * 4,
-              vy: 14 + Math.random() * 16,
-              life: 1.2,
-              kind: 'co2',
-            })
-          }
-        }
+        emitGases(
+          particles,
+          emitAccRef.current,
+          clampedDt,
+          time,
+          st.isDay,
+          rates,
+          { plants, animals, factories },
+          { w, h, oceanW },
+        )
       }
+      stepAndDrawParticles(ctx, particles, clampedDt, time, h)
 
-      while (particles.length > 120) particles.shift()
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]
-        p.x += p.vx * dt
-        p.y += p.vy * dt
-        p.life -= dt * 0.55
-        if (p.vy > 8 && p.y > h * 0.72 && p.kind === 'co2') p.life -= dt * 0.8
-        if (p.life <= 0 || p.y < -20 || p.y > h + 10) {
-          particles.splice(i, 1)
-          continue
-        }
-        const alpha = Math.max(0, Math.min(1, p.life))
-        const sinking = p.vy > 8 && p.kind === 'co2'
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, sinking ? 3.5 : 4, 0, Math.PI * 2)
-        ctx.fillStyle = sinking
-          ? `rgba(56,189,248,${alpha})`
-          : p.kind === 'o2'
-            ? `rgba(46,204,113,${alpha})`
-            : `rgba(231,76,60,${alpha})`
-        ctx.fill()
-      }
-
+      // Atmosphere gauge
       ctx.fillStyle = 'rgba(15,23,42,0.88)'
-      roundRect(ctx, 12, 12, 160, 62, 10)
+      roundRect(ctx, 12, 12, 168, 68, 12)
       ctx.fill()
       ctx.fillStyle = '#fff'
-      ctx.font = `700 ${fontPx(11, w, h)}px system-ui,sans-serif`
-      ctx.fillText('Atmosphere', 22, 30)
-      const barW = 140
-      ctx.fillStyle = 'rgba(255,255,255,0.15)'
-      roundRect(ctx, 22, 38, barW, 10, 4)
-      ctx.fill()
-      ctx.fillStyle = '#e74c3c'
-      roundRect(ctx, 22, 38, (st.co2Level / 100) * barW, 10, 4)
-      ctx.fill()
-      ctx.fillStyle = 'rgba(255,255,255,0.15)'
-      roundRect(ctx, 22, 54, barW, 10, 4)
-      ctx.fill()
-      ctx.fillStyle = '#27ae60'
-      roundRect(ctx, 22, 54, (st.o2Level / 100) * barW, 10, 4)
-      ctx.fill()
-      ctx.fillStyle = '#ecf0f1'
-      ctx.font = `${fontPx(9, w, h)}px system-ui,sans-serif`
-      ctx.fillText(`CO₂ ${st.co2Level.toFixed(0)}%`, 26, 46)
-      ctx.fillText(`O₂ ${st.o2Level.toFixed(0)}%`, 26, 62)
+      ctx.font = `700 ${fontPx(11, w, h)}px Roboto, system-ui, sans-serif`
+      ctx.fillText('Atmosphere', 24, 32)
+      const barW = 144
+      const drawBar = (y: number, frac: number, color: string, label: string) => {
+        ctx.fillStyle = 'rgba(255,255,255,0.12)'
+        roundRect(ctx, 24, y, barW, 11, 5)
+        ctx.fill()
+        const fillW = Math.max(4, frac * barW)
+        ctx.fillStyle = color
+        roundRect(ctx, 24, y, fillW, 11, 5)
+        ctx.fill()
+        if (fillW > 12) {
+          const shimmer = ((time * 40) % Math.max(1, fillW - 10))
+          ctx.fillStyle = 'rgba(255,255,255,0.18)'
+          ctx.fillRect(24 + shimmer, y + 1, 8, 9)
+        }
+        ctx.fillStyle = '#ecf0f1'
+        ctx.font = `${fontPx(9, w, h)}px Roboto, system-ui, sans-serif`
+        ctx.fillText(label, 28, y + 9)
+      }
+      drawBar(40, st.co2Level / 100, '#e74c3c', `CO₂ ${st.co2Level.toFixed(0)}%`)
+      drawBar(56, st.o2Level / 100, '#27ae60', `O₂ ${st.o2Level.toFixed(0)}%`)
 
-      drawBadge(ctx, running ? 'Running' : 'Paused', 12, 90, {
-        bg: running ? 'rgba(39,174,96,0.85)' : 'rgba(0,0,0,0.45)',
+      drawBadge(ctx, running ? 'Live gases' : 'Paused', 12, 98, {
+        bg: running ? 'rgba(39,174,96,0.9)' : 'rgba(0,0,0,0.45)',
       })
 
       const avg = (list: { x: number; y: number }[], fx: number, fy: number) => {
@@ -375,27 +212,32 @@ export function CarbonOxygenCycleSim() {
           y: list.reduce((n, p) => n + p.y, 0) / list.length,
         }
       }
+      const bob = Math.sin(time * 2.2) * 3
       if (rates.photosynthesis > 0.15) {
         const p = avg(plants, w * 0.4, h * 0.4)
-        drawLabelPill(ctx, 'Photosynthesis', p.x, p.y - 36)
+        drawLabelPill(ctx, 'Photosynthesis → O₂', p.x, p.y - 42 + bob)
       }
       if (rates.respiration > 0.1) {
         const p = avg(animals, w * 0.45, h * 0.55)
-        drawLabelPill(ctx, 'Respiration', p.x, p.y - 28)
+        drawLabelPill(ctx, 'Breathing → CO₂', p.x, p.y - 34 - bob)
       }
-      if (rates.decomposition > 0.15) drawLabelPill(ctx, 'Decomposition', w * 0.5, h * 0.82)
-      if (rates.oceanAbsorb > 0.15) drawLabelPill(ctx, 'Ocean absorb', oceanW * 0.5, h * 0.72)
+      if (rates.decomposition > 0.15) {
+        drawLabelPill(ctx, 'Decay → CO₂', w * 0.52, h * 0.8 + bob * 0.5)
+      }
+      if (rates.oceanAbsorb > 0.15) {
+        drawLabelPill(ctx, 'Ocean absorbs CO₂', oceanW * 0.5, h * 0.7 - bob)
+      }
       if (rates.combustion > 0.2) {
         const p = avg(factories, w * 0.7, h * 0.5)
-        drawLabelPill(ctx, 'Combustion', p.x, p.y - 52)
+        drawLabelPill(ctx, 'Burning → CO₂', p.x, p.y - 58 + bob)
       }
 
       const chart = { x: w * 0.28, y: h - 120, w: Math.min(400, w * 0.45), h: 100 }
       ctx.fillStyle = 'rgba(15,23,42,0.82)'
-      roundRect(ctx, chart.x, chart.y, chart.w, chart.h, 10)
+      roundRect(ctx, chart.x, chart.y, chart.w, chart.h, 12)
       ctx.fill()
       ctx.fillStyle = '#bdc3c7'
-      ctx.font = `${fontPx(10, w, h)}px system-ui,sans-serif`
+      ctx.font = `${fontPx(10, w, h)}px Roboto, system-ui, sans-serif`
       ctx.fillText('CO₂ (red) & O₂ (green) over time', chart.x + 14, chart.y + 16)
       const hist = st.history
       if (hist.length > 1) {
@@ -410,6 +252,7 @@ export function CarbonOxygenCycleSim() {
           ctx.beginPath()
           ctx.strokeStyle = color
           ctx.lineWidth = 2.5
+          ctx.lineJoin = 'round'
           hist.forEach((sample, i) => {
             const x = x0 + (i / (hist.length - 1)) * plotW
             const y = yBase - (sample[key] / 100) * plotH
@@ -425,10 +268,10 @@ export function CarbonOxygenCycleSim() {
       drawLegend(
         ctx,
         [
-          { color: '#2ecc71', label: 'O₂ from trees' },
-          { color: '#e74c3c', label: 'CO₂ from animals/factories' },
+          { color: '#2ecc71', label: 'O₂ rising from trees' },
+          { color: '#e74c3c', label: 'CO₂ from breath / burn / decay' },
         ],
-        Math.max(12, w - 280),
+        Math.max(12, w - 310),
         16,
         11,
       )
@@ -438,7 +281,7 @@ export function CarbonOxygenCycleSim() {
         roundRect(ctx, w / 2 - 220, 12, 440, 28, 8)
         ctx.fill()
         ctx.fillStyle = '#fff'
-        ctx.font = `${fontPx(11, w, h)}px system-ui,sans-serif`
+        ctx.font = `${fontPx(11, w, h)}px Roboto, system-ui, sans-serif`
         ctx.textAlign = 'center'
         ctx.fillText(st.takeaway, w / 2, 30)
         ctx.textAlign = 'left'
@@ -455,7 +298,7 @@ export function CarbonOxygenCycleSim() {
       const agents = [...stateRef.current.agents].reverse()
       for (const a of agents) {
         const p = toLocal(land, a)
-        const r = a.kind === 'factory' ? 28 : a.kind === 'plant' ? 24 : 20
+        const r = a.kind === 'factory' ? 32 : a.kind === 'plant' ? 28 : 26
         if ((pt.x - p.x) ** 2 + (pt.y - p.y) ** 2 < r * r) return a.id
       }
       if (pt.x < size.w * 0.22 && pt.y > size.h * 0.62) return 'ocean'
@@ -721,7 +564,7 @@ export function CarbonOxygenCycleSim() {
       subtitle={
         placeKind
           ? `Tap the meadow to place a ${placeKind === 'plant' ? 'tree' : placeKind}`
-          : 'Drag agents · gases come from each one you place'
+          : 'Watch O₂ and CO₂ stream live from each agent you place'
       }
       canvasRef={canvasRef}
       running={running}
