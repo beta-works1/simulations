@@ -8,24 +8,39 @@ import { SoftButton } from '../../common/ui/SoftButton.js'
 import { ScrollableNode } from '../../common/ui/ScrollableNode.js'
 import { controlHint, controlSection } from '../../common/ui/controlPanelBits.js'
 import { CarbonStrings } from '../../CarbonStrings.js'
+import { AGENT_LIMITS } from '../model/agents.js'
 import { CarbonOxygenModel } from '../model/CarbonOxygenModel.js'
+import { CYCLE_STEPS, type CycleStepId } from '../model/cycleSteps.js'
+import { AgentPaletteChip, type LandDropTarget } from './AgentPaletteChip.js'
 import { CarbonSounds } from './CarbonSounds.js'
 
+export type CarbonControlPanelExtras = {
+  dropTarget: LandDropTarget
+  ghostLayer: Node
+}
+
 /**
- * Ch2 SoftButton teaching-shell control panel — dark DepthCard with a
- * ScrollableNode of SoftButtons + DepthSliders (nervous reflex-arc parity).
+ * SoftButton teaching-shell control panel — drag agents + rates + challenges.
  */
 export class CarbonControlPanel extends Node {
   public readonly soundBtn: SoftButton
   public readonly playPauseBtn: SoftButton
 
-  public constructor(model: CarbonOxygenModel, sounds: CarbonSounds, width: number, height: number) {
+  public constructor(
+    model: CarbonOxygenModel,
+    sounds: CarbonSounds,
+    width: number,
+    height: number,
+    extras: CarbonControlPanelExtras,
+  ) {
     super()
 
-    const card = new DepthCard(width, height, { title: CarbonStrings.controlsStringProperty.value })
+    const card = new DepthCard(width, height, {
+      title: CarbonStrings.controlsStringProperty.value,
+      fill: 'rgba(11, 22, 40, 0.9)',
+    })
     this.addChild(card)
 
-    // Leave room for ScrollableNode scrollbar so slider values are not clipped.
     const contentW = width - 42
     const halfW = (contentW - 8) / 2
     const btnH = 32
@@ -55,9 +70,84 @@ export class CarbonControlPanel extends Node {
       balText.fill = s === 'Balanced' ? '#a7f3d0' : s === 'CO₂ rising' ? '#fca5a5' : '#86efac'
     })
 
+    const placeHeader = controlSection('Place on the land', contentW)
+    panelContent.addChild(placeHeader)
+    const placeHint = controlHint('Drag onto the meadow. Drag off land to remove.', contentW)
+    panelContent.addChild(placeHint)
+
+    const plantChip = new AgentPaletteChip(
+      'plant',
+      contentW,
+      extras.dropTarget,
+      (kind, nx, ny) => model.addAgent(kind, nx, ny),
+      extras.ghostLayer,
+      sounds,
+    )
+    panelContent.addChild(plantChip)
+    const animalChip = new AgentPaletteChip(
+      'animal',
+      contentW,
+      extras.dropTarget,
+      (kind, nx, ny) => model.addAgent(kind, nx, ny),
+      extras.ghostLayer,
+      sounds,
+    )
+    panelContent.addChild(animalChip)
+    const factoryChip = new AgentPaletteChip(
+      'factory',
+      contentW,
+      extras.dropTarget,
+      (kind, nx, ny) => model.addAgent(kind, nx, ny),
+      extras.ghostLayer,
+      sounds,
+    )
+    panelContent.addChild(factoryChip)
+
+    const tourHeader = controlSection('How the cycle works', contentW)
+    panelContent.addChild(tourHeader)
+    const tourHint = controlHint('Setups + a task — then you drag.', contentW)
+    panelContent.addChild(tourHint)
+
+    const stepButtons: SoftButton[] = []
+    for (const step of CYCLE_STEPS) {
+      const btn = new SoftButton(
+        step.label,
+        () => {
+          model.setCycleStep(step.id)
+          sounds.scenario()
+        },
+        {
+          width: contentW,
+          height: btnH,
+          fill: '#0d9488',
+          fontSize: 11,
+          selected: false,
+        },
+      )
+      stepButtons.push(btn)
+      panelContent.addChild(btn)
+    }
+    const freeBtn = new SoftButton(
+      'Free play',
+      () => {
+        model.setCycleStep('free')
+        sounds.button()
+      },
+      { width: contentW, height: btnH, fill: '#64748b', fontSize: 11, selected: true },
+    )
+    panelContent.addChild(freeBtn)
+
+    const syncTourSelection = (id: CycleStepId) => {
+      for (let i = 0; i < CYCLE_STEPS.length; i++) {
+        stepButtons[i].setSelected(CYCLE_STEPS[i].id === id)
+      }
+      freeBtn.setSelected(id === 'free')
+    }
+    model.cycleStepProperty.link(syncTourSelection)
+
     const ratesHeader = controlSection('Process rates', contentW)
     panelContent.addChild(ratesHeader)
-    const ratesHint = controlHint('Sliders ↔ environment (plants, animals, factories…)', contentW)
+    const ratesHint = controlHint('Mirrors your agents — or nudge the world.', contentW)
     panelContent.addChild(ratesHint)
 
     const photoSlider = new DepthSlider(model.photosynthesisRateProperty, {
@@ -92,6 +182,17 @@ export class CarbonControlPanel extends Node {
       onTick: () => sounds.sliderTick(),
     })
     panelContent.addChild(decompSlider)
+
+    const oceanRateSlider = new DepthSlider(model.oceanAbsorbRateProperty, {
+      min: 0,
+      max: CarbonConstants.RATE_OCEAN_MAX,
+      width: contentW,
+      label: 'Ocean absorb',
+      format: (n) => n.toFixed(1),
+      fill: '#38bdf8',
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(oceanRateSlider)
 
     const burnSlider = new DepthSlider(model.combustionRateProperty, {
       min: 0,
@@ -147,9 +248,9 @@ export class CarbonControlPanel extends Node {
 
     const plantsSlider = new DepthSlider(model.plantCountProperty, {
       min: 0,
-      max: 20,
+      max: AGENT_LIMITS.plant,
       width: contentW,
-      label: 'Plants',
+      label: 'Trees (count)',
       format: (n) => `${Math.round(n)}`,
       fill: '#2ecc71',
       onTick: () => sounds.sliderTick(),
@@ -158,20 +259,31 @@ export class CarbonControlPanel extends Node {
 
     const animalsSlider = new DepthSlider(model.animalCountProperty, {
       min: 0,
-      max: 12,
+      max: AGENT_LIMITS.animal,
       width: contentW,
-      label: 'Animals',
+      label: 'Animals (count)',
       format: (n) => `${Math.round(n)}`,
       fill: '#e67e22',
       onTick: () => sounds.sliderTick(),
     })
     panelContent.addChild(animalsSlider)
 
+    const oceanSlider = new DepthSlider(model.oceanStrengthProperty, {
+      min: 0,
+      max: 16,
+      width: contentW,
+      label: 'Ocean strength',
+      format: (n) => `${Math.round(n)}`,
+      fill: '#0ea5e9',
+      onTick: () => sounds.sliderTick(),
+    })
+    panelContent.addChild(oceanSlider)
+
     const factoriesSlider = new DepthSlider(model.factoryCountProperty, {
       min: 0,
-      max: 20,
+      max: AGENT_LIMITS.factory,
       width: contentW,
-      label: 'Factories',
+      label: 'Factories (count)',
       format: (n) => `${Math.round(n)}`,
       fill: '#e74c3c',
       onTick: () => sounds.sliderTick(),
@@ -227,22 +339,31 @@ export class CarbonControlPanel extends Node {
     )
     panelContent.addChild(resetBtn)
 
-    const scenarioHeader = controlSection('Scenarios', contentW)
+    const scenarioHeader = controlSection('Challenges (optional)', contentW)
     panelContent.addChild(scenarioHeader)
+    const scenarioHint = controlHint('Applies a starting world — you keep playing.', contentW)
+    panelContent.addChild(scenarioHint)
 
     const deforestBtn = new SoftButton(
-      'Deforestation + industry',
+      'Challenge: Deforestation',
       () => model.startDeforestationScenario(),
       { width: contentW, height: btnH + 4, fill: '#c0392b', fontSize: 11, onSound: () => sounds.scenario() },
     )
     panelContent.addChild(deforestBtn)
 
     const reforestBtn = new SoftButton(
-      'Reforestation recovery',
+      'Challenge: Reforestation',
       () => model.startReforestationScenario(),
       { width: contentW, height: btnH + 4, fill: '#16a34a', fontSize: 11, onSound: () => sounds.scenario() },
     )
     panelContent.addChild(reforestBtn)
+
+    const cancelChallengeBtn = new SoftButton(
+      'Clear challenge banner',
+      () => model.cancelScenario(),
+      { width: contentW, height: btnH, fill: '#475569', fontSize: 11, onSound: () => sounds.button() },
+    )
+    panelContent.addChild(cancelChallengeBtn)
 
     const relayoutPanel = () => {
       let py = 0
@@ -252,6 +373,37 @@ export class CarbonControlPanel extends Node {
       balText.left = 0
       balText.top = py
       py = balText.bottom + 10
+
+      placeHeader.left = 0
+      placeHeader.top = py
+      py = placeHeader.bottom + 4
+      placeHint.left = 0
+      placeHint.top = py
+      py = placeHint.bottom + 6
+      plantChip.left = 0
+      plantChip.top = py
+      py = plantChip.bottom + 6
+      animalChip.left = 0
+      animalChip.top = py
+      py = animalChip.bottom + 6
+      factoryChip.left = 0
+      factoryChip.top = py
+      py = factoryChip.bottom + 12
+
+      tourHeader.left = 0
+      tourHeader.top = py
+      py = tourHeader.bottom + 4
+      tourHint.left = 0
+      tourHint.top = py
+      py = tourHint.bottom + 6
+      for (const btn of stepButtons) {
+        btn.left = 0
+        btn.top = py
+        py = btn.bottom + 4
+      }
+      freeBtn.left = 0
+      freeBtn.top = py
+      py = freeBtn.bottom + 12
 
       ratesHeader.left = 0
       ratesHeader.top = py
@@ -268,6 +420,9 @@ export class CarbonControlPanel extends Node {
       decompSlider.left = 0
       decompSlider.top = py
       py = decompSlider.bottom + 8
+      oceanRateSlider.left = 0
+      oceanRateSlider.top = py
+      py = oceanRateSlider.bottom + 8
       burnSlider.left = 0
       burnSlider.top = py
       py = burnSlider.bottom + 12
@@ -289,6 +444,9 @@ export class CarbonControlPanel extends Node {
       animalsSlider.left = 0
       animalsSlider.top = py
       py = animalsSlider.bottom + 8
+      oceanSlider.left = 0
+      oceanSlider.top = py
+      py = oceanSlider.bottom + 8
       factoriesSlider.left = 0
       factoriesSlider.top = py
       py = factoriesSlider.bottom + 8
@@ -313,13 +471,18 @@ export class CarbonControlPanel extends Node {
 
       scenarioHeader.left = 0
       scenarioHeader.top = py
-      py = scenarioHeader.bottom + 6
+      py = scenarioHeader.bottom + 4
+      scenarioHint.left = 0
+      scenarioHint.top = py
+      py = scenarioHint.bottom + 6
       deforestBtn.left = 0
       deforestBtn.top = py
       py = deforestBtn.bottom + gap
       reforestBtn.left = 0
       reforestBtn.top = py
-      py = reforestBtn.bottom + 4
+      py = reforestBtn.bottom + gap
+      cancelChallengeBtn.left = 0
+      cancelChallengeBtn.top = py
     }
     relayoutPanel()
 

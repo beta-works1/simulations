@@ -165,9 +165,10 @@ export class CarbonSounds {
     )
   }
 
-  public processTap(kind: 'trees' | 'animals' | 'factory' | 'soil'): void {
+  public processTap(kind: 'trees' | 'animals' | 'factory' | 'soil' | 'ocean'): void {
     if (kind === 'soil') this.playTambo(this.erase, () => this.tone(300, 0.08, { type: 'triangle', gain: 0.05, slideTo: 160 }))
     else if (kind === 'factory') this.playTambo(this.grab, () => this.tone(240, 0.1, { type: 'square', gain: 0.06, slideTo: 140 }))
+    else if (kind === 'ocean') this.playTambo(this.soft, () => this.tone(440, 0.1, { type: 'sine', gain: 0.05, slideTo: 280 }))
     else this.softClick()
   }
 

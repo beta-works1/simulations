@@ -4,7 +4,7 @@ import { ProfileColorProperty } from 'scenerystack/scenery'
 const ns = new Namespace('carbon-oxygen')
 
 export const CarbonColors = {
-  screenBackgroundColorProperty: new ProfileColorProperty(ns, 'background', { default: '#0b1628' }),
+  screenBackgroundColorProperty: new ProfileColorProperty(ns, 'background', { default: '#6eb6e0' }),
   panelBorderProperty: new ProfileColorProperty(ns, 'panelBorder', { default: '#1e8449' }),
   /** Scenario preset buttons */
   buttonProperty: new ProfileColorProperty(ns, 'button', { default: '#27ae60' }),
@@ -24,8 +24,9 @@ export const CarbonConstants = {
   O2_MAX: 95,
   DAY_NIGHT_PERIOD: 16,
   /** Slider ranges for process rates (environment-derived). */
-  RATE_PHOTO_MAX: 30,
-  RATE_RESP_MAX: 15,
+  RATE_PHOTO_MAX: 22,
+  RATE_RESP_MAX: 12,
   RATE_DECOMP_MAX: 5,
-  RATE_BURN_MAX: 45,
+  RATE_BURN_MAX: 22,
+  RATE_OCEAN_MAX: 8,
 }

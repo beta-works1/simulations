@@ -31,26 +31,35 @@ export class CarbonParticleLayer extends Node {
     this.addChild(this.gfxLayer)
   }
 
+  /**
+   * Spawn gases from agent positions (not random landscape bands).
+   * `emitters` are absolute scene coords for plants / animals / factories.
+   */
   public update(
     dt: number,
     bounds: { left: number; top: number; width: number; height: number },
     isDay: boolean,
     sunlight: number,
-    plantCount: number,
-    factoryCount: number,
     rates: ProcessRates,
+    emitters: {
+      plants: { x: number; y: number }[]
+      animals: { x: number; y: number }[]
+      factories: { x: number; y: number }[]
+    },
   ): void {
-    const groundY = bounds.top + bounds.height * 0.68
     const skyY = bounds.top + bounds.height * 0.12
-    const spawnBudget = Math.min(10, 2 + Math.floor(dt * 60))
-    const plantFactor = Math.max(0.15, plantCount / 12)
+    const spawnBudget = Math.min(12, 2 + Math.floor(dt * 60))
 
-    if (isDay && rates.photosynthesis > 0.1) {
-      const chance = rates.photosynthesis * 0.08 * plantFactor * (sunlight / 80)
+    const pick = <T>(arr: T[]): T | null => (arr.length ? arr[Math.floor(Math.random() * arr.length)] : null)
+
+    if (isDay && rates.photosynthesis > 0.1 && emitters.plants.length) {
+      const chance = rates.photosynthesis * 0.1 * (sunlight / 80)
       for (let i = 0; i < spawnBudget && Math.random() < chance; i++) {
+        const src = pick(emitters.plants)
+        if (!src) break
         this.particles.push({
-          x: bounds.left + bounds.width * (0.08 + Math.random() * 0.45),
-          y: groundY - 40,
+          x: src.x + (Math.random() - 0.5) * 16,
+          y: src.y - 20,
           vx: (Math.random() - 0.5) * 10,
           vy: -22 - Math.random() * 28,
           life: 1,
@@ -58,11 +67,13 @@ export class CarbonParticleLayer extends Node {
         })
       }
     }
-    if (rates.respiration > 0.1) {
-      for (let i = 0; i < spawnBudget && Math.random() < rates.respiration * 0.08; i++) {
+    if (rates.respiration > 0.1 && emitters.animals.length) {
+      for (let i = 0; i < spawnBudget && Math.random() < rates.respiration * 0.12; i++) {
+        const src = pick(emitters.animals)
+        if (!src) break
         this.particles.push({
-          x: bounds.left + bounds.width * (0.1 + Math.random() * 0.45),
-          y: groundY - 10,
+          x: src.x + (Math.random() - 0.5) * 10,
+          y: src.y - 14,
           vx: (Math.random() - 0.5) * 8,
           vy: -12 - Math.random() * 18,
           life: 1,
@@ -70,11 +81,25 @@ export class CarbonParticleLayer extends Node {
         })
       }
     }
-    if (rates.decomposition > 0.12) {
-      for (let i = 0; i < 3 && Math.random() < rates.decomposition * 0.2; i++) {
+    // Plants also respire a little at night / always mild
+    if (rates.respiration > 0.1 && emitters.plants.length && Math.random() < 0.15) {
+      const src = pick(emitters.plants)
+      if (src) {
         this.particles.push({
-          x: bounds.left + bounds.width * (0.12 + Math.random() * 0.4),
-          y: bounds.top + bounds.height * 0.9,
+          x: src.x,
+          y: src.y - 8,
+          vx: (Math.random() - 0.5) * 6,
+          vy: -8 - Math.random() * 10,
+          life: 0.8,
+          kind: 'co2',
+        })
+      }
+    }
+    if (rates.decomposition > 0.12) {
+      for (let i = 0; i < 3 && Math.random() < rates.decomposition * 0.25; i++) {
+        this.particles.push({
+          x: bounds.left + bounds.width * (0.35 + Math.random() * 0.3),
+          y: bounds.top + bounds.height * 0.88,
           vx: (Math.random() - 0.5) * 6,
           vy: -8 - Math.random() * 10,
           life: 1,
@@ -82,12 +107,14 @@ export class CarbonParticleLayer extends Node {
         })
       }
     }
-    if (rates.combustion > 0.15) {
-      const chance = rates.combustion * 0.07 * Math.max(0.2, factoryCount / 8)
+    if (rates.combustion > 0.15 && emitters.factories.length) {
+      const chance = rates.combustion * 0.1
       for (let i = 0; i < spawnBudget && Math.random() < chance; i++) {
+        const src = pick(emitters.factories)
+        if (!src) break
         this.particles.push({
-          x: bounds.left + bounds.width * (0.58 + Math.random() * 0.35),
-          y: groundY - 55,
+          x: src.x + 6 + (Math.random() - 0.5) * 8,
+          y: src.y - 40,
           vx: (Math.random() - 0.5) * 12,
           vy: -20 - Math.random() * 24,
           life: 1.1,
@@ -95,23 +122,57 @@ export class CarbonParticleLayer extends Node {
         })
       }
     }
+    if (rates.oceanAbsorb > 0.15) {
+      const oceanX0 = bounds.left + bounds.width * 0.02
+      const oceanX1 = bounds.left + bounds.width * 0.22
+      const waterY = bounds.top + bounds.height * 0.78
+      for (let i = 0; i < spawnBudget && Math.random() < rates.oceanAbsorb * 0.35; i++) {
+        this.particles.push({
+          x: oceanX0 + Math.random() * (oceanX1 - oceanX0),
+          y: skyY + 30 + Math.random() * 40,
+          vx: (Math.random() - 0.5) * 6,
+          vy: 14 + Math.random() * 18,
+          life: 1.2,
+          kind: 'co2',
+        })
+      }
+      if (Math.random() < rates.oceanAbsorb * 0.25) {
+        this.particles.push({
+          x: oceanX0 + Math.random() * (oceanX1 - oceanX0),
+          y: waterY,
+          vx: (Math.random() - 0.5) * 4,
+          vy: 2,
+          life: 0.7,
+          kind: 'o2',
+        })
+      }
+    }
 
     while (this.particles.length > 120) this.particles.shift()
 
     this.gfxLayer.removeAllChildren()
+    const waterTop = bounds.top + bounds.height * 0.72
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i]
       p.x += p.vx * dt
       p.y += p.vy * dt
       p.life -= dt * 0.55
-      if (p.life <= 0 || p.y < skyY - 20) {
+      if (p.vy > 0 && p.y > waterTop && p.kind === 'co2') {
+        p.life -= dt * 0.8
+      }
+      if (p.life <= 0 || p.y < skyY - 20 || p.y > bounds.top + bounds.height + 10) {
         this.particles.splice(i, 1)
         continue
       }
       const alpha = Math.max(0, Math.min(1, p.life))
+      const sinking = p.vy > 8 && p.kind === 'co2'
       this.gfxLayer.addChild(
-        new Circle(p.kind === 'o2' ? 4 : 3.5, {
-          fill: p.kind === 'o2' ? `rgba(46,204,113,${alpha})` : `rgba(231,76,60,${alpha})`,
+        new Circle(p.kind === 'o2' && !sinking ? 4 : 3.5, {
+          fill: sinking
+            ? `rgba(56,189,248,${alpha})`
+            : p.kind === 'o2'
+              ? `rgba(46,204,113,${alpha})`
+              : `rgba(231,76,60,${alpha})`,
           centerX: p.x,
           centerY: p.y,
         }),
@@ -212,12 +273,33 @@ export function makeEquationPanel(
 
   activeProcessProperty.link((active) => {
     const photo = active === 'photosynthesis'
+    const respLike =
+      active === 'respiration' ||
+      active === 'decomposition' ||
+      active === 'combustion' ||
+      active === 'ocean'
     photoHighlight.visible = photo
-    respHighlight.visible = !photo
+    respHighlight.visible = respLike && !photo
     photoTitle.fill = photo ? '#2ecc71' : 'rgba(255,255,255,0.55)'
     photoEq.fill = photo ? '#ecf0f1' : 'rgba(255,255,255,0.4)'
-    respTitle.fill = !photo ? '#e74c3c' : 'rgba(255,255,255,0.55)'
-    respEq.fill = !photo ? '#ecf0f1' : 'rgba(255,255,255,0.4)'
+    if (active === 'ocean') {
+      respTitle.string = 'Oceans absorb CO₂'
+      respEq.string = 'CO₂ (air) → dissolved carbon in seawater'
+      respTitle.fill = '#38bdf8'
+    } else if (active === 'decomposition') {
+      respTitle.string = 'Decomposition'
+      respEq.string = 'Dead matter → CO₂ (fungi & bacteria)'
+      respTitle.fill = '#eab308'
+    } else if (active === 'combustion') {
+      respTitle.string = 'Combustion'
+      respEq.string = 'Fossil fuels + O₂ → CO₂ + energy'
+      respTitle.fill = '#e74c3c'
+    } else {
+      respTitle.string = 'Respiration'
+      respEq.string = 'C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + energy'
+      respTitle.fill = respLike ? '#e74c3c' : 'rgba(255,255,255,0.55)'
+    }
+    respEq.fill = respLike || photo === false ? '#ecf0f1' : 'rgba(255,255,255,0.4)'
   })
 
   return root

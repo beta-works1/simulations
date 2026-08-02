@@ -1,4 +1,4 @@
-import { Bounds2 } from 'scenerystack/dot'
+import { Bounds2, Matrix3, Vector2 } from 'scenerystack/dot'
 import { EmptySelfOptions } from 'scenerystack/phet-core'
 import { ScreenView, ScreenViewOptions } from 'scenerystack/sim'
 import { Circle, Node, Path, Rectangle, Text } from 'scenerystack/scenery'
@@ -6,6 +6,7 @@ import { Shape } from 'scenerystack/kite'
 import { PhetFont } from 'scenerystack/scenery-phet'
 import { RectangularPushButton } from 'scenerystack/sun'
 import { CarbonOxygenModel } from '../model/CarbonOxygenModel.js'
+import { cycleStepById, dominantProcess, triadForDominant } from '../model/cycleSteps.js'
 import { CarbonControlPanel } from './CarbonControlPanel.js'
 import { CarbonSounds } from './CarbonSounds.js'
 import { createEcologyIcon } from '../../common/EcologyArt.js'
@@ -15,6 +16,8 @@ import { GuidanceBanner } from '../../common/ui/GuidanceBanner.js'
 import { TeachingTriad } from '../../common/ui/TeachingTriad.js'
 import { MiniQuiz } from '../../common/ui/MiniQuiz.js'
 import { ParticleBurst } from '../../common/ui/ParticleBurst.js'
+import { LandscapeAgentNode } from './LandscapeAgentNode.js'
+import type { LandDropTarget } from './AgentPaletteChip.js'
 import {
   CarbonCloudLayer,
   CarbonParticleLayer,
@@ -25,16 +28,21 @@ import {
 } from './CarbonSceneHelpers.js'
 
 type Options = EmptySelfOptions & ScreenViewOptions
+type HoverZone = 'trees' | 'animals' | 'factory' | 'soil' | 'ocean'
+
+/** Widescreen landscape frame — cover-scaled to the window without distortion. */
+const LAYOUT = new Bounds2(0, 0, 1280, 720)
 
 const DEFAULT_STATUS =
-  'Tap trees, animals, factory, or soil. Green trees make O₂. Animals and factories make CO₂.'
+  'Drag trees, animals, or factories onto the land. Gases come from each one you place.'
 
 function isProcessTip(status: string): boolean {
   return (
     status.startsWith('Photosynthesis:') ||
     status.startsWith('Respiration:') ||
     status.startsWith('Combustion:') ||
-    status.startsWith('Decomposition:')
+    status.startsWith('Decomposition:') ||
+    status.startsWith('Oceans:')
   )
 }
 
@@ -48,12 +56,18 @@ function tipBody(status: string): string {
   return i > 0 ? status.slice(i + 1).trim() : status
 }
 
+/**
+ * Full-bleed landscape stage with floating teaching chrome.
+ * Interactive panels sit on top of the scene; the scene keeps a fixed aspect
+ * and cover-scales to the browser (no stretch).
+ */
 export class CarbonOxygenScreenView extends ScreenView {
   private readonly model: CarbonOxygenModel
   private readonly sounds: CarbonSounds
-  private readonly treesLayer: Node
-  private readonly animalsLayer: Node
-  private readonly factoryLayer: Node
+  private readonly agentsLayer: Node
+  private readonly ghostLayer: Node
+  private readonly landHighlight: Rectangle
+  private readonly agentNodes = new Map<string, LandscapeAgentNode>()
   private readonly processLayer: Node
   private readonly particleLayer: CarbonParticleLayer
   private readonly cloudLayer: CarbonCloudLayer
@@ -69,6 +83,9 @@ export class CarbonOxygenScreenView extends ScreenView {
   private readonly tipTitleText: Text
   private readonly tipBodyText: Text
   private readonly soilHit: Rectangle
+  private readonly oceanHit: Rectangle
+  private readonly oceanWater: Rectangle
+  private readonly oceanLayer: Node
   private readonly runningBadge: Rectangle
   private readonly runningText: Text
   private readonly scenarioBadge: Rectangle
@@ -85,39 +102,230 @@ export class CarbonOxygenScreenView extends ScreenView {
   private readonly gaugeCenterX: number
   private readonly gaugeCenterY: number
   private skyBlend = 1
-  private hoverZone: 'trees' | 'animals' | 'factory' | 'soil' | null = null
+  private hoverZone: HoverZone | null = null
+  private relayoutLeftColumn: () => void = () => undefined
+  private dropTarget!: LandDropTarget
 
   public constructor(model: CarbonOxygenModel, providedOptions?: Options) {
-    super(providedOptions)
+    super({ ...providedOptions, layoutBounds: LAYOUT.copy() })
     this.model = model
     this.sounds = new CarbonSounds()
     this.addInputListener({ down: () => this.sounds.unlock() })
 
-    const m = 12
-    const my = 12
     const b = this.layoutBounds
-    const leftW = 190
-    const rightW = 270
-    const gap = 14
+    const sceneLeft = 0
+    const sceneTop = 0
+    const sceneW = b.width
+    const sceneH = b.height
+    this.sceneBounds = { left: sceneLeft, top: sceneTop, width: sceneW, height: sceneH }
+    this.sceneCenterX = sceneW / 2
+    this.sceneCenterY = sceneH / 2
 
-    const stageLeft = m + leftW + gap
-    const stageTop = my + 78
-    const stageW = b.width - m * 2 - leftW - gap - rightW - gap
-    const stageH = b.height - my * 2 - 78
+    // Compact chart strip floating over the meadow (not a separate column)
+    const chartW = 420
+    const chartH = 110
+    this.chartBounds = {
+      left: sceneW * 0.28,
+      top: sceneH - chartH - 14,
+      width: chartW,
+      height: chartH,
+    }
 
-    // ── Top: guidance banner across the full width ───────────────────────────
-    this.guide = new GuidanceBanner(b.width - m * 2, {
+    // ── Full-bleed landscape ────────────────────────────────────────────────
+    this.skyRect = new Rectangle(sceneLeft, sceneTop, sceneW, sceneH, { fill: '#6eb6e0' })
+    this.hillsPath = new Path(null, { fill: 'rgba(106,143,120,0.55)' })
+    const oceanW = sceneW * 0.22
+    this.oceanWater = new Rectangle(sceneLeft, sceneTop + sceneH * 0.62, oceanW, sceneH * 0.38, {
+      fill: '#0ea5e9',
+    })
+    this.groundRect = new Rectangle(
+      sceneLeft + oceanW - 10,
+      sceneTop + sceneH * 0.68,
+      sceneW - oceanW + 10,
+      sceneH * 0.32,
+      { fill: '#5a8f3d' },
+    )
+
+    this.sun = new Circle(28, { fill: '#f4d03f' })
+    this.sun.centerX = sceneLeft + sceneW * 0.42
+    this.sun.centerY = sceneTop + sceneH * 0.14
+    this.moon = new Circle(14, { fill: '#e8eef8', visible: false })
+    this.moon.centerX = this.sun.centerX
+    this.moon.centerY = this.sun.centerY
+
+    this.agentsLayer = new Node()
+    this.oceanLayer = new Node()
+    this.processLayer = new Node()
+    this.particleLayer = new CarbonParticleLayer()
+    this.cloudLayer = new CarbonCloudLayer(makeClouds())
+
+    const land = {
+      left: sceneLeft + sceneW * 0.22,
+      top: sceneTop + sceneH * 0.42,
+      width: sceneW * 0.55,
+      height: sceneH * 0.45,
+    }
+    this.landHighlight = new Rectangle(land.left, land.top, land.width, land.height, {
+      fill: 'rgba(255,255,255,0.14)',
+      stroke: 'rgba(255,255,255,0.45)',
+      lineWidth: 2,
+      cornerRadius: 10,
+      visible: false,
+      pickable: false,
+    })
+
+    const landscape = new Node({
+      clipArea: Shape.bounds(new Bounds2(sceneLeft, sceneTop, sceneLeft + sceneW, sceneTop + sceneH)),
+    })
+    landscape.addChild(this.skyRect)
+    landscape.addChild(this.hillsPath)
+    landscape.addChild(this.oceanWater)
+    landscape.addChild(this.groundRect)
+    landscape.addChild(this.landHighlight)
+    landscape.addChild(this.cloudLayer)
+    landscape.addChild(this.sun)
+    landscape.addChild(this.moon)
+    landscape.addChild(this.agentsLayer)
+    landscape.addChild(this.oceanLayer)
+    landscape.addChild(this.particleLayer)
+    landscape.addChild(this.processLayer)
+    this.addChild(landscape)
+
+    this.ghostLayer = new Node()
+    this.dropTarget = this.makeDropTarget()
+
+    // Hit targets live with the landscape (under floating chrome)
+    this.oceanHit = new Rectangle(sceneLeft + 4, sceneTop + sceneH * 0.64, oceanW - 8, sceneH * 0.34, {
+      fill: 'rgba(14, 165, 233, 0)',
+      stroke: 'rgba(255,255,255,0)',
+      lineWidth: 1.5,
+      cornerRadius: 8,
+      cursor: 'pointer',
+    })
+    this.oceanHit.addInputListener({
+      up: () => {
+        model.setSceneTip('ocean')
+        this.sounds.processTap('ocean')
+      },
+      enter: () => {
+        this.hoverZone = 'ocean'
+        this.oceanHit.fill = 'rgba(56, 189, 248, 0.28)'
+        this.oceanHit.stroke = 'rgba(255,255,255,0.5)'
+      },
+      exit: () => {
+        if (this.hoverZone === 'ocean') this.hoverZone = null
+        this.oceanHit.fill = 'rgba(14, 165, 233, 0)'
+        this.oceanHit.stroke = 'rgba(255,255,255,0)'
+      },
+    })
+    this.addChild(this.oceanHit)
+
+    this.soilHit = new Rectangle(sceneLeft + sceneW * 0.36, sceneTop + sceneH * 0.82, sceneW * 0.28, sceneH * 0.12, {
+      fill: 'rgba(92, 64, 51, 0)',
+      stroke: 'rgba(255,255,255,0)',
+      lineWidth: 1.5,
+      cornerRadius: 6,
+      cursor: 'pointer',
+    })
+    this.soilHit.addInputListener({
+      up: () => {
+        model.setSceneTip('soil')
+        this.sounds.processTap('soil')
+      },
+      enter: () => {
+        this.hoverZone = 'soil'
+        this.soilHit.fill = 'rgba(92, 64, 51, 0.35)'
+        this.soilHit.stroke = 'rgba(255,255,255,0.45)'
+      },
+      exit: () => {
+        if (this.hoverZone === 'soil') this.hoverZone = null
+        this.soilHit.fill = 'rgba(92, 64, 51, 0)'
+        this.soilHit.stroke = 'rgba(255,255,255,0)'
+      },
+    })
+    this.addChild(this.soilHit)
+
+    // ── Floating HUD on top of the landscape ────────────────────────────────
+    const gaugeW = 150
+    this.gaugeCenterX = 16 + (gaugeW + 8) / 2
+    this.gaugeCenterY = 16 + 31
+    this.addChild(makeAtmosphereGauge(model, 16, 16, gaugeW))
+
+    this.runningBadge = new Rectangle(16, 84, 72, 20, {
+      cornerRadius: 6,
+      fill: 'rgba(39,174,96,0.85)',
+    })
+    this.runningText = new Text('Running', {
+      font: new PhetFont(9),
+      fill: 'white',
+      center: this.runningBadge.center,
+    })
+    this.addChild(this.runningBadge)
+    this.addChild(this.runningText)
+    model.runningProperty.link((running) => {
+      this.runningBadge.fill = running ? 'rgba(39,174,96,0.85)' : 'rgba(0,0,0,0.45)'
+      this.runningText.string = running ? 'Running' : 'Paused'
+      this.runningText.center = this.runningBadge.center
+    })
+
+    this.scenarioBadge = new Rectangle(96, 84, 110, 20, {
+      cornerRadius: 6,
+      fill: 'rgba(192,57,43,0.9)',
+      visible: false,
+    })
+    this.scenarioText = new Text('', {
+      font: new PhetFont(9),
+      fill: 'white',
+      center: this.scenarioBadge.center,
+    })
+    this.addChild(this.scenarioBadge)
+    this.addChild(this.scenarioText)
+    model.scenarioProgressProperty.link((p) => {
+      const active = p >= 0
+      this.scenarioBadge.visible = active
+      if (active) {
+        this.scenarioText.string = `Scenario ${Math.round(p * 100)}%`
+        this.scenarioText.center = this.scenarioBadge.center
+      }
+    })
+
+    const eqW = 260
+    this.addChild(makeEquationPanel(model.activeProcessProperty, sceneW - eqW - 280, 16, eqW))
+
+    this.takeawayBg = new Rectangle(sceneW / 2 - 220, 16, 440, 28, {
+      cornerRadius: 8,
+      fill: 'rgba(192, 57, 43, 0.92)',
+      visible: false,
+    })
+    const takeawayText = new Text('', {
+      font: new PhetFont(11),
+      fill: 'white',
+      maxWidth: this.takeawayBg.width - 16,
+      center: this.takeawayBg.center,
+    })
+    model.takeawayProperty.link((t) => {
+      this.takeawayBg.visible = t.length > 0
+      takeawayText.string = t
+      takeawayText.center = this.takeawayBg.center
+    })
+    this.addChild(this.takeawayBg)
+    this.addChild(takeawayText)
+
+    // Guidance strip — centered top, floats over sky
+    const guideW = Math.min(640, sceneW - 520)
+    this.guide = new GuidanceBanner(guideW, {
       title: 'Carbon–Oxygen Cycle',
       body: DEFAULT_STATUS,
     })
-    this.guide.left = m
-    this.guide.top = my
+    this.guide.centerX = sceneW / 2
+    this.guide.top = 12
     this.addChild(this.guide)
 
-    // ── Left column: teaching triad + sound toggle ────────────────────────────
-    const leftCard = new DepthCard(leftW, stageH)
-    leftCard.left = m
-    leftCard.top = stageTop
+    // NOW / WHY / NEXT — left overlay card
+    const leftW = 188
+    const leftCard = new DepthCard(leftW, 320, { fill: 'rgba(11, 22, 40, 0.82)' })
+    leftCard.left = 12
+    leftCard.top = 118
     this.addChild(leftCard)
 
     this.teachingTriad = new TeachingTriad(leftW - 24)
@@ -136,10 +344,10 @@ export class CarbonOxygenScreenView extends ScreenView {
     this.soundBtnLeft.left = 12
     leftCard.content.addChild(this.soundBtnLeft)
 
-    const relayoutLeftColumn = () => {
-      this.soundBtnLeft.top = this.teachingTriad.bottom + 16
+    this.relayoutLeftColumn = () => {
+      this.soundBtnLeft.top = this.teachingTriad.bottom + 12
     }
-    relayoutLeftColumn()
+    this.relayoutLeftColumn()
 
     model.soundEnabledProperty.link((on) => {
       this.sounds.setEnabled(on)
@@ -147,40 +355,8 @@ export class CarbonOxygenScreenView extends ScreenView {
       this.soundBtnLeft.setSelected(on)
     })
 
-    // ── Center: landscape scene + history chart (shrunk to fit new columns) ──
-    const sceneLeft = stageLeft
-    const sceneTop = stageTop
-    const sceneW = stageW
-    const sceneH = stageH * 0.52
-    this.sceneBounds = { left: sceneLeft, top: sceneTop, width: sceneW, height: sceneH }
-    this.sceneCenterX = sceneLeft + sceneW / 2
-    this.sceneCenterY = sceneTop + sceneH / 2
-
-    const chartTop = sceneTop + sceneH + 8
-    const chartH = stageH - sceneH - 8
-    this.chartBounds = { left: sceneLeft, top: chartTop, width: sceneW, height: chartH }
-
-    this.takeawayBg = new Rectangle(sceneLeft, sceneTop - 34, Math.min(sceneW, sceneW - 20), 28, {
-      cornerRadius: 8,
-      fill: 'rgba(192, 57, 43, 0.92)',
-      visible: false,
-    })
-    const takeawayText = new Text('', {
-      font: new PhetFont(10),
-      fill: 'white',
-      maxWidth: this.takeawayBg.width - 16,
-      center: this.takeawayBg.center,
-    })
-    model.takeawayProperty.link((t) => {
-      this.takeawayBg.visible = t.length > 0
-      takeawayText.string = t
-      takeawayText.center = this.takeawayBg.center
-    })
-    this.addChild(this.takeawayBg)
-    this.addChild(takeawayText)
-
-    // Tip popover card (presentation of process info — not bare status text)
-    const tipW = Math.min(340, sceneW - 24)
+    // Tip popover
+    const tipW = 340
     this.tipCard = new Node({ visible: false })
     const tipBg = new Rectangle(0, 0, tipW, 96, {
       fill: 'rgba(15, 23, 42, 0.96)',
@@ -218,8 +394,9 @@ export class CarbonOxygenScreenView extends ScreenView {
     this.tipCard.addChild(this.tipTitleText)
     this.tipCard.addChild(this.tipBodyText)
     this.tipCard.addChild(closeBtn)
-    this.tipCard.centerX = sceneLeft + sceneW / 2
-    this.tipCard.top = sceneTop + 76
+    this.tipCard.centerX = sceneW / 2
+    this.tipCard.top = 100
+    this.addChild(this.tipCard)
 
     model.statusProperty.link((t) => {
       if (isProcessTip(t)) {
@@ -233,125 +410,12 @@ export class CarbonOxygenScreenView extends ScreenView {
       }
     })
 
-    this.skyRect = new Rectangle(sceneLeft, sceneTop, sceneW, sceneH, { fill: '#6eb6e0', cornerRadius: 10 })
-    this.hillsPath = new Path(null, { fill: 'rgba(106,143,120,0.55)' })
-    this.groundRect = new Rectangle(sceneLeft, sceneTop + sceneH * 0.68, sceneW, sceneH * 0.32, {
-      fill: '#5a8f3d',
-      cornerRadius: 10,
-    })
-
-    // Sun/moon kept left of the equation panel so nothing peeks past its right edge
-    this.sun = new Circle(22, { fill: '#f4d03f' })
-    this.sun.centerX = sceneLeft + sceneW * 0.14
-    this.sun.centerY = sceneTop + sceneH * 0.16
-    this.moon = new Circle(11, { fill: '#e8eef8', visible: false })
-    this.moon.centerX = this.sun.centerX
-    this.moon.centerY = this.sun.centerY
-
-    this.treesLayer = new Node()
-    this.animalsLayer = new Node()
-    this.factoryLayer = new Node()
-    this.processLayer = new Node()
-    this.particleLayer = new CarbonParticleLayer()
-    this.cloudLayer = new CarbonCloudLayer(makeClouds())
-
-    const sceneClip = Shape.bounds(
-      new Bounds2(sceneLeft, sceneTop, sceneLeft + sceneW, sceneTop + sceneH),
-    )
-    const clippedSkyLayer = new Node({ clipArea: sceneClip })
-    clippedSkyLayer.addChild(this.skyRect)
-    clippedSkyLayer.addChild(this.hillsPath)
-    clippedSkyLayer.addChild(this.groundRect)
-    clippedSkyLayer.addChild(this.cloudLayer)
-    clippedSkyLayer.addChild(this.sun)
-    clippedSkyLayer.addChild(this.moon)
-    clippedSkyLayer.addChild(this.treesLayer)
-    clippedSkyLayer.addChild(this.animalsLayer)
-    clippedSkyLayer.addChild(this.factoryLayer)
-    clippedSkyLayer.addChild(this.particleLayer)
-    clippedSkyLayer.addChild(this.processLayer)
-    this.addChild(clippedSkyLayer)
-
-    const gaugeW = Math.min(140, sceneW * 0.32)
-    this.gaugeCenterX = sceneLeft + 8 + (gaugeW + 8) / 2
-    this.gaugeCenterY = sceneTop + 8 + 31
-    this.addChild(makeAtmosphereGauge(model, sceneLeft + 8, sceneTop + 8, gaugeW))
-
-    // Running / scenario pills — fixed under Atmosphere, clear of tree animation
-    this.runningBadge = new Rectangle(sceneLeft + 8, sceneTop + 76, 72, 20, {
-      cornerRadius: 6,
-      fill: 'rgba(39,174,96,0.85)',
-    })
-    this.runningText = new Text('Running', {
-      font: new PhetFont(9),
-      fill: 'white',
-      center: this.runningBadge.center,
-    })
-    this.addChild(this.runningBadge)
-    this.addChild(this.runningText)
-    model.runningProperty.link((running) => {
-      this.runningBadge.fill = running ? 'rgba(39,174,96,0.85)' : 'rgba(0,0,0,0.45)'
-      this.runningText.string = running ? 'Running' : 'Paused'
-      this.runningText.center = this.runningBadge.center
-    })
-
-    this.scenarioBadge = new Rectangle(sceneLeft + 88, sceneTop + 76, 110, 20, {
-      cornerRadius: 6,
-      fill: 'rgba(192,57,43,0.9)',
-      visible: false,
-    })
-    this.scenarioText = new Text('', {
-      font: new PhetFont(9),
-      fill: 'white',
-      center: this.scenarioBadge.center,
-    })
-    this.addChild(this.scenarioBadge)
-    this.addChild(this.scenarioText)
-    model.scenarioProgressProperty.link((p) => {
-      const active = p >= 0
-      this.scenarioBadge.visible = active
-      if (active) {
-        this.scenarioText.string = `Scenario ${Math.round(p * 100)}%`
-        this.scenarioText.center = this.scenarioBadge.center
-      }
-    })
-
-    const eqW = Math.min(240, sceneW * 0.42)
-    this.addChild(makeEquationPanel(model.activeProcessProperty, sceneLeft + sceneW - eqW - 8, sceneTop + 8, eqW))
-
-    // Soil hit target: invisible by default, subtle highlight on hover (no permanent label)
-    this.soilHit = new Rectangle(sceneLeft + sceneW * 0.32, sceneTop + sceneH * 0.82, sceneW * 0.36, sceneH * 0.14, {
-      fill: 'rgba(92, 64, 51, 0)',
-      stroke: 'rgba(255,255,255,0)',
-      lineWidth: 1.5,
-      cornerRadius: 6,
-      cursor: 'pointer',
-    })
-    this.soilHit.addInputListener({
-      up: () => {
-        model.setSceneTip('soil')
-        this.sounds.processTap('soil')
-      },
-      enter: () => {
-        this.hoverZone = 'soil'
-        this.soilHit.fill = 'rgba(92, 64, 51, 0.35)'
-        this.soilHit.stroke = 'rgba(255,255,255,0.45)'
-      },
-      exit: () => {
-        if (this.hoverZone === 'soil') this.hoverZone = null
-        this.soilHit.fill = 'rgba(92, 64, 51, 0)'
-        this.soilHit.stroke = 'rgba(255,255,255,0)'
-      },
-    })
-    this.addChild(this.soilHit)
-
-    this.addChild(this.tipCard)
-
+    // History chart — floating over meadow
     const chartBg = new Rectangle(this.chartBounds.left, this.chartBounds.top, this.chartBounds.width, this.chartBounds.height, {
-      fill: 'rgba(15, 23, 42, 0.88)',
-      stroke: 'rgba(255,255,255,0.2)',
+      fill: 'rgba(15, 23, 42, 0.82)',
+      stroke: 'rgba(255,255,255,0.22)',
       lineWidth: 1,
-      cornerRadius: 8,
+      cornerRadius: 10,
     })
     this.co2Path = new Path(null, { stroke: '#e74c3c', lineWidth: 2.5 })
     this.o2Path = new Path(null, { stroke: '#2ecc71', lineWidth: 2.5 })
@@ -369,13 +433,17 @@ export class CarbonOxygenScreenView extends ScreenView {
       }),
     )
 
-    // ── Right: control panel (Ch2 SoftButton chrome) ──────────────────────────
-    const controlPanel = new CarbonControlPanel(model, this.sounds, rightW, stageH)
-    controlPanel.left = sceneLeft + sceneW + gap
-    controlPanel.top = stageTop
+    // Controls — right overlay (scrollable SoftButton panel)
+    const rightW = 260
+    const rightH = sceneH - 24
+    const controlPanel = new CarbonControlPanel(model, this.sounds, rightW, rightH, {
+      dropTarget: this.dropTarget,
+      ghostLayer: this.ghostLayer,
+    })
+    controlPanel.right = sceneW - 10
+    controlPanel.top = 12
     this.addChild(controlPanel)
 
-    // ── Particle bursts + mini quiz overlay ───────────────────────────────────
     this.particles = new ParticleBurst(70)
     this.addChild(this.particles)
 
@@ -384,16 +452,22 @@ export class CarbonOxygenScreenView extends ScreenView {
     this.miniQuiz.centerY = this.sceneCenterY
     this.addChild(this.miniQuiz)
 
-    model.plantCountProperty.link(() => this.rebuildTrees())
-    model.animalCountProperty.link(() => this.rebuildAnimals())
-    model.factoryCountProperty.link(() => this.rebuildFactories())
+    this.addChild(this.ghostLayer)
+
+    model.agentsProperty.link(() => this.rebuildAgents())
+    model.oceanStrengthProperty.link(() => this.rebuildOcean())
     model.isDayProperty.link(() => this.updateSky())
     model.sunlightProperty.link(() => this.updateSky())
     model.historyProperty.link(() => this.updateChart())
-    model.ratesProperty.link(() => this.updateProcessChips())
+    model.ratesProperty.link(() => {
+      this.updateProcessChips()
+      this.updateGuidance()
+    })
 
     model.balanceProperty.link(() => this.updateGuidance())
     model.scenarioProgressProperty.link(() => this.updateGuidance())
+    model.cycleStepProperty.link(() => this.updateGuidance())
+    model.scenarioKindProperty.link(() => this.updateGuidance())
 
     model.balanceProperty.lazyLink((s) => {
       const color = s === 'CO₂ rising' ? '#e74c3c' : s === 'O₂ rising' ? '#2ecc71' : '#0d9488'
@@ -422,14 +496,99 @@ export class CarbonOxygenScreenView extends ScreenView {
       }
     })
 
-    this.rebuildTrees()
-    this.rebuildAnimals()
-    this.rebuildFactories()
+    this.rebuildAgents()
+    this.rebuildOcean()
     this.updateSky()
     this.updateChart()
     this.updateProcessChips()
     this.updateHills()
     this.updateGuidance()
+  }
+
+  private landRect(): { left: number; top: number; width: number; height: number } {
+    const s = this.sceneBounds
+    return {
+      left: s.left + s.width * 0.22,
+      top: s.top + s.height * 0.42,
+      width: s.width * 0.55,
+      height: s.height * 0.45,
+    }
+  }
+
+  private landToLocal(nx: number, ny: number): { x: number; y: number } {
+    const land = this.landRect()
+    return {
+      x: land.left + nx * land.width,
+      y: land.top + ny * land.height,
+    }
+  }
+
+  private makeDropTarget(): LandDropTarget {
+    return {
+      containsGlobalPoint: (gx, gy) => {
+        const local = this.globalToLocalPoint(new Vector2(gx, gy))
+        const land = this.landRect()
+        return (
+          local.x >= land.left &&
+          local.x <= land.left + land.width &&
+          local.y >= land.top &&
+          local.y <= land.top + land.height
+        )
+      },
+      globalToLandNorm: (gx, gy) => {
+        const local = this.globalToLocalPoint(new Vector2(gx, gy))
+        const land = this.landRect()
+        if (
+          local.x < land.left ||
+          local.x > land.left + land.width ||
+          local.y < land.top ||
+          local.y > land.top + land.height
+        ) {
+          return null
+        }
+        return {
+          nx: (local.x - land.left) / land.width,
+          ny: (local.y - land.top) / land.height,
+        }
+      },
+      setHighlight: (on) => {
+        this.landHighlight.visible = on
+      },
+    }
+  }
+
+  private rebuildAgents(): void {
+    const agents = this.model.agentsProperty.value
+    const ids = new Set(agents.map((a) => a.id))
+    for (const [id, node] of this.agentNodes) {
+      if (!ids.has(id)) {
+        this.agentsLayer.removeChild(node)
+        this.agentNodes.delete(id)
+      }
+    }
+    for (const agent of agents) {
+      let node = this.agentNodes.get(agent.id)
+      if (!node) {
+        node = new LandscapeAgentNode(
+          agent,
+          (nx, ny) => this.landToLocal(nx, ny),
+          this.dropTarget,
+          (id, nx, ny) => this.model.moveAgent(id, nx, ny),
+          (id) => this.model.removeAgent(id),
+          (kind) => {
+            const zone = kind === 'plant' ? 'trees' : kind === 'animal' ? 'animals' : 'factory'
+            this.model.setSceneTip(zone)
+            this.sounds.processTap(zone)
+          },
+          this.sounds,
+        )
+        this.agentNodes.set(agent.id, node)
+        this.agentsLayer.addChild(node)
+      } else {
+        node.syncPosition(agent, (nx, ny) => this.landToLocal(nx, ny))
+      }
+    }
+    this.updateProcessChips()
   }
 
   private onScenarioComplete(kind: string): void {
@@ -465,7 +624,7 @@ export class CarbonOxygenScreenView extends ScreenView {
         this.teachingTriad.setTriad(
           `Deforestation scenario — ${pct}%`,
           'Fewer trees mean less photosynthesis; more factories mean more combustion.',
-          'Watch CO₂ climb and O₂ fall on the chart below.',
+          'Watch CO₂ climb and O₂ fall on the chart.',
         )
       } else if (kind === 'reforestation') {
         this.guide.setGuidance(
@@ -475,38 +634,49 @@ export class CarbonOxygenScreenView extends ScreenView {
         this.teachingTriad.setTriad(
           `Reforestation scenario — ${pct}%`,
           'More trees add photosynthesis; fewer factories cut combustion.',
-          'Watch CO₂ fall and O₂ rise on the chart below.',
+          'Watch CO₂ fall and O₂ rise on the chart.',
         )
       }
+      this.relayoutLeftColumn()
       return
     }
 
+    const stepId = this.model.cycleStepProperty.value
+    if (stepId !== 'free') {
+      const step = cycleStepById(stepId)
+      if (step) {
+        this.guide.setGuidance(step.guideTitle, step.guideBody)
+        this.teachingTriad.setTriad(step.now, step.why, step.next)
+        this.relayoutLeftColumn()
+        return
+      }
+    }
+
+    const rates = this.model.ratesProperty.value
+    const [now, why, next] = triadForDominant(dominantProcess(rates))
     const balance = this.model.balanceProperty.value
     if (balance === 'CO₂ rising') {
       this.guide.setGuidance(
         'CO₂ is rising',
-        'Combustion, respiration, and decomposition are outpacing photosynthesis.',
+        'Breathing, decay, and burning are outpacing plants and the ocean.',
       )
       this.teachingTriad.setTriad(
         'CO₂ is rising.',
-        'Factories, animals, and soil release more CO₂ than the plants can soak up right now.',
-        'Raise Plants or Sunlight, or lower Factories, to pull CO₂ back down.',
+        'Animals, soil, and factories release more CO₂ than plants and oceans take up.',
+        'Raise Plants or Ocean strength, or lower Factories.',
       )
     } else if (balance === 'O₂ rising') {
       this.guide.setGuidance('O₂ is rising', 'Photosynthesis is outpacing respiration and combustion.')
       this.teachingTriad.setTriad(
         'O₂ is rising.',
         'Plants are making more oxygen than animals, soil, and factories are using up.',
-        'Try the Deforestation scenario to see how this can reverse.',
+        'Try Steps 1–5, or the Deforestation scenario to tip the balance.',
       )
     } else {
-      this.guide.setGuidance('Balanced', 'CO₂ and O₂ are holding roughly steady.')
-      this.teachingTriad.setTriad(
-        'The cycle is balanced.',
-        'Photosynthesis roughly matches respiration + decomposition + combustion.',
-        'Tap trees, animals, factory, or soil to see each process. Try a scenario to break the balance.',
-      )
+      this.guide.setGuidance('Free play — cycle balanced', 'CO₂ and O₂ are holding roughly steady. Use Steps 1–5 anytime.')
+      this.teachingTriad.setTriad(now, why, next)
     }
+    this.relayoutLeftColumn()
   }
 
   private drawChartGrid(): void {
@@ -543,9 +713,9 @@ export class CarbonOxygenScreenView extends ScreenView {
     const w = s.width
     const shape = new Shape()
     shape.moveTo(s.left, groundY)
-    shape.quadraticCurveTo(s.left + w * 0.18, groundY - 36, s.left + w * 0.35, groundY - 22)
-    shape.quadraticCurveTo(s.left + w * 0.55, groundY - 48, s.left + w * 0.72, groundY - 24)
-    shape.quadraticCurveTo(s.left + w * 0.88, groundY - 40, s.left + w, groundY - 18)
+    shape.quadraticCurveTo(s.left + w * 0.18, groundY - 48, s.left + w * 0.35, groundY - 28)
+    shape.quadraticCurveTo(s.left + w * 0.55, groundY - 64, s.left + w * 0.72, groundY - 30)
+    shape.quadraticCurveTo(s.left + w * 0.88, groundY - 52, s.left + w, groundY - 22)
     shape.lineTo(s.left + w, groundY)
     shape.close()
     this.hillsPath.shape = shape
@@ -564,156 +734,103 @@ export class CarbonOxygenScreenView extends ScreenView {
     this.sun.visible = day
     this.moon.visible = !day
     this.groundRect.fill = day ? '#5a8f3d' : '#3d5c32'
+    this.oceanWater.fill = day ? '#0ea5e9' : '#0369a1'
     this.hillsPath.fill = day ? 'rgba(106,143,120,0.55)' : 'rgba(45,74,58,0.65)'
   }
 
-  private rebuildTrees(): void {
-    this.treesLayer.removeAllChildren()
-    const count = Math.round(this.model.plantCountProperty.value)
+  private rebuildOcean(): void {
+    this.oceanLayer.removeAllChildren()
     const s = this.sceneBounds
+    const strength = this.model.oceanStrengthProperty.value
     const rates = this.model.ratesProperty.value
-    const glowing = rates.photosynthesis > 0.3 && this.model.isDayProperty.value
-    const cols = Math.max(1, Math.min(count, 10))
-    for (let i = 0; i < count; i++) {
-      const col = i % cols
-      const row = Math.floor(i / cols)
-      const x = s.left + 36 + col * ((s.width * 0.42) / cols) + (((i * 19) % 7) - 3) * 2
-      const y = s.top + s.height * 0.54 + row * 20 + ((i * 23) % 9) - 4
-      const scale = 0.75 + ((i * 41) % 11) / 18
-      const tree = this.makeTree(x, y, scale, glowing)
-      tree.cursor = 'pointer'
-      tree.addInputListener({
-        up: () => {
-          this.model.setSceneTip('trees')
-          this.sounds.processTap('trees')
-        },
-        enter: () => {
-          this.hoverZone = 'trees'
-        },
-        exit: () => {
-          if (this.hoverZone === 'trees') this.hoverZone = null
-        },
-      })
-      this.treesLayer.addChild(tree)
+    const absorbing = rates.oceanAbsorb > 0.2
+    const cx = s.left + s.width * 0.11
+    const cy = s.top + s.height * 0.78
+    const earth = createEcologyIcon('earth', 28 + Math.min(10, strength))
+    earth.centerX = 0
+    earth.centerY = 0
+    const algae = createEcologyIcon('algae', 22)
+    algae.centerX = 22
+    algae.centerY = 8
+    const phyto = createEcologyIcon('phytoplankton', 18)
+    phyto.centerX = -18
+    phyto.centerY = 10
+    const n = new Node({ x: cx, y: cy, cursor: 'pointer' })
+    if (absorbing) {
+      n.addChild(new Circle(26, { fill: 'rgba(56,189,248,0.28)', centerX: 0, centerY: 0 }))
     }
-  }
-
-  private makeTree(x: number, y: number, scale: number, glowing: boolean): Node {
-    const n = new Node({ x, y })
-    const icon = createEcologyIcon('tree', 28 * scale + 10)
-    icon.centerY = -6 * scale
-    n.addChild(icon)
-    if (glowing) {
-      n.addChild(new Circle(18 * scale, { fill: 'rgba(46,204,113,0.18)', centerY: -8 * scale }))
-    }
-    return n
-  }
-
-  private rebuildAnimals(): void {
-    this.animalsLayer.removeAllChildren()
-    const count = Math.round(this.model.animalCountProperty.value)
-    const s = this.sceneBounds
-    const groundY = s.top + s.height * 0.68 - 6
-    for (let i = 0; i < count; i++) {
-      const x = s.left + s.width * (0.1 + (i / Math.max(1, count)) * 0.38)
-      const animal = new Node({ x, y: groundY, cursor: 'pointer' })
-      animal.addChild(createEcologyIcon(i % 2 === 0 ? 'cow' : 'deer', 30))
-      animal.addInputListener({
-        up: () => {
-          this.model.setSceneTip('animals')
-          this.sounds.processTap('animals')
-        },
-        enter: () => {
-          this.hoverZone = 'animals'
-        },
-        exit: () => {
-          if (this.hoverZone === 'animals') this.hoverZone = null
-        },
-      })
-      this.animalsLayer.addChild(animal)
-    }
-  }
-
-  private rebuildFactories(): void {
-    this.factoryLayer.removeAllChildren()
-    const count = Math.round(this.model.factoryCountProperty.value)
-    const s = this.sceneBounds
-    const rates = this.model.ratesProperty.value
-    const groundY = s.top + s.height * 0.68
-    for (let i = 0; i < Math.min(count, 10); i++) {
-      const x = s.left + s.width * (0.58 + (i / 10) * 0.36)
-      const g = new Node({ x, y: groundY, cursor: 'pointer' })
-      const icon = createEcologyIcon('factory', 42)
-      icon.centerY = -18
-      g.addChild(icon)
-      const smoke = rates.combustion * (0.4 + i * 0.05)
-      if (smoke > 0.15) {
-        const puffs = Math.min(3, 1 + Math.floor(smoke))
-        for (let p = 0; p < puffs; p++) {
-          g.addChild(
-            new Circle(5 + p * 2, {
-              fill: `rgba(70,70,70,${Math.min(0.55, 0.15 + smoke * 0.08)})`,
-              centerX: 8 + p * 5,
-              centerY: -58 - p * 10,
-            }),
-          )
-        }
-      }
-      g.addInputListener({
-        up: () => {
-          this.model.setSceneTip('factory')
-          this.sounds.processTap('factory')
-        },
-        enter: () => {
-          this.hoverZone = 'factory'
-        },
-        exit: () => {
-          if (this.hoverZone === 'factory') this.hoverZone = null
-        },
-      })
-      this.factoryLayer.addChild(g)
-    }
-    for (let i = 10; i < count; i++) {
-      const x = s.left + s.width * (0.55 + ((i - 10) / 10) * 0.4)
-      const car = new Node({ x, y: groundY })
-      car.addChild(new Rectangle(0, -8, 14, 6, { fill: '#555' }))
-      car.addChild(new Circle(2.5, { fill: '#222', centerX: 3, centerY: -2 }))
-      car.addChild(new Circle(2.5, { fill: '#222', centerX: 11, centerY: -2 }))
-      this.factoryLayer.addChild(car)
-    }
+    n.addChild(earth)
+    if (strength > 4) n.addChild(algae)
+    if (strength > 8) n.addChild(phyto)
+    n.addInputListener({
+      up: () => {
+        this.model.setSceneTip('ocean')
+        this.sounds.processTap('ocean')
+      },
+      enter: () => {
+        this.hoverZone = 'ocean'
+      },
+      exit: () => {
+        if (this.hoverZone === 'ocean') this.hoverZone = null
+      },
+    })
+    this.oceanLayer.addChild(n)
   }
 
   private updateProcessChips(): void {
     this.processLayer.removeAllChildren()
     const rates = this.model.ratesProperty.value
     const s = this.sceneBounds
-    // Decomposition chip sits slightly above the soil hit zone so labels never stack
+    const plants = this.model.agentsOfKind('plant')
+    const animals = this.model.agentsOfKind('animal')
+    const factories = this.model.agentsOfKind('factory')
+    const avg = (list: { nx: number; ny: number }[], fallbackX: number, fallbackY: number) => {
+      if (!list.length) return { x: fallbackX, y: fallbackY }
+      let sx = 0
+      let sy = 0
+      for (const a of list) {
+        const p = this.landToLocal(a.nx, a.ny)
+        sx += p.x
+        sy += p.y
+      }
+      return { x: sx / list.length, y: sy / list.length }
+    }
+    const pPos = avg(plants, s.left + s.width * 0.38, s.top + s.height * 0.4)
+    const aPos = avg(animals, s.left + s.width * 0.42, s.top + s.height * 0.58)
+    const fPos = avg(factories, s.left + s.width * 0.68, s.top + s.height * 0.46)
     const items: { label: string; x: number; y: number; on: boolean; hot: boolean }[] = [
       {
         label: 'Photosynthesis',
-        x: s.left + s.width * 0.28,
-        y: s.top + s.height * 0.42,
+        x: pPos.x,
+        y: pPos.y - 28,
         on: rates.photosynthesis > 0.15,
         hot: this.hoverZone === 'trees',
       },
       {
         label: 'Respiration',
-        x: s.left + s.width * 0.42,
-        y: s.top + s.height * 0.58,
+        x: aPos.x,
+        y: aPos.y - 24,
         on: rates.respiration > 0.1,
         hot: this.hoverZone === 'animals',
       },
       {
         label: 'Decomposition',
-        x: s.left + s.width * 0.5,
+        x: s.left + s.width * 0.48,
         y: s.top + s.height * 0.78,
         on: rates.decomposition > 0.15,
         hot: this.hoverZone === 'soil',
       },
       {
+        label: 'Ocean absorb',
+        x: s.left + s.width * 0.11,
+        y: s.top + s.height * 0.7,
+        on: rates.oceanAbsorb > 0.15,
+        hot: this.hoverZone === 'ocean',
+      },
+      {
         label: 'Combustion',
-        x: s.left + s.width * 0.78,
-        y: s.top + s.height * 0.46,
+        x: fPos.x,
+        y: fPos.y - 36,
         on: rates.combustion > 0.2,
         hot: this.hoverZone === 'factory',
       },
@@ -759,6 +876,19 @@ export class CarbonOxygenScreenView extends ScreenView {
     this.o2Path.shape = o2Shape
   }
 
+  /**
+   * Cover-scale: fill the window with one uniform scale (keeps ratio, no stretch).
+   * Slight edge crop when the window aspect differs from 1280×720.
+   */
+  public override layout(viewBounds: Bounds2): void {
+    const lb = this.layoutBounds
+    const scale = Math.max(viewBounds.width / lb.width, viewBounds.height / lb.height)
+    this.matrix = Matrix3.translation(viewBounds.centerX, viewBounds.centerY)
+      .timesMatrix(Matrix3.scaling(scale, scale))
+      .timesMatrix(Matrix3.translation(-lb.centerX, -lb.centerY))
+    this.visibleBoundsProperty.value = this.parentToLocalBounds(viewBounds)
+  }
+
   public override step(dt: number): void {
     const capped = Math.min(dt, 0.05)
     this.model.step(capped)
@@ -770,15 +900,12 @@ export class CarbonOxygenScreenView extends ScreenView {
     this.skyBlend += (target - this.skyBlend) * (1 - Math.exp(-capped * 6))
 
     this.cloudLayer.step(capped, this.sceneBounds, this.skyBlend)
-    this.particleLayer.update(
-      capped,
-      this.sceneBounds,
-      day,
-      sun,
-      this.model.plantCountProperty.value,
-      this.model.factoryCountProperty.value,
-      this.model.ratesProperty.value,
-    )
+    const toLocal = (a: { nx: number; ny: number }) => this.landToLocal(a.nx, a.ny)
+    this.particleLayer.update(capped, this.sceneBounds, day, sun, this.model.ratesProperty.value, {
+      plants: this.model.agentsOfKind('plant').map(toLocal),
+      animals: this.model.agentsOfKind('animal').map(toLocal),
+      factories: this.model.agentsOfKind('factory').map(toLocal),
+    })
     this.updateProcessChips()
   }
 }
