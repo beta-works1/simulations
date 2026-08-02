@@ -1,0 +1,93 @@
+.co-status {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--sim-text);
+}
+
+.co-place-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.co-place-btn {
+  min-height: 40px;
+  border: none;
+  border-radius: var(--sim-radius-sm);
+  background: var(--sim-panel-elevated);
+  box-shadow: 0 0 0 1px var(--sim-panel-border);
+  color: var(--sim-text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.co-place-btn.is-active {
+  background: rgba(30, 132, 73, 0.18);
+  box-shadow: 0 0 0 2px #1e8449;
+  color: #145a32;
+}
+
+.co-counts {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--sim-muted);
+}
+
+.co-step-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.co-step-stack .sim-shell-btn.is-active {
+  box-shadow: 0 0 0 2px var(--sim-accent);
+}
+
+.co-triad {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.co-triad-card {
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--sim-radius-sm);
+  background: var(--sim-panel-elevated);
+  box-shadow: 0 0 0 1px var(--sim-panel-border);
+}
+
+.co-triad-card strong {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.2rem;
+}
+
+.co-triad-card p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.co-now strong {
+  color: #1e8449;
+}
+
+.co-why strong {
+  color: #1a5276;
+}
+
+.co-next strong {
+  color: #9a7b0a;
+}
+
+.co-balance,
+.co-net,
+.co-rates {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--sim-muted);
+}
