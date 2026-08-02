@@ -16,6 +16,7 @@ import { SimShell } from '../../shared/SimShell'
 import { useCanvasLoop } from '../../shared/useCanvasLoop'
 import { useCanvasPointer } from '../../shared/useCanvasPointer'
 import {
+  AGENT_ART,
   createEmitAcc,
   drawAgent,
   drawLandscape,
@@ -394,14 +395,21 @@ export function CarbonOxygenCycleSim() {
       <ControlSection title="Place on the land">
         <ControlHint>Select a tool, then tap the meadow. Drag agents off land to remove.</ControlHint>
         <div className="co-place-row">
-          {(['plant', 'animal', 'factory'] as AgentKind[]).map((kind) => (
+          {(
+            [
+              { kind: 'plant' as const, label: 'Tree', src: AGENT_ART.tree },
+              { kind: 'animal' as const, label: 'Animal', src: AGENT_ART.cow },
+              { kind: 'factory' as const, label: 'Factory', src: AGENT_ART.factory },
+            ] as const
+          ).map(({ kind, label, src }) => (
             <button
               key={kind}
               type="button"
               className={`co-place-btn ${placeKind === kind ? 'is-active' : ''}`}
               onClick={() => setPlaceKind((k) => (k === kind ? null : kind))}
             >
-              {kind === 'plant' ? 'Tree' : kind === 'animal' ? 'Animal' : 'Factory'}
+              <img src={src} alt="" width={28} height={28} />
+              <span>{label}</span>
             </button>
           ))}
         </div>

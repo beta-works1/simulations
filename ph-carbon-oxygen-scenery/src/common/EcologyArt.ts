@@ -9,15 +9,25 @@ function svgDataUri(svg: string): string {
 }
 
 const RABBIT = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="32" cy="42" rx="16" ry="14" fill="#f5f5f5" stroke="#94a3b8" stroke-width="1.5"/>
-  <ellipse cx="22" cy="18" rx="6" ry="16" fill="#f5f5f5" stroke="#94a3b8" stroke-width="1.2"/>
-  <ellipse cx="42" cy="18" rx="6" ry="16" fill="#f5f5f5" stroke="#94a3b8" stroke-width="1.2"/>
-  <ellipse cx="22" cy="18" rx="3" ry="10" fill="#fda4af"/>
-  <ellipse cx="42" cy="18" rx="3" ry="10" fill="#fda4af"/>
-  <circle cx="26" cy="40" r="2.2" fill="#1e293b"/>
-  <circle cx="38" cy="40" r="2.2" fill="#1e293b"/>
-  <ellipse cx="32" cy="46" rx="3" ry="2" fill="#fda4af"/>
-  <ellipse cx="48" cy="48" rx="5" ry="4" fill="#e2e8f0"/>
+  <defs>
+    <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="32" cy="58" rx="13" ry="3" fill="#000" opacity="0.16"/>
+  <ellipse cx="22" cy="16" rx="6" ry="15" fill="url(#fur)" stroke="#94a3b8" stroke-width="1"/>
+  <ellipse cx="42" cy="16" rx="6" ry="15" fill="url(#fur)" stroke="#94a3b8" stroke-width="1"/>
+  <ellipse cx="22" cy="16" rx="3" ry="10" fill="#fda4af"/>
+  <ellipse cx="42" cy="16" rx="3" ry="10" fill="#fda4af"/>
+  <ellipse cx="32" cy="40" rx="17" ry="15" fill="url(#fur)" stroke="#94a3b8" stroke-width="1.2"/>
+  <circle cx="26" cy="38" r="2.4" fill="#1e293b"/>
+  <circle cx="38" cy="38" r="2.4" fill="#1e293b"/>
+  <circle cx="26.7" cy="37.3" r="0.7" fill="#fff"/>
+  <circle cx="38.7" cy="37.3" r="0.7" fill="#fff"/>
+  <ellipse cx="32" cy="44" rx="3.5" ry="2.4" fill="#fda4af"/>
+  <ellipse cx="48" cy="46" rx="6" ry="4.5" fill="#e2e8f0" stroke="#94a3b8" stroke-width="0.8"/>
+  <ellipse cx="32" cy="50" rx="7" ry="3" fill="#f1f5f9"/>
 </svg>`)
 
 const FOX = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
@@ -45,20 +55,48 @@ const GRASS = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6
 </svg>`)
 
 const TREE = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect x="28" y="40" width="8" height="18" rx="2" fill="#92400e"/>
-  <circle cx="32" cy="28" r="18" fill="#16a34a"/>
-  <circle cx="22" cy="32" r="10" fill="#15803d"/>
-  <circle cx="42" cy="30" r="11" fill="#22c55e"/>
-  <circle cx="32" cy="18" r="9" fill="#4ade80"/>
+  <defs>
+    <radialGradient id="canopy" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#86efac"/>
+      <stop offset="55%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#15803d"/>
+    </radialGradient>
+    <linearGradient id="trunk" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#78350f"/>
+      <stop offset="50%" stop-color="#a16207"/>
+      <stop offset="100%" stop-color="#713f12"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="32" cy="58" rx="15" ry="4" fill="#000" opacity="0.2"/>
+  <rect x="28" y="38" width="8" height="20" rx="2.5" fill="url(#trunk)"/>
+  <circle cx="32" cy="26" r="19" fill="url(#canopy)"/>
+  <circle cx="20" cy="32" r="11" fill="#16a34a"/>
+  <circle cx="44" cy="30" r="12" fill="#4ade80" opacity="0.9"/>
+  <circle cx="32" cy="16" r="9" fill="#86efac"/>
+  <circle cx="26" cy="22" r="3" fill="#bbf7d0" opacity="0.7"/>
 </svg>`)
 
 const DEER = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="34" cy="40" rx="16" ry="12" fill="#b45309"/>
-  <ellipse cx="48" cy="30" rx="8" ry="7" fill="#b45309"/>
-  <path d="M44 24 L40 10 M44 24 L48 8 M50 24 L54 10" stroke="#78350f" stroke-width="2" fill="none"/>
-  <circle cx="52" cy="28" r="1.8" fill="#1e293b"/>
-  <rect x="24" y="48" width="4" height="10" fill="#92400e"/>
-  <rect x="40" y="48" width="4" height="10" fill="#92400e"/>
+  <defs>
+    <linearGradient id="deerCoat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#92400e"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="34" cy="58" rx="14" ry="3.2" fill="#000" opacity="0.18"/>
+  <rect x="22" y="46" width="4.5" height="11" rx="2" fill="#78350f"/>
+  <rect x="30" y="46" width="4.5" height="11" rx="2" fill="#78350f"/>
+  <rect x="38" y="46" width="4.5" height="11" rx="2" fill="#92400e"/>
+  <rect x="45" y="46" width="4.5" height="11" rx="2" fill="#92400e"/>
+  <ellipse cx="33" cy="38" rx="17" ry="13" fill="url(#deerCoat)"/>
+  <ellipse cx="28" cy="40" rx="8" ry="6" fill="#fef3c7" opacity="0.55"/>
+  <ellipse cx="50" cy="28" rx="9" ry="8" fill="url(#deerCoat)"/>
+  <path d="M44 20 L40 6 M44 20 L47 5 M50 20 L54 7 M50 20 L52 9" stroke="#78350f" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <circle cx="54" cy="26" r="2" fill="#1e293b"/>
+  <circle cx="54.5" cy="25.4" r="0.6" fill="#fff"/>
+  <ellipse cx="56" cy="32" rx="3.5" ry="2.2" fill="#fca5a5"/>
+  <ellipse cx="18" cy="40" rx="5" ry="3.5" fill="#b45309"/>
+  <path d="M18 40 Q12 36 10 30" stroke="#92400e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
 </svg>`)
 
 const HAWK = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
@@ -92,12 +130,37 @@ const FUNGI = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6
 </svg>`)
 
 const FACTORY = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect x="8" y="28" width="40" height="28" fill="#64748b"/>
-  <rect x="40" y="16" width="10" height="40" fill="#94a3b8"/>
-  <rect x="14" y="34" width="8" height="8" fill="#38bdf8"/>
-  <rect x="28" y="34" width="8" height="8" fill="#38bdf8"/>
-  <path d="M44 16 Q50 8 56 4" stroke="#94a3b8" stroke-width="4" fill="none" opacity="0.7"/>
-  <path d="M48 16 Q56 6 60 2" stroke="#cbd5e1" stroke-width="3" fill="none" opacity="0.5"/>
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+    <linearGradient id="stack" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="50%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </linearGradient>
+    <linearGradient id="roof" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="32" cy="58" rx="24" ry="4" fill="#000" opacity="0.2"/>
+  <path d="M6 30 L22 18 L22 30 Z" fill="#64748b"/>
+  <rect x="6" y="28" width="38" height="28" rx="2" fill="url(#wall)"/>
+  <rect x="6" y="28" width="38" height="5" fill="url(#roof)"/>
+  <rect x="42" y="12" width="11" height="44" rx="1.5" fill="url(#stack)"/>
+  <rect x="40" y="10" width="15" height="5" rx="1" fill="#334155"/>
+  <rect x="12" y="36" width="9" height="9" rx="1.5" fill="#7dd3fc"/>
+  <rect x="26" y="36" width="9" height="9" rx="1.5" fill="#38bdf8"/>
+  <rect x="12" y="36" width="9" height="3" fill="#e0f2fe" opacity="0.55"/>
+  <rect x="26" y="36" width="9" height="3" fill="#e0f2fe" opacity="0.55"/>
+  <rect x="14" y="48" width="10" height="8" rx="1" fill="#0f172a" opacity="0.45"/>
+  <rect x="28" y="48" width="8" height="8" rx="1" fill="#0f172a" opacity="0.35"/>
+  <path d="M47 10 Q54 2 60 0" stroke="#94a3b8" stroke-width="4" fill="none" opacity="0.55" stroke-linecap="round"/>
+  <path d="M50 10 Q58 1 62 -1" stroke="#cbd5e1" stroke-width="3" fill="none" opacity="0.4" stroke-linecap="round"/>
+  <circle cx="16" cy="40" r="1.2" fill="#fff" opacity="0.5"/>
+  <circle cx="30" cy="40" r="1.2" fill="#fff" opacity="0.5"/>
 </svg>`)
 
 const EARTH = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
@@ -118,14 +181,28 @@ const SUN = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 
 </svg>`)
 
 const COW = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <ellipse cx="32" cy="38" rx="18" ry="14" fill="#f8fafc" stroke="#64748b" stroke-width="1.5"/>
-  <ellipse cx="20" cy="34" rx="5" ry="4" fill="#1e293b"/>
-  <ellipse cx="40" cy="42" rx="6" ry="5" fill="#1e293b"/>
-  <ellipse cx="48" cy="28" rx="9" ry="8" fill="#f8fafc" stroke="#64748b" stroke-width="1"/>
-  <circle cx="52" cy="26" r="2" fill="#1e293b"/>
-  <ellipse cx="50" cy="32" rx="4" ry="2.5" fill="#fda4af"/>
-  <rect x="22" y="48" width="5" height="10" fill="#64748b"/>
-  <rect x="38" y="48" width="5" height="10" fill="#64748b"/>
+  <defs>
+    <linearGradient id="cowBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="30" cy="58" rx="16" ry="3.5" fill="#000" opacity="0.18"/>
+  <rect x="18" y="46" width="5" height="11" rx="2" fill="#475569"/>
+  <rect x="28" y="46" width="5" height="11" rx="2" fill="#475569"/>
+  <rect x="36" y="46" width="5" height="11" rx="2" fill="#334155"/>
+  <rect x="44" y="46" width="5" height="11" rx="2" fill="#334155"/>
+  <ellipse cx="32" cy="36" rx="19" ry="14" fill="url(#cowBody)" stroke="#94a3b8" stroke-width="1.2"/>
+  <ellipse cx="18" cy="32" rx="5.5" ry="4.5" fill="#1e293b"/>
+  <ellipse cx="36" cy="40" rx="6.5" ry="5" fill="#0f172a"/>
+  <ellipse cx="42" cy="28" rx="4" ry="3.5" fill="#1e293b" opacity="0.85"/>
+  <ellipse cx="50" cy="26" rx="10" ry="9" fill="url(#cowBody)" stroke="#94a3b8" stroke-width="1"/>
+  <circle cx="54" cy="24" r="2.2" fill="#0f172a"/>
+  <circle cx="54.6" cy="23.4" r="0.7" fill="#fff"/>
+  <ellipse cx="52" cy="30" rx="4.5" ry="2.8" fill="#fda4af"/>
+  <path d="M42 20 Q40 14 38 12" stroke="#64748b" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  <path d="M46 19 Q47 13 48 11" stroke="#64748b" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  <ellipse cx="14" cy="40" rx="4" ry="3" fill="#e2e8f0" stroke="#94a3b8" stroke-width="0.8"/>
 </svg>`)
 
 const MOUSE = svgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">

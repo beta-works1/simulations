@@ -11,9 +11,9 @@ const ICON: Record<AgentKind, string> = {
 }
 
 const SIZE: Record<AgentKind, number> = {
-  plant: 44,
-  animal: 36,
-  factory: 50,
+  plant: 48,
+  animal: 42,
+  factory: 56,
 }
 
 /**
@@ -37,8 +37,12 @@ export class LandscapeAgentNode extends Node {
     this.agentId = agent.id
     this.kind = agent.kind
 
-    const useDeer = agent.kind === 'animal' && agent.id.length % 2 === 0
-    const icon = createEcologyIcon(useDeer ? 'deer' : ICON[agent.kind], SIZE[agent.kind])
+    const variant = agent.id.length % 3
+    const animalIcon = variant === 0 ? 'cow' : variant === 1 ? 'deer' : 'rabbit'
+    const icon = createEcologyIcon(
+      agent.kind === 'animal' ? animalIcon : ICON[agent.kind],
+      SIZE[agent.kind],
+    )
     this.addChild(icon)
 
     const pos = landToLocal(agent.nx, agent.ny)

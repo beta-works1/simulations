@@ -12,16 +12,29 @@
 }
 
 .co-place-btn {
-  min-height: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 64px;
+  padding: 0.4rem 0.25rem;
   border: none;
   border-radius: var(--sim-radius-sm);
   background: var(--sim-panel-elevated);
   box-shadow: 0 0 0 1px var(--sim-panel-border);
   color: var(--sim-text);
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+.co-place-btn img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 .co-place-btn.is-active {
