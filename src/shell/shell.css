@@ -1,0 +1,268 @@
+.gs8-shell {
+  --gs8-ink: #152033;
+  --gs8-muted: #5a6b7f;
+  --gs8-canvas: #f7f4ef;
+  --gs8-panel: #ffffff;
+  --gs8-bottom: #1a2332;
+  --gs8-focus: #0ea5e9;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  height: 100dvh;
+  background: var(--gs8-canvas);
+  color: var(--gs8-ink);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.gs8-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--gs8-accent, #0ea5e9);
+  color: #fff;
+}
+
+.gs8-header-left,
+.gs8-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gs8-header h1 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.gs8-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.gs8-icon-btn {
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.18);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.gs8-icon-btn:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+.gs8-tabs {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  overflow-x: auto;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.gs8-tab {
+  min-height: 40px;
+  padding: 0.35rem 0.85rem;
+  border: none;
+  border-radius: 999px;
+  background: #f1f5f9;
+  cursor: pointer;
+  white-space: nowrap;
+  font: inherit;
+}
+
+.gs8-tab.is-active {
+  background: var(--gs8-accent, #0ea5e9);
+  color: #fff;
+}
+
+.gs8-modebar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.gs8-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.gs8-step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid var(--gs8-accent, #0ea5e9);
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.gs8-step-dot.is-done,
+.gs8-step-dot.is-current {
+  background: var(--gs8-accent, #0ea5e9);
+}
+
+.gs8-step-label {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--gs8-muted);
+}
+
+.gs8-body {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr minmax(220px, 280px);
+}
+
+@media (max-width: 760px) {
+  .gs8-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+}
+
+.gs8-canvas-slot {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #e8f4ff 0%, var(--gs8-canvas) 55%);
+}
+
+.gs8-controls {
+  overflow: auto;
+  padding: 0.85rem;
+  background: var(--gs8-panel);
+  border-left: 1px solid #e2e8f0;
+  box-shadow: -8px 0 24px rgba(21, 32, 51, 0.04);
+}
+
+.gs8-controls h2 {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gs8-muted);
+}
+
+.gs8-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  background: var(--gs8-bottom);
+  color: #e8eef8;
+}
+
+.gs8-bottom-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.gs8-bottom .gs8-icon-btn {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.gs8-popover {
+  position: absolute;
+  z-index: 30;
+  top: 3.4rem;
+  right: 0.75rem;
+  width: min(320px, calc(100% - 1.5rem));
+  padding: 0.9rem;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--gs8-ink);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.2);
+}
+
+.gs8-popover h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.gs8-popover p,
+.gs8-popover li {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--gs8-muted);
+}
+
+.gs8-recap {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 40;
+  max-height: 70%;
+  overflow: auto;
+  padding: 1rem 1.1rem 1.25rem;
+  border-radius: 16px 16px 0 0;
+  background: #fff;
+  box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.18);
+}
+
+.gs8-recap h2 {
+  margin: 0 0 0.75rem;
+}
+
+.gs8-recap-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+/* RTL: flip control panel to the start edge without per-sim CSS */
+html[dir='rtl'] .gs8-body {
+  grid-template-columns: minmax(220px, 280px) 1fr;
+}
+
+html[dir='rtl'] .gs8-controls {
+  border-left: none;
+  border-right: 1px solid #e2e8f0;
+  box-shadow: 8px 0 24px rgba(21, 32, 51, 0.04);
+}
+
+html[dir='rtl'] .gs8-popover {
+  right: auto;
+  left: 0.75rem;
+}
+
+html[dir='rtl'] .gs8-tabs {
+  flex-direction: row-reverse;
+}
+
+/* Reduced motion: keep interactivity, drop decorative animation */
+.gs8-shell[data-reduced-motion='true'] *,
+.gs8-shell[data-reduced-motion='true'] *::before,
+.gs8-shell[data-reduced-motion='true'] *::after,
+html.gs8-reduced-motion .gs8-shell *,
+html.gs8-reduced-motion .gs8-shell *::before,
+html.gs8-reduced-motion .gs8-shell *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+

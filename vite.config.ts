@@ -2,10 +2,11 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
+import tailwindcss from '@tailwindcss/vite'
 
 /**
  * Ensure /downloads/*.html always comes from public/, never SPA index fallback.
- * Vite can briefly 404→SPA if a download is requested before the file lands on disk.
  */
 function serveDownloadHtml(): Plugin {
   return {
@@ -33,10 +34,40 @@ function serveDownloadHtml(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [serveDownloadHtml(), react()],
+  plugins: [
+    serveDownloadHtml(),
+    react(),
+    tailwindcss(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg'],
+      manifest: {
+        name: 'General Science 8 Simulations',
+        short_name: 'GS8 Sims',
+        description: 'SNC 2022 Grade 8 interactive simulations (offline-capable)',
+        theme_color: '#0ea5e9',
+        background_color: '#f7f4ef',
+        display: 'standalone',
+        start_url: '/gs8',
+        icons: [
+          {
+            src: '/favicon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any maskable',
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globIgnores: ['**/downloads/**'],
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/downloads\//],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+      },
+    }),
+  ],
   server: {
-    // PhET clones / SceneryStack packages are separate builds; watching them
-    // forces noisy full reloads of the main app.
     watch: {
       ignored: ['**/.phet-src/**', '**/nervous-scenery/**', '**/ecology-scenery/**', '**/ph-*-scenery/**'],
     },

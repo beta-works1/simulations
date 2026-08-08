@@ -9,8 +9,12 @@ import '@fontsource/space-grotesk/400.css'
 import '@fontsource/space-grotesk/500.css'
 import '@fontsource/space-grotesk/700.css'
 import '@fontsource-variable/fraunces'
+import './i18n'
 import './index.css'
 import App from './App.tsx'
+import { registerOfflineWorker } from './offline/register'
+
+void registerOfflineWorker()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

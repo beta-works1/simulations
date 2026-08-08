@@ -1,0 +1,111 @@
+.gs8-library {
+  min-height: 100dvh;
+  padding: 1.5rem clamp(1rem, 3vw, 2.5rem) 3rem;
+  background: #f7f4ef;
+  color: #152033;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.gs8-library-hero h1 {
+  margin: 0.2rem 0 0.5rem;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
+.gs8-eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5a6b7f;
+}
+
+.gs8-unit-block {
+  margin-top: 1.75rem;
+}
+
+.gs8-unit-block h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.gs8-unit-block h2 span {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+}
+
+.gs8-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.gs8-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border-radius: 14px;
+  border: 2px solid;
+  text-decoration: none;
+  color: inherit;
+  min-height: 110px;
+}
+
+.gs8-card strong {
+  font-size: 1rem;
+}
+
+.gs8-inline-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #0369a1;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.gs8-teacher-table-wrap {
+  overflow: auto;
+  margin-top: 1rem;
+  border-radius: 12px;
+  border: 1px solid #dbe3ee;
+  background: #fff;
+}
+
+.gs8-teacher-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.gs8-teacher-table th,
+.gs8-teacher-table td {
+  padding: 0.55rem 0.7rem;
+  text-align: start;
+  border-bottom: 1px solid #e8eef5;
+}
+
+.gs8-teacher-table th {
+  background: #f1f5f9;
+  font-weight: 700;
+}
+
+.gs8-card span {
+  font-size: 0.8rem;
+  color: #5a6b7f;
+}
+
+.gs8-done {
+  font-style: normal;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #15803d;
+}
+
+.gs8-library a {
+  color: #075985;
+}

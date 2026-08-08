@@ -1,0 +1,163 @@
+.gs8-slider,
+.gs8-toggle,
+.gs8-check,
+.gs8-readout,
+.gs8-activity,
+.gs8-hotspot,
+.gs8-stepper,
+.gs8-dropzone,
+.gs8-keypoints,
+.gs8-quiz {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  color: var(--gs8-ink, #152033);
+}
+
+.gs8-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.gs8-slider-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.gs8-slider input[type='range'] {
+  width: 100%;
+  accent-color: var(--gs8-accent, #0ea5e9);
+}
+
+.gs8-toggle,
+.gs8-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.gs8-readout {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  background: var(--gs8-accent-soft, #e0f2fe);
+}
+
+.gs8-activity {
+  border-left: 4px solid #facc15;
+  background: #fffbeb;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0 10px 10px 0;
+}
+
+.gs8-hotspot {
+  min-height: 44px;
+  padding: 0.4rem 0.75rem;
+  border: 1px dashed #94a3b8;
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.gs8-hotspot.is-active {
+  border-style: solid;
+  border-color: var(--gs8-accent, #0ea5e9);
+  background: var(--gs8-accent-soft, #e0f2fe);
+}
+
+.gs8-stepper-transport,
+.gs8-stepper-markers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.gs8-stepper button {
+  min-height: 40px;
+  padding: 0.35rem 0.7rem;
+  border: none;
+  border-radius: 8px;
+  background: #e2e8f0;
+  cursor: pointer;
+}
+
+.gs8-stepper button.is-active {
+  background: var(--gs8-accent, #0ea5e9);
+  color: #fff;
+}
+
+.gs8-dropzone {
+  min-height: 88px;
+  border: 2px dashed #94a3b8;
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #f8fafc;
+}
+
+.gs8-token {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 2px solid var(--gs8-accent, #0ea5e9);
+  background: #fff;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gs8-accent, #0ea5e9) 25%, transparent);
+  cursor: grab;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.gs8-keypoints ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.gs8-quiz {
+  border: none;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.gs8-quiz button,
+.gs8-btn {
+  min-height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: var(--gs8-accent, #0ea5e9);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gs8-quiz button.is-correct {
+  background: #15803d;
+  box-shadow: inset 0 0 0 2px #fff;
+}
+
+.gs8-quiz button.is-wrong {
+  background: #b91c1c;
+  text-decoration: line-through;
+}
+
+.gs8-quiz-feedback {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #152033;
+}
+
+.gs8-quiz button:focus-visible,
+.gs8-btn:focus-visible,
+.gs8-slider input:focus-visible,
+.gs8-toggle input:focus-visible,
+.gs8-token:focus-visible,
+.gs8-hotspot:focus-visible,
+.gs8-stepper button:focus-visible {
+  outline: 3px solid var(--gs8-focus, #0ea5e9);
+  outline-offset: 2px;
+}

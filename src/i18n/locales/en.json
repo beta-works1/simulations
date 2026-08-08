@@ -1,0 +1,69 @@
+{
+  "shell": {
+    "library": "← Library",
+    "backToCatalog": "← Back to SimLab catalog",
+    "learningGoals": "Learning goals",
+    "bookPage": "Book page {{page}}",
+    "settings": "Settings",
+    "sound": "Sound",
+    "urdu": "Urdu",
+    "reducedMotion": "Reduce motion",
+    "controls": "Controls",
+    "home": "Home",
+    "reset": "Reset",
+    "soundOn": "Sound",
+    "muted": "Muted",
+    "keyboard": "Keyboard",
+    "keyboardHelp": "Tab moves focus. Arrow keys adjust sliders. Enter/Space activates buttons.",
+    "freeExplore": "Free Explore",
+    "freeExploreHint": "Free Explore — all controls unlocked",
+    "recap": "Recap",
+    "markUnderstood": "Mark as understood",
+    "close": "Close",
+    "teacherView": "Teacher view",
+    "libraryTitle": "Simulation library",
+    "libraryBlurb": "Grade 8 General Science simulations aligned to the Punjab SNC 2022 textbook. Open any card to explore Guided Mode, then Free Explore."
+  },
+  "sims": {
+    "prism-dispersion-rainbow": {
+      "keyPoints": [
+        "White light is a mixture of seven colours (ROYGBIV).",
+        "A rainbow is dispersion plus internal reflection in water droplets."
+      ],
+      "quiz": {
+        "question": "What makes a rainbow’s colours separate?",
+        "choices": [
+          "Dispersion of white light in water droplets",
+          "Only reflection with no bending",
+          "The Sun changing colour",
+          "Clouds filtering red light only"
+        ]
+      }
+    },
+    "equation-balancer": {
+      "keyPoints": [
+        "Atoms are neither created nor destroyed in a chemical reaction (Law of Conservation of Mass).",
+        "Coefficients are adjusted so each element’s atom count matches on both sides."
+      ],
+      "quiz": {
+        "question": "When is an equation balanced?",
+        "choices": [
+          "When atom counts match for every element on both sides",
+          "When coefficients are all 1",
+          "When products look more complex",
+          "When the reaction is hot"
+        ]
+      }
+    },
+    "ph-indicator-lab": {
+      "keyPoints": [
+        "pH 0–6 is acidic, 7 is neutral, 8–14 is alkaline.",
+        "Indicators change colour to show acid or alkali."
+      ],
+      "quiz": {
+        "question": "Red litmus turns blue in which solution?",
+        "choices": ["An alkali (base)", "A strong acid", "Only pure water", "Any salt solution"]
+      }
+    }
+  }
+}

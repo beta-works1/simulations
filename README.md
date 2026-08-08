@@ -35,10 +35,26 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173). Choose **Grade 8**, then open a simulation.
 
+### GS8 Phase 0 platform (new shell)
+
+Curriculum rebuild lives beside the existing catalog:
+
+- Library (1 reference demo): [http://localhost:5173/gs8](http://localhost:5173/gs8)
+- UI primitives playground: [http://localhost:5173/gs8/ui](http://localhost:5173/gs8/ui)
+- Specs: [`docs/01-master-plan.md`](docs/01-master-plan.md), [`docs/02-cursor-phase-prompts.md`](docs/02-cursor-phase-prompts.md)
+
 ```bash
-npm test   # Vitest (pure model tests)
+npm test   # Vitest (pure model tests + Phase 0 foundation tests)
 npm run build
 ```
+
+#### Offline check (PWA)
+
+```bash
+npm run build && npm run preview
+```
+
+Open the preview URL → DevTools → Network → **Offline** → reload. `/gs8` and the reference demo should still load. Mark the demo “understood,” reload — completion should persist (IndexedDB).
 
 ## Offline download (PhET-style)
 
