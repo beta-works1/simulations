@@ -60,7 +60,7 @@ Open the preview URL → DevTools → Network → **Offline** → reload. `/gs8`
 
 Twelve Class 8 science labs ship as single-file HTML under [`public/final-sims/`](public/final-sims/):
 
-- Hub: [`/final-sims/`](https://simulations-ivory.vercel.app/final-sims/)
+- Hub: [`/final-sims/`](https://simulations-one.vercel.app/final-sims/)
 - Also in the app catalog: **Simulations → Grade 8 → Final PCTB Labs**
 
 ## Offline download (PhET-style)

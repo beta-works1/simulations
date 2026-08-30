@@ -6,7 +6,7 @@ interface PageMetaProps {
   path?: string
 }
 
-const SITE_URL = 'https://simulations-ivory.vercel.app'
+const SITE_URL = 'https://simulations-one.vercel.app'
 
 export function PageMeta({ title, description, path = '/' }: PageMetaProps) {
   const url = `${SITE_URL}${path}`
