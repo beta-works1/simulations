@@ -127,17 +127,13 @@ export function Hero() {
               whileHover={reduce ? undefined : { y: -2 }}
               whileTap={reduce ? undefined : { scale: 0.98 }}
             >
-              <Link to="/simulations" className="hero-cta">
-                Browse every simulation
+              <a href="/final-sims/" className="hero-cta">
+                Final simulations
                 <span className="hero-cta-arrow" aria-hidden="true">
                   →
                 </span>
-              </Link>
+              </a>
             </motion.div>
-            <a className="hero-jump" href="#subjects">
-              What&rsquo;s inside
-              <span aria-hidden="true"> ↓</span>
-            </a>
           </motion.div>
         </div>
 
