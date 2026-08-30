@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<title>Heat Transfer &amp; Thermal Equilibrium — PCTB Class 8 Science</title>
+<!--
+==========================================================================
+ HEAT TRANSFER & THERMAL EQUILIBRIUM  ·  Sim 6 of 10
+ PCTB / SNC Class 8 General Science — Heat and Temperature
+
+ LEARNING OBJECTIVES (all reachable by manipulating the stage)
+   1. Temperature is average particle motion — hotter = faster vibration/speed.
+   2. Heat always flows hot → cold until both sides match (equilibrium).
+      Net flow then stops; particles keep moving.
+   3. Conduction: particle-to-particle bumps in a solid. Fast in metals,
+      slow in wood/plastic.
+   4. Convection: hot fluid rises, cool fluid sinks — a circulating current.
+   5. Radiation: heat as waves. Needs no medium. Crosses empty space.
+   6. Materials conduct at different rates (metal spoon vs wooden spoon).
+   7. One real object can use all three at once (a pot on a stove).
+
+ MISCONCEPTIONS TARGETED BY THE QUIZ
+   - "Cold flows into a warm object"
+   - "Heat always needs matter to travel"
+   - "Metal is inherently colder than wood"
+   - "At equilibrium particles stop moving"
+   - "Convection happens in solids too"
+
+ SIMPLIFICATIONS FOR CLASS 8
+   - No Q=mcΔT, no joules, no specific heat numbers — qualitative only.
+   - Radiation is "waves, no medium" — no IR / wavelength / spectrum.
+   - No latent heat or boiling plateau. Flame stays below boiling.
+   - Particles are simple dots. Colour = temperature on one shared scale.
+
+ TEACHER: tunables live in CONFIG. Safe to adjust: T_ROOM, T_FLAME, K_*,
+   ROD_N, CONV_N, RAD_FALLOFF, LOOP_SPEED. One file, double-click to run.
+
+ Heat is NEVER blocked. Insert a barrier and convection stalls. Empty the
+ gap and radiation still crosses. Productive failure is the lesson.
+==========================================================================
+-->
+<style>
+:root{
+  --accent:#1F6FD0;
+  --good:#237A46;
+  --warn:#8C5A05;
+  --crit:#A0173F;
+  --panel:#FFFFFF;
+  --panel-2:#F2F4F5;
+  --panel-border:#8A8A8A;
+  --text:#14202A;
+  --text-2:#46565F;
+  --text-3:#71828C;
+  --cold:#2B6CB0;
+  --warm:#E07A12;
+  --hot:#C4320A;
+  --board:#EEF2F4;
+  --grid:#D3DBDF;
+  --hairline:#DCE1E4;
+  --shadow:0 2px 8px rgba(20,32,42,.14);
+  --focus:#14202A;
+  --on-accent:#FFFFFF;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --radius:12px;
+}
+:root[data-profile="dim"]{
+  --accent:#4E9BF0;
+  --good:#4FB27A;
+  --warn:#D0A03A;
+  --crit:#E0648F;
+  --panel:#1A2126;
+  --panel-2:#242D33;
+  --panel-border:#5F6C74;
+  --text:#F1F5F7;
+  --text-2:#C3CFD5;
+  --text-3:#95A4AD;
+  --cold:#6BA3E8;
+  --warm:#F0A040;
+  --hot:#F2572A;
+  --board:#131A1F;
+  --grid:#26313A;
+  --hairline:#3B464D;
+  --shadow:0 2px 10px rgba(0,0,0,.5);
+  --focus:#FFFFFF;
+  --on-accent:#0B1220;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  font-family:var(--font); background:var(--panel-2); color:var(--text);
+  font-size:16px; line-height:1.45; overflow-x:hidden;
+}
+:focus-visible{ outline:3px solid var(--focus); outline-offset:2px; border-radius:4px; }
+.sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.wrap{ max-width:1400px; margin:0 auto; padding:10px 10px 80px; }
+:root[dir="rtl"] body{ font-family:system-ui,"Noto Nastaliq Urdu","Segoe UI",Tahoma,sans-serif; }
+:root[dir="rtl"] .stage__inner{ direction:ltr; }
+
+.head{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; padding:2px 2px 10px; }
+.head__title{ font-size:clamp(19px,2.3vw,25px); font-weight:700; margin:0; letter-spacing:-.02em; }
+.head__sub{ margin:0; font-size:14.5px; color:var(--text-2); }
+.head__spacer{ margin-inline-start:auto; display:flex; gap:8px; flex-wrap:wrap; }
+
+.panel{
+  background:var(--panel); border:1px solid var(--panel-border);
+  border-radius:var(--radius); box-shadow:var(--shadow); padding:12px 14px;
+}
+.panel__title{ font-size:15px; font-weight:700; margin:0 0 10px; }
+
+.guide{
+  background:var(--panel); border:2px solid var(--accent); border-radius:var(--radius);
+  padding:10px 13px; margin-bottom:10px;
+  display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center;
+}
+@media (max-width:760px){ .guide{ grid-template-columns:1fr; } }
+.guide.done{ border-color:var(--good); }
+.guide__badge{
+  min-width:72px; padding:6px 10px; border-radius:9px; text-align:center;
+  background:var(--panel-2); border:1px solid var(--panel-border);
+}
+.guide__badgeTop{ font-size:12.5px; font-weight:700; letter-spacing:.06em; color:var(--text-3); }
+.guide__badgeNum{ font-size:20px; font-weight:700; font-family:var(--mono); font-variant-numeric:tabular-nums; }
+.guide__task{ font-size:17px; font-weight:700; margin:0; }
+.guide__hint{ font-size:14px; margin:4px 0 0; color:var(--text-2); }
+.guide__dots{ display:flex; gap:6px; margin-top:8px; }
+.guide__dot{ width:9px; height:9px; border-radius:50%; background:var(--hairline); }
+.guide__dot.on{ background:var(--good); }
+.guide__dot.now{ background:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent); }
+.guide__acts{ display:flex; gap:8px; flex-wrap:wrap; }
+
+.btn{
+  font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 16px; border-radius:9px; white-space:nowrap;
+  background:var(--accent); color:var(--on-accent); border:1px solid rgba(0,0,0,.28);
+  box-shadow:0 1px 2px rgba(0,0,0,.18);
+}
+.btn:hover{ filter:brightness(1.08); }
+.btn:active{ transform:translateY(1px); }
+.btn--ghost{ background:var(--panel); color:var(--text); border-color:var(--panel-border); }
+.btn--go{ background:var(--good); color:#fff; }
+.btn--sm{ font-size:13.5px; padding:0 12px; }
+.round{
+  width:48px; height:48px; border-radius:50%; cursor:pointer; padding:0;
+  border:1px solid rgba(0,0,0,.35); display:grid; place-items:center;
+  box-shadow:var(--shadow); background:var(--btn,#E2E6E9);
+}
+.round--play{ --btn:var(--good); }
+.round--reset{ --btn:var(--warn); }
+
+.main{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,330px); gap:10px; align-items:start; }
+@media (max-width:1080px){ .main{ grid-template-columns:1fr; } }
+
+.tray{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+.seg{ display:inline-flex; border:1px solid var(--panel-border); border-radius:9px; overflow:hidden; flex-wrap:wrap; }
+.seg button{
+  font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 12px; border:0; background:var(--panel); color:var(--text-2);
+  border-inline-end:1px solid var(--panel-border);
+}
+.seg button:last-child{ border-inline-end:0; }
+.seg button[aria-pressed="true"]{ background:var(--accent); color:var(--on-accent); }
+
+.stage{
+  border:1px solid var(--panel-border); border-radius:var(--radius); overflow:hidden;
+  background:var(--board); box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
+}
+.stage__inner{ position:relative; }
+#board{ display:block; width:100%; height:auto; touch-action:none; }
+.stage__bar{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  padding:8px 10px; background:var(--panel); border-top:1px solid var(--hairline);
+}
+
+.reads{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.read{
+  background:var(--panel-2); border:1px solid var(--hairline);
+  border-radius:9px; padding:8px 10px;
+}
+.read__k{ font-size:12.5px; color:var(--text-3); font-weight:700; }
+.read__v{ font-family:var(--mono); font-size:18px; font-variant-numeric:tabular-nums; font-weight:700; }
+.narr{ font-size:15px; line-height:1.5; margin:10px 0 0; }
+.legend{
+  display:flex; align-items:center; gap:8px; margin-top:10px; font-size:12.5px; color:var(--text-2);
+}
+.legend__bar{
+  flex:1; height:14px; border-radius:7px; border:1px solid var(--panel-border);
+  background:linear-gradient(90deg,var(--cold),#3CB371,#E8C547,var(--warm),var(--hot));
+}
+#tGraphCvs{ display:block; width:100%; height:132px; }
+.graph-note{ font-size:13px; color:var(--text-3); margin:6px 0 0; }
+
+.row{ display:flex; align-items:center; gap:8px; margin:8px 0; flex-wrap:wrap; }
+.row label{ font-size:13.5px; font-weight:700; color:var(--text-2); min-width:72px; }
+.val{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:14px; min-width:48px; }
+
+.screen{ display:none; }
+.screen.on{ display:block; }
+.q{ margin-bottom:10px; }
+.q__n{ font-size:12.5px; color:var(--text-3); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.q__t{ font-size:17px; font-weight:700; margin:6px 0 12px; }
+.opts{ display:grid; gap:8px; }
+.opt{
+  display:flex; align-items:flex-start; gap:10px; text-align:start; width:100%;
+  min-height:52px; padding:12px 14px; cursor:pointer; border-radius:9px;
+  font-family:inherit; font-size:15.5px; background:var(--panel-2); color:var(--text);
+  border:2px solid var(--panel-border);
+}
+.opt:hover:not(:disabled){ border-color:var(--accent); background:var(--panel); }
+.opt.correct{ border-color:var(--good); background:color-mix(in srgb,var(--good) 14%,var(--panel)); }
+.opt.wrong{ border-color:var(--crit); background:color-mix(in srgb,var(--crit) 12%,var(--panel)); }
+.opt__k{ font-family:var(--mono); font-size:14px; color:var(--text-3); min-width:1.2em; }
+.fb{
+  display:none; margin:10px 0 0; padding:11px 13px; font-size:14.5px; border-radius:8px;
+  background:var(--panel-2); border-inline-start:5px solid var(--panel-border);
+}
+.fb.show{ display:block; }
+.fb.ok{ border-inline-start-color:var(--good); }
+.fb.no{ border-inline-start-color:var(--crit); }
+.score{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.score__v{ font-family:var(--mono); font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; }
+
+.nav{
+  position:sticky; bottom:6px; z-index:40; margin-top:10px; border-radius:10px;
+  background:#101418; color:#fff; display:flex; align-items:center; gap:9px;
+  flex-wrap:wrap; padding:6px 13px;
+}
+.nav__t{ font-size:14.5px; font-weight:700; margin-inline-end:auto; }
+.navbtn{
+  cursor:pointer; background:transparent; border:2px solid transparent; border-radius:8px;
+  color:#B9C0C5; font-family:inherit; font-size:14px; font-weight:700;
+  padding:5px 11px; min-height:44px;
+}
+.navbtn[aria-current="page"]{ color:#fff; border-color:#fff; }
+
+input[type=range]{ -webkit-appearance:none; appearance:none; height:44px; background:transparent; cursor:pointer; flex:1; min-width:80px; }
+input[type=range]::-webkit-slider-runnable-track{ height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border); }
+input[type=range]::-moz-range-track{ height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border); }
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:26px; height:30px; margin-top:-12px;
+  border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45);
+}
+input[type=range]::-moz-range-thumb{
+  width:26px; height:30px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45);
+}
+@media (prefers-reduced-motion:reduce){
+  *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="screen on" id="scBench">
+  <header class="head">
+    <h1 class="head__title" id="tTitle">Heat Transfer</h1>
+    <p class="head__sub" id="tSub">Watch heat move from hot to cold until both sides match.</p>
+    <span class="head__spacer">
+      <button class="btn btn--ghost btn--sm" id="btnLang" type="button">اردو</button>
+      <button class="btn btn--ghost btn--sm" id="btnProfile" type="button">Dim room</button>
+    </span>
+  </header>
+
+  <section class="guide" id="guide" aria-live="polite">
+    <div class="guide__badge">
+      <div class="guide__badgeTop" id="tStep">TASK</div>
+      <div class="guide__badgeNum" id="gNum">1/5</div>
+    </div>
+    <div>
+      <p class="guide__task" id="gTask">—</p>
+      <p class="guide__hint" id="gHint">—</p>
+      <div class="guide__dots" id="gDots" aria-hidden="true"></div>
+    </div>
+    <div class="guide__acts">
+      <button class="btn btn--ghost" id="gShow" type="button">Show me</button>
+      <button class="btn btn--go" id="gNext" type="button" hidden>Next</button>
+    </div>
+  </section>
+
+  <div class="main">
+    <div>
+      <div class="tray" id="modeTray"></div>
+      <div class="stage">
+        <div class="stage__inner" id="stageInner">
+          <canvas id="board" role="img" aria-label="Heat transfer bench" aria-describedby="boardDesc" tabindex="0"></canvas>
+          <p class="sr" id="boardDesc">Particles are coloured by temperature. Blue is cooler, red is hotter. Heat always flows from hot toward cold.</p>
+        </div>
+        <div class="stage__bar">
+          <button class="round round--play" id="btnPlay" type="button" aria-pressed="true" aria-label="Pause">
+            <svg width="20" height="20" viewBox="0 0 24 24" id="icPlay" aria-hidden="true"><rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/></svg>
+          </button>
+          <button class="btn btn--ghost btn--sm" id="btnStep" type="button">Step</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px">
+            <span id="tSpeed">Speed</span>
+            <input type="range" id="speed" min="0.25" max="2" step="0.25" value="1" style="width:96px" aria-label="Speed" />
+          </label>
+          <button class="round round--reset" id="btnReset" type="button" aria-label="Reset">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 1 0 6.5 4.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M12 1.5V8.5L6.5 5z" fill="#fff"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:10px" id="modeOpts"></div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2 class="panel__title" id="tReadings">Live readings</h2>
+        <div class="reads" aria-live="polite">
+          <div class="read"><div class="read__k" id="kA">Near / source</div><div class="read__v" id="rA">—</div></div>
+          <div class="read"><div class="read__k" id="kB">Far / bulk</div><div class="read__v" id="rB">—</div></div>
+          <div class="read"><div class="read__k" id="kC">Mid / receiver</div><div class="read__v" id="rC">—</div></div>
+          <div class="read"><div class="read__k" id="kD">Gap to equal</div><div class="read__v" id="rD">—</div></div>
+        </div>
+        <p class="narr" id="narr" aria-live="polite">—</p>
+        <div class="legend" id="tempLegend">
+          <span id="legCold">cold</span>
+          <div class="legend__bar" role="img" aria-label="Temperature colour from cold to hot"></div>
+          <span id="legHot">hot</span>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:10px">
+        <h2 class="panel__title" id="tGraph">Temperature over time</h2>
+        <canvas id="tGraphCvs" role="img" aria-label="Graph of temperatures over time"></canvas>
+        <p class="graph-note" id="tGraphNote">Lines meet when the two sides reach the same temperature — equilibrium.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="scQuiz">
+  <header class="head">
+    <h1 class="head__title" id="tQuizTitle">Check what you have learned</h1>
+    <p class="head__sub" id="tQuizSub">Five questions, with the answer explained straight away.</p>
+  </header>
+  <div id="quiz" style="max-width:840px;margin:0 auto"></div>
+</div>
+
+<nav class="nav" aria-label="Screens">
+  <span class="nav__t" id="tNavTitle">Heat Transfer</span>
+  <button class="navbtn" id="navBench" type="button" aria-current="page">Bench</button>
+  <button class="navbtn" id="navQuiz"  type="button">Quiz</button>
+</nav>
+</div>
+
+<script>
+"use strict";
+/* ======================================================================
+   1. CONFIG
+   Heat flows hot → cold. k is relative conductivity, not SI.
+   Flame stays below boiling so we never need latent heat.
+   ====================================================================== */
+const CONFIG = {
+  T_ROOM: 22,          // °C starting / room
+  T_FLAME: 82,         // °C — below boiling on purpose
+  T_ICE: 2,
+  ROD_N: 28,           // cells along a rod
+  ROD_ROWS: 3,         // particle lattice rows
+  K: { copper: 22, iron: 9, wood: 0.55, plastic: 0.22 },
+  FLAME_RATE: 6.5,     // how fast the hot end is pulled toward T_FLAME
+  LOSS: 0.04,          // slow leak to room along the rod
+  CONV_N: 86,
+  BUOY: 42,            // hotter particles rise (canvas y grows downward)
+  DRAG: 1.6,
+  LOOP_SPEED: 38,      // closed-loop field so convection is a real circuit
+  HEAT_RATE: 28,
+  COOL_RATE: 6,
+  RAD_SRC: 90,         // source glow (not boiling water)
+  RAD_FALLOFF: 1.15,   // intensity vs distance — qualitative 1/r-ish
+  RAD_GAIN: 1.8,
+  SAMPLE_DT: 0.18
+};
+
+const MATS = ["copper","iron","wood","plastic"];
+
+/* ======================================================================
+   2. STRINGS
+   ====================================================================== */
+const STRINGS = {
+  en: {
+    title:"Heat Transfer & Thermal Equilibrium",
+    sub:"Heat always flows from hot to cold. The three routes are just different ways to deliver that one rule.",
+    navTitle:"Heat Transfer", bench:"Bench", quiz:"Quiz", lang:"اردو", dim:"Dim room", bright:"Bright room",
+    play:"Play", pause:"Pause", stepBtn:"Step", speed:"Speed", reset:"Reset",
+    readings:"Live readings", graph:"Temperature over time",
+    graphNote:"Lines meet when both sides reach the same temperature — that is equilibrium.",
+    boardDesc:"Dots are particles. Colour shows temperature: blue cooler, red hotter. Heat flows from hot toward cold until both match.",
+    quizTitle:"Check what you have learned", quizSub:"Five questions, with the answer explained straight away.",
+    tryAgain:"Try again", score:"Score", next:"Next", show:"Show me", task:"TASK",
+    m1:"Conduction", m2:"Convection", m3:"Radiation", m4:"All three",
+    copper:"Copper", iron:"Iron", wood:"Wood", plastic:"Plastic",
+    flame:"Flame", ice:"Ice / free end",
+    near:"Near flame", mid:"Middle", far:"Far end",
+    srcT:"Hot source", bulkT:"Average water", recT:"Receiver",
+    gap:"Still apart", equal:"Equilibrium",
+    cold:"cold", hot:"hot",
+    arrows:"Show flow arrows", barrier:"Insert barrier",
+    vac:"Empty (vacuum)", air:"Air in the gap", glass:"Glass in the gap",
+    dist:"Distance",
+    condOn:"Conduction (pot wall)", convOn:"Convection (water)", radOn:"Radiation (into the room)",
+    t1:"Race copper against wood on the same flame. Watch which far end warms first.",
+    h1:"Leave the flame on. You do not press “I’m done” — the sim notices the race.",
+    p1:"Same flame, different materials. Copper’s far end warms much sooner. Wood barely moves.",
+    t2:"Turn on the flow arrows and watch one full convection loop.",
+    h2:"Hot water rises, crosses the top, sinks, and comes back along the bottom.",
+    p2:"That closed loop is convection. The water is carrying heat by actually moving.",
+    t3:"Slide the barrier into the beaker while it is heating. Watch the loop stall.",
+    h3:"A solid wall is not a fluid — convection needs space to flow.",
+    p3:"The barrier broke the loop. Heat now struggles to travel. That is productive failure.",
+    t4:"Set the gap to empty. Heat still reaches the far thermometer.",
+    h4:"Nothing is in the gap. If heat still arrives, it cannot need a medium.",
+    p4:"Radiation crossed empty space. That is how the Sun warms Earth.",
+    t5:"On the pot, turn each mechanism on by itself — conduction, then convection, then radiation.",
+    h5:"Isolate one at a time so you can name it in a real kitchen object.",
+    p5:"One pot, three routes. Same rule: heat still flows hot → cold.",
+    nRace:"Copper’s particles pass the vibration along fast. Wood’s barely moved.",
+    nEq:"The two ends are almost the same temperature. Net heat flow has nearly stopped — particles still jiggle.",
+    nConv:"Hot water rises, cool water sinks. That circulating current is convection.",
+    nBar:"The barrier blocks the loop. Convection stalls. Heat now has a harder path.",
+    nRad:"The gap is empty. Heat still arrives as waves. No particles carried it.",
+    nPot:"The stove heats the pot by conduction, the water swirls by convection, and the pot glows heat into the room.",
+    q1:"A metal spoon and a wooden spoon sit in the same room. The metal feels colder. Why?",
+    q1a:"Metal is always at a lower temperature than wood.",
+    q1b:"Metal conducts heat away from your hand faster — both are actually the same temperature.",
+    q1c:"Wood contains more heat energy.",
+    q1w:"Both spoons are at room temperature. Metal only *feels* colder because it conducts heat out of your skin quickly.",
+    q2:"Heat flows from a hot mug into the cooler air. Which statement is true?",
+    q2a:"Cold from the air flows into the mug.",
+    q2b:"Heat flows out of the mug into the air — cold is not a substance that flows.",
+    q2c:"Both heat and cold flow toward each other and cancel.",
+    q2w:"Cold is not a fluid. Heat leaves the hot object. The mug cools because heat is leaving it.",
+    q3:"The Sun’s heat reaches Earth across empty space. Which mechanism is that?",
+    q3a:"Conduction — particles bumping all the way from the Sun.",
+    q3b:"Convection — hot space rising.",
+    q3c:"Radiation — heat as waves, which needs no medium.",
+    q3w:"Conduction and convection need matter. Radiation does not. Empty space is not a problem for waves.",
+    q4:"Two blocks have been touching for a long time and now read the same temperature. What is happening?",
+    q4a:"The particles have stopped moving.",
+    q4b:"Particles still move. Net heat flow has stopped because there is no hot-to-cold difference left.",
+    q4c:"Heat is now flowing both ways equally, so it feels frozen.",
+    q4w:"Equilibrium means no *net* flow, not no motion. Particles keep jiggling at that shared temperature.",
+    q5:"Why does convection not happen inside a copper rod?",
+    q5a:"Copper is too shiny.",
+    q5b:"Convection needs a fluid that can physically flow. A solid’s particles stay in place and only bump neighbours.",
+    q5c:"Copper is already a perfect insulator.",
+    q5w:"Solids conduct. Only liquids and gases can form rising/sinking currents."
+  },
+  ur: {
+    title:"حرارت کی منتقلی اور حرارتی توازن",
+    sub:"حرارت ہمیشہ گرم سے ٹھنڈے کی طرف بہتی ہے۔ تین راستے ایک ہی قاعدے کے مختلف طریقے ہیں۔",
+    navTitle:"حرارت کی منتقلی", bench:"بینچ", quiz:"سوالات", lang:"English", dim:"مدھم کمرہ", bright:"روشن کمرہ",
+    play:"چلائیں", pause:"روکیں", stepBtn:"قدم", speed:"رفتار", reset:"ری سیٹ",
+    readings:"لائیو ریڈنگز", graph:"وقت کے ساتھ درجہ حرارت",
+    graphNote:"جب دونوں طرف ایک جیسا درجہ حرارت ہو جائے تو لکیریں مل جاتی ہیں — یہ توازن ہے۔",
+    boardDesc:"نقطے ذرات ہیں۔ رنگ درجہ حرارت بتاتا ہے: نیلا ٹھنڈا، سرخ گرم۔ حرارت گرم سے ٹھنڈے کی طرف بہتی ہے۔",
+    quizTitle:"جو سیکھا ہے جانچیں", quizSub:"پانچ سوال، جواب فوراً سمجھایا جاتا ہے۔",
+    tryAgain:"دوبارہ کوشش", score:"اسکور", next:"آگے", show:"دکھاؤ", task:"کام",
+    m1:"ایصال", m2:"حمل", m3:"شعاع ریزی", m4:"تینوں",
+    copper:"تانبا", iron:"لوہا", wood:"لکڑی", plastic:"پلاسٹک",
+    flame:"شعلہ", ice:"برف / کھلا سرا",
+    near:"شعلے کے پاس", mid:"درمیان", far:"دور کا سرا",
+    srcT:"گرم ذریعہ", bulkT:"اوسط پانی", recT:"وصول کنندہ",
+    gap:"ابھی فرق", equal:"توازن",
+    cold:"ٹھنڈا", hot:"گرم",
+    arrows:"بہاؤ کے تیر", barrier:"رکاوٹ ڈالیں",
+    vac:"خالی (خلا)", air:"ہوا درمیان میں", glass:"شیشہ درمیان میں",
+    dist:"فاصلہ",
+    condOn:"ایصال (دیگ کی دیوار)", convOn:"حمل (پانی)", radOn:"شعاع ریزی (کمرے میں)",
+    t1:"ایک ہی شعلے پر تانبے اور لکڑی کی دوڑ۔ دیکھیں کون سا دور کا سرا پہلے گرم ہوتا ہے۔",
+    h1:"شعلہ جلتا رہے۔ آپ کو 'میں ہو گیا' دبانے کی ضرورت نہیں۔",
+    p1:"ایک ہی شعلہ، مختلف مادے۔ تانبے کا دور سرا بہت جلدی گرم ہوتا ہے۔ لکڑی بمشکل ہلتی ہے۔",
+    t2:"بہاؤ کے تیر چالو کریں اور ایک پورا حمل کا چکر دیکھیں۔",
+    h2:"گرم پانی اوپر جاتا ہے، ٹھنڈا نیچے آتا ہے، اور نیچے سے واپس آتا ہے۔",
+    p2:"یہ بند چکر حمل ہے۔ پانی حرکت کر کے حرارت لے جا رہا ہے۔",
+    t3:"گرم کرتے ہوئے رکاوٹ اندر کریں۔ چکر رک جائے گا۔",
+    h3:"ٹھوس دیوار سیال نہیں — حمل کو بہنے کی جگہ چاہیے۔",
+    p3:"رکاوٹ نے چکر توڑ دیا۔ حرارت کا راستہ مشکل ہو گیا۔",
+    t4:"درمیانی جگہ خالی کریں۔ حرارت پھر بھی دور کے تھرمامیٹر تک پہنچتی ہے۔",
+    h4:"درمیان میں کچھ نہیں۔ اگر حرارت آئے تو اسے واسطے کی ضرورت نہیں۔",
+    p4:"شعاع ریزی نے خالی جگہ پار کی۔ سورج زمین کو اسی طرح گرم کرتا ہے۔",
+    t5:"دیگ پر ہر طریقہ الگ الگ چالو کریں — ایصال، پھر حمل، پھر شعاع ریزی۔",
+    h5:"ایک وقت میں ایک، تاکہ باورچی خانے کی چیز میں پہچان سکیں۔",
+    p5:"ایک دیگ، تین راستے۔ ایک ہی قاعدہ: حرارت گرم → ٹھنڈا۔",
+    nRace:"تانبے کے ذرات کمپن تیزی سے آگے دیتے ہیں۔ لکڑی بمشکل ہلی۔",
+    nEq:"دونوں سرے تقریباً ایک جیسے ہیں۔ خالص بہاؤ رک سا گیا — ذرات اب بھی ہل رہے ہیں۔",
+    nConv:"گرم پانی اوپر، ٹھنڈا نیچے. یہ چکر حمل ہے۔",
+    nBar:"رکاوٹ نے چکر روک دیا۔ حمل رک گیا۔",
+    nRad:"جگہ خالی ہے۔ حرارت لہروں کی صورت میں پہنچی۔ کسی ذرے نے نہیں اٹھایا۔",
+    nPot:"چولہا دیوار سے ایصال کرتا ہے، پانی حمل سے گھومتا ہے، دیگ کمرے میں شعاعیں بھیجتی ہے۔",
+    q1:"دھاتی اور لکڑی کا چمچ ایک ہی کمرے میں ہیں۔ دھات ٹھنڈی لگتی ہے۔ کیوں؟",
+    q1a:"دھات ہمیشہ لکڑی سے کم درجہ حرارت پر ہوتی ہے۔",
+    q1b:"دھات آپ کے ہاتھ سے حرارت تیزی سے نکال لیتی ہے — دونوں اصل میں ایک جیسے درجہ حرارت پر ہیں۔",
+    q1c:"لکڑی میں زیادہ حرارت ہوتی ہے۔",
+    q1w:"دونوں کمرے کے درجہ حرارت پر ہیں۔ دھات صرف اس لیے ٹھنڈی لگتی ہے کہ وہ جلد سے حرارت تیزی سے نکال لیتی ہے۔",
+    q2:"گرم پیالے سے حرارت ٹھنڈی ہوا میں جاتی ہے۔ کون سی بات درست ہے؟",
+    q2a:"ٹھنڈک ہوا سے پیالے میں بہتی ہے۔",
+    q2b:"حرارت پیالے سے ہوا میں جاتی ہے — ٹھنڈک کوئی مادہ نہیں جو بہے۔",
+    q2c:"حرارت اور ٹھنڈک دونوں ایک دوسرے کی طرف بہتی ہیں۔",
+    q2w:"ٹھنڈک کوئی سیال نہیں۔ حرارت گرم چیز چھوڑتی ہے۔ پیالہ ٹھنڈا ہوتا ہے کیونکہ حرارت نکل رہی ہے۔",
+    q3:"سورج کی حرارت خالی فضا پار کر کے زمین تک آتی ہے۔ یہ کون سا طریقہ ہے؟",
+    q3a:"ایصال — ذرات سورج سے ٹکراتے آتے ہیں۔",
+    q3b:"حمل — گرم فضا اوپر اٹھتی ہے۔",
+    q3c:"شعاع ریزی — حرارت لہروں کی صورت میں، جسے واسطے کی ضرورت نہیں۔",
+    q3w:"ایصال اور حمل کو مادہ چاہیے۔ شعاع ریزی کو نہیں۔ خالی جگہ لہروں کے لیے رکاوٹ نہیں۔",
+    q4:"دو بلاک دیر سے چھو رہے ہیں اور اب ایک جیسا درجہ حرارت دکھاتے ہیں۔ کیا ہو رہا ہے؟",
+    q4a:"ذرات رک گئے ہیں۔",
+    q4b:"ذرات اب بھی ہل رہے ہیں۔ خالص حرارت کا بہاؤ رک گیا کیونکہ گرم-ٹھنڈا فرق ختم ہو گیا۔",
+    q4c:"حرارت اب برابر دونوں طرف بہہ رہی ہے اس لیے جمی ہوئی لگتی ہے۔",
+    q4w:"توازن کا مطلب خالص بہاؤ نہیں، حرکت کا نہ ہونا نہیں۔ ذرات اسی درجہ حرارت پر ہلتے رہتے ہیں۔",
+    q5:"تانبے کی سلاخ کے اندر حمل کیوں نہیں ہوتا؟",
+    q5a:"تانبا بہت چمکدار ہے۔",
+    q5b:"حمل کو ایسے سیال کی ضرورت ہے جو بہہ سکے۔ ٹھوس کے ذرات جگہ پر رہتے ہیں اور صرف پڑوسیوں سے ٹکراتے ہیں۔",
+    q5c:"تانبا پہلے سے کامل عایق ہے۔",
+    q5w:"ٹھوس ایصال کرتے ہیں۔ صرف مائع اور گیسیں اوپر-نیچے کے بہاؤ بنا سکتی ہیں۔"
+  }
+};
+let LANG = "en";
+function T(k){ return (STRINGS[LANG]&&STRINGS[LANG][k]) || STRINGS.en[k] || k; }
+function el(id){ return document.getElementById(id); }
+function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+/* Shared cold→hot colour. Same map in every mode — temperature literacy. */
+function tempColor(t){
+  const u = clamp((t - CONFIG.T_ROOM) / (CONFIG.T_FLAME - CONFIG.T_ROOM), 0, 1);
+  const stops = [
+    [43,108,176], [60,179,113], [232,197,71], [224,122,18], [196,50,10]
+  ];
+  const x = u * (stops.length-1);
+  const i = Math.min(stops.length-2, Math.floor(x));
+  const f = x - i;
+  const a = stops[i], b = stops[i+1];
+  return "rgb("+Math.round(lerp(a[0],b[0],f))+","+Math.round(lerp(a[1],b[1],f))+","+Math.round(lerp(a[2],b[2],f))+")";
+}
+
+/* ======================================================================
+   3. STATE
+   ====================================================================== */
+function freshRods(){
+  return ["copper","iron","wood"].map(mat => ({
+    mat,
+    T: Float64Array.from({length:CONFIG.ROD_N}, ()=> CONFIG.T_ROOM)
+  }));
+}
+function freshConv(){
+  const pts = [];
+  for(let i=0;i<CONFIG.CONV_N;i++){
+    pts.push({
+      x: 220 + Math.random()*460,
+      y: 140 + Math.random()*280,
+      vx: 0, vy: 0,
+      T: CONFIG.T_ROOM + Math.random()*4,
+      quad: 0, seen: 0
+    });
+  }
+  return pts;
+}
+function initial(){
+  return {
+    mode: 1,
+    running: true,
+    speed: 1,
+    flame: 0.85,
+    iceEnd: false,
+    rods: freshRods(),
+    conv: freshConv(),
+    arrows: false,
+    barrier: false,
+    looped: false,
+    heatOn: true,
+    radMed: "vac",
+    radDist: 0.55,
+    recT: CONFIG.T_ROOM,
+    wave: 0,
+    pot: { cond:true, conv:true, rad:true },
+    seen: { condSolo:false, convSolo:false, radSolo:false },
+    samples: [],
+    tSim: 0,
+    guide: { i:0, done:false, memo:{} }
+  };
+}
+let S = initial();
+let dim = false;
+
+const W = 900, H = 520;
+const canvas = el("board");
+const ctx = canvas.getContext("2d");
+const gcv = el("tGraphCvs");
+const gctx = gcv.getContext("2d");
+let cssW=900, cssH=520;
+function dpr(){ return Math.min(2, window.devicePixelRatio||1); }
+function fitBoard(){
+  const wrap = el("stageInner");
+  const w = Math.max(280, wrap.clientWidth);
+  const h = Math.max(300, Math.min(560, Math.round(w * H/W)));
+  cssW=w; cssH=h;
+  const d=dpr();
+  canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+}
+
+/* ======================================================================
+   4. PHYSICS / MODEL  — step(dt) only mutates. Draw never does.
+   1-D diffusion on the rod: dT/dt = k (T_left + T_right − 2T).
+   That IS conduction: a hot cell speeds its cooler neighbour.
+   ====================================================================== */
+function stepRods(dt){
+  const n = CONFIG.ROD_N;
+  const Tf = lerp(CONFIG.T_ROOM, CONFIG.T_FLAME, S.flame);
+  S.rods.forEach(rod=>{
+    const k = CONFIG.K[rod.mat] * dt;
+    const next = new Float64Array(n);
+    for(let i=0;i<n;i++){
+      const L = i===0 ? Tf : rod.T[i-1];
+      const R = i===n-1 ? (S.iceEnd ? CONFIG.T_ICE : rod.T[i]) : rod.T[i+1];
+      let t = rod.T[i] + k * (L + R - 2*rod.T[i]);
+      t += (CONFIG.T_ROOM - t) * CONFIG.LOSS * dt;
+      if(i===0) t += (Tf - t) * CONFIG.FLAME_RATE * dt * S.flame;
+      if(S.iceEnd && i===n-1) t += (CONFIG.T_ICE - t) * 4 * dt;
+      next[i] = clamp(t, CONFIG.T_ICE, CONFIG.T_FLAME+4);
+    }
+    rod.T = next;
+  });
+}
+
+function beaker(){ return { x:200, y:120, w:500, h:320 }; }
+
+function stepConv(dt){
+  if(!S.heatOn) return;
+  const b = beaker();
+  const cx = b.x + b.w*0.42, cy = b.y + b.h*0.52;
+  const rx = b.w*0.38, ry = b.h*0.36;
+  const heatX = b.x + 70, heatY = b.y + b.h - 28;
+  const barX = b.x + b.w*0.5;
+  const barTop = b.y + 24, barBot = b.y + b.h*0.62;
+  S.conv.forEach(p=>{
+    /* Closed circulation: up on the heated (left) side, across the top,
+       down on the far side, back along the bottom. Not jitter that vanishes. */
+    const vxF = ((cy - p.y) / ry) * CONFIG.LOOP_SPEED * S.flame;
+    const vyF = ((p.x - cx) / rx) * CONFIG.LOOP_SPEED * S.flame;
+    const hot = p.T - CONFIG.T_ROOM;
+    p.vy -= CONFIG.BUOY * (hot/60) * dt;          // hotter → up (smaller y)
+    p.vx += vxF * dt;
+    p.vy += vyF * dt;
+    p.vx *= Math.exp(-CONFIG.DRAG*dt);
+    p.vy *= Math.exp(-CONFIG.DRAG*dt);
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    if(S.barrier){
+      if(p.x > barX-8 && p.x < barX+8 && p.y > barTop && p.y < barBot){
+        if(p.vx>0) p.x = barX-8; else p.x = barX+8;
+        p.vx *= -0.4;
+      }
+    }
+    if(p.x < b.x+16){ p.x=b.x+16; p.vx=Math.abs(p.vx)*0.4; }
+    if(p.x > b.x+b.w-16){ p.x=b.x+b.w-16; p.vx=-Math.abs(p.vx)*0.4; }
+    if(p.y < b.y+20){ p.y=b.y+20; p.vy=Math.abs(p.vy)*0.4; }
+    if(p.y > b.y+b.h-18){ p.y=b.y+b.h-18; p.vy=-Math.abs(p.vy)*0.4; }
+    const dHeat = Math.hypot(p.x-heatX, p.y-heatY);
+    if(dHeat < 90) p.T += CONFIG.HEAT_RATE * (1-dHeat/90) * S.flame * dt;
+    if(p.y < b.y+50) p.T += (CONFIG.T_ROOM - p.T) * CONFIG.COOL_RATE * dt;
+    p.T += (CONFIG.T_ROOM - p.T) * 0.15 * dt;
+    p.T = clamp(p.T, CONFIG.T_ROOM, CONFIG.T_FLAME);
+    /* Loop detector: quadrants 1=BL, 2=TL, 3=TR, 4=BR. Need 1-2-3-4. */
+    const left = p.x < cx, top = p.y < cy;
+    const q = top ? (left?2:3) : (left?1:4);
+    if(q !== p.quad){
+      if(p.seen===0 && q===1) p.seen=1;
+      else if(p.seen===1 && q===2) p.seen=2;
+      else if(p.seen===2 && q===3) p.seen=3;
+      else if(p.seen===3 && q===4){ p.seen=4; S.looped=true; }
+      p.quad = q;
+    }
+  });
+}
+
+function stepRad(dt){
+  S.wave += dt * 50;
+  const dist = lerp(140, 520, S.radDist);
+  const trans = S.radMed==="glass" ? 0.72 : S.radMed==="air" ? 0.96 : 1;
+  /* Intensity falls with distance. Vacuum still transmits — that is the point. */
+  const I = trans / Math.pow(dist/180, CONFIG.RAD_FALLOFF);
+  const Teq = CONFIG.T_ROOM + (CONFIG.RAD_SRC - CONFIG.T_ROOM) * clamp(I, 0, 1);
+  S.recT += (Teq - S.recT) * CONFIG.RAD_GAIN * dt;
+}
+
+function stepPot(dt){
+  /* Lightweight: reuse conv particles in a smaller bowl if cond/conv on. */
+  if(S.pot.conv) stepConv(dt*0.6);
+}
+
+function step(dt){
+  dt = clamp(dt, 0, 0.05);
+  S.tSim += dt;
+  if(S.mode===1) stepRods(dt);
+  else if(S.mode===2) stepConv(dt);
+  else if(S.mode===3) stepRad(dt);
+  else stepPot(dt);
+  if(S.mode===4){
+    if(S.pot.cond && !S.pot.conv && !S.pot.rad) S.seen.condSolo = true;
+    if(S.pot.conv && !S.pot.cond && !S.pot.rad) S.seen.convSolo = true;
+    if(S.pot.rad && !S.pot.cond && !S.pot.conv) S.seen.radSolo = true;
+  }
+}
+
+/* ======================================================================
+   5. RENDER
+   ====================================================================== */
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(x,y,w,h,r);
+  else { ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); }
+}
+function chip(text,x,y,color,align){
+  ctx.save();
+  ctx.font = "700 12.5px "+css("--font");
+  ctx.textAlign = align||"center"; ctx.textBaseline="middle";
+  const w = ctx.measureText(text).width, h=20;
+  const bx = align==="right"?x-w : align==="left"?x : x-w/2;
+  const dark = document.documentElement.getAttribute("data-profile")==="dim";
+  ctx.fillStyle = dark ? "rgba(16,20,24,0.9)" : "rgba(255,255,255,0.94)";
+  roundRect(bx-6, y-h/2, w+12, h, 6); ctx.fill();
+  ctx.fillStyle = color||css("--text");
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+function flame(x,y,s){
+  ctx.save();
+  ctx.fillStyle = css("--hot");
+  ctx.beginPath(); ctx.moveTo(x, y-38*s); ctx.quadraticCurveTo(x+18*s,y-8*s,x,y+8); ctx.quadraticCurveTo(x-18*s,y-8*s,x,y-38*s); ctx.fill();
+  ctx.fillStyle = css("--warm");
+  ctx.beginPath(); ctx.moveTo(x, y-24*s); ctx.quadraticCurveTo(x+9*s,y-4*s,x,y+4); ctx.quadraticCurveTo(x-9*s,y-4*s,x,y-24*s); ctx.fill();
+  ctx.restore();
+}
+
+function drawMode1(){
+  ctx.fillStyle=css("--board"); ctx.fillRect(0,0,W,H);
+  flame(70, 250, S.flame*1.1);
+  chip(T("flame"), 70, 290, css("--hot"));
+  const n = CONFIG.ROD_N, rows = CONFIG.ROD_ROWS;
+  S.rods.forEach((rod, ri)=>{
+    const y0 = 90 + ri*140;
+    ctx.fillStyle = css("--text-2");
+    ctx.font = "700 14px "+css("--font");
+    ctx.textAlign="left";
+    ctx.fillText(T(rod.mat), 118, y0-18);
+    for(let i=0;i<n;i++){
+      for(let r=0;r<rows;r++){
+        const Tcell = rod.T[i];
+        const jig = REDUCED ? 0 : Math.sin(S.tSim*24 + i*0.7 + r)* (0.4 + 2.4*(Tcell-CONFIG.T_ROOM)/(CONFIG.T_FLAME-CONFIG.T_ROOM));
+        const x = 130 + i*((W-200)/n);
+        const y = y0 + r*16 + jig;
+        ctx.beginPath(); ctx.arc(x, y, 4.2, 0, 7);
+        ctx.fillStyle = tempColor(Tcell); ctx.fill();
+      }
+    }
+    const idx = [1, Math.floor(n/2), n-2];
+    const labs = [T("near"), T("mid"), T("far")];
+    idx.forEach((i,k)=>{
+      const x = 130 + i*((W-200)/n);
+      chip(Math.round(rod.T[i])+"°C", x, y0+64, tempColor(rod.T[i]));
+      ctx.fillStyle=css("--text-3"); ctx.font="12.5px "+css("--font"); ctx.textAlign="center";
+      ctx.fillText(labs[k], x, y0+82);
+    });
+  });
+}
+
+function drawMode2(){
+  const b = beaker();
+  ctx.fillStyle=css("--board"); ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = "rgba(80,140,200,0.16)";
+  roundRect(b.x, b.y, b.w, b.h, 16); ctx.fill();
+  ctx.strokeStyle=css("--text-2"); ctx.lineWidth=3;
+  roundRect(b.x, b.y, b.w, b.h, 16); ctx.stroke();
+  flame(b.x+70, b.y+b.h+8, S.flame);
+  chip(T("flame"), b.x+70, b.y+b.h+28, css("--hot"));
+  if(S.barrier){
+    ctx.fillStyle=css("--text-3");
+    ctx.fillRect(b.x+b.w*0.5-6, b.y+20, 12, b.h*0.55);
+    chip(T("barrier"), b.x+b.w*0.5, b.y+12, css("--text"));
+  }
+  S.conv.forEach(p=>{
+    ctx.beginPath(); ctx.arc(p.x, p.y, 4.4, 0, 7);
+    ctx.fillStyle = tempColor(p.T); ctx.fill();
+  });
+  if(S.arrows){
+    const cx=b.x+b.w*0.42, cy=b.y+b.h*0.52, rx=b.w*0.32, ry=b.h*0.3;
+    ctx.strokeStyle=css("--accent"); ctx.lineWidth=2.2; ctx.setLineDash([6,4]);
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+    /* arrow heads along the loop: up-left, right-top, down-right, left-bottom */
+    [[cx-rx,cy,0,-1],[cx,cy-ry,1,0],[cx+rx,cy,0,1],[cx,cy+ry,-1,0]].forEach(([x,y,dx,dy])=>{
+      ctx.beginPath(); ctx.moveTo(x,y);
+      ctx.lineTo(x-dx*10-dy*6, y-dy*10+dx*6);
+      ctx.lineTo(x-dx*10+dy*6, y-dy*10-dx*6);
+      ctx.closePath(); ctx.fillStyle=css("--accent"); ctx.fill();
+    });
+  }
+}
+
+function drawMode3(){
+  ctx.fillStyle=css("--board"); ctx.fillRect(0,0,W,H);
+  const srcX=90, srcY=H/2;
+  const dist = lerp(140, 520, S.radDist);
+  const recX = srcX + dist, recY=H/2;
+  /* Explicitly empty gap — no particles. That is the misconception target. */
+  ctx.fillStyle = S.radMed==="glass" ? "rgba(140,190,220,0.22)" : S.radMed==="air" ? "rgba(180,200,210,0.08)" : "transparent";
+  ctx.fillRect(srcX+30, 80, dist-60, H-160);
+  if(S.radMed==="vac"){
+    ctx.setLineDash([3,8]); ctx.strokeStyle=css("--text-3"); ctx.lineWidth=1;
+    for(let x=srcX+40;x<recX-30;x+=28){ ctx.beginPath(); ctx.moveTo(x,90); ctx.lineTo(x+14, H-90); ctx.stroke(); }
+    ctx.setLineDash([]);
+    chip(T("vac"), (srcX+recX)/2, 70, css("--text-2"));
+  } else {
+    chip(S.radMed==="glass"?T("glass"):T("air"), (srcX+recX)/2, 70, css("--text-2"));
+  }
+  /* Radiation waves — no medium required. */
+  const nW = 7;
+  for(let i=0;i<nW;i++){
+    const r = 24 + ((S.wave + i*28)% (dist-40));
+    ctx.beginPath(); ctx.arc(srcX, srcY, r, -0.5, 0.5);
+    ctx.strokeStyle=css("--warm"); ctx.globalAlpha = 0.15 + 0.55*(1-r/dist);
+    ctx.lineWidth=2.4; ctx.stroke(); ctx.globalAlpha=1;
+  }
+  flame(srcX, srcY+20, 1);
+  chip(Math.round(CONFIG.RAD_SRC)+"°C", srcX, srcY+56, css("--hot"));
+  ctx.fillStyle=css("--panel"); ctx.strokeStyle=css("--text"); ctx.lineWidth=2;
+  roundRect(recX-18, recY-50, 36, 100, 6); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = tempColor(S.recT);
+  ctx.fillRect(recX-12, recY+40 - (S.recT-CONFIG.T_ROOM)/(CONFIG.T_FLAME-CONFIG.T_ROOM)*80, 24, (S.recT-CONFIG.T_ROOM)/(CONFIG.T_FLAME-CONFIG.T_ROOM)*80);
+  chip(Math.round(S.recT)+"°C", recX, recY+68, tempColor(S.recT));
+}
+
+function drawMode4(){
+  ctx.fillStyle=css("--board"); ctx.fillRect(0,0,W,H);
+  const px=330, py=210, pw=240, ph=160;
+  /* stove */
+  ctx.fillStyle="#3a3a3a"; roundRect(px-20, py+ph-8, pw+40, 28, 6); ctx.fill();
+  flame(px+pw/2, py+ph+18, 1);
+  /* pot wall — conduction lattice */
+  if(S.pot.cond){
+    for(let i=0;i<18;i++){
+      for(let r=0;r<3;r++){
+        const t = lerp(CONFIG.T_FLAME-8, 50, r/2);
+        ctx.beginPath(); ctx.arc(px+10+i*12, py+8+r*8, 3.4, 0, 7);
+        ctx.fillStyle=tempColor(t); ctx.fill();
+      }
+    }
+  }
+  ctx.strokeStyle=css("--text"); ctx.lineWidth=5;
+  ctx.beginPath(); ctx.moveTo(px, py+ph); ctx.lineTo(px, py); ctx.lineTo(px+pw, py); ctx.lineTo(px+pw, py+ph); ctx.stroke();
+  /* water convection */
+  ctx.fillStyle="rgba(80,140,200,0.2)"; ctx.fillRect(px+8, py+8, pw-16, ph-16);
+  if(S.pot.conv){
+    S.conv.slice(0,40).forEach((p,i)=>{
+      const x = px+20 + (p.x-200)/500*(pw-40);
+      const y = py+20 + (p.y-120)/320*(ph-40);
+      ctx.beginPath(); ctx.arc(x,y,3.6,0,7); ctx.fillStyle=tempColor(p.T); ctx.fill();
+    });
+  }
+  /* radiation waves off the pot */
+  if(S.pot.rad){
+    for(let i=0;i<5;i++){
+      const r = 20 + ((S.wave*0.6 + i*18)%80);
+      ctx.beginPath(); ctx.arc(px+pw+6, py+40, r, -1.1, 0.4);
+      ctx.strokeStyle=css("--warm"); ctx.globalAlpha=0.35; ctx.lineWidth=2; ctx.stroke(); ctx.globalAlpha=1;
+    }
+  }
+  chip(T("m4"), px+pw/2, py-18, css("--text"));
+}
+
+function draw(){
+  ctx.setTransform(dpr()*cssW/W, 0, 0, dpr()*cssH/H, 0, 0);
+  ctx.clearRect(0,0,W,H);
+  if(S.mode===1) drawMode1();
+  else if(S.mode===2) drawMode2();
+  else if(S.mode===3) drawMode3();
+  else drawMode4();
+}
+
+function rodRead(rod, frac){
+  const i = clamp(Math.round(frac*(CONFIG.ROD_N-1)), 0, CONFIG.ROD_N-1);
+  return rod.T[i];
+}
+function convStats(){
+  if(!S.conv.length) return { src:CONFIG.T_ROOM, bulk:CONFIG.T_ROOM };
+  let src=0, ns=0, bulk=0;
+  const b=beaker();
+  S.conv.forEach(p=>{
+    bulk+=p.T;
+    if(p.x<b.x+120 && p.y>b.y+b.h-70){ src+=p.T; ns++; }
+  });
+  return { src: ns?src/ns:CONFIG.T_FLAME, bulk: bulk/S.conv.length };
+}
+
+function sync(){
+  let a="—", b="—", c="—", d="—", narr=T("nRace");
+  el("kA").textContent = T("near"); el("kB").textContent = T("far");
+  el("kC").textContent = T("mid"); el("kD").textContent = T("gap");
+  if(S.mode===1){
+    const cu = S.rods.find(r=>r.mat==="copper") || S.rods[0];
+    const wd = S.rods.find(r=>r.mat==="wood") || S.rods[S.rods.length-1];
+    const near = rodRead(cu, 0.05), farC = rodRead(cu, 0.92), farW = rodRead(wd, 0.92), mid = rodRead(cu, 0.5);
+    a = Math.round(near)+"°C"; b = Math.round(farC)+"°C"; c = Math.round(mid)+"°C";
+    const gap = Math.abs(near-farC);
+    d = gap<1.2 ? T("equal") : Math.round(gap)+"°C";
+    narr = gap<2 ? T("nEq") : T("nRace");
+    S.samples.push({ t:S.tSim, A:near, B:farC, C:farW });
+  } else if(S.mode===2){
+    el("kA").textContent = T("srcT"); el("kB").textContent = T("bulkT");
+    el("kC").textContent = T("hot");
+    const st = convStats();
+    a = Math.round(st.src)+"°C"; b = Math.round(st.bulk)+"°C"; c = S.looped ? "↻" : "…";
+    const gap = Math.abs(st.src-st.bulk);
+    d = S.barrier ? T("nBar").slice(0,18)+"…" : (gap<2? T("equal") : Math.round(gap)+"°C");
+    narr = S.barrier ? T("nBar") : T("nConv");
+    S.samples.push({ t:S.tSim, A:st.src, B:st.bulk, C:st.src });
+  } else if(S.mode===3){
+    el("kA").textContent = T("srcT"); el("kB").textContent = T("recT");
+    el("kC").textContent = T("dist");
+    a = Math.round(CONFIG.RAD_SRC)+"°C"; b = Math.round(S.recT)+"°C";
+    c = Math.round(lerp(14,52,S.radDist))+" cm";
+    const gap = CONFIG.RAD_SRC - S.recT;
+    d = Math.round(gap)+"°C";
+    narr = T("nRad");
+    S.samples.push({ t:S.tSim, A:CONFIG.RAD_SRC, B:S.recT, C:S.recT });
+  } else {
+    el("kA").textContent = T("condOn"); el("kB").textContent = T("convOn");
+    el("kC").textContent = T("radOn");
+    a = S.pot.cond?"ON":"off"; b = S.pot.conv?"ON":"off"; c = S.pot.rad?"ON":"off";
+    d = "—";
+    narr = T("nPot");
+    const st = convStats();
+    S.samples.push({ t:S.tSim, A:st.src, B:st.bulk, C:S.recT });
+  }
+  if(S.samples.length>80) S.samples.shift();
+  el("rA").textContent=a; el("rB").textContent=b; el("rC").textContent=c; el("rD").textContent=d;
+  el("narr").textContent=narr;
+  drawGraph();
+  checkGuide();
+}
+
+function drawGraph(){
+  const d=dpr(), w=gcv.clientWidth||300, h=132;
+  if(gcv.width!==Math.round(w*d)){ gcv.width=Math.round(w*d); gcv.height=Math.round(h*d); }
+  gctx.setTransform(d,0,0,d,0,0); gctx.clearRect(0,0,w,h);
+  const padL=36, padB=18, padT=8, padR=8;
+  const pw=w-padL-padR, ph=h-padT-padB;
+  gctx.strokeStyle=css("--hairline"); gctx.lineWidth=1;
+  gctx.beginPath(); gctx.moveTo(padL,padT); gctx.lineTo(padL,padT+ph); gctx.lineTo(padL+pw,padT+ph); gctx.stroke();
+  const pts=S.samples; if(pts.length<2) return;
+  const t0=pts[0].t, t1=pts[pts.length-1].t, span=Math.max(0.5, t1-t0);
+  const ymin=CONFIG.T_ROOM-2, ymax=CONFIG.T_FLAME+4;
+  const X=t=> padL + (t-t0)/span*pw;
+  const Y=v=> padT+ph - (v-ymin)/(ymax-ymin)*ph;
+  [["A",css("--hot")],["B",css("--cold")],["C",css("--warm")]].forEach(([k,col])=>{
+    gctx.beginPath(); gctx.strokeStyle=col; gctx.lineWidth=2;
+    pts.forEach((p,i)=>{ const x=X(p.t), y=Y(p[k]); if(i===0) gctx.moveTo(x,y); else gctx.lineTo(x,y); });
+    gctx.stroke();
+  });
+}
+
+/* ======================================================================
+   6. CONTROLS
+   ====================================================================== */
+function setMode(m){
+  S.mode=m;
+  if(m!==2 && m!==4) S.looped=false;
+  buildModeTray(); buildOpts(); computeBoard(); sync();
+}
+function buildModeTray(){
+  const host=el("modeTray"); host.innerHTML="";
+  const seg=document.createElement("div"); seg.className="seg";
+  [[1,"m1"],[2,"m2"],[3,"m3"],[4,"m4"]].forEach(([m,k])=>{
+    const b=document.createElement("button"); b.type="button";
+    b.textContent=T(k); b.setAttribute("aria-pressed", String(S.mode===m));
+    b.addEventListener("click", ()=>setMode(m));
+    seg.appendChild(b);
+  });
+  host.appendChild(seg);
+}
+function togBtn(label, pressed, fn){
+  const b=document.createElement("button"); b.type="button"; b.className="btn btn--ghost btn--sm";
+  b.textContent=label; b.setAttribute("aria-pressed", String(pressed));
+  b.addEventListener("click", fn); return b;
+}
+function buildOpts(){
+  const host=el("modeOpts"); host.innerHTML="";
+  if(S.mode===1){
+    const row=document.createElement("div"); row.className="row";
+    MATS.forEach(m=>{
+      const on = S.rods.some(r=>r.mat===m);
+      const b=togBtn(T(m), on, ()=>{
+        if(on && S.rods.length>1) S.rods = S.rods.filter(r=>r.mat!==m);
+        else if(!on && S.rods.length<3){
+          S.rods.push({ mat:m, T:Float64Array.from({length:CONFIG.ROD_N},()=>CONFIG.T_ROOM) });
+        }
+        buildOpts();
+      });
+      row.appendChild(b);
+    });
+    host.appendChild(row);
+    const r2=document.createElement("div"); r2.className="row";
+    r2.innerHTML = '<label>'+T("flame")+'</label>';
+    const sl=document.createElement("input"); sl.type="range"; sl.min="0.2"; sl.max="1"; sl.step="0.05"; sl.value=S.flame;
+    sl.setAttribute("aria-label", T("flame"));
+    sl.addEventListener("input", ()=>{ S.flame=+sl.value; });
+    r2.appendChild(sl);
+    const ice=togBtn(T("ice"), S.iceEnd, ()=>{ S.iceEnd=!S.iceEnd; buildOpts(); });
+    r2.appendChild(ice);
+    host.appendChild(r2);
+  } else if(S.mode===2){
+    const row=document.createElement("div"); row.className="row";
+    row.appendChild(togBtn(T("arrows"), S.arrows, ()=>{ S.arrows=!S.arrows; buildOpts(); }));
+    row.appendChild(togBtn(T("barrier"), S.barrier, ()=>{ S.barrier=!S.barrier; buildOpts(); }));
+    host.appendChild(row);
+    const r2=document.createElement("div"); r2.className="row";
+    r2.innerHTML='<label>'+T("flame")+'</label>';
+    const sl=document.createElement("input"); sl.type="range"; sl.min="0.2"; sl.max="1"; sl.step="0.05"; sl.value=S.flame;
+    sl.addEventListener("input", ()=>{ S.flame=+sl.value; });
+    r2.appendChild(sl); host.appendChild(r2);
+  } else if(S.mode===3){
+    const row=document.createElement("div"); row.className="row";
+    [["vac","vac"],["air","air"],["glass","glass"]].forEach(([id,k])=>{
+      row.appendChild(togBtn(T(k), S.radMed===id, ()=>{ S.radMed=id; buildOpts(); }));
+    });
+    host.appendChild(row);
+    const r2=document.createElement("div"); r2.className="row";
+    r2.innerHTML='<label>'+T("dist")+'</label>';
+    const sl=document.createElement("input"); sl.type="range"; sl.min="0"; sl.max="1"; sl.step="0.02"; sl.value=S.radDist;
+    sl.addEventListener("input", ()=>{ S.radDist=+sl.value; });
+    r2.appendChild(sl); host.appendChild(r2);
+  } else {
+    const row=document.createElement("div"); row.className="row";
+    row.appendChild(togBtn(T("condOn"), S.pot.cond, ()=>{ S.pot.cond=!S.pot.cond; buildOpts(); }));
+    row.appendChild(togBtn(T("convOn"), S.pot.conv, ()=>{ S.pot.conv=!S.pot.conv; buildOpts(); }));
+    row.appendChild(togBtn(T("radOn"), S.pot.rad, ()=>{ S.pot.rad=!S.pot.rad; buildOpts(); }));
+    host.appendChild(row);
+  }
+}
+function computeBoard(){ /* layout is derived in draw from S */ }
+
+/* ======================================================================
+   7. GUIDE
+   ====================================================================== */
+const TASKS = [
+  {
+    t:"t1", h:"h1", p:"p1",
+    ready:()=> S.mode===1 && S.rods.some(r=>r.mat==="copper") && S.rods.some(r=>r.mat==="wood"),
+    done:()=>{
+      const cu=S.rods.find(r=>r.mat==="copper"), wd=S.rods.find(r=>r.mat==="wood");
+      if(!cu||!wd) return false;
+      return rodRead(cu,0.92) - rodRead(wd,0.92) > 8;
+    },
+    show:()=>{
+      S.mode=1; S.rods=freshRods(); S.flame=1; S.iceEnd=false;
+      for(let i=0;i<90;i++) stepRods(0.05);
+    }
+  },
+  {
+    t:"t2", h:"h2", p:"p2",
+    ready:()=> S.mode===2 && S.arrows,
+    done:()=> S.mode===2 && S.looped,
+    show:()=>{ S.mode=2; S.arrows=true; S.barrier=false; S.heatOn=true; S.flame=1; }
+  },
+  {
+    t:"t3", h:"h3", p:"p3",
+    ready:()=> S.mode===2 && S.barrier && S.heatOn,
+    done:()=> S.mode===2 && S.barrier && S.heatOn,
+    show:()=>{ S.mode=2; S.barrier=true; S.arrows=true; S.flame=1; }
+  },
+  {
+    t:"t4", h:"h4", p:"p4",
+    ready:()=> S.mode===3 && S.radMed==="vac",
+    done:()=> S.mode===3 && S.radMed==="vac" && S.recT > CONFIG.T_ROOM+4,
+    show:()=>{ S.mode=3; S.radMed="vac"; S.radDist=0.45; S.recT=CONFIG.T_ROOM+8; }
+  },
+  {
+    t:"t5", h:"h5", p:"p5",
+    ready:()=> S.mode===4,
+    done:()=> S.seen.condSolo && S.seen.convSolo && S.seen.radSolo,
+    show:()=>{ S.mode=4; S.pot={cond:true,conv:false,rad:false}; S.seen.condSolo=true; }
+  }
+];
+function renderGuide(){
+  const i=S.guide.i, task=TASKS[i];
+  el("gNum").textContent=(i+1)+"/5";
+  el("gTask").textContent=T(task.t);
+  el("gHint").textContent = S.guide.done ? T(task.p) : T(task.h);
+  el("gShow").textContent=T("show");
+  el("gNext").textContent=T("next");
+  el("tStep").textContent=T("task");
+  el("gNext").hidden = !S.guide.done || i>=4;
+  el("guide").classList.toggle("done", S.guide.done);
+  const dots=el("gDots"); dots.innerHTML="";
+  TASKS.forEach((_,k)=>{
+    const d=document.createElement("span"); d.className="guide__dot";
+    if(k<i) d.classList.add("on"); if(k===i) d.classList.add("now");
+    dots.appendChild(d);
+  });
+}
+function checkGuide(){
+  const task=TASKS[S.guide.i];
+  if(!S.guide.done && task.done()){ S.guide.done=true; renderGuide(); }
+}
+el("gShow").addEventListener("click", ()=>{
+  TASKS[S.guide.i].show();
+  buildModeTray(); buildOpts(); renderGuide(); sync();
+});
+el("gNext").addEventListener("click", ()=>{
+  if(S.guide.i<4){ S.guide.i++; S.guide.done=false; renderGuide(); }
+});
+
+/* ======================================================================
+   8. QUIZ
+   ====================================================================== */
+const QUESTIONS = [
+  { q:"q1", opts:["q1a","q1b","q1c"], ans:1, why:"q1w" },
+  { q:"q2", opts:["q2a","q2b","q2c"], ans:1, why:"q2w" },
+  { q:"q3", opts:["q3a","q3b","q3c"], ans:2, why:"q3w" },
+  { q:"q4", opts:["q4a","q4b","q4c"], ans:1, why:"q4w" },
+  { q:"q5", opts:["q5a","q5b","q5c"], ans:1, why:"q5w" }
+];
+function buildQuiz(){
+  const host=el("quiz"); host.innerHTML="";
+  let score=0, answered=0;
+  QUESTIONS.forEach((Q, qi)=>{
+    const box=document.createElement("div"); box.className="panel q"; box.style.marginBottom="12px";
+    box.innerHTML = '<div class="q__n">Q '+(qi+1)+'</div><p class="q__t">'+T(Q.q)+'</p><div class="opts"></div><div class="fb"></div>';
+    const opts=box.querySelector(".opts"), fb=box.querySelector(".fb");
+    Q.opts.forEach((ok, oi)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="opt";
+      b.innerHTML='<span class="opt__k">'+"ABC"[oi]+'</span><span>'+T(ok)+'</span>';
+      b.addEventListener("click", ()=>{
+        if(b.disabled) return;
+        opts.querySelectorAll(".opt").forEach(o=>o.disabled=true);
+        const good = oi===Q.ans;
+        b.classList.add(good?"correct":"wrong");
+        opts.children[Q.ans].classList.add("correct");
+        fb.className="fb show "+(good?"ok":"no");
+        fb.textContent=T(Q.why);
+        answered++; if(good) score++;
+        if(answered===QUESTIONS.length){
+          const s=document.createElement("div"); s.className="panel score"; s.style.marginTop="12px";
+          s.innerHTML='<span>'+T("score")+'</span><span class="score__v">'+score+' / '+QUESTIONS.length+'</span>';
+          const again=document.createElement("button"); again.className="btn"; again.textContent=T("tryAgain");
+          again.addEventListener("click", buildQuiz); s.appendChild(again);
+          host.appendChild(s);
+        }
+      });
+      opts.appendChild(b);
+    });
+    host.appendChild(box);
+  });
+}
+
+/* ======================================================================
+   9. LOOP
+   ====================================================================== */
+const mqReduce = matchMedia("(prefers-reduced-motion: reduce)");
+let REDUCED = mqReduce.matches;
+mqReduce.addEventListener("change", ()=>{ REDUCED = mqReduce.matches; });
+let prev = performance.now(), acc=0, syncT=0;
+function frame(now){
+  const dt=Math.min(0.1,(now-prev)/1000); prev=now;
+  if(S.running){
+    if(REDUCED){ acc+=dt; if(acc>0.5){ acc=0; step(0.5*S.speed); syncT=1; } }
+    else { step(dt*S.speed); syncT+=dt; }
+    if(syncT>CONFIG.SAMPLE_DT){ syncT=0; sync(); }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+
+function setRunning(on){
+  S.running=on;
+  el("icPlay").innerHTML = on
+    ? '<rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/>'
+    : '<path d="M7 4 L19 12 L7 20 Z" fill="#fff"/>';
+  el("btnPlay").setAttribute("aria-pressed", String(on));
+  el("btnPlay").setAttribute("aria-label", on ? T("pause") : T("play"));
+}
+
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.documentElement.dir=LANG==="ur"?"rtl":"ltr";
+  el("tTitle").textContent=T("title"); el("tSub").textContent=T("sub");
+  el("tNavTitle").textContent=T("navTitle");
+  el("navBench").textContent=T("bench"); el("navQuiz").textContent=T("quiz");
+  el("btnLang").textContent=T("lang");
+  el("btnProfile").textContent=dim?T("bright"):T("dim");
+  el("tReadings").textContent=T("readings");
+  el("tSpeed").textContent=T("speed"); el("btnStep").textContent=T("stepBtn");
+  el("btnReset").setAttribute("aria-label", T("reset"));
+  el("tGraph").textContent=T("graph"); el("tGraphNote").textContent=T("graphNote");
+  el("tQuizTitle").textContent=T("quizTitle"); el("tQuizSub").textContent=T("quizSub");
+  el("boardDesc").textContent=T("boardDesc");
+  el("legCold").textContent=T("cold"); el("legHot").textContent=T("hot");
+  el("gShow").textContent=T("show"); el("gNext").textContent=T("next");
+  setRunning(S.running);
+  buildModeTray(); buildOpts(); renderGuide(); buildQuiz(); sync();
+}
+
+el("btnLang").addEventListener("click", ()=>{ LANG = LANG==="en"?"ur":"en"; applyLang(); });
+el("btnProfile").addEventListener("click", ()=>{
+  dim=!dim;
+  if(dim) document.documentElement.setAttribute("data-profile","dim");
+  else document.documentElement.removeAttribute("data-profile");
+  el("btnProfile").textContent=dim?T("bright"):T("dim");
+});
+el("btnPlay").addEventListener("click", ()=> setRunning(!S.running));
+el("btnStep").addEventListener("click", ()=>{ step(0.25); sync(); });
+el("speed").addEventListener("input", e=>{ S.speed=+e.target.value; });
+el("btnReset").addEventListener("click", ()=>{
+  const mode=S.mode;
+  S=initial(); S.mode=mode;
+  el("speed").value=1;
+  setRunning(true);
+  buildModeTray(); buildOpts(); renderGuide(); sync();
+});
+function showScreen(which){
+  el("scBench").classList.toggle("on", which==="bench");
+  el("scQuiz").classList.toggle("on", which==="quiz");
+  el("navBench").setAttribute("aria-current", which==="bench"?"page":"false");
+  el("navQuiz").setAttribute("aria-current", which==="quiz"?"page":"false");
+  scrollTo({top:0});
+  if(which==="bench") fitBoard();
+}
+el("navBench").addEventListener("click", ()=>showScreen("bench"));
+el("navQuiz").addEventListener("click", ()=>showScreen("quiz"));
+addEventListener("resize", ()=>{ fitBoard(); drawGraph(); });
+
+fitBoard();
+applyLang();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<title>Human Circulatory System: Heart, Blood Flow &amp; Double Circulation — PCTB Class 8 Science</title>
+<!--
+==========================================================================
+ HUMAN CIRCULATORY SYSTEM  ·  Sim 11
+ PCTB / SNC Class 8 General Science — Transport in Humans
+
+ LEARNING OBJECTIVES
+   1. Four chambers: atria receive, ventricles pump, as a two-step beat.
+   2. Double circulation: pulmonary loop (right heart → lungs → left heart)
+      and systemic loop (left heart → body → right heart) every cycle.
+   3. The septum keeps the two sides separate — oxygen-rich and oxygen-poor
+      blood never mix in a healthy heart.
+   4. Valves are one-way gates timed with pressure. A leak lets blood reverse.
+   5. Arteries = away from the heart, veins = toward it — NOT an oxygen rule.
+      Pulmonary artery is low-O2; pulmonary vein is high-O2.
+   6. Exercise raises BPM so more oxygen reaches muscle per minute.
+   7. Plasma, red cells, white cells, platelets — four jobs.
+
+ MISCONCEPTIONS (quiz)
+   - Blood visits the heart only once per circuit.
+   - The two sides mix inside the heart.
+   - Arteries always carry oxygenated blood.
+   - All four chambers squeeze at the same instant.
+   - Veins carry literally blue blood.
+
+ TEACHER: CONFIG. REST_BPM / EX_BPM, N_DROPS, TRACE speed. The send-back
+   bug is a particle crossing the septum (x between HEART.sx0 and HEART.sx1
+   while inside the heart box). Paths are built to go around that wall.
+
+ Blue = diagram low-oxygen. Real deoxygenated blood is still dark red.
+==========================================================================
+-->
+<style>
+:root{
+  --accent:#1F6FD0; --good:#237A46; --warn:#8C5A05; --crit:#A0173F;
+  --panel:#FFFFFF; --panel-2:#F2F4F5; --panel-border:#8A8A8A;
+  --text:#14202A; --text-2:#46565F; --text-3:#71828C;
+  --ox:#C62828; --deox:#1F6FD0; --septum:#5C4033; --plasma:#F3E6C4;
+  --skin:#E8C4A8; --lung:#6E9BC4; --liver:#C45C3A; --muscle:#C46A6A;
+  --board:#EEF2F4; --grid:#D3DBDF; --hairline:#DCE1E4;
+  --shadow:0 2px 8px rgba(20,32,42,.14); --focus:#14202A; --on-accent:#FFFFFF;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --radius:12px;
+}
+:root[data-profile="dim"]{
+  --accent:#4E9BF0; --good:#4FB27A; --warn:#D0A03A; --crit:#E0648F;
+  --panel:#1A2126; --panel-2:#242D33; --panel-border:#5F6C74;
+  --text:#F1F5F7; --text-2:#C3CFD5; --text-3:#95A4AD;
+  --ox:#E06060; --deox:#4E9BF0; --septum:#C4A484; --plasma:#5A4E38;
+  --skin:#8A6A54; --lung:#4E7AA0; --liver:#D07050; --muscle:#D08080;
+  --board:#131A1F; --grid:#26313A; --hairline:#3B464D;
+  --shadow:0 2px 10px rgba(0,0,0,.5); --focus:#FFFFFF; --on-accent:#0B1220;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{ font-family:var(--font); background:var(--panel-2); color:var(--text); font-size:16px; line-height:1.45; overflow-x:hidden; }
+:focus-visible{ outline:3px solid var(--focus); outline-offset:2px; border-radius:4px; }
+.sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.wrap{ max-width:1400px; margin:0 auto; padding:10px 10px 80px; }
+:root[dir="rtl"] body{ font-family:system-ui,"Noto Nastaliq Urdu","Segoe UI",Tahoma,sans-serif; }
+:root[dir="rtl"] .stage__inner{ direction:ltr; }
+.head{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; padding:2px 2px 10px; }
+.head__title{ font-size:clamp(19px,2.3vw,25px); font-weight:700; margin:0; letter-spacing:-.02em; }
+.head__sub{ margin:0; font-size:14.5px; color:var(--text-2); }
+.head__spacer{ margin-inline-start:auto; display:flex; gap:8px; flex-wrap:wrap; }
+.panel{ background:var(--panel); border:1px solid var(--panel-border); border-radius:var(--radius); box-shadow:var(--shadow); padding:12px 14px; }
+.panel__title{ font-size:15px; font-weight:700; margin:0 0 10px; }
+.guide{
+  background:var(--panel); border:2px solid var(--accent); border-radius:var(--radius);
+  padding:10px 13px; margin-bottom:10px;
+  display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center;
+}
+@media (max-width:760px){ .guide{ grid-template-columns:1fr; } }
+.guide.done{ border-color:var(--good); }
+.guide__badge{ min-width:72px; padding:6px 10px; border-radius:9px; text-align:center; background:var(--panel-2); border:1px solid var(--panel-border); }
+.guide__badgeTop{ font-size:12.5px; font-weight:700; letter-spacing:.06em; color:var(--text-3); }
+.guide__badgeNum{ font-size:20px; font-weight:700; font-family:var(--mono); font-variant-numeric:tabular-nums; }
+.guide__task{ font-size:17px; font-weight:700; margin:0; }
+.guide__hint{ font-size:14px; margin:4px 0 0; color:var(--text-2); }
+.guide__dots{ display:flex; gap:6px; margin-top:8px; }
+.guide__dot{ width:9px; height:9px; border-radius:50%; background:var(--hairline); }
+.guide__dot.on{ background:var(--good); }
+.guide__dot.now{ background:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent); }
+.guide__acts{ display:flex; gap:8px; flex-wrap:wrap; }
+.btn{
+  font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 16px; border-radius:9px; white-space:nowrap;
+  background:var(--accent); color:var(--on-accent); border:1px solid rgba(0,0,0,.28);
+}
+.btn:hover{ filter:brightness(1.08); }
+.btn--ghost{ background:var(--panel); color:var(--text); border-color:var(--panel-border); }
+.btn--go{ background:var(--good); color:#fff; }
+.btn--sm{ font-size:13.5px; padding:0 12px; }
+.btn[aria-pressed="true"]{ box-shadow:inset 0 0 0 2px var(--focus); }
+.round{
+  width:48px; height:48px; border-radius:50%; cursor:pointer; padding:0;
+  border:1px solid rgba(0,0,0,.35); display:grid; place-items:center; background:var(--btn,#E2E6E9);
+}
+.round--play{ --btn:var(--good); }
+.round--reset{ --btn:var(--warn); }
+.main{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,340px); gap:10px; align-items:start; }
+@media (max-width:1080px){ .main{ grid-template-columns:1fr; } }
+.tray{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+.seg{ display:inline-flex; border:1px solid var(--panel-border); border-radius:9px; overflow:hidden; flex-wrap:wrap; }
+.seg button{
+  font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 12px; border:0; background:var(--panel); color:var(--text-2);
+  border-inline-end:1px solid var(--panel-border);
+}
+.seg button:last-child{ border-inline-end:0; }
+.seg button[aria-pressed="true"]{ background:var(--accent); color:var(--on-accent); }
+.stage{ border:1px solid var(--panel-border); border-radius:var(--radius); overflow:hidden; background:var(--board); }
+.stage__inner{ position:relative; }
+#board{ display:block; width:100%; height:auto; touch-action:none; }
+.stage__bar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 10px; background:var(--panel); border-top:1px solid var(--hairline); }
+.reads{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.read{ background:var(--panel-2); border:1px solid var(--hairline); border-radius:9px; padding:8px 10px; }
+.read__k{ font-size:12.5px; color:var(--text-3); font-weight:700; }
+.read__v{ font-family:var(--mono); font-size:18px; font-variant-numeric:tabular-nums; font-weight:700; }
+.narr{ font-size:15px; line-height:1.5; margin:10px 0 0; }
+.row{ display:flex; align-items:center; gap:8px; margin:8px 0; flex-wrap:wrap; }
+.row label{ font-size:13.5px; font-weight:700; color:var(--text-2); min-width:108px; }
+.val{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:14px; min-width:56px; }
+#tGraphCvs{ display:block; width:100%; height:176px; }
+.graph-note{ font-size:13px; color:var(--text-3); margin:6px 0 0; }
+.legend{ display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:12.5px; color:var(--text-2); }
+.legend[hidden]{ display:none; }
+.sw{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-inline-end:5px; vertical-align:middle; }
+.note{ font-size:12.5px; color:var(--text-3); margin:8px 0 0; }
+.note[hidden]{ display:none; }
+.cell-key{ display:flex; flex-direction:column; gap:7px; margin-top:10px; }
+.cell-key[hidden]{ display:none; }
+.cell-key__t{ font-size:12px; font-weight:700; color:var(--text-3); letter-spacing:.06em; text-transform:uppercase; }
+.cell-key__row{
+  display:grid; grid-template-columns:36px 1fr; gap:8px; align-items:center;
+  padding:7px 8px; border:1px solid var(--hairline); border-radius:8px; background:var(--panel-2);
+  cursor:pointer;
+}
+.cell-key__row.on{ box-shadow:inset 0 0 0 2px var(--accent); }
+.cell-key__ic{ width:36px; height:22px; display:grid; place-items:center; }
+.cell-key__ic--plasma i{ display:block; width:22px; height:14px; border-radius:3px; background:var(--plasma); border:1px solid var(--panel-border); }
+.cell-key__ic--rbc i{ display:block; width:22px; height:13px; border-radius:50%; background:var(--ox); }
+.cell-key__ic--wbc i{ display:block; width:18px; height:18px; border-radius:50%; background:var(--panel); border:2px solid var(--text-2); box-shadow:inset 5px 3px 0 0 var(--text-3); }
+.cell-key__ic--plat i{ display:block; width:9px; height:6px; border-radius:50%; background:var(--warn); transform:rotate(20deg); }
+.cell-key__row b{ display:block; font-size:13.5px; }
+.cell-key__row small{ display:block; font-size:12px; color:var(--text-3); }
+.match{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+.match button{ min-height:48px; font-size:13px; white-space:normal; }
+.screen{ display:none; } .screen.on{ display:block; }
+.q{ margin-bottom:10px; }
+.q__n{ font-size:12.5px; color:var(--text-3); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.q__t{ font-size:17px; font-weight:700; margin:6px 0 12px; }
+.opts{ display:grid; gap:8px; }
+.opt{
+  display:flex; align-items:flex-start; gap:10px; text-align:start; width:100%;
+  min-height:52px; padding:12px 14px; cursor:pointer; border-radius:9px;
+  font-family:inherit; font-size:15.5px; background:var(--panel-2); color:var(--text);
+  border:2px solid var(--panel-border);
+}
+.opt.correct{ border-color:var(--good); background:color-mix(in srgb,var(--good) 14%,var(--panel)); }
+.opt.wrong{ border-color:var(--crit); background:color-mix(in srgb,var(--crit) 12%,var(--panel)); }
+.opt__k{ font-family:var(--mono); font-size:14px; color:var(--text-3); min-width:1.2em; }
+.fb{ display:none; margin:10px 0 0; padding:11px 13px; font-size:14.5px; border-radius:8px; background:var(--panel-2); border-inline-start:5px solid var(--panel-border); }
+.fb.show{ display:block; } .fb.ok{ border-inline-start-color:var(--good); } .fb.no{ border-inline-start-color:var(--crit); }
+.score{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.score__v{ font-family:var(--mono); font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; }
+.nav{
+  position:sticky; bottom:6px; z-index:40; margin-top:10px; border-radius:10px;
+  background:#101418; color:#fff; display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:6px 13px;
+}
+.nav__t{ font-size:14.5px; font-weight:700; margin-inline-end:auto; }
+.navbtn{ cursor:pointer; background:transparent; border:2px solid transparent; border-radius:8px; color:#B9C0C5; font-family:inherit; font-size:14px; font-weight:700; padding:5px 11px; min-height:44px; }
+.navbtn[aria-current="page"]{ color:#fff; border-color:#fff; }
+input[type=range]{ -webkit-appearance:none; appearance:none; height:44px; background:transparent; cursor:pointer; flex:1; min-width:80px; }
+input[type=range]::-webkit-slider-runnable-track{ height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border); }
+input[type=range]::-moz-range-track{ height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border); }
+input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:26px; height:30px; margin-top:-12px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45); }
+input[type=range]::-moz-range-thumb{ width:26px; height:30px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45); }
+@media (prefers-reduced-motion:reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="screen on" id="scBench">
+  <header class="head">
+    <h1 class="head__title" id="tTitle">Circulatory System</h1>
+    <p class="head__sub" id="tSub">Two loops, one heart. The wall in the middle is why red and blue never mix.</p>
+    <span class="head__spacer">
+      <button class="btn btn--ghost btn--sm" id="btnLang" type="button">اردو</button>
+      <button class="btn btn--ghost btn--sm" id="btnProfile" type="button">Dim room</button>
+    </span>
+  </header>
+  <section class="guide" id="guide" aria-live="polite">
+    <div class="guide__badge">
+      <div class="guide__badgeTop" id="tStep">TASK</div>
+      <div class="guide__badgeNum" id="gNum">1/5</div>
+    </div>
+    <div>
+      <p class="guide__task" id="gTask">—</p>
+      <p class="guide__hint" id="gHint">—</p>
+      <div class="guide__dots" id="gDots" aria-hidden="true"></div>
+    </div>
+    <div class="guide__acts">
+      <button class="btn btn--ghost" id="gShow" type="button">Show me</button>
+      <button class="btn btn--go" id="gNext" type="button" hidden>Next</button>
+    </div>
+  </section>
+  <div class="main">
+    <div>
+      <div class="tray" id="modeTray"></div>
+      <div class="stage">
+        <div class="stage__inner" id="stageInner">
+          <canvas id="board" role="img" aria-label="Double circulation diagram" aria-describedby="boardDesc" tabindex="0"></canvas>
+          <p class="sr" id="boardDesc">Blood goes through the heart twice each circuit: lungs, then body. A wall down the middle of the heart keeps low-oxygen and high-oxygen blood apart.</p>
+        </div>
+        <div class="stage__bar">
+          <button class="round round--play" id="btnPlay" type="button" aria-pressed="true" aria-label="Pause">
+            <svg width="20" height="20" viewBox="0 0 24 24" id="icPlay" aria-hidden="true"><rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/></svg>
+          </button>
+          <button class="btn btn--ghost btn--sm" id="btnStep" type="button">Step</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px">
+            <span id="tSpeed">Speed</span>
+            <input type="range" id="speed" min="0.25" max="2" step="0.25" value="1" style="width:96px" aria-label="Speed" />
+          </label>
+          <button class="round round--reset" id="btnReset" type="button" aria-label="Reset">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 1 0 6.5 4.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M12 1.5V8.5L6.5 5z" fill="#fff"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:10px" id="modeOpts"></div>
+    </div>
+    <div>
+      <div class="panel">
+        <h2 class="panel__title" id="tReadings">Live readings</h2>
+        <div class="reads" aria-live="polite">
+          <div class="read"><div class="read__k" id="kA">Where</div><div class="read__v" id="rA">—</div></div>
+          <div class="read"><div class="read__k" id="kB">Oxygen</div><div class="read__v" id="rB">—</div></div>
+          <div class="read"><div class="read__k" id="kC">BPM</div><div class="read__v" id="rC">—</div></div>
+          <div class="read"><div class="read__k" id="kD">O2 / min</div><div class="read__v" id="rD">—</div></div>
+        </div>
+        <p class="narr" id="narr" aria-live="polite">—</p>
+        <div class="legend" id="legendOx">
+          <span><i class="sw" style="background:var(--ox)"></i><span id="legOx">high oxygen (diagram red)</span></span>
+          <span><i class="sw" style="background:var(--deox)"></i><span id="legDx">low oxygen (diagram blue)</span></span>
+        </div>
+        <p class="note" id="legNote">Blue is a diagram colour. Real low-oxygen blood is still dark red, never actually blue.</p>
+        <div class="cell-key" id="legendCells" hidden>
+          <div class="cell-key__t" id="tCellKey">Key</div>
+          <div class="cell-key__row" data-k="plasma"><span class="cell-key__ic cell-key__ic--plasma" aria-hidden="true"><i></i></span><span><b id="nmPlasma">Plasma</b><small id="jbPlasma">liquid that carries everything</small></span></div>
+          <div class="cell-key__row" data-k="rbc"><span class="cell-key__ic cell-key__ic--rbc" aria-hidden="true"><i></i></span><span><b id="nmRbc">Red cell</b><small id="jbRbc">carries oxygen</small></span></div>
+          <div class="cell-key__row" data-k="wbc"><span class="cell-key__ic cell-key__ic--wbc" aria-hidden="true"><i></i></span><span><b id="nmWbc">White cell</b><small id="jbWbc">fights infection</small></span></div>
+          <div class="cell-key__row" data-k="plat"><span class="cell-key__ic cell-key__ic--plat" aria-hidden="true"><i></i></span><span><b id="nmPlat">Platelet</b><small id="jbPlat">helps blood clot</small></span></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:10px" id="graphPanel">
+        <h2 class="panel__title" id="tGraph">Oxygen along the trip</h2>
+        <canvas id="tGraphCvs" role="img" aria-label="Oxygen level around one full double circuit"></canvas>
+        <p class="graph-note" id="tGraphNote">One drop, two climbs: lungs load oxygen, body unloads it. The heart is visited twice.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="screen" id="scQuiz">
+  <header class="head">
+    <h1 class="head__title" id="tQuizTitle">Check what you have learned</h1>
+    <p class="head__sub" id="tQuizSub">Five questions, with the answer explained straight away.</p>
+  </header>
+  <div id="quiz" style="max-width:840px;margin:0 auto"></div>
+</div>
+<nav class="nav" aria-label="Screens">
+  <span class="nav__t" id="tNavTitle">Circulation</span>
+  <button class="navbtn" id="navBench" type="button" aria-current="page">Bench</button>
+  <button class="navbtn" id="navQuiz" type="button">Quiz</button>
+</nav>
+</div>
+
+<script>
+"use strict";
+/* ======================================================================
+   1. CONFIG
+   Path points never enter the septum slab (HEART.sx0 … sx1 inside the
+   heart box). Pulmonary return crosses the midline ABOVE the heart.
+   ====================================================================== */
+const CONFIG = {
+  N_DROPS: 22,
+  LOOP_S: 14,          // seconds for one double circuit at speed 1
+  REST_BPM: 64,
+  EX_BPM: 148,
+  STROKE: 1,           // relative O2 units per beat
+  COMP_MATCH: 4        // matching pairs in Mode 4
+};
+
+/* Anatomical RIGHT is on the VIEWER'S LEFT (textbook convention). */
+const HEART = { x:450, y:250, w:200, h:210, sx0:442, sx1:458, top:145, bot:355 };
+
+const STRINGS = {
+  en: {
+    title:"Human Circulatory System: Double Circulation",
+    sub:"Blood visits the heart twice every circuit — lungs, then body. The wall in the middle stops the two colours mixing.",
+    navTitle:"Circulation", bench:"Bench", quiz:"Quiz", lang:"اردو", dim:"Dim room", bright:"Bright room",
+    play:"Play", pause:"Pause", stepBtn:"Step", speed:"Speed", reset:"Reset",
+    readings:"Live readings", graph:"Oxygen along one full trip",
+    graph3:"Heart rate and oxygen delivery",
+    graphNote:"The drop is oxygenated at the lungs and emptied at the body. Two peaks = two loops.",
+    graphNote3:"Faster beats, more oxygen per minute. That is why exercise raises BPM.",
+    boardDesc:"Follow the drops. Right heart (your left) is low-oxygen to the lungs. Left heart (your right) is high-oxygen to the body. Nothing crosses the brown septum.",
+    quizTitle:"Check what you have learned", quizSub:"Five questions, with the answer explained straight away.",
+    tryAgain:"Try again", score:"Score", next:"Next", show:"Show me", task:"TASK",
+    m1:"Follow the blood", m2:"Heart as a pump", m3:"Rest ↔ exercise", m4:"Under the microscope",
+    where:"Where", oxygen:"Oxygen", bpm:"BPM", o2min:"O2 / min",
+    high:"high", low:"low",
+    startBeat:"Start heartbeat", tracing:"Trace one drop", tracingOn:"Tracing…",
+    atria:"Squeeze atria", vent:"Squeeze ventricles", auto:"Auto beat", leaky:"Leaky valve",
+    rest:"Resting", ex:"Exercising",
+    plasma:"Plasma", rbc:"Red cell", wbc:"White cell", plat:"Platelet",
+    jPlasma:"liquid that carries everything", jRbc:"carries oxygen", jWbc:"fights infection", jPlat:"helps blood clot",
+    pickJob:"Tap a cell, then tap its job.",
+    matchOk:"Matched.",
+    keyTitle:"Key",
+    keyNote:"Same shapes as on the slide. Plasma is the liquid they float in.",
+    nPlay:"Press play and watch one colour leave the lungs and the other leave the body. Two flips = two loops.",
+    nRA:"Right atrium — low-oxygen blood arriving from the body.",
+    nRV:"Right ventricle — about to pump this drop to the lungs (pulmonary artery: away from the heart, still low oxygen).",
+    nLung:"Lungs — the drop picks up oxygen. Colour flips. Next stop is the LEFT heart, not the body.",
+    nLA:"Left atrium — high-oxygen blood back from the lungs in a pulmonary VEIN (toward the heart, oxygen-rich).",
+    nLV:"Left ventricle — the strong pump to the body through the aorta.",
+    nBody:"Body tissues — oxygen is delivered. Colour flips back. Now it must return to the RIGHT heart. That is the second loop.",
+    nSept:"The brown wall is the septum. Right and left never share a doorway.",
+    nAtria:"Atria first: they squeeze and fill the ventricles. Valves into the ventricles are open.",
+    nVent:"Ventricles next: they squeeze, outlet valves open, inlet valves slam shut so blood cannot run backward.",
+    nLeak:"A leaky inlet valve: some blood slips back into the atrium. The pump still beats — it just wastes a share of each push.",
+    nWrong:"Ventricles squeezed while still empty. Fill them first — atria, then ventricles.",
+    nEx:"Muscles want more oxygen per minute. The heart’s answer is more beats, not a bigger colour.",
+    nRest:"At rest the pulse is slower and the arteries throb more gently. Veins stay steadier either way.",
+    nCell:"Four components, four jobs. Number of red cells is the crowd; white cells and platelets are scarce on purpose.",
+    labPA:"PA · away · still low O2",
+    labPV:"PV · toward · now high O2",
+    labAo:"aorta · away · high O2",
+    labVC:"vena cava · toward · low O2",
+    dirRule:"Artery = away from the heart. Vein = toward it. Oxygen colour is a separate fact.",
+    labBrain:"brain", labLiver:"liver", labMuscle:"muscle",
+    labFromBody:"from body", labToLungs:"to lungs", labFromLungs:"from lungs", labToBody:"to body",
+    t1:"Run one full double circuit and watch the colour flip at the lungs and at the body.",
+    h1:"Start the heartbeat. You do not press “I’m done” — one complete lap is enough.",
+    p1:"Two flips, two loops. The heart is a stop on both journeys, not a single pass.",
+    t2:"Turn on Trace one drop and follow it from the right atrium all the way home.",
+    h2:"The highlighted drop is the storyteller. Stay with it through lungs AND body.",
+    p2:"Same drop, two visits to the heart. That is double circulation in one sentence.",
+    t3:"In the pump view, squeeze atria first, then ventricles, once.",
+    h3:"Two buttons, that order. The valves will only make sense if filling happens before firing.",
+    p3:"A beat is a pair: fill, then fire. Four chambers, two steps.",
+    t4:"Turn on the leaky valve while the pump is beating and watch blood slip backward.",
+    h4:"No error message — the leak is the lesson. Look for the reverse splash.",
+    p4:"Valves exist to stop that reverse. A leak does not halt the heart; it just wastes force.",
+    t5:"Slide from rest to full exercise. BPM and oxygen-per-minute should rise together.",
+    h5:"Park the slider at the exercising end and watch both meters.",
+    p5:"Faster circulation is how working muscle gets more oxygen without the blood changing its job.",
+    q1:"On one full trip around the body, how many times does a drop of blood pass through the heart?",
+    q1a:"Once — in, then out to the body, finished.",
+    q1b:"Twice — once out to the lungs and back, then once out to the body and back (double circulation).",
+    q1c:"Four times, once per chamber, then it is done.",
+    q1w:"Pulmonary loop, then systemic loop. The heart is a station on both, which is why we call it double circulation.",
+    q2:"In a healthy heart, do oxygen-rich and oxygen-poor blood mix?",
+    q2a:"Yes — that is how oxygen is shared inside the heart.",
+    q2b:"No. The septum is a solid wall. Right side stays low-oxygen; left side stays high-oxygen.",
+    q2c:"They mix only in the ventricles.",
+    q2w:"If a drop ever appeared to drift through the middle wall in this sim, that would be a bug. In life it would be a hole in the septum.",
+    q3:"Which statement about arteries and veins is always true?",
+    q3a:"Arteries carry oxygenated blood; veins carry deoxygenated blood.",
+    q3b:"Arteries carry blood away from the heart; veins carry blood toward it. The pulmonary artery is low-oxygen; the pulmonary vein is high-oxygen.",
+    q3c:"Veins are the ones with a pulse.",
+    q3w:"Direction, not oxygen. The lung vessels are the exception that proves the rule.",
+    q4:"Do all four chambers squeeze at the same moment?",
+    q4a:"Yes — one clench is one heartbeat.",
+    q4b:"No. The two atria squeeze first and fill the ventricles; then the two ventricles squeeze and send blood out.",
+    q4c:"Only the left side squeezes; the right side is passive.",
+    q4w:"Try the manual pump: atria, then ventricles. Reverse the order and the ventricles fire empty.",
+    q5:"Is the blood in veins actually blue?",
+    q5a:"Yes — that is why veins look blue under the skin.",
+    q5b:"No. Blue is a diagram code for low oxygen. Real deoxygenated blood is still dark red.",
+    q5c:"Only pulmonary veins are blue; the others are red.",
+    q5w:"Skin and light make veins look bluish. The legend in every mode of this sim repeats the same warning."
+  },
+  ur: {
+    title:"انسانی گردشی نظام: دوہری گردش",
+    sub:"خون ہر چکر میں دل سے دو بار گزرتا ہے — پھیپھڑے، پھر جسم۔ بیچ کی دیوار دونوں رنگوں کو ملنے نہیں دیتی۔",
+    navTitle:"گردش", bench:"بینچ", quiz:"سوالات", lang:"English", dim:"مدھم کمرہ", bright:"روشن کمرہ",
+    play:"چلائیں", pause:"روکیں", stepBtn:"قدم", speed:"رفتار", reset:"ری سیٹ",
+    readings:"لائیو ریڈنگز", graph:"ایک پورے سفر پر آکسیجن",
+    graph3:"دل کی رفتار اور آکسیجن کی فراہمی",
+    graphNote:"قطرہ پھیپھڑوں میں آکسیجن بھرتا ہے، جسم میں خالی ہوتا ہے۔ دو چوٹیاں = دو حلقے۔",
+    graphNote3:"زیادہ دھڑکن، منٹ میں زیادہ آکسیجن۔ ورزش BPM اسی لیے بڑھاتی ہے۔",
+    boardDesc:"قطروں کو دیکھیں۔ دایاں دل (آپ کی بائیں) کم آکسیجن پھیپھڑوں کو۔ بایاں دل جسم کو۔ کچھ بھوری دیوار پار نہیں کرتا۔",
+    quizTitle:"جو سیکھا ہے جانچیں", quizSub:"پانچ سوال، جواب فوراً سمجھایا جاتا ہے۔",
+    tryAgain:"دوبارہ کوشش", score:"اسکور", next:"آگے", show:"دکھاؤ", task:"کام",
+    m1:"خون کے پیچھے", m2:"دل بطور پمپ", m3:"آرام ↔ ورزش", m4:"خردبین کے نیچے",
+    where:"کہاں", oxygen:"آکسیجن", bpm:"BPM", o2min:"O2 / منٹ",
+    high:"زیادہ", low:"کم",
+    startBeat:"دھڑکن شروع", tracing:"ایک قطرہ ٹریس", tracingOn:"ٹریس…",
+    atria:"ایٹریا دبائیں", vent:"وینٹریکل دبائیں", auto:"خودکار دھڑکن", leaky:"رسنے والا والو",
+    rest:"آرام", ex:"ورزش",
+    plasma:"پلازما", rbc:"سرخ خلیہ", wbc:"سفید خلیہ", plat:"پلیٹلیٹ",
+    jPlasma:"مائع جو سب کچھ لے جاتا ہے", jRbc:"آکسیجن لے جاتا ہے", jWbc:"انفیکشن سے لڑتا ہے", jPlat:"خون جم نے میں مدد",
+    pickJob:"خلیہ دبائیں، پھر اس کا کام۔",
+    matchOk:"جوڑ بن گیا۔",
+    keyTitle:"کلید",
+    keyNote:"یہی شکلیں سلائیڈ پر ہیں۔ پلازما وہ مائع ہے جس میں یہ تیرتے ہیں۔",
+    nPlay:"چلائیں دبائیں۔ ایک رنگ پھیپھڑوں سے نکلتا ہے، دوسرا جسم سے۔ دو الٹ = دو حلقے۔",
+    nRA:"دایاں ایٹریئم — جسم سے کم آکسیجن خون آ رہا ہے۔",
+    nRV:"دایاں وینٹریکل — اب اس قطرے کو پھیپھڑوں کی طرف دھکے گا (پلمونری شریان: دل سے دور، پھر بھی کم آکسیجن)۔",
+    nLung:"پھیپھڑے — قطرہ آکسیجن بھرتا ہے۔ رنگ بدلتا ہے۔ اگلا پڑاؤ بایاں دل ہے، جسم نہیں۔",
+    nLA:"بایاں ایٹریئم — پھیپھڑوں سے زیادہ آکسیجن، پلمونری سیہرگ میں (دل کی طرف، آکسیجن بھرپور)۔",
+    nLV:"بایاں وینٹریکل — جسم کے لیے مضبوط پمپ، ابهرن کے راستے۔",
+    nBody:"جسم کے ٹشو — آکسیجن دی جا رہی ہے۔ رنگ واپس۔ اب دائیں دل کو لوٹنا ہے۔ یہ دوسرا حلقہ ہے۔",
+    nSept:"بھوری دیوار سیپٹم ہے۔ دائیں اور بائیں کا کوئی مشترکہ دروازہ نہیں۔",
+    nAtria:"پہلے ایٹریا: دب کر وینٹریکل بھرتے ہیں۔ اندر کے والو کھلے ہیں۔",
+    nVent:"پھر وینٹریکل: دبیں، خارجی والو کھلیں، داخلی بند ہوں تاکہ خون الٹا نہ بہے۔",
+    nLeak:"رسنے والا داخلی والو: کچھ خون ایٹریئم میں واپس۔ دل رکتا نہیں — ہر دھکے کا حصہ ضائع ہوتا ہے۔",
+    nWrong:"وینٹریکل خالی ہی دب گئے۔ پہلے بھریں — ایٹریا، پھر وینٹریکل۔",
+    nEx:"پٹھوں کو منٹ میں زیادہ آکسیجن چاہیے۔ دل کا جواب زیادہ دھڑکن ہے، نیا رنگ نہیں۔",
+    nRest:"آرام میں نبض سست، شریانوں کی دھڑکم ہلکی۔ رگیں دونوں حال میں زیادہ پرسکون رہتی ہیں۔",
+    nCell:"چار حصے، چار کام۔ سرخ خلیے بھیڑ ہیں؛ سفید اور پلیٹلیٹ جان بوجھ کر کم ہیں۔",
+    labPA:"پلمونری شریان · دور · کم O2",
+    labPV:"پلمونری سیہرگ · طرف · زیادہ O2",
+    labAo:"ابهرن · دور · زیادہ O2",
+    labVC:"وینا کیوا · طرف · کم O2",
+    dirRule:"شریان = دل سے دور۔ سیہرگ = دل کی طرف۔ آکسیجن کا رنگ الگ حقیقت ہے۔",
+    labBrain:"دماغ", labLiver:"جگر", labMuscle:"پٹھا",
+    labFromBody:"جسم سے", labToLungs:"پھیپھڑوں کو", labFromLungs:"پھیپھڑوں سے", labToBody:"جسم کو",
+    t1:"ایک پورا دوہرا چکر چلائیں اور پھیپھڑوں و جسم پر رنگ بدلتے دیکھیں۔",
+    h1:"دھڑکن شروع کریں۔ 'میں ہو گیا' نہیں — ایک پورا چکر کافی ہے۔",
+    p1:"دو الٹ، دو حلقے۔ دل دونوں سفر کا اسٹاپ ہے، ایک گزر نہیں۔",
+    t2:"ایک قطرہ ٹریس چالو کریں اور دائیں ایٹریئم سے گھر تک دیکھیں۔",
+    h2:"چمکتا قطرہ کہانی کہتا ہے۔ پھیپھڑے اور جسم دونوں کے ساتھ رہیں۔",
+    p2:"وہی قطرہ، دل پر دو حاضری۔ دوہری گردش ایک جملے میں۔",
+    t3:"پمپ منظر میں پہلے ایٹریا، پھر وینٹریکل، ایک بار دبائیں۔",
+    h3:"دو بٹن، یہی ترتیب۔ والو تب سمجھ آتے ہیں جب بھرنا فائرنگ سے پہلے۔",
+    p3:"دھڑکن جوڑا ہے: بھرو، پھر فائر۔ چار خانے، دو قدم۔",
+    t4:"پمپ چلتے رسنے والا والو چالو کریں اور خون الٹا بہتا دیکھیں۔",
+    h4:"کوئی غلطی کا پیغام نہیں — رساو ہی سبق ہے۔ الٹی چھینٹ دیکھو۔",
+    p4:"والو اسی الٹ کو روکنے ہیں۔ رساو دل نہیں روکتا؛ زور ضائع کرتا ہے۔",
+    t5:"آرام سے پوری ورزش تک سلائیڈر۔ BPM اور آکسیجن فی منٹ ساتھ بڑھیں۔",
+    h5:"سلائیڈر ورزش والے سرے پر رکھیں اور دونوں میٹر دیکھیں۔",
+    p5:"تیز گردش کام کرتے پٹھے کو زیادہ آکسیجن دیتی ہے بغیر خون کا کام بدلے.",
+    q1:"جسم کے ایک پورے سفر میں خون کا قطرہ دل سے کتنی بار گزرتا ہے؟",
+    q1a:"ایک بار — اندر، جسم کو باہر، ختم۔",
+    q1b:"دو بار — ایک پھیپھڑوں کو جا کر واپس، پھر جسم کو جا کر واپس (دوہری گردش)۔",
+    q1c:"چار بار، ہر خانے سے ایک، پھر ختم۔",
+    q1w:"پلمونری حلقہ، پھر سیسٹمک۔ دل دونوں کا اسٹیشن ہے — اسیے دوہری گردش کہتے ہیں۔",
+    q2:"صحت مند دل میں زیادہ اور کم آکسیجن والا خون مل جاتا ہے؟",
+    q2a:"ہاں — دل کے اندر آکسیجن بانٹی جاتی ہے۔",
+    q2b:"نہیں۔ سیپٹم ٹھوس دیوار ہے۔ دایاں کم آکسیجن؛ بایاں زیادہ۔",
+    q2c:"صرف وینٹریکل میں ملتے ہیں۔",
+    q2w:"اگر اس سیم میں قطرہ بیچ کی دیوار پار کرتا نظر آئے تو وہ غلطی ہے۔ زندگی میں وہ سیپٹم کا سوراخ ہوتا۔",
+    q3:"شریانوں اور سیہرگوں کے بارے میں کون سی بات ہمیشہ درست ہے؟",
+    q3a:"شریانوں میں ہمیشہ آکسیجن بھرا خون، سیہرگوں میں خالی۔",
+    q3b:"شریان دل سے دور، سیہرگ دل کی طرف۔ پلمونری شریان کم آکسیجن؛ پلمونری سیہرگ زیادہ۔",
+    q3c:"سیہرگیں وہ ہیں جن میں نبض ہوتی ہے۔",
+    q3w:"سمت، آکسیجن نہیں۔ پھیپھڑوں کی نلیاں وہ استثنا ہیں جو قاعدہ ثابت کرتی ہیں۔",
+    q4:"کیا چاروں خانے ایک ہی لمحے دبتے ہیں؟",
+    q4a:"ہاں — ایک سکوڑ ایک دھڑکن ہے۔",
+    q4b:"نہیں۔ پہلے دونوں ایٹریا دب کر وینٹریکل بھرتے ہیں؛ پھر دونوں وینٹریکل دب کر خون باہر بھیجتے ہیں۔",
+    q4c:"صرف بایاں دبتا ہے؛ دایاں خاموش ہے۔",
+    q4w:"دستی پمپ آزمائیں: ایٹریا، پھر وینٹریکل۔ الٹ ترتیب پر وینٹریکل خالی فائر ہوتے ہیں۔",
+    q5:"کیا سیہرگوں کا خون واقعی نیلا ہوتا ہے؟",
+    q5a:"ہاں — اسی لیے جلد کے نیچے نیلی دکھتی ہیں۔",
+    q5b:"نہیں۔ نیلا کم آکسیجن کا خاکہ ہے۔ حقیقی کم آکسیجن خون پھر بھی گہرا سرخ ہے۔",
+    q5c:"صرف پلمونری سیہرگیں نیلی؛ باقی سرخ۔",
+    q5w:"جلد اور روشنی سیہرگوں کو نیلا دکھاتی ہے۔ ہر موڈ کا لیجنڈ یہی خبردار کرتا ہے۔"
+  }
+};
+let LANG = "en";
+function T(k){ return (STRINGS[LANG]&&STRINGS[LANG][k]) || STRINGS.en[k] || k; }
+function el(id){ return document.getElementById(id); }
+function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+/* Waypoints: RA → RV → lungs (flip on) → over the roof → LA → LV → body (flip off) → under the floor → RA.
+   No point sits in the septum slab while inside the heart box. */
+const RAW = [
+  {x:392, y:198, id:"ra"},
+  {x:392, y:248, id:"avR"},
+  {x:378, y:310, id:"rv"},
+  {x:322, y:288, id:"rvOut"},
+  {x:278, y:152, id:"pa"},
+  {x:210, y:118, id:"pa2"},
+  {x:142, y:150, id:"lung"},
+  {x:146, y:208, id:"lungO2"},
+  {x:228, y:104, id:"pv"},
+  {x:510, y:100, id:"pvTop"},
+  {x:518, y:198, id:"la"},
+  {x:518, y:248, id:"avL"},
+  {x:528, y:314, id:"lv"},
+  {x:582, y:280, id:"lvOut"},
+  {x:618, y:140, id:"aorta"},
+  {x:698, y:96,  id:"arch"},
+  {x:772, y:172, id:"bodyArt"},
+  {x:780, y:318, id:"body"},
+  {x:702, y:420, id:"vein"},
+  {x:450, y:440, id:"ivc"},
+  {x:342, y:378, id:"ivc2"},
+  {x:392, y:198, id:"ra2"}
+];
+const PATH = [];
+const SEG = [];
+(function buildPath(){
+  let dist = [0];
+  for(let i=1;i<RAW.length;i++){
+    const a=RAW[i-1], b=RAW[i];
+    dist.push(dist[i-1] + Math.hypot(b.x-a.x, b.y-a.y));
+  }
+  const total = dist[dist.length-1];
+  for(let i=0;i<RAW.length;i++){
+    PATH.push({ x:RAW[i].x, y:RAW[i].y, id:RAW[i].id, s: dist[i]/total });
+  }
+})();
+function sOf(id){ return PATH.find(p=>p.id===id).s; }
+function pt(id){ return RAW.find(p=>p.id===id); }
+const S_LUNG = sOf("lungO2");
+const S_BODY = sOf("body");
+function oxyAt(s){
+  const u = ((s%1)+1)%1;
+  return (u >= S_LUNG && u < S_BODY) ? 1 : 0;
+}
+function atPath(s){
+  const u = ((s%1)+1)%1;
+  for(let i=1;i<PATH.length;i++){
+    if(u <= PATH[i].s || i===PATH.length-1){
+      const a=PATH[i-1], b=PATH[i];
+      const span = b.s-a.s || 1e-6;
+      const t = clamp((u-a.s)/span, 0, 1);
+      return { x:lerp(a.x,b.x,t), y:lerp(a.y,b.y,t), id: a.id, s:u };
+    }
+  }
+  return { x:PATH[0].x, y:PATH[0].y, id:"ra", s:0 };
+}
+function placeName(id){
+  if(id==="ra"||id==="ra2"||id==="ivc2") return T("nRA");
+  if(id==="avR"||id==="rv"||id==="rvOut"||id==="pa") return T("nRV");
+  if(id==="pa2"||id==="lung"||id==="lungO2") return T("nLung");
+  if(id==="pv"||id==="pvTop"||id==="la") return T("nLA");
+  if(id==="avL"||id==="lv"||id==="lvOut"||id==="aorta") return T("nLV");
+  return T("nBody");
+}
+function whereWord(id){
+  if(id==="ra"||id==="ra2"||id==="ivc2") return "RA";
+  if(id==="avR"||id==="rv") return "RV";
+  if(id==="pa"||id==="pa2") return "PA";
+  if(id==="lung"||id==="lungO2") return LANG==="en"?"lungs":"پھیپھڑے";
+  if(id==="pv"||id==="pvTop") return "PV";
+  if(id==="la") return "LA";
+  if(id==="avL"||id==="lv") return "LV";
+  if(id==="aorta"||id==="arch"||id==="bodyArt") return LANG==="en"?"aorta":"ابهرن";
+  return LANG==="en"?"body":"جسم";
+}
+
+function bpmNow(){ return Math.round(lerp(CONFIG.REST_BPM, CONFIG.EX_BPM, S.ex)); }
+function o2Min(){ return +(bpmNow() * CONFIG.STROKE / CONFIG.REST_BPM).toFixed(2); }
+
+function initial(){
+  const drops = [];
+  for(let i=0;i<CONFIG.N_DROPS;i++) drops.push({ s: i/CONFIG.N_DROPS, lung:false, body:false, laps:0 });
+  return {
+    mode: 1,
+    running: true,
+    speed: 1,
+    drops,
+    trace: false,
+    traceId: 0,
+    beatOn: true,
+    phase: 0,
+    autoPump: true,
+    leaky: false,
+    leakSpawned: false,
+    fill: 0,
+    manual: "waitAtria",
+    backflow: [],
+    ex: 0,
+    pulse: 0,
+    cells: makeCells(),
+    pick: null,
+    matched: {},
+    tSim: 0,
+    seen: { lap:false, flips:false, traced:false, seq:false, leak:false, ex:false },
+    guide: { i:0, done:false }
+  };
+}
+const MICRO_KEY = { x:708, y:48, w:176, h:188 };
+function makeCells(){
+  const out = [];
+  for(let i=0;i<28;i++) out.push({ kind:"rbc", x:80+Math.random()*580, y:80+Math.random()*360, vx:18+Math.random()*22, vy:(Math.random()-0.5)*8 });
+  for(let i=0;i<3;i++) out.push({ kind:"wbc", x:100+Math.random()*540, y:100+Math.random()*320, vx:10+Math.random()*10, vy:(Math.random()-0.5)*6 });
+  for(let i=0;i<10;i++) out.push({ kind:"plat", x:90+Math.random()*560, y:90+Math.random()*340, vx:20+Math.random()*24, vy:(Math.random()-0.5)*10 });
+  return out;
+}
+let S = initial();
+let dim = false;
+
+const W = 900, H = 500;
+const canvas = el("board");
+const ctx = canvas.getContext("2d");
+const gcv = el("tGraphCvs");
+const gctx = gcv.getContext("2d");
+let cssW=900, cssH=500;
+function dpr(){ return Math.min(2, window.devicePixelRatio||1); }
+function fitBoard(){
+  const wrap = el("stageInner");
+  const w = Math.max(280, wrap.clientWidth);
+  const h = Math.max(300, Math.min(540, Math.round(w * H/W)));
+  cssW=w; cssH=h;
+  const d=dpr();
+  canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+}
+
+function crossesSeptum(x,y){
+  return x>HEART.sx0 && x<HEART.sx1 && y>HEART.top && y<HEART.bot;
+}
+function stepDrops(dt){
+  /* Speed lives in the rAF step(dt*S.speed) call — do not multiply again. */
+  const v = (1/CONFIG.LOOP_S) * lerp(1, 2.2, S.ex);
+  S.drops.forEach((d,i)=>{
+    let remain = v*dt, s = d.s;
+    while(remain > 1e-9){
+      const toEnd = Math.max(1e-9, 1 - s);
+      const take = Math.min(remain, toEnd);
+      const s1 = s + take;
+      if(s < S_LUNG && s1 >= S_LUNG) d.lung = true;
+      if(s < S_BODY && s1 >= S_BODY) d.body = true;
+      remain -= take;
+      if(s1 >= 1 - 1e-9){
+        d.laps++;
+        if(d.lung && d.body) S.seen.flips = true;
+        if(d.laps>=1 && d.lung && d.body) S.seen.lap = true;
+        if(S.trace && i===S.traceId && d.lung && d.body) S.seen.traced = true;
+        d.lung=false; d.body=false;
+        s = 0;
+      } else s = s1;
+    }
+    d.s = s;
+  });
+}
+function stepPump(dt){
+  const bps = bpmNow()/60;
+  if(S.autoPump && S.mode!==4){
+    S.phase = (S.phase + bps*dt) % 1;
+    S.pulse = Math.sin(S.phase * Math.PI*2);
+    const inWin = S.leaky && S.phase>0.18 && S.phase<0.42;
+    if(inWin && !S.leakSpawned){
+      for(let i=0;i<4;i++){
+        S.backflow.push({ x:534+Math.random()*8, y:248, vy:-50-Math.random()*40, vx:(Math.random()-0.5)*24, life:0.55 });
+      }
+      S.leakSpawned = true;
+      if(S.running) S.seen.leak = true;
+    }
+    if(!inWin) S.leakSpawned = false;
+  }
+  S.backflow.forEach(p=>{ p.x += (p.vx||0)*dt; p.y += p.vy*dt; p.life -= dt; });
+  S.backflow = S.backflow.filter(p=> p.life>0);
+}
+function stepCells(dt){
+  S.cells.forEach(c=>{
+    c.x += c.vx*dt;
+    c.y += c.vy*dt;
+    if(c.x>MICRO_KEY.x-16) c.x = 40;
+    if(c.y<50) c.vy = Math.abs(c.vy);
+    if(c.y>450) c.vy = -Math.abs(c.vy);
+  });
+}
+function step(dt){
+  S.tSim += dt;
+  if(S.mode===1 || S.mode===3) stepDrops(dt);
+  if(S.mode===2 || S.mode===3) stepPump(dt);
+  if(S.mode===4) stepCells(dt);
+}
+
+function label(text,x,y,opt){
+  opt=opt||{};
+  ctx.font = (opt.bold?"700 ":"600 ")+(opt.size||13)+"px "+css("--font");
+  ctx.fillStyle = opt.fill || css("--text");
+  ctx.textAlign = opt.align || "center";
+  ctx.textBaseline = opt.base || "middle";
+  ctx.fillText(text, x, y);
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function oxCol(o){ return o ? css("--ox") : css("--deox"); }
+function ellipse(x,y,rx,ry){ ctx.beginPath(); ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2); }
+function chevron(x,y,ang,col){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang);
+  ctx.fillStyle=col;
+  ctx.beginPath(); ctx.moveTo(10,0); ctx.lineTo(-7,7); ctx.lineTo(-3,0); ctx.lineTo(-7,-7); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function heartOutline(){
+  ctx.beginPath();
+  ctx.moveTo(-18, -96);
+  ctx.bezierCurveTo(-72, -118, -120, -88, -110, -16);
+  ctx.bezierCurveTo(-104, 42, -90, 90, -22, 120);
+  ctx.bezierCurveTo(12, 134, 52, 118, 82, 88);
+  ctx.bezierCurveTo(120, 52, 124, 8, 108, -28);
+  ctx.bezierCurveTo(116, -92, 48, -120, -18, -96);
+  ctx.closePath();
+}
+function lungLobe(cx, cy, side){
+  const s = side;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy-92);
+  ctx.bezierCurveTo(cx+s*18, cy-110, cx+s*64, cy-96, cx+s*72, cy-36);
+  ctx.bezierCurveTo(cx+s*84, cy+12, cx+s*72, cy+72, cx+s*40, cy+98);
+  ctx.bezierCurveTo(cx+s*10, cy+114, cx-s*10, cy+86, cx, cy+70);
+  ctx.bezierCurveTo(cx-s*8, cy+18, cx-s*12, cy-40, cx, cy-92);
+  ctx.closePath();
+}
+
+function drawHeart(cx, cy, sc, phase){
+  const atr = (phase>=0 && phase<0.16) ? 1 : 0;
+  const ven = (phase>=0.16 && phase<0.45) ? 1 : 0;
+  ctx.save();
+  ctx.translate(cx, cy); ctx.scale(sc, sc); ctx.translate(0, ven*3);
+  ctx.save(); ctx.translate(5, 9); heartOutline();
+  ctx.fillStyle="rgba(20,32,42,.14)"; ctx.fill(); ctx.restore();
+  heartOutline(); ctx.fillStyle=css("--panel"); ctx.fill();
+  ctx.strokeStyle=css("--text"); ctx.lineWidth=2.4; ctx.stroke();
+  const raY=-62+atr*7, rvY=28+ven*10, laY=-62+atr*7, lvY=28+ven*10;
+  ctx.save();
+  heartOutline(); ctx.clip();
+  ctx.globalAlpha=0.42;
+  ctx.fillStyle=css("--deox");
+  roundRect(-102, raY-36, 90, 68, 26); ctx.fill();
+  roundRect(-108, rvY-34, 98, 98, 34); ctx.fill();
+  ctx.fillStyle=css("--ox");
+  roundRect(12, laY-36, 90, 68, 26); ctx.fill();
+  roundRect(10, lvY-34, 100, 102, 36); ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.fillStyle=css("--septum");
+  roundRect(-10, -104, 20, 232, 7); ctx.fill();
+  ctx.strokeStyle=css("--text"); ctx.lineWidth=1.2;
+  roundRect(-10, -104, 20, 232, 7); ctx.stroke();
+  ctx.strokeStyle=css("--text"); ctx.lineWidth=1.7; ctx.globalAlpha=0.65;
+  roundRect(-102, raY-36, 90, 68, 26); ctx.stroke();
+  roundRect(-108, rvY-34, 98, 98, 34); ctx.stroke();
+  roundRect(12, laY-36, 90, 68, 26); ctx.stroke();
+  roundRect(10, lvY-34, 100, 102, 36); ctx.stroke();
+  ctx.globalAlpha=1;
+  ctx.strokeStyle=css("--septum"); ctx.globalAlpha=0.4; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(-102,-8); ctx.lineTo(-12,-8); ctx.moveTo(12,-8); ctx.lineTo(110,-8); ctx.stroke();
+  ctx.globalAlpha=1;
+  drawValve(-54, -8, atr && !ven);
+  drawValve(54, -8, (atr && !ven) || (S.leaky && ven));
+  drawValve(-54, 78, ven);
+  drawValve(54, 78, ven);
+  ctx.restore();
+  ctx.lineCap="round"; ctx.lineWidth=10;
+  ctx.strokeStyle=css("--ox");
+  ctx.beginPath(); ctx.moveTo(58,-72); ctx.quadraticCurveTo(58,-120, 96,-124); ctx.stroke();
+  ctx.strokeStyle=css("--deox");
+  ctx.beginPath(); ctx.moveTo(-58,-72); ctx.quadraticCurveTo(-58,-120, -98,-122); ctx.stroke();
+  ctx.restore();
+}
+function drawValve(x,y,open){
+  ctx.save(); ctx.translate(x,y);
+  ctx.strokeStyle = S.leaky && x>0 && !open ? css("--crit") : css("--text");
+  ctx.lineWidth=3; ctx.lineCap="round"; ctx.lineJoin="round";
+  ctx.beginPath(); ctx.moveTo(-13,0); ctx.lineTo(0, open?17:5); ctx.lineTo(13,0); ctx.stroke();
+  if(open){
+    ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(-11,1); ctx.quadraticCurveTo(-4,12, 0,16); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(11,1); ctx.quadraticCurveTo(4,12, 0,16); ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawLungs(faint){
+  const A = faint ? 0.22 : 1;
+  ctx.save();
+  ctx.globalAlpha=0.11*A; ctx.fillStyle=css("--lung");
+  ellipse(150, 188, 118, 124); ctx.fill(); ctx.globalAlpha=A;
+  ctx.fillStyle=css("--text-3");
+  roundRect(143, 56, 14, 50, 6); ctx.fill();
+  ctx.strokeStyle=css("--text-2"); ctx.lineWidth=3; ctx.lineCap="round";
+  ctx.beginPath(); ctx.moveTo(150,104); ctx.quadraticCurveTo(150,124, 116,140);
+  ctx.moveTo(150,104); ctx.quadraticCurveTo(150,124, 184,140); ctx.stroke();
+  [-1,1].forEach(side=>{
+    const cx=150+side*54;
+    lungLobe(cx, 190, side);
+    ctx.fillStyle=css("--lung"); ctx.globalAlpha=0.58*A; ctx.fill(); ctx.globalAlpha=A;
+    ctx.strokeStyle=css("--deox"); ctx.lineWidth=2.2; ctx.stroke();
+    ctx.save(); lungLobe(cx, 190, side); ctx.clip();
+    ctx.fillStyle=css("--ox"); ctx.globalAlpha=0.14*A;
+    ellipse(cx+side*10, 214, 34, 48); ctx.fill();
+    ctx.fillStyle=css("--deox"); ctx.globalAlpha=0.22*A;
+    for(let i=0;i<20;i++){
+      const a=i*2.399, r=Math.sqrt((i+0.35)/20);
+      ctx.beginPath(); ctx.arc(cx+Math.cos(a)*30*r, 192+Math.sin(a)*44*r, 3.1, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  });
+  if(!faint) label(LANG==="en"?"LUNGS":"پھیپھڑے", 150, 48, { size:14, bold:true, fill:css("--deox") });
+  ctx.restore();
+}
+function drawPerson(faint){
+  const A = faint ? 0.22 : 1;
+  const x=768;
+  ctx.save();
+  ctx.globalAlpha=0.09*A; ctx.fillStyle=css("--ox");
+  ellipse(x, 248, 96, 158); ctx.fill(); ctx.globalAlpha=A;
+  ctx.fillStyle=css("--skin");
+  roundRect(x-30, 320, 18, 94, 9); ctx.fill();
+  roundRect(x+12, 320, 18, 94, 9); ctx.fill();
+  roundRect(x-66, 186, 16, 90, 8); ctx.fill();
+  roundRect(x+50, 186, 16, 90, 8); ctx.fill();
+  roundRect(x-44, 166, 88, 164, 30); ctx.fill();
+  ctx.strokeStyle=css("--ox"); ctx.lineWidth=2;
+  roundRect(x-44, 166, 88, 164, 30); ctx.stroke();
+  roundRect(x-11, 140, 22, 28, 6); ctx.fillStyle=css("--skin"); ctx.fill();
+  ctx.beginPath(); ctx.arc(x, 116, 27, 0, Math.PI*2);
+  ctx.fillStyle=css("--skin"); ctx.fill();
+  ctx.strokeStyle=css("--ox"); ctx.stroke();
+  ctx.fillStyle=css("--deox"); ctx.globalAlpha=0.4*A;
+  ellipse(x, 112, 17, 13); ctx.fill(); ctx.globalAlpha=A;
+  if(!faint) label(T("labBrain"), x, 86, { size:10, fill:css("--deox") });
+  ctx.fillStyle=css("--liver"); ctx.globalAlpha=0.78*A;
+  ctx.beginPath();
+  ctx.moveTo(x-24, 226);
+  ctx.bezierCurveTo(x-30, 248, x-6, 270, x+10, 258);
+  ctx.bezierCurveTo(x+24, 248, x+16, 226, x-6, 220);
+  ctx.closePath(); ctx.fill(); ctx.globalAlpha=A;
+  if(!faint) label(T("labLiver"), x-2, 244, { size:10, fill:css("--text") });
+  ctx.strokeStyle=css("--ox"); ctx.globalAlpha=0.4*A; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.arc(x+6, 288, 15, 0.15, Math.PI*1.65); ctx.stroke(); ctx.globalAlpha=A;
+  ctx.fillStyle=css("--muscle"); ctx.globalAlpha=0.6*A;
+  roundRect(x+14, 342, 14, 38, 6); ctx.fill(); ctx.globalAlpha=A;
+  if(!faint){
+    label(T("labMuscle"), x+36, 360, { size:10, fill:css("--muscle"), align:"left" });
+    label(LANG==="en"?"BODY":"جسم", x, 48, { size:14, bold:true, fill:css("--ox") });
+  }
+  ctx.restore();
+}
+function insideHeartBox(x,y){
+  return x>HEART.x-HEART.w/2+6 && x<HEART.x+HEART.w/2-6 && y>HEART.top+6 && y<HEART.bot-6;
+}
+function drawTubes(){
+  ctx.lineCap="round"; ctx.lineJoin="round";
+  for(let i=1;i<PATH.length;i++){
+    const a=PATH[i-1], b=PATH[i];
+    if(insideHeartBox(a.x,a.y) && insideHeartBox(b.x,b.y)) continue;
+    const col=oxCol(oxyAt((a.s+b.s)/2));
+    ctx.strokeStyle=col;
+    ctx.globalAlpha=0.16; ctx.lineWidth=22;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    ctx.globalAlpha=0.5; ctx.lineWidth=12; ctx.stroke();
+    ctx.globalAlpha=1; ctx.lineWidth=3.4; ctx.stroke();
+  }
+}
+
+function drawLoop(){
+  ctx.fillStyle=css("--board"); ctx.fillRect(0,0,W,H);
+  ctx.save();
+  ctx.globalAlpha=0.08; ctx.fillStyle=css("--deox");
+  ellipse(176, 198, 168, 152); ctx.fill();
+  ctx.fillStyle=css("--ox");
+  ellipse(742, 250, 156, 172); ctx.fill();
+  ctx.restore();
+  drawLungs();
+  drawPerson();
+  drawTubes();
+  const ph = S.mode===3 ? S.phase : (S.beatOn ? S.phase : 0);
+  drawHeart(450, 250, 1, S.mode===1 ? (S.beatOn? (S.tSim*bpmNow()/60)%1 : 0) : ph);
+  label(LANG==="en"?"RIGHT":"دایاں", 288, 155, { size:12, fill:css("--deox"), bold:true });
+  label(LANG==="en"?"LEFT":"بایاں", 612, 155, { size:12, fill:css("--ox"), bold:true });
+  label("septum", 450, 392, { size:11, fill:css("--septum") });
+  label(T("labPA"), 248, 188, { size:11, fill:css("--deox"), bold:true });
+  label(T("labPV"), 355, 72, { size:11, fill:css("--ox"), bold:true });
+  label(T("labAo"), 656, 118, { size:11, fill:css("--ox"), bold:true });
+  label(T("labVC"), 530, 462, { size:11, fill:css("--deox"), bold:true });
+  chevron(244, 136, Math.atan2(118-152, 210-278), css("--deox"));
+  chevron(370, 102, 0, css("--ox"));
+  chevron(658, 118, Math.atan2(96-140, 698-618), css("--ox"));
+  chevron(572, 430, Math.atan2(440-420, 450-702), css("--deox"));
+  if(S.mode===3){
+    const w = 11 + 7*Math.max(0, S.pulse)*S.ex;
+    const ao=pt("aorta"), ar=pt("arch"), ba=pt("bodyArt");
+    ctx.strokeStyle=css("--ox"); ctx.globalAlpha=0.55; ctx.lineWidth=w; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(ao.x,ao.y); ctx.lineTo(ar.x,ar.y); ctx.lineTo(ba.x,ba.y); ctx.stroke();
+    ctx.globalAlpha=1;
+    const bd=pt("body"), vn=pt("vein"), iv=pt("ivc");
+    ctx.strokeStyle=css("--deox"); ctx.lineWidth=8;
+    ctx.beginPath(); ctx.moveTo(bd.x,bd.y); ctx.lineTo(vn.x,vn.y); ctx.lineTo(iv.x,iv.y); ctx.stroke();
+  }
+  S.drops.forEach((d,i)=>{
+    const p=atPath(d.s);
+    if(crossesSeptum(p.x,p.y)) return;
+    const tr=S.trace && i===S.traceId;
+    ctx.beginPath(); ctx.arc(p.x, p.y, tr?9:5.6, 0, Math.PI*2);
+    ctx.fillStyle=oxCol(oxyAt(d.s)); ctx.fill();
+    if(tr){ ctx.strokeStyle=css("--text"); ctx.lineWidth=2; ctx.stroke(); }
+  });
+}
+
+function drawPump(){
+  ctx.fillStyle=css("--board"); ctx.fillRect(0,0,W,H);
+  drawLungs(true); drawPerson(true);
+  const phase = S.autoPump ? S.phase : (S.manual==="atria"?0.08 : S.manual==="vent"?0.28 : 0.7);
+  drawHeart(450, 250, 1.55, phase);
+  label(T("nSept").split(".")[0], 450, 28, { size:14, fill:css("--septum"), bold:true });
+  label("RA", 292, 158, { size:16, bold:true, fill:css("--deox") });
+  label("RV", 292, 348, { size:16, bold:true, fill:css("--deox") });
+  label("LA", 608, 158, { size:16, bold:true, fill:css("--ox") });
+  label("LV", 608, 348, { size:16, bold:true, fill:css("--ox") });
+  label(T("labFromBody"), 210, 430, { size:12, fill:css("--deox") });
+  label(T("labToLungs"), 210, 70, { size:12, fill:css("--deox") });
+  label(T("labFromLungs"), 690, 70, { size:12, fill:css("--ox") });
+  label(T("labToBody"), 690, 430, { size:12, fill:css("--ox") });
+  S.backflow.forEach(p=>{
+    ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
+    ctx.fillStyle=css("--ox"); ctx.globalAlpha=0.7; ctx.fill(); ctx.globalAlpha=1;
+  });
+  if(S.leaky) label(T("nLeak"), 450, 474, { size:13, fill:css("--crit") });
+}
+
+function drawMicro(){
+  ctx.fillStyle=css("--plasma"); ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=css("--text-3"); ctx.globalAlpha=0.2;
+  ctx.fillRect(0,0,W,40); ctx.fillRect(0,H-40,W,40); ctx.globalAlpha=1;
+  ctx.strokeStyle=css("--text-2"); ctx.lineWidth=8; ctx.globalAlpha=0.25;
+  ctx.beginPath(); ctx.moveTo(0,36); ctx.lineTo(W,36); ctx.moveTo(0,H-36); ctx.lineTo(W,H-36); ctx.stroke();
+  ctx.globalAlpha=1;
+  S.cells.forEach(c=>{
+    if(c.kind==="rbc"){
+      ctx.beginPath(); ctx.ellipse(c.x,c.y,12,7.5,0,0,Math.PI*2);
+      ctx.fillStyle=css("--ox"); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(c.x,c.y,6,3.2,0,0,Math.PI*2);
+      ctx.fillStyle="rgba(255,255,255,0.28)"; ctx.fill();
+    } else if(c.kind==="wbc"){
+      ctx.beginPath();
+      for(let i=0;i<8;i++){
+        const a=i*Math.PI/4, rr=16*(i%2?0.82:1.16);
+        const px=c.x+Math.cos(a)*rr, py=c.y+Math.sin(a)*rr;
+        if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+      }
+      ctx.closePath();
+      ctx.fillStyle=css("--panel"); ctx.fill();
+      ctx.strokeStyle=css("--text-2"); ctx.lineWidth=2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(c.x-3,c.y,7,0,Math.PI*2);
+      ctx.fillStyle=css("--text-3"); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.ellipse(c.x,c.y,4,2.6,0.4,0,Math.PI*2);
+      ctx.fillStyle=css("--warn"); ctx.fill();
+    }
+    if(S.pick===c.kind){
+      ctx.strokeStyle=css("--accent"); ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(c.x,c.y, c.kind==="wbc"?22:15, 0, Math.PI*2); ctx.stroke();
+    }
+  });
+  label(T("nCell"), 20, 22, { size:13, align:"left", fill:css("--text") });
+  drawMicroKey();
+}
+function drawKeyIcon(x, y, kind){
+  if(kind==="plasma"){
+    ctx.fillStyle=css("--plasma");
+    roundRect(x-12, y-8, 24, 16, 3); ctx.fill();
+    ctx.strokeStyle=css("--panel-border"); ctx.lineWidth=1;
+    roundRect(x-12, y-8, 24, 16, 3); ctx.stroke();
+  } else if(kind==="rbc"){
+    ctx.beginPath(); ctx.ellipse(x, y, 12, 7.5, 0, 0, Math.PI*2);
+    ctx.fillStyle=css("--ox"); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x, y, 5, 2.8, 0, 0, Math.PI*2);
+    ctx.fillStyle="rgba(255,255,255,0.28)"; ctx.fill();
+  } else if(kind==="wbc"){
+    ctx.beginPath();
+    for(let i=0;i<8;i++){
+      const a=i*Math.PI/4, rr=11*(i%2?0.82:1.16);
+      const px=x+Math.cos(a)*rr, py=y+Math.sin(a)*rr;
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.fillStyle=css("--panel"); ctx.fill();
+    ctx.strokeStyle=css("--text-2"); ctx.lineWidth=1.6; ctx.stroke();
+    ctx.beginPath(); ctx.arc(x-2, y, 4.5, 0, Math.PI*2);
+    ctx.fillStyle=css("--text-3"); ctx.fill();
+  } else {
+    ctx.beginPath(); ctx.ellipse(x, y, 5, 3.2, 0.4, 0, Math.PI*2);
+    ctx.fillStyle=css("--warn"); ctx.fill();
+  }
+}
+function drawMicroKey(){
+  const K=MICRO_KEY;
+  const rows=["plasma","rbc","wbc","plat"];
+  ctx.save();
+  ctx.fillStyle=css("--panel");
+  ctx.globalAlpha=0.96;
+  roundRect(K.x, K.y, K.w, K.h, 10); ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.strokeStyle=css("--panel-border"); ctx.lineWidth=1.5;
+  roundRect(K.x, K.y, K.w, K.h, 10); ctx.stroke();
+  label(T("keyTitle"), K.x+14, K.y+18, { size:13, bold:true, align:"left", fill:css("--text") });
+  rows.forEach((k,i)=>{
+    const cy=K.y+48+i*34;
+    if(S.pick===k){
+      ctx.fillStyle=css("--panel-2");
+      roundRect(K.x+8, cy-15, K.w-16, 30, 6); ctx.fill();
+      ctx.strokeStyle=css("--accent"); ctx.lineWidth=2;
+      roundRect(K.x+8, cy-15, K.w-16, 30, 6); ctx.stroke();
+    }
+    drawKeyIcon(K.x+26, cy, k);
+    label(T(k), K.x+46, cy, { size:13, bold:true, align:"left", fill:css("--text") });
+  });
+  ctx.restore();
+}
+function microKeyHit(x,y){
+  const K=MICRO_KEY;
+  if(x<K.x || x>K.x+K.w || y<K.y || y>K.y+K.h) return null;
+  const i=Math.floor((y-(K.y+31))/34);
+  return (i>=0 && i<4) ? ["plasma","rbc","wbc","plat"][i] : "panel";
+}
+
+function draw(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const d=dpr();
+  ctx.setTransform(d*cssW/W, 0, 0, d*cssH/H, 0, 0);
+  if(S.mode===2) drawPump();
+  else if(S.mode===4) drawMicro();
+  else drawLoop();
+}
+
+function drawGraph(){
+  const d=dpr(), w=gcv.clientWidth||300, h=176;
+  if(gcv.width!==Math.round(w*d)){ gcv.width=Math.round(w*d); gcv.height=Math.round(h*d); }
+  gctx.setTransform(d,0,0,d,0,0);
+  gctx.clearRect(0,0,w,h);
+  gctx.fillStyle = css("--panel-2"); gctx.fillRect(0,0,w,h);
+  const padL=36, padB=22, padT=10, padR=10;
+  const pw=w-padL-padR, ph=h-padT-padB;
+  gctx.strokeStyle=css("--hairline"); gctx.lineWidth=1;
+  gctx.beginPath(); gctx.moveTo(padL,padT); gctx.lineTo(padL,padT+ph); gctx.lineTo(padL+pw,padT+ph); gctx.stroke();
+  if(S.mode===3){
+    gctx.beginPath(); gctx.strokeStyle=css("--accent"); gctx.lineWidth=2;
+    for(let i=0;i<=40;i++){
+      const x=i/40;
+      const bpm=lerp(CONFIG.REST_BPM, CONFIG.EX_BPM, x);
+      const ox=bpm/CONFIG.EX_BPM;
+      const X=padL+x*pw, Y=padT+ph-ox*ph;
+      if(i===0) gctx.moveTo(X,Y); else gctx.lineTo(X,Y);
+    }
+    gctx.stroke();
+    const u=S.ex;
+    gctx.beginPath(); gctx.fillStyle=css("--ox");
+    gctx.arc(padL+u*pw, padT+ph-(bpmNow()/CONFIG.EX_BPM)*ph, 5, 0, Math.PI*2); gctx.fill();
+  } else {
+    gctx.beginPath(); gctx.strokeStyle=css("--ox"); gctx.lineWidth=2;
+    for(let i=0;i<=60;i++){
+      const s=i/60;
+      const o=oxyAt(s);
+      const X=padL+s*pw, Y=padT+ph-(0.15+0.7*o)*ph;
+      if(i===0) gctx.moveTo(X,Y); else gctx.lineTo(X,Y);
+    }
+    gctx.stroke();
+    const d0 = S.drops[S.trace ? S.traceId : 0];
+    const p = atPath(d0.s);
+    gctx.beginPath(); gctx.fillStyle=oxCol(oxyAt(d0.s));
+    gctx.arc(padL+d0.s*pw, padT+ph-(0.15+0.7*oxyAt(d0.s))*ph, 5, 0, Math.PI*2); gctx.fill();
+    gctx.fillStyle=css("--text-3"); gctx.font="11px "+css("--font"); gctx.textAlign="center";
+    gctx.fillText("lungs", padL+S_LUNG*pw, padT+ph+16);
+    gctx.fillText("body", padL+S_BODY*pw, padT+ph+16);
+  }
+}
+
+function traced(){ return S.drops[S.trace ? S.traceId : 0]; }
+function sync(){
+  const d = traced();
+  const p = atPath(d.s);
+  const o = oxyAt(d.s);
+  el("kA").textContent=T("where"); el("kB").textContent=T("oxygen");
+  el("kC").textContent=T("bpm"); el("kD").textContent=T("o2min");
+  el("rA").textContent = S.mode===4 ? (S.pick ? T(S.pick) : "—") : whereWord(p.id);
+  el("rB").textContent = S.mode===4 ? Object.keys(S.matched).length+"/4" : (o?T("high"):T("low"));
+  el("rC").textContent = (S.mode===2 || S.mode===3) ? String(bpmNow()) : "—";
+  el("rD").textContent = S.mode===3 ? o2Min()+"×" : "—";
+  el("narr").textContent = narrFor(p);
+  el("tGraph").textContent = S.mode===3 ? T("graph3") : T("graph");
+  el("tGraphNote").textContent = S.mode===3 ? T("graphNote3") : T("graphNote");
+  syncLegend();
+  drawGraph();
+  checkGuide();
+}
+function syncLegend(){
+  const cells = S.mode===4;
+  el("legendOx").hidden = cells;
+  el("legendCells").hidden = !cells;
+  el("graphPanel").hidden = cells;
+  el("legNote").textContent = cells ? T("keyNote") : T("q5w");
+  if(!cells) return;
+  el("tCellKey").textContent = T("keyTitle");
+  el("nmPlasma").textContent = T("plasma"); el("jbPlasma").textContent = T("jPlasma");
+  el("nmRbc").textContent = T("rbc"); el("jbRbc").textContent = T("jRbc");
+  el("nmWbc").textContent = T("wbc"); el("jbWbc").textContent = T("jWbc");
+  el("nmPlat").textContent = T("plat"); el("jbPlat").textContent = T("jPlat");
+  document.querySelectorAll("#legendCells .cell-key__row").forEach(row=>{
+    row.classList.toggle("on", S.pick===row.dataset.k);
+  });
+}
+function narrFor(p){
+  if(S.mode===4) return T("nCell");
+  if(S.mode===2){
+    if(S.leaky) return T("nLeak");
+    if(S.manual==="wrong") return T("nWrong");
+    if(!S.autoPump && S.manual==="atria") return T("nAtria");
+    if(!S.autoPump && S.manual==="vent") return T("nVent");
+    return T("nAtria");
+  }
+  if(S.mode===3) return S.ex>0.6 ? T("nEx") : T("nRest");
+  if(!S.beatOn && !S.running) return T("nPlay");
+  return placeName(p.id);
+}
+
+function setMode(m){
+  S.mode=m;
+  if(m!==4) S.pick=null;
+  buildModeTray(); buildOpts(); sync();
+}
+function buildModeTray(){
+  const host=el("modeTray"); host.innerHTML="";
+  const seg=document.createElement("div"); seg.className="seg";
+  [[1,"m1"],[2,"m2"],[3,"m3"],[4,"m4"]].forEach(([m,k])=>{
+    const b=document.createElement("button"); b.type="button";
+    b.textContent=T(k); b.setAttribute("aria-pressed", String(S.mode===m));
+    b.addEventListener("click", ()=>setMode(m));
+    seg.appendChild(b);
+  });
+  host.appendChild(seg);
+}
+function togBtn(label, pressed, fn){
+  const b=document.createElement("button"); b.type="button"; b.className="btn btn--ghost btn--sm";
+  b.textContent=label; b.setAttribute("aria-pressed", String(pressed));
+  b.addEventListener("click", fn); return b;
+}
+function squeezeAtria(){
+  S.autoPump=false;
+  if(S.manual==="waitAtria" || S.manual==="vent"){
+    S.manual="atria"; S.phase=0.08;
+  }
+  buildOpts(); sync();
+}
+function squeezeVent(){
+  S.autoPump=false;
+  if(S.manual==="atria"){ S.manual="vent"; S.phase=0.28; S.seen.seq=true; }
+  else { S.manual="wrong"; S.phase=0.28; }
+  buildOpts(); sync();
+}
+function buildOpts(){
+  const host=el("modeOpts"); host.innerHTML="";
+  if(S.mode===1){
+    const row=document.createElement("div"); row.className="row";
+    row.appendChild(togBtn(T("startBeat"), S.beatOn && S.running, ()=>{
+      S.beatOn=true; setRunning(true); buildOpts(); sync();
+    }));
+    row.appendChild(togBtn(S.trace?T("tracingOn"):T("tracing"), S.trace, ()=>{
+      S.trace=!S.trace; if(S.trace){ S.traceId=0; S.drops[0].s=0; S.drops[0].laps=0; S.drops[0].lung=false; S.drops[0].body=false; }
+      buildOpts(); sync();
+    }));
+    host.appendChild(row);
+  } else if(S.mode===2){
+    const row=document.createElement("div"); row.className="row";
+    const a=document.createElement("button"); a.type="button"; a.className="btn"; a.textContent=T("atria");
+    a.addEventListener("click", squeezeAtria);
+    const v=document.createElement("button"); v.type="button"; v.className="btn"; v.textContent=T("vent");
+    v.addEventListener("click", squeezeVent);
+    row.appendChild(a); row.appendChild(v);
+    row.appendChild(togBtn(T("auto"), S.autoPump, ()=>{ S.autoPump=!S.autoPump; S.manual="waitAtria"; buildOpts(); sync(); }));
+    row.appendChild(togBtn(T("leaky"), S.leaky, ()=>{
+      S.leaky=!S.leaky;
+      if(S.leaky && S.autoPump && S.running) S.seen.leak=true;
+      buildOpts(); sync();
+    }));
+    host.appendChild(row);
+  } else if(S.mode===3){
+    const r=document.createElement("div"); r.className="row";
+    const lab=document.createElement("label"); lab.textContent=T("rest")+" → "+T("ex");
+    const sl=document.createElement("input"); sl.type="range"; sl.min="0"; sl.max="1"; sl.step="0.01"; sl.value=String(S.ex);
+    sl.setAttribute("aria-label", T("ex"));
+    const v=document.createElement("span"); v.className="val"; v.textContent=bpmNow()+" BPM";
+    sl.addEventListener("input", ()=>{
+      S.ex=+sl.value;
+      if(S.ex>0.92) S.seen.ex=true;
+      v.textContent=bpmNow()+" BPM";
+      sync();
+    });
+    r.appendChild(lab); r.appendChild(sl); r.appendChild(v);
+    host.appendChild(r);
+  } else {
+    const hint=document.createElement("p"); hint.className="note"; hint.textContent=T("pickJob"); hint.style.margin="0 0 8px";
+    host.appendChild(hint);
+    const grid=document.createElement("div"); grid.className="match";
+    [["plasma","jPlasma"],["rbc","jRbc"],["wbc","jWbc"],["plat","jPlat"]].forEach(([k,jk])=>{
+      const b=document.createElement("button"); b.type="button"; b.className="btn btn--ghost";
+      b.textContent = S.matched[k] ? T(k)+" ✓" : T(jk);
+      b.disabled = !!S.matched[k];
+      b.addEventListener("click", ()=>{
+        if(S.pick===k){ S.matched[k]=true; S.pick=null; }
+        else S.pick=null; /* wrong job: no dialog, just try again */
+        buildOpts(); sync();
+      });
+      grid.appendChild(b);
+    });
+    host.appendChild(grid);
+  }
+}
+
+canvas.addEventListener("pointerdown", e=>{
+  const r=canvas.getBoundingClientRect();
+  const x=(e.clientX-r.left)*W/r.width, y=(e.clientY-r.top)*H/r.height;
+  if(S.mode===2){
+    if(y<250) squeezeAtria(); else squeezeVent();
+    return;
+  }
+  if(S.mode!==4) return;
+  const keyHit = microKeyHit(x,y);
+  if(keyHit){
+    if(keyHit!=="panel"){ S.pick=keyHit; buildOpts(); sync(); }
+    return;
+  }
+  let hit=null, best=30;
+  S.cells.forEach(c=>{
+    const d=Math.hypot(c.x-x,c.y-y);
+    const rad = c.kind==="wbc"?20:c.kind==="plat"?8:14;
+    if(d<rad && d<best){ best=d; hit=c.kind; }
+  });
+  if(hit){ S.pick=hit; buildOpts(); sync(); }
+  else { S.pick="plasma"; buildOpts(); sync(); }
+});
+el("legendCells").addEventListener("click", e=>{
+  const row=e.target.closest(".cell-key__row");
+  if(!row || S.mode!==4) return;
+  S.pick=row.dataset.k;
+  buildOpts(); sync();
+});
+canvas.addEventListener("keydown", e=>{
+  if(S.mode!==2) return;
+  if(e.key==="a"||e.key==="A"){ e.preventDefault(); squeezeAtria(); }
+  if(e.key==="v"||e.key==="V"){ e.preventDefault(); squeezeVent(); }
+});
+
+const TASKS = [
+  { t:"t1", h:"h1", p:"p1", done:()=> S.seen.lap && S.seen.flips, show:()=>{ S.mode=1; S.seen.lap=true; S.seen.flips=true; S.drops.forEach(d=>{ d.lung=true; d.body=true; d.laps=1; }); } },
+  { t:"t2", h:"h2", p:"p2", done:()=> S.seen.traced, show:()=>{ S.mode=1; S.trace=true; S.traceId=0; S.seen.traced=true; } },
+  { t:"t3", h:"h3", p:"p3", done:()=> S.seen.seq, show:()=>{ S.mode=2; S.autoPump=false; S.manual="vent"; S.seen.seq=true; } },
+  { t:"t4", h:"h4", p:"p4", done:()=> S.seen.leak, show:()=>{ S.mode=2; S.leaky=true; S.autoPump=true; S.seen.leak=true; } },
+  { t:"t5", h:"h5", p:"p5", done:()=> S.seen.ex, show:()=>{ S.mode=3; S.ex=1; S.seen.ex=true; } }
+];
+function renderGuide(){
+  const i=S.guide.i, task=TASKS[i];
+  el("gNum").textContent=(i+1)+"/5";
+  el("gTask").textContent=T(task.t);
+  el("gHint").textContent = S.guide.done ? T(task.p) : T(task.h);
+  el("gShow").textContent=T("show");
+  el("gNext").textContent=T("next");
+  el("tStep").textContent=T("task");
+  el("gNext").hidden = !S.guide.done || i>=4;
+  el("guide").classList.toggle("done", S.guide.done);
+  const dots=el("gDots"); dots.innerHTML="";
+  TASKS.forEach((_,k)=>{
+    const d=document.createElement("span"); d.className="guide__dot";
+    if(k<i) d.classList.add("on"); if(k===i) d.classList.add("now");
+    dots.appendChild(d);
+  });
+}
+function checkGuide(){
+  const task=TASKS[S.guide.i];
+  if(!S.guide.done && task.done()){ S.guide.done=true; renderGuide(); }
+}
+el("gShow").addEventListener("click", ()=>{
+  TASKS[S.guide.i].show();
+  buildModeTray(); buildOpts(); renderGuide(); sync();
+});
+el("gNext").addEventListener("click", ()=>{
+  if(S.guide.i<4){ S.guide.i++; S.guide.done=false; renderGuide(); }
+});
+
+const QUESTIONS = [
+  { q:"q1", opts:["q1a","q1b","q1c"], ans:1, why:"q1w" },
+  { q:"q2", opts:["q2a","q2b","q2c"], ans:1, why:"q2w" },
+  { q:"q3", opts:["q3a","q3b","q3c"], ans:1, why:"q3w" },
+  { q:"q4", opts:["q4a","q4b","q4c"], ans:1, why:"q4w" },
+  { q:"q5", opts:["q5a","q5b","q5c"], ans:1, why:"q5w" }
+];
+function buildQuiz(){
+  const host=el("quiz"); host.innerHTML="";
+  let score=0, answered=0;
+  QUESTIONS.forEach((Q, qi)=>{
+    const box=document.createElement("div"); box.className="panel q"; box.style.marginBottom="12px";
+    box.innerHTML = '<div class="q__n">Q '+(qi+1)+'</div><p class="q__t">'+T(Q.q)+'</p><div class="opts"></div><div class="fb"></div>';
+    const opts=box.querySelector(".opts"), fb=box.querySelector(".fb");
+    Q.opts.forEach((ok, oi)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="opt";
+      b.innerHTML='<span class="opt__k">'+"ABC"[oi]+'</span><span>'+T(ok)+'</span>';
+      b.addEventListener("click", ()=>{
+        if(b.disabled) return;
+        opts.querySelectorAll(".opt").forEach(o=>o.disabled=true);
+        const good=oi===Q.ans;
+        b.classList.add(good?"correct":"wrong");
+        opts.children[Q.ans].classList.add("correct");
+        fb.className="fb show "+(good?"ok":"no");
+        fb.textContent=T(Q.why);
+        answered++; if(good) score++;
+        if(answered===QUESTIONS.length){
+          const s=document.createElement("div"); s.className="panel score"; s.style.marginTop="12px";
+          s.innerHTML='<span>'+T("score")+'</span><span class="score__v">'+score+' / '+QUESTIONS.length+'</span>';
+          const again=document.createElement("button"); again.className="btn"; again.textContent=T("tryAgain");
+          again.addEventListener("click", buildQuiz); s.appendChild(again);
+          host.appendChild(s);
+        }
+      });
+      opts.appendChild(b);
+    });
+    host.appendChild(box);
+  });
+}
+
+const mqReduce = matchMedia("(prefers-reduced-motion: reduce)");
+let REDUCED = mqReduce.matches;
+mqReduce.addEventListener("change", ()=>{ REDUCED = mqReduce.matches; });
+let prev = performance.now(), acc=0, syncT=0;
+function frame(now){
+  const dt=Math.min(0.1,(now-prev)/1000); prev=now;
+  if(S.running){
+    if(REDUCED){ acc+=dt; if(acc>0.5){ acc=0; step(0.5*S.speed); syncT=1; } }
+    else { step(dt*S.speed); syncT+=dt; }
+    if(syncT>0.12){ syncT=0; sync(); }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+function setRunning(on){
+  S.running=on;
+  el("icPlay").innerHTML = on
+    ? '<rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/>'
+    : '<path d="M7 4 L19 12 L7 20 Z" fill="#fff"/>';
+  el("btnPlay").setAttribute("aria-pressed", String(on));
+  el("btnPlay").setAttribute("aria-label", on ? T("pause") : T("play"));
+}
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.documentElement.dir=LANG==="ur"?"rtl":"ltr";
+  el("tTitle").textContent=T("title"); el("tSub").textContent=T("sub");
+  el("tNavTitle").textContent=T("navTitle");
+  el("navBench").textContent=T("bench"); el("navQuiz").textContent=T("quiz");
+  el("btnLang").textContent=T("lang");
+  el("btnProfile").textContent=dim?T("bright"):T("dim");
+  el("tReadings").textContent=T("readings");
+  el("tSpeed").textContent=T("speed"); el("btnStep").textContent=T("stepBtn");
+  el("btnReset").setAttribute("aria-label", T("reset"));
+  el("tQuizTitle").textContent=T("quizTitle"); el("tQuizSub").textContent=T("quizSub");
+  el("boardDesc").textContent=T("boardDesc");
+  el("legOx").textContent = LANG==="en" ? "high oxygen (diagram red)" : "زیادہ آکسیجن (خاکہ سرخ)";
+  el("legDx").textContent = LANG==="en" ? "low oxygen (diagram blue)" : "کم آکسیجن (خاکہ نیلا)";
+  el("gShow").textContent=T("show"); el("gNext").textContent=T("next");
+  setRunning(S.running);
+  buildModeTray(); buildOpts(); renderGuide(); buildQuiz(); sync();
+}
+el("btnLang").addEventListener("click", ()=>{ LANG = LANG==="en"?"ur":"en"; applyLang(); });
+el("btnProfile").addEventListener("click", ()=>{
+  dim=!dim;
+  if(dim) document.documentElement.setAttribute("data-profile","dim");
+  else document.documentElement.removeAttribute("data-profile");
+  el("btnProfile").textContent=dim?T("bright"):T("dim");
+});
+el("btnPlay").addEventListener("click", ()=> setRunning(!S.running));
+el("btnStep").addEventListener("click", ()=>{ step(0.25); sync(); });
+el("speed").addEventListener("input", e=>{ S.speed=+e.target.value; });
+el("btnReset").addEventListener("click", ()=>{
+  const mode=S.mode, guide=S.guide, seen=S.seen;
+  S=initial(); S.mode=mode; S.guide=guide; S.seen=seen;
+  el("speed").value=1;
+  setRunning(true);
+  buildModeTray(); buildOpts(); renderGuide(); sync();
+});
+function showScreen(which){
+  el("scBench").classList.toggle("on", which==="bench");
+  el("scQuiz").classList.toggle("on", which==="quiz");
+  el("navBench").setAttribute("aria-current", which==="bench"?"page":"false");
+  el("navQuiz").setAttribute("aria-current", which==="quiz"?"page":"false");
+  scrollTo({top:0});
+  if(which==="bench") fitBoard();
+}
+el("navBench").addEventListener("click", ()=>showScreen("bench"));
+el("navQuiz").addEventListener("click", ()=>showScreen("quiz"));
+addEventListener("resize", ()=>{ fitBoard(); drawGraph(); });
+
+fitBoard();
+applyLang();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

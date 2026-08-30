@@ -1,0 +1,1793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<title>Circuit Construction Kit — PCTB Class 8 Science</title>
+<!--
+==========================================================================
+ CIRCUIT CONSTRUCTION KIT  ·  Sim 1 of 5
+ PCTB / SNC Class 8 General Science — Chapter 10, Electricity & Magnetism
+
+ LEARNING OBJECTIVES (all reachable by dragging parts on the board)
+   1. Current only flows in a COMPLETE, CLOSED loop.
+   2. Current is NOT used up — the same current returns to the cell.
+   3. Conductors let current through; insulators do not.
+   4. Ohm's Law as a felt relationship: more volts -> more current,
+      more resistance -> less current.  V = I x R
+   5. SERIES: one path, same current everywhere, more bulbs = all dimmer,
+      remove one and they all go out.
+   6. PARALLEL: many paths, each branch gets full voltage, bulbs stay bright,
+      remove one and the rest keep working.
+   7. A switch opens and closes the loop.
+   8. Short circuits are dangerous; a fuse protects the circuit.
+
+ MISCONCEPTIONS TARGETED BY THE QUIZ
+   - "Current gets used up by the bulb"
+   - "The cell always supplies the same current"
+   - "Parallel bulbs get dimmer as you add more"
+   - "Electricity comes out of both terminals and meets in the bulb"
+   - "Thicker wire has more resistance"
+
+ SIMPLIFICATIONS FOR CLASS 8
+   - DC only. No AC, capacitors, inductors, or logic gates.
+   - Wires have a tiny resistance (R_WIRE) so the solver never divides by zero.
+   - Cell internal resistance is kept small so 6 V / 10 Ω still reads ~0.60 A,
+     but a dead short stays finite instead of infinite.
+   - Open switches and blown fuses remove the edge entirely (a real gap),
+     rather than faking an open with a mega-ohm resistor.
+   - Nodal analysis (G v = i) is used instead of series/parallel reduction
+     so odd topologies (bridges, opposing cells) do not silently lie.
+
+ TEACHER: every tunable number lives in the CONFIG block at the top of the
+ script. Safe to adjust: CELL_V, BULB_R, RESISTOR_R, FUSE_A, HOT_A,
+ R_INTERNAL, R_WIRE, ELECTRON_SPACING, ELECTRON_SPEED, GRID cols/rows.
+ Nothing here needs a server, a build step, or an internet connection —
+ one file, double-click to run.
+
+ SHORT CIRCUITS ARE NEVER BLOCKED. A short heats the wire, races the
+ electrons, and (if a fuse is in the loop) blows the fuse. There is no
+ error dialog. Productive failure is the lesson.
+==========================================================================
+-->
+<style>
+:root{
+  --accent:#1F6FD0;
+  --good:#237A46;
+  --warn:#8C5A05;
+  --crit:#A0173F;
+  --panel:#FFFFFF;
+  --panel-2:#F2F4F5;
+  --panel-border:#8A8A8A;
+  --text:#14202A;
+  --text-2:#46565F;
+  --text-3:#71828C;
+
+  --wire:#6B7B84;
+  --electron:#0092B0;
+  --glow:#FFB020;
+  --hot:#C4320A;
+
+  --board:#EEF2F4;
+  --grid:#D3DBDF;
+  --hairline:#DCE1E4;
+  --shadow:0 2px 8px rgba(20,32,42,.14);
+  --focus:#14202A;
+  --on-accent:#FFFFFF;
+
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --radius:12px;
+  --space:8px;
+}
+:root[data-profile="dim"]{
+  --accent:#4E9BF0;
+  --good:#4FB27A;
+  --warn:#D0A03A;
+  --crit:#E0648F;
+  --panel:#1A2126;
+  --panel-2:#242D33;
+  --panel-border:#5F6C74;
+  --text:#F1F5F7;
+  --text-2:#C3CFD5;
+  --text-3:#95A4AD;
+  --wire:#93A4AD;
+  --electron:#3EC8E4;
+  --glow:#FFC44D;
+  --hot:#F2572A;
+  --board:#131A1F;
+  --grid:#26313A;
+  --hairline:#3B464D;
+  --shadow:0 2px 10px rgba(0,0,0,.5);
+  --focus:#FFFFFF;
+  --on-accent:#0B1220;
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  font-family:var(--font);
+  background:var(--panel-2);
+  color:var(--text);
+  font-size:16px;
+  line-height:1.45;
+  overflow-x:hidden;
+}
+:focus-visible{
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+  border-radius:4px;
+}
+.sr{
+  position:absolute; width:1px; height:1px; overflow:hidden;
+  clip:rect(0 0 0 0); white-space:nowrap;
+}
+.wrap{ max-width:1400px; margin:0 auto; padding:10px 10px 80px; }
+
+/* Circuit diagram conventions stay LTR even when chrome is RTL. */
+:root[dir="rtl"] body{
+  font-family:system-ui,"Noto Nastaliq Urdu","Segoe UI",Tahoma,sans-serif;
+}
+:root[dir="rtl"] .stage__inner{ direction:ltr; }
+
+.head{
+  display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+  padding:2px 2px 10px;
+}
+.head__title{ font-size:clamp(19px,2.3vw,25px); font-weight:700; margin:0; letter-spacing:-.02em; }
+.head__sub{ margin:0; font-size:14.5px; color:var(--text-2); }
+.head__spacer{ margin-inline-start:auto; display:flex; gap:8px; flex-wrap:wrap; }
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--panel-border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:12px 14px;
+}
+.panel__title{ font-size:15px; font-weight:700; margin:0 0 10px; }
+
+.guide{
+  background:var(--panel);
+  border:2px solid var(--accent);
+  border-radius:var(--radius);
+  padding:10px 13px;
+  margin-bottom:10px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:12px;
+  align-items:center;
+}
+@media (max-width:760px){ .guide{ grid-template-columns:1fr; } }
+.guide.done{ border-color:var(--good); }
+.guide__badge{
+  min-width:72px; padding:6px 10px; border-radius:9px; text-align:center;
+  background:var(--panel-2); border:1px solid var(--panel-border);
+}
+.guide__badgeTop{ font-size:12.5px; font-weight:700; letter-spacing:.06em; color:var(--text-3); }
+.guide__badgeNum{
+  font-size:20px; font-weight:700; font-family:var(--mono);
+  font-variant-numeric:tabular-nums;
+}
+.guide__task{ font-size:17px; font-weight:700; margin:0; }
+.guide__hint{ font-size:14px; margin:4px 0 0; color:var(--text-2); }
+.guide__dots{ display:flex; gap:6px; margin-top:8px; }
+.guide__dot{ width:9px; height:9px; border-radius:50%; background:var(--hairline); }
+.guide__dot.on{ background:var(--good); }
+.guide__dot.now{ background:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent); }
+.guide__acts{ display:flex; gap:8px; flex-wrap:wrap; }
+.tick{ color:var(--good); font-weight:700; }
+
+.btn{
+  font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 16px; border-radius:9px; white-space:nowrap;
+  background:var(--accent); color:var(--on-accent); border:1px solid rgba(0,0,0,.28);
+  box-shadow:0 1px 2px rgba(0,0,0,.18);
+  transition:filter .15s ease, transform .12s ease;
+}
+.btn:hover{ filter:brightness(1.08); }
+.btn:active{ transform:translateY(1px); }
+.btn--ghost{ background:var(--panel); color:var(--text); border-color:var(--panel-border); }
+.btn--go{ background:var(--good); color:#fff; }
+.btn--sm{ min-height:44px; font-size:13.5px; padding:0 12px; }
+.round{
+  width:48px; height:48px; border-radius:50%; cursor:pointer; padding:0;
+  border:1px solid rgba(0,0,0,.35); display:grid; place-items:center;
+  box-shadow:var(--shadow); background:var(--btn,#E2E6E9);
+}
+.round--play{ --btn:var(--good); }
+.round--reset{ --btn:var(--warn); }
+
+.main{ display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:10px; align-items:start; }
+@media (max-width:1080px){ .main{ grid-template-columns:1fr; } }
+
+.tray{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+.part{
+  min-width:74px; min-height:66px; padding:6px 8px 4px; cursor:grab;
+  border:2px solid var(--panel-border); border-radius:10px; background:var(--panel);
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  font-family:inherit; font-size:12.5px; font-weight:600; color:var(--text);
+  touch-action:none; user-select:none;
+  transition:border-color .15s ease, background .15s ease;
+}
+.part:hover{ border-color:var(--accent); }
+.part[aria-pressed="true"]{
+  border-color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 14%,var(--panel));
+}
+.part svg{ display:block; pointer-events:none; }
+.tray__label{
+  width:100%; font-size:12.5px; font-weight:700; color:var(--text-3);
+  margin:4px 0 2px; letter-spacing:.04em; text-transform:uppercase;
+}
+
+.stage{
+  border:1px solid var(--panel-border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  background:var(--board);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
+}
+.stage__inner{ position:relative; }
+#board{ display:block; width:100%; height:auto; touch-action:none; }
+.stage__bar{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  padding:8px 10px; background:var(--panel); border-top:1px solid var(--hairline);
+}
+.seg{ display:inline-flex; border:1px solid var(--panel-border); border-radius:9px; overflow:hidden; }
+.seg button{
+  font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 13px; border:0; background:var(--panel); color:var(--text-2);
+  border-inline-end:1px solid var(--panel-border);
+}
+.seg button:last-child{ border-inline-end:0; }
+.seg button[aria-pressed="true"]{ background:var(--accent); color:var(--on-accent); }
+
+.popover{
+  position:absolute; z-index:20; min-width:186px; padding:10px;
+  background:var(--panel); border:2px solid var(--accent); border-radius:10px;
+  box-shadow:0 8px 24px rgba(20,32,42,.28);
+}
+.popover h4{ margin:0 0 8px; font-size:13.5px; }
+.popover .row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.popover input[type=range]{ flex:1; }
+.popover .val{
+  font-family:var(--mono); font-size:14px; font-variant-numeric:tabular-nums;
+  min-width:56px; text-align:end;
+}
+.popover .acts{ display:flex; gap:6px; }
+.popover .acts .btn{ flex:1; min-height:44px; font-size:13px; padding:0 8px; }
+
+.reads{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.read{
+  background:var(--panel-2); border:1px solid var(--hairline);
+  border-radius:9px; padding:8px 10px;
+}
+.read__k{ font-size:12.5px; color:var(--text-3); font-weight:700; }
+.read__v{
+  font-family:var(--mono); font-size:19px; font-variant-numeric:tabular-nums; font-weight:700;
+}
+.narr{ font-size:15px; line-height:1.5; margin:10px 0 0; }
+.badge{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:13.5px; font-weight:700; padding:3px 9px; border-radius:20px;
+}
+.badge--good{ color:var(--good); background:color-mix(in srgb,var(--good) 14%,transparent); }
+.badge--warn{ color:var(--warn); background:color-mix(in srgb,var(--warn) 16%,transparent); }
+.badge--crit{ color:var(--crit); background:color-mix(in srgb,var(--crit) 14%,transparent); }
+#viGraph{ display:block; width:100%; height:150px; }
+.graph-note{ font-size:13px; color:var(--text-3); margin:6px 0 0; }
+
+.screen{ display:none; }
+.screen.on{ display:block; }
+.q{ margin-bottom:10px; }
+.q__n{ font-size:12.5px; color:var(--text-3); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.q__t{ font-size:17px; font-weight:700; margin:6px 0 12px; }
+.opts{ display:grid; gap:8px; }
+.opt{
+  display:flex; align-items:flex-start; gap:10px; text-align:start; width:100%;
+  min-height:52px; padding:12px 14px; cursor:pointer; border-radius:9px;
+  font-family:inherit; font-size:15.5px; background:var(--panel-2); color:var(--text);
+  border:2px solid var(--panel-border);
+}
+.opt:hover:not(:disabled){ border-color:var(--accent); background:var(--panel); }
+.opt.correct{ border-color:var(--good); background:color-mix(in srgb,var(--good) 14%,var(--panel)); }
+.opt.wrong{ border-color:var(--crit); background:color-mix(in srgb,var(--crit) 12%,var(--panel)); }
+.opt__k{ font-family:var(--mono); font-size:14px; color:var(--text-3); min-width:1.2em; }
+.fb{
+  display:none; margin:10px 0 0; padding:11px 13px; font-size:14.5px; border-radius:8px;
+  background:var(--panel-2); border-inline-start:5px solid var(--panel-border);
+}
+.fb.show{ display:block; }
+.fb.ok{ border-inline-start-color:var(--good); }
+.fb.no{ border-inline-start-color:var(--crit); }
+.score{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.score__v{ font-family:var(--mono); font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; }
+
+.nav{
+  position:sticky; bottom:6px; z-index:40; margin-top:10px; border-radius:10px;
+  background:#101418; color:#fff; display:flex; align-items:center; gap:9px;
+  flex-wrap:wrap; padding:6px 13px;
+}
+.nav__t{ font-size:14.5px; font-weight:700; margin-inline-end:auto; }
+.navbtn{
+  cursor:pointer; background:transparent; border:2px solid transparent; border-radius:8px;
+  color:#B9C0C5; font-family:inherit; font-size:14px; font-weight:700;
+  padding:5px 11px; min-height:44px;
+}
+.navbtn[aria-current="page"]{ color:#fff; border-color:#fff; }
+
+input[type=range]{
+  -webkit-appearance:none; appearance:none; height:44px; background:transparent; cursor:pointer;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border);
+}
+input[type=range]::-moz-range-track{
+  height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border);
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:26px; height:30px; margin-top:-12px;
+  border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45);
+}
+input[type=range]::-moz-range-thumb{
+  width:26px; height:30px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45);
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="screen on" id="scBench">
+  <header class="head">
+    <h1 class="head__title" id="tTitle">Circuit Construction Kit</h1>
+    <p class="head__sub" id="tSub">Build circuits and watch the electrons move.</p>
+    <span class="head__spacer">
+      <button class="btn btn--ghost btn--sm" id="btnLang" type="button">اردو</button>
+      <button class="btn btn--ghost btn--sm" id="btnProfile" type="button">Dim room</button>
+    </span>
+  </header>
+
+  <section class="guide" id="guide" aria-live="polite">
+    <div class="guide__badge">
+      <div class="guide__badgeTop" id="tStep">TASK</div>
+      <div class="guide__badgeNum" id="gNum">1/5</div>
+    </div>
+    <div>
+      <p class="guide__task" id="gTask">—</p>
+      <p class="guide__hint" id="gHint">—</p>
+      <div class="guide__dots" id="gDots" aria-hidden="true"></div>
+    </div>
+    <div class="guide__acts">
+      <button class="btn btn--ghost" id="gShow" type="button">Show me</button>
+      <button class="btn btn--go" id="gNext" type="button" hidden>Next</button>
+    </div>
+  </section>
+
+  <div class="main">
+    <div>
+      <div class="tray" id="tray"></div>
+
+      <div class="stage">
+        <div class="stage__inner" id="stageInner">
+          <canvas id="board" role="img" aria-label="Circuit board" aria-describedby="boardDesc" tabindex="0"></canvas>
+          <p class="sr" id="boardDesc">A grid workbench. Drag parts from the tray onto the grid to build a circuit. Moving blue dots are electrons; their speed shows how big the current is. Electrons travel from the negative terminal toward the positive terminal.</p>
+        </div>
+        <div class="stage__bar">
+          <div class="seg" role="group" aria-label="View">
+            <button id="vReal" type="button" aria-pressed="true">Realistic</button>
+            <button id="vSym"  type="button" aria-pressed="false">Symbols</button>
+          </div>
+          <button class="round round--play" id="btnPlay" type="button" aria-pressed="true" aria-label="Pause">
+            <svg width="20" height="20" viewBox="0 0 24 24" id="icPlay" aria-hidden="true"><rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/></svg>
+          </button>
+          <button class="btn btn--ghost btn--sm" id="btnStep" type="button">Step</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px">
+            <span id="tSpeed">Speed</span>
+            <input type="range" id="speed" min="0.25" max="2" step="0.25" value="1" style="width:96px" aria-label="Speed" />
+          </label>
+          <button class="round round--reset" id="btnReset" type="button" aria-label="Reset">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 1 0 6.5 4.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M12 1.5V8.5L6.5 5z" fill="#fff"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:10px">
+        <div class="tray" id="presets"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2 class="panel__title" id="tReadings">Live readings</h2>
+        <div class="reads" aria-live="polite">
+          <div class="read"><div class="read__k" id="tCur">Current</div><div class="read__v" id="rCur">0.00 A</div></div>
+          <div class="read"><div class="read__k" id="tVol">Circuit voltage</div><div class="read__v" id="rVol">0.0 V</div></div>
+          <div class="read"><div class="read__k" id="tRes">Resistance</div><div class="read__v" id="rRes">— Ω</div></div>
+          <div class="read"><div class="read__k" id="tPow">Power</div><div class="read__v" id="rPow">0.00 W</div></div>
+        </div>
+        <p class="narr" id="narr" aria-live="polite">—</p>
+      </div>
+
+      <div class="panel" style="margin-top:10px">
+        <h2 class="panel__title" id="tGraph">Voltage vs Current</h2>
+        <canvas id="viGraph" role="img" aria-label="Graph of current against voltage"></canvas>
+        <p class="graph-note" id="tGraphNote">Each dot is one measurement you made. A straight line through zero means V = I × R.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="scQuiz">
+  <header class="head">
+    <h1 class="head__title" id="tQuizTitle">Check what you have learned</h1>
+    <p class="head__sub" id="tQuizSub">Five questions, with the answer explained straight away.</p>
+  </header>
+  <div id="quiz" style="max-width:840px;margin:0 auto"></div>
+</div>
+
+<nav class="nav" aria-label="Screens">
+  <span class="nav__t" id="tNavTitle">Circuit Construction Kit</span>
+  <button class="navbtn" id="navBench" type="button" aria-current="page">Bench</button>
+  <button class="navbtn" id="navQuiz"  type="button">Quiz</button>
+</nav>
+</div>
+
+<script>
+"use strict";
+/* ======================================================================
+   1. CONFIG — every tunable number a teacher might want to change.
+   ====================================================================== */
+const CONFIG = {
+  GRID_COLS: 15,        // grid POINTS across (cells = COLS-1)
+  GRID_ROWS: 9,         // grid POINTS down
+  CELL_V:    6,         // default cell EMF, volts        (range 1.5 – 12)
+  BULB_R:    10,        // bulb resistance, ohms
+  RESISTOR_R:20,        // resistor default, ohms         (range 1 – 100)
+  FUSE_A:    5,         // fuse blows above this many amps
+  // Real cells have internal resistance. Kept deliberately TINY so that
+  // V = I x R still works out to the textbook answer (6V / 10ohm = 0.60 A),
+  // but non-zero so a dead short gives a large finite current instead of
+  // dividing by zero. This is the only place internal resistance matters.
+  R_INTERNAL: 0.05,
+  R_WIRE:     0.001,    // a plain wire: near-zero, but never exactly zero
+  R_VOLTMETER:1e6,      // ideal-ish voltmeter: huge, so it draws almost no current
+  HOT_A:      8,        // wire starts glowing red above this current
+  ELECTRON_SPACING: 26, // px between electrons — CONSTANT everywhere, so
+                        // density never changes: that is the whole point
+  ELECTRON_SPEED:   34, // px per second per amp
+  MAX_VI_POINTS:    48,
+  DPR_CAP:          2   // cap backing-store DPR so hit-tests match drawing
+};
+
+/* Material resistances for the conductor / insulator test objects (ohms). */
+const MATERIALS = {
+  copper:  { r:0.002,  conductor:true  },
+  iron:    { r:0.05,   conductor:true  },
+  graphite:{ r:30,     conductor:true  },   // pencil lead: conducts, but poorly
+  plastic: { r:1e9,    conductor:false },
+  wood:    { r:1e9,    conductor:false },
+  rubber:  { r:1e9,    conductor:false }
+};
+
+/* ======================================================================
+   2. STRINGS — every user-facing string, in one place.
+   ====================================================================== */
+const STRINGS = {
+en:{
+  title:"Circuit Construction Kit", sub:"Build circuits and watch the electrons move.",
+  navTitle:"Circuit Construction Kit", bench:"Bench", quiz:"Quiz",
+  lang:"اردو", dim:"Dim room", bright:"Bright room",
+  step:"TASK", showMe:"Show me", next:"Next", finish:"Go to the quiz",
+  readings:"Live readings", current:"Current", voltage:"Circuit voltage",
+  resistance:"Resistance", power:"Power", speed:"Speed", play:"Play", pause:"Pause",
+  reset:"Reset", stepBtn:"Step",
+  graph:"Voltage vs Current",
+  graphNote:"Each dot is one measurement you made. A straight line through zero means V = I × R.",
+  realistic:"Realistic", symbols:"Symbols",
+  quizTitle:"Check what you have learned",
+  quizSub:"Five questions, with the answer explained straight away.",
+  tryAgain:"Try again", left:"questions left.",
+  scoreAll:"Excellent — you understand circuits.",
+  scoreMid:"Good. Read the feedback, then go back and build it.",
+  scoreLow:"Go back to the bench and try the tasks again.",
+  parts:"Parts", testObjects:"Test objects", presets:"Starting points",
+  cell:"Cell", wire:"Wire", bulb:"Bulb", switch:"Switch", resistor:"Resistor",
+  ammeter:"Ammeter", voltmeter:"Voltmeter", fuse:"Fuse",
+  copper:"Copper", iron:"Iron nail", graphite:"Pencil lead",
+  plastic:"Plastic", wood:"Wood", rubber:"Rubber",
+  pEmpty:"Empty board", pSimple:"Simple circuit", pSeries:"Series (2 bulbs)",
+  pParallel:"Parallel (2 bulbs)", pSwitch:"Switch circuit",
+  value:"Value", reverse:"Reverse", remove:"Remove", closed:"Closed", open:"Open",
+  boardDesc:"A grid workbench. Drag parts from the tray onto the grid to build a circuit. Moving blue dots are electrons; their speed shows how big the current is. Electrons travel from the negative terminal toward the positive terminal.",
+  nEmpty:"Drag a cell and a bulb onto the grid, then join them with wires.",
+  nOpen:"The loop is broken, so no current flows. Find the gap and close it.",
+  nNoCell:"There is no cell, so nothing pushes the charge around.",
+  nUnsolved:"I cannot work this circuit out. Try removing a part.",
+  nSeries:"{n} bulbs in series. The same current passes through every one, so each glows dimly.",
+  nParallel:"{n} bulbs in parallel. Each branch gets the full voltage, so they all stay bright.",
+  nOne:"One complete loop. The current is the same all the way round — it is not used up.",
+  nShort:"SHORT CIRCUIT. The current has found a path with almost no resistance. In a real circuit this melts wires and starts fires.",
+  nBlown:"The fuse has blown and broken the circuit. That is exactly its job — it sacrifices itself to protect everything else.",
+  nOff:"The switch is open, so the loop is broken.",
+  conductor:"conducts", insulator:"does not conduct",
+  ohmHint:"steeper line = less resistance",
+  t1:"Light one bulb.",
+  t1h:"You need a cell, a bulb, and wires making one closed loop.",
+  t1p:"A complete, closed loop — that is the only way current can flow.",
+  t2:"Add a second bulb in series. Watch what happens to the brightness.",
+  t2h:"Put it in the same single loop, one after the other.",
+  t2p:"Both bulbs share one path, so the same current passes through each — and both are dimmer than one bulb alone.",
+  t3:"Now wire two bulbs in parallel, then remove one. What happens to the other?",
+  t3h:"Parallel means each bulb gets its own branch across the cell.",
+  t3p:"The other bulb kept working. Each branch is its own path, so breaking one does not break the rest. That is why house wiring is parallel.",
+  t4:"Test all six objects. Which conduct and which do not?",
+  t4h:"Put each object into a gap in a working circuit and see if the bulb lights.",
+  t4p:"Metals conduct. Pencil lead conducts too — it is graphite, a form of carbon. Plastic, wood and rubber are insulators, which is why wires are wrapped in them.",
+  t5:"Make a short circuit, then protect it with a fuse.",
+  t5h:"Join the two ends of the cell with just wire — then add a fuse in the loop.",
+  t5p:"With almost no resistance the current becomes huge and wires melt. A fuse is a deliberate weak link: it burns out first and breaks the circuit. Every house has them.",
+  q1:"A bulb is lit in a simple circuit. How does the current going INTO the bulb compare with the current coming OUT of it?",
+  q1a:"The current coming out is smaller — the bulb uses some up",
+  q1b:"They are exactly the same",
+  q1c:"No current comes out at all",
+  q1d:"The current coming out is larger",
+  q1w:"Current is not used up. The same current returns to the cell — what the bulb uses is ENERGY, not charge.",
+  q2:"You double the resistance in a circuit but keep the same cell. What happens to the current?",
+  q2a:"It stays the same — the cell always gives the same current",
+  q2b:"It doubles",
+  q2c:"It halves",
+  q2d:"It becomes zero",
+  q2w:"A cell supplies VOLTAGE, not a fixed current. From V = I × R, doubling R halves I.",
+  q3:"Two bulbs are wired in PARALLEL. You add a third bulb, also in parallel. What happens to the brightness of the first two?",
+  q3a:"They all get dimmer",
+  q3b:"They stay about as bright, but the cell drains faster",
+  q3c:"They go out completely",
+  q3d:"They get brighter",
+  q3w:"That is SERIES behaviour. In parallel each branch still gets the full cell voltage, so brightness holds — but the total current rises, so the cell runs down faster.",
+  q4:"Which best describes how current moves in a simple circuit?",
+  q4a:"It leaves both terminals and meets inside the bulb",
+  q4b:"It flows one way round the whole loop, the same everywhere",
+  q4c:"It sits still in the wire until the switch is closed",
+  q4d:"It only flows in the half of the circuit near the bulb",
+  q4w:"Charge flows one way around the whole loop. Nothing 'meets' in the bulb — that idea would mean charge piles up there.",
+  q5:"You replace a thin wire with a much thicker one of the same metal. What happens to its resistance?",
+  q5a:"It increases — more metal means more resistance",
+  q5b:"It decreases — there is more room for charge to flow",
+  q5c:"It stays exactly the same",
+  q5d:"It becomes zero",
+  q5w:"Thicker wire = lower resistance. A wider pipe lets more water through for the same push; a wider wire does the same for charge."
+},
+ur:{
+  title:"برقی دور بنانے کی کٹ", sub:"برقی دور بنائیں اور الیکٹرانوں کو چلتے ہوئے دیکھیں۔",
+  navTitle:"برقی دور بنانے کی کٹ", bench:"میز", quiz:"سوالات",
+  lang:"English", dim:"کم روشنی", bright:"تیز روشنی",
+  step:"کام", showMe:"مجھے دکھائیں", next:"اگلا", finish:"سوالات کی طرف",
+  readings:"براہِ راست پیمائش", current:"برقی رو", voltage:"دور کا وولٹیج",
+  resistance:"مزاحمت", power:"طاقت", speed:"رفتار", play:"چلائیں", pause:"روکیں",
+  reset:"ری سیٹ", stepBtn:"قدم",
+  graph:"وولٹیج بمقابلہ برقی رو",
+  graphNote:"ہر نقطہ آپ کی ایک پیمائش ہے۔ صفر سے گزرتی سیدھی لکیر کا مطلب ہے V = I × R",
+  realistic:"تصویری", symbols:"علامتی",
+  quizTitle:"دیکھیں آپ نے کیا سیکھا",
+  quizSub:"پانچ سوال، جواب فوراً وضاحت کے ساتھ۔",
+  tryAgain:"دوبارہ کوشش", left:"سوال باقی ہیں۔",
+  scoreAll:"بہت خوب — آپ برقی دور سمجھ گئے ہیں۔",
+  scoreMid:"اچھا۔ وضاحت پڑھیں، پھر دوبارہ بنا کر دیکھیں۔",
+  scoreLow:"میز پر واپس جائیں اور کام دوبارہ کریں۔",
+  parts:"پرزے", testObjects:"جانچ کی اشیاء", presets:"نمونے",
+  cell:"سیل", wire:"تار", bulb:"بلب", switch:"سوئچ", resistor:"مزاحم",
+  ammeter:"ایمی میٹر", voltmeter:"وولٹ میٹر", fuse:"فیوز",
+  copper:"تانبا", iron:"لوہے کی کیل", graphite:"پنسل کا سیسہ",
+  plastic:"پلاسٹک", wood:"لکڑی", rubber:"ربڑ",
+  pEmpty:"خالی میز", pSimple:"سادہ دور", pSeries:"سلسلہ وار (۲ بلب)",
+  pParallel:"متوازی (۲ بلب)", pSwitch:"سوئچ والا دور",
+  value:"قدر", reverse:"الٹ دیں", remove:"ہٹا دیں", closed:"بند", open:"کھلا",
+  boardDesc:"ایک گرڈ ورک بینچ۔ ٹرے سے پرزے گھسیٹ کر گرڈ پر رکھیں۔ نیلی حرکت کرتی نقطے الیکٹران ہیں؛ ان کی رفتار برقی رو کی مقدار دکھاتی ہے۔ الیکٹران منفی سرے سے مثبت سرے کی طرف سفر کرتے ہیں۔",
+  nEmpty:"ایک سیل اور ایک بلب گرڈ پر رکھیں، پھر تاروں سے جوڑیں۔",
+  nOpen:"دور ٹوٹا ہوا ہے، اس لیے برقی رو نہیں بہہ رہی۔ خلا تلاش کریں۔",
+  nNoCell:"کوئی سیل نہیں ہے، اس لیے چارج کو دھکیلنے والا کچھ نہیں۔",
+  nUnsolved:"میں یہ دور حل نہیں کر سکا۔ کوئی پرزہ ہٹا کر دیکھیں۔",
+  nSeries:"{n} بلب سلسلہ وار۔ ہر ایک میں سے وہی برقی رو گزرتی ہے، اس لیے سب مدھم جلتے ہیں۔",
+  nParallel:"{n} بلب متوازی۔ ہر شاخ کو پورا وولٹیج ملتا ہے، اس لیے سب روشن رہتے ہیں۔",
+  nOne:"ایک مکمل دور۔ برقی رو پورے راستے میں یکساں ہے — یہ خرچ نہیں ہوتی۔",
+  nShort:"شارٹ سرکٹ۔ برقی رو کو تقریباً بغیر مزاحمت کا راستہ مل گیا ہے۔ اصل زندگی میں اس سے تار پگھل جاتے ہیں اور آگ لگ سکتی ہے۔",
+  nBlown:"فیوز اڑ گیا اور دور ٹوٹ گیا۔ یہی اس کا کام ہے — وہ خود جل کر باقی سب کو بچاتا ہے۔",
+  nOff:"سوئچ کھلا ہے، اس لیے دور ٹوٹا ہوا ہے۔",
+  conductor:"بجلی گزارتا ہے", insulator:"بجلی نہیں گزارتا",
+  ohmHint:"زیادہ ڈھلوان = کم مزاحمت",
+  t1:"ایک بلب جلائیں۔",
+  t1h:"آپ کو ایک سیل، ایک بلب اور تاریں چاہئیں جو ایک بند دور بنائیں۔",
+  t1p:"ایک مکمل، بند دور — برقی رو صرف اسی طرح بہہ سکتی ہے۔",
+  t2:"دوسرا بلب سلسلہ وار لگائیں۔ روشنی پر اثر دیکھیں۔",
+  t2h:"اسے اسی ایک لوپ میں، ایک کے بعد ایک لگائیں۔",
+  t2p:"دونوں بلب ایک ہی راستے پر ہیں، اس لیے دونوں میں وہی برقی رو گزرتی ہے — اور دونوں اکیلے بلب سے مدھم ہیں۔",
+  t3:"اب دو بلب متوازی لگائیں، پھر ایک ہٹا دیں۔ دوسرے کا کیا بنا؟",
+  t3h:"متوازی کا مطلب ہے ہر بلب کو سیل کے آر پار اپنی شاخ ملے۔",
+  t3p:"دوسرا بلب چلتا رہا۔ ہر شاخ اپنا راستہ ہے، اس لیے ایک ٹوٹنے سے باقی نہیں رکتے۔ اسی لیے گھروں کی وائرنگ متوازی ہوتی ہے۔",
+  t4:"چھ اشیاء جانچیں۔ کون سی بجلی گزارتی ہیں؟",
+  t4h:"ہر شے کو چلتے دور کے خلا میں رکھیں اور دیکھیں بلب جلتا ہے یا نہیں۔",
+  t4p:"دھاتیں بجلی گزارتی ہیں۔ پنسل کا سیسہ بھی گزارتا ہے — یہ گریفائٹ ہے۔ پلاسٹک، لکڑی اور ربڑ غیر موصل ہیں، اسی لیے تاروں پر ان کا غلاف ہوتا ہے۔",
+  t5:"شارٹ سرکٹ بنائیں، پھر فیوز سے حفاظت کریں۔",
+  t5h:"سیل کے دونوں سرے صرف تار سے جوڑیں — پھر لوپ میں فیوز لگائیں۔",
+  t5p:"تقریباً بغیر مزاحمت کے برقی رو بہت بڑھ جاتی ہے اور تاریں پگھل جاتی ہیں۔ فیوز جان بوجھ کر کمزور کڑی ہے: یہ پہلے جل کر دور توڑ دیتا ہے۔ ہر گھر میں یہ ہوتے ہیں۔",
+  q1:"ایک سادہ دور میں بلب جل رہا ہے۔ بلب میں داخل ہونے والی اور نکلنے والی برقی رو کا موازنہ کریں۔",
+  q1a:"نکلنے والی کم ہے — بلب کچھ خرچ کر دیتا ہے",
+  q1b:"دونوں بالکل برابر ہیں",
+  q1c:"کوئی رو نہیں نکلتی",
+  q1d:"نکلنے والی زیادہ ہے",
+  q1w:"برقی رو خرچ نہیں ہوتی۔ وہی رو سیل میں واپس جاتی ہے — بلب توانائی خرچ کرتا ہے، چارج نہیں۔",
+  q2:"آپ مزاحمت دگنی کر دیتے ہیں لیکن سیل وہی رہتا ہے۔ برقی رو کا کیا بنے گا؟",
+  q2a:"وہی رہے گی — سیل ہمیشہ ایک جیسی رو دیتا ہے",
+  q2b:"دگنی ہو جائے گی",
+  q2c:"آدھی رہ جائے گی",
+  q2d:"صفر ہو جائے گی",
+  q2w:"سیل وولٹیج دیتا ہے، مقررہ رو نہیں۔ V = I × R کے مطابق R دگنی ہو تو I آدھی رہ جاتی ہے۔",
+  q3:"دو بلب متوازی لگے ہیں۔ آپ تیسرا بلب بھی متوازی لگاتے ہیں۔ پہلے دو کی روشنی کا کیا بنے گا؟",
+  q3a:"سب مدھم ہو جائیں گے",
+  q3b:"تقریباً اتنے ہی روشن رہیں گے، مگر سیل جلدی ختم ہوگا",
+  q3c:"بالکل بجھ جائیں گے",
+  q3d:"زیادہ روشن ہو جائیں گے",
+  q3w:"مدھم ہونا سلسلہ وار کی خاصیت ہے۔ متوازی میں ہر شاخ کو پورا وولٹیج ملتا ہے، اس لیے روشنی برقرار رہتی ہے — مگر کل رو بڑھ جاتی ہے، اس لیے سیل جلدی ختم ہوتا ہے۔",
+  q4:"سادہ دور میں برقی رو کیسے چلتی ہے؟",
+  q4a:"دونوں سروں سے نکل کر بلب میں ملتی ہے",
+  q4b:"پورے لوپ میں ایک ہی سمت بہتی ہے، ہر جگہ یکساں",
+  q4c:"سوئچ بند ہونے تک تار میں ساکن رہتی ہے",
+  q4d:"صرف بلب کے قریب والے حصے میں بہتی ہے",
+  q4w:"چارج پورے لوپ میں ایک سمت بہتا ہے۔ بلب میں کچھ نہیں 'ملتا' — ورنہ وہاں چارج جمع ہوتا رہتا۔",
+  q5:"آپ پتلی تار کی جگہ اسی دھات کی موٹی تار لگاتے ہیں۔ مزاحمت کا کیا بنے گا؟",
+  q5a:"بڑھ جائے گی — زیادہ دھات یعنی زیادہ مزاحمت",
+  q5b:"کم ہو جائے گی — چارج کے بہنے کو زیادہ جگہ ملتی ہے",
+  q5c:"بالکل وہی رہے گی",
+  q5d:"صفر ہو جائے گی",
+  q5w:"موٹی تار = کم مزاحمت۔ چوڑے پائپ سے اتنے ہی دباؤ پر زیادہ پانی گزرتا ہے؛ چوڑی تار چارج کے ساتھ یہی کرتی ہے۔"
+}};
+let LANG = "en";
+const T = k => STRINGS[LANG][k] ?? STRINGS.en[k] ?? k;
+
+/* ======================================================================
+   3. STATE
+   ====================================================================== */
+const S = {
+  parts: [],            // {id,type,c,r,dir,value,closed,blown,material,flip,phase}
+  nextId: 1,
+  running: true,
+  speed: 1,
+  view: "real",         // "real" | "sym"
+  armed: null,
+  drag: null,
+  hover: null,          // snap-to ghost while an armed part is over the board
+  selected: null,
+  sol: null,
+  viPoints: [],
+  cursor: {c:2,r:2},
+  lastPtr: {x:0,y:0},
+  guide: { i:0, done:false, memo:{} },
+  everShorted:false, everBlown:false
+};
+const el = id => document.getElementById(id);
+let dim = false;
+
+/* ======================================================================
+   4. MODEL — the circuit solver.
+
+   Every component is an EDGE between two grid points (its terminals).
+   Two components touching the same grid point are joined there — that
+   point is a NODE. So the board is literally a graph, and we can solve it
+   with nodal analysis:
+
+        G · v = i
+
+   G is the conductance matrix, v the node voltages, i the injected
+   currents. Each resistive edge of conductance g adds +g on the diagonal
+   for both its nodes and −g off-diagonal. A cell is converted from a
+   voltage source in series with its internal resistance (Thevenin) into a
+   current source in parallel with a conductance (Norton), so the whole
+   circuit is just conductances and current sources.
+
+   Nodal analysis is used instead of series/parallel reduction because it
+   is correct for ANY shape a student can build — including bridges and
+   several cells — and cannot silently return a wrong number.
+   ====================================================================== */
+const COLS = CONFIG.GRID_COLS, ROWS = CONFIG.GRID_ROWS;
+const nodeId = (c,r) => r*COLS + c;
+const termB = p => p.dir==="h" ? { c:p.c+1, r:p.r } : { c:p.c, r:p.r+1 };
+
+/* Electrical description of one part: null means "no edge at all"
+   (an open switch or a blown fuse is a genuine gap, not a big resistor). */
+function edgeOf(p){
+  const a = nodeId(p.c,p.r), b = nodeId(termB(p).c, termB(p).r);
+  switch(p.type){
+    case "wire":   return { a,b, g:1/CONFIG.R_WIRE };
+    case "bulb":   return { a,b, g:1/p.value };
+    case "resistor":return{ a,b, g:1/p.value };
+    case "ammeter":return { a,b, g:1/CONFIG.R_WIRE };
+    case "voltmeter":return{a,b, g:1/CONFIG.R_VOLTMETER };
+    case "switch": return p.closed ? { a,b, g:1/CONFIG.R_WIRE } : null;
+    case "fuse":   return p.blown  ? null : { a,b, g:1/CONFIG.R_WIRE };
+    case "test":   return { a,b, g:1/MATERIALS[p.material].r };
+    case "cell": {
+      const g = 1/CONFIG.R_INTERNAL;
+      const plusAtA = !p.flip;
+      return { a,b, g, isrc:p.value*g, plusAtA };
+    }
+  }
+  return null;
+}
+
+/* Dense Gaussian elimination with partial pivoting. n is small (<150). */
+function solveLinear(M, rhs, n){
+  for(let col=0; col<n; col++){
+    let piv = col;
+    for(let r2=col+1; r2<n; r2++) if(Math.abs(M[r2][col]) > Math.abs(M[piv][col])) piv = r2;
+    if(Math.abs(M[piv][col]) < 1e-12) return null;
+    if(piv !== col){ const t=M[piv]; M[piv]=M[col]; M[col]=t;
+                     const s=rhs[piv]; rhs[piv]=rhs[col]; rhs[col]=s; }
+    const d = M[col][col];
+    for(let r2=col+1; r2<n; r2++){
+      const f = M[r2][col]/d; if(!f) continue;
+      for(let c2=col; c2<n; c2++) M[r2][c2] -= f*M[col][c2];
+      rhs[r2] -= f*rhs[col];
+    }
+  }
+  const v = new Array(n).fill(0);
+  for(let r2=n-1; r2>=0; r2--){
+    let s = rhs[r2];
+    for(let c2=r2+1; c2<n; c2++) s -= M[r2][c2]*v[c2];
+    v[r2] = s/M[r2][r2];
+  }
+  return v;
+}
+
+function solveCircuit(){
+  const edges = [];
+  for(const p of S.parts){
+    const e = edgeOf(p);
+    if(e){ e.part = p; edges.push(e); }
+  }
+  const result = { volt:new Map(), cur:new Map(), ok:true, hasCell:false, solvable:true };
+  if(!edges.length) return result;
+
+  const adj = new Map();
+  const touch = n => { if(!adj.has(n)) adj.set(n,[]); return adj.get(n); };
+  edges.forEach((e,i)=>{ touch(e.a).push(i); touch(e.b).push(i); });
+
+  const seen = new Set(); const groups = [];
+  for(const n of adj.keys()){
+    if(seen.has(n)) continue;
+    const stack=[n], group=[]; seen.add(n);
+    while(stack.length){
+      const x = stack.pop(); group.push(x);
+      for(const ei of adj.get(x)){
+        const o = edges[ei].a===x ? edges[ei].b : edges[ei].a;
+        if(!seen.has(o)){ seen.add(o); stack.push(o); }
+      }
+    }
+    groups.push(group);
+  }
+
+  for(const group of groups){
+    const hasSource = edges.some(e => e.isrc && (group.includes(e.a) || group.includes(e.b)));
+    if(!hasSource){ group.forEach(n => result.volt.set(n,0)); continue; }
+    result.hasCell = true;
+
+    const idx = new Map(); group.forEach((n,k)=> idx.set(n,k-1));
+    const n = group.length - 1;
+    if(n <= 0){ group.forEach(x=>result.volt.set(x,0)); continue; }
+
+    const M = Array.from({length:n},()=>new Array(n).fill(0));
+    const rhs = new Array(n).fill(0);
+    const add = (row,col,val)=>{ if(row>=0 && col>=0) M[row][col]+=val; };
+
+    for(const e of edges){
+      if(!group.includes(e.a) && !group.includes(e.b)) continue;
+      const ia = idx.get(e.a), ib = idx.get(e.b);
+      add(ia,ia, e.g); add(ib,ib, e.g);
+      add(ia,ib,-e.g); add(ib,ia,-e.g);
+      if(e.isrc){
+        const pA = e.plusAtA ? e.a : e.b, pB = e.plusAtA ? e.b : e.a;
+        const ip = idx.get(pA), im = idx.get(pB);
+        if(ip>=0) rhs[ip] += e.isrc;
+        if(im>=0) rhs[im] -= e.isrc;
+      }
+    }
+    const v = solveLinear(M, rhs, n);
+    if(!v || v.some(x=>!isFinite(x))){ result.solvable = false; continue; }
+    group.forEach((node,k)=> result.volt.set(node, k===0 ? 0 : v[k-1]));
+  }
+
+  for(const e of edges){
+    const va = result.volt.get(e.a) ?? 0, vb = result.volt.get(e.b) ?? 0;
+    let I;
+    if(e.isrc){
+      const E = e.part.value, drop = e.plusAtA ? (va-vb) : (vb-va);
+      I = (E - drop) * e.g;
+      if(!e.plusAtA) I = -I;
+    } else {
+      I = (va - vb) * e.g;
+    }
+    result.cur.set(e.part.id, isFinite(I) ? I : 0);
+  }
+  return result;
+}
+
+/* Huge current is a short — record it BEFORE a fuse opens the loop, so
+   a fused short still counts as "the student made a short". Never block. */
+function noteOvercurrent(sol){
+  for(const p of S.parts){
+    const I = Math.abs(sol.cur.get(p.id)||0);
+    if(p.type==="cell" && I > CONFIG.HOT_A) S.everShorted = true;
+    if(p.type==="wire" && I > CONFIG.HOT_A) S.everShorted = true;
+    if(p.type==="fuse" && !p.blown && I > CONFIG.FUSE_A) S.everShorted = true;
+  }
+}
+
+function updateFuses(sol){
+  let changed = false;
+  for(const p of S.parts){
+    if(p.type!=="fuse" || p.blown) continue;
+    if(Math.abs(sol.cur.get(p.id)||0) > CONFIG.FUSE_A){
+      p.blown = true; changed = true; S.everBlown = true;
+    }
+  }
+  return changed;
+}
+
+function refreshModel(){
+  let sol = solveCircuit();
+  noteOvercurrent(sol);
+  if(updateFuses(sol)){
+    sol = solveCircuit();
+    noteOvercurrent(sol);
+  }
+  S.sol = sol;
+  return sol;
+}
+
+function describe(sol){
+  const bulbs = S.parts.filter(p=>p.type==="bulb");
+  const cells = S.parts.filter(p=>p.type==="cell");
+  if(!S.parts.length) return { key:"nEmpty", kind:"empty" };
+  if(!cells.length)   return { key:"nNoCell", kind:"nocell" };
+  if(!sol.solvable)   return { key:"nUnsolved", kind:"bad" };
+  if(S.parts.some(p=>p.type==="fuse" && p.blown)) return { key:"nBlown", kind:"crit" };
+
+  const cellI = Math.abs(sol.cur.get(cells[0].id)||0);
+  if(cellI > CONFIG.HOT_A) return { key:"nShort", kind:"crit" };
+  if(cellI < 1e-4){
+    const openSwitch = S.parts.some(p=>p.type==="switch" && !p.closed);
+    return { key: openSwitch ? "nOff" : "nOpen", kind:"open" };
+  }
+  const lit = bulbs.filter(b=>Math.abs(sol.cur.get(b.id)||0) > 1e-4);
+  if(lit.length >= 2){
+    const same = lit.every(b => Math.abs(Math.abs(sol.cur.get(b.id)) - cellI) < cellI*0.05);
+    return same ? { key:"nSeries", kind:"series", n:lit.length }
+                : { key:"nParallel", kind:"parallel", n:lit.length };
+  }
+  return { key:"nOne", kind:"one" };
+}
+
+/* Honest meters: voltage is the span of node potentials (highest minus
+   lowest), not a sum of cell EMFs. That stays right for parallel cells
+   (still ~6 V) and opposing cells (~0 V). Load power is I²R in every
+   non-cell part; I = P/V when both are meaningful. */
+function readMeters(sol){
+  if(!sol.solvable) return { V:null, I:null, R:null, P:null };
+  const cells = S.parts.filter(p=>p.type==="cell");
+  if(!cells.length) return { V:null, I:0, R:null, P:0 };
+
+  let lo = Infinity, hi = -Infinity;
+  for(const v of sol.volt.values()){ if(v<lo) lo=v; if(v>hi) hi=v; }
+  const V = (isFinite(lo) && isFinite(hi)) ? (hi - lo) : 0;
+
+  let P = 0;
+  for(const p of S.parts){
+    if(p.type==="cell" || p.type==="voltmeter") continue;
+    const e = edgeOf(p);
+    if(!e) continue;
+    const I = sol.cur.get(p.id)||0;
+    P += I*I / e.g;
+  }
+  const I = (V > 1e-6) ? P/V : 0;
+  const R = (I > 1e-6) ? V/I : null;
+  return { V, I, R, P };
+}
+
+function step(dt){
+  const sol = refreshModel();
+  const pitch = CELL_PX() || 60;
+  for(const p of S.parts){
+    const I = sol.cur.get(p.id) || 0;
+    if(Math.abs(I) < 1e-4) continue;
+    p.phase = ((p.phase||0) + dt*Math.abs(I)*CONFIG.ELECTRON_SPEED / pitch) % 1;
+  }
+}
+
+/* ======================================================================
+   5. RENDER
+   ====================================================================== */
+const cv = el("board"), ctx = cv.getContext("2d");
+let PX = 60, OX = 0, OY = 0, BOARD_W = 700, BOARD_H = 400;
+const CELL_PX = () => PX;
+const gx = c => OX + c*PX, gy = r => OY + r*PX;
+const dpr = () => Math.min(CONFIG.DPR_CAP, window.devicePixelRatio || 1);
+
+function fitBoard(){
+  const wrapW = cv.parentElement.clientWidth || 700;
+  PX = Math.max(38, Math.min(64, Math.floor(wrapW / (COLS+0.6))));
+  const w = PX*(COLS-1) + PX*1.2, h = PX*(ROWS-1) + PX*1.2;
+  const d = dpr();
+  BOARD_W = w; BOARD_H = h;
+  cv.style.width = "100%";
+  cv.style.aspectRatio = `${w} / ${h}`;
+  cv.width = Math.round(w*d);
+  cv.height = Math.round(h*d);
+  ctx.setTransform(d,0,0,d,0,0);
+  OX = PX*0.6; OY = PX*0.6;
+}
+
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function draw(){
+  ctx.clearRect(0,0,BOARD_W,BOARD_H);
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,BOARD_W,BOARD_H);
+
+  ctx.fillStyle = css("--grid");
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    ctx.beginPath(); ctx.arc(gx(c),gy(r),2,0,7); ctx.fill();
+  }
+  if(document.activeElement === cv){
+    ctx.strokeStyle = css("--accent"); ctx.lineWidth = 3;
+    ctx.strokeRect(gx(S.cursor.c)-PX*0.34, gy(S.cursor.r)-PX*0.34, PX*0.68, PX*0.68);
+  }
+  const sol = S.sol || { cur:new Map(), volt:new Map() };
+  for(const p of S.parts) drawPart(p, sol);
+  if(S.drag && S.drag.ghost) drawGhost(S.drag);
+  else if(S.hover) drawGhost(S.hover);
+}
+
+function partGeom(p){
+  const a = { x:gx(p.c), y:gy(p.r) }, bt = termB(p);
+  const b = { x:gx(bt.c), y:gy(bt.r) };
+  return { a, b, mx:(a.x+b.x)/2, my:(a.y+b.y)/2, horiz:p.dir==="h" };
+}
+
+function drawPart(p, sol){
+  const G = partGeom(p), I = sol.cur.get(p.id)||0, aI = Math.abs(I);
+  const lead = PX*0.30;
+  ctx.save();
+  ctx.translate(G.mx, G.my);
+  if(!G.horiz) ctx.rotate(Math.PI/2);
+  const L = PX/2;
+
+  const hot = Math.min(1, Math.max(0, (aI-CONFIG.HOT_A)/(CONFIG.HOT_A*1.6)));
+  const wireCol = hot>0 ? mix(css("--wire"), css("--hot"), hot) : css("--wire");
+
+  ctx.lineCap = "round";
+  ctx.strokeStyle = wireCol; ctx.lineWidth = Math.max(3, PX*0.075);
+  ctx.beginPath(); ctx.moveTo(-L,0); ctx.lineTo(-lead,0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(lead,0);  ctx.lineTo(L,0);  ctx.stroke();
+
+  const sym = S.view === "sym";
+  switch(p.type){
+    case "wire": ctx.beginPath(); ctx.moveTo(-lead,0); ctx.lineTo(lead,0); ctx.stroke(); break;
+    case "cell": drawCell(p,lead,sym); break;
+    case "bulb": drawBulb(p,I,lead,sym); break;
+    case "switch": drawSwitch(p,lead,sym); break;
+    case "resistor": drawResistor(p,lead,sym); break;
+    case "fuse": drawFuse(p,lead,sym); break;
+    case "ammeter": drawMeter("A", fmtA(I), lead); break;
+    case "voltmeter": drawMeter("V", fmtV(nodeDrop(p,sol)), lead); break;
+    case "test": drawTest(p,lead); break;
+  }
+  ctx.restore();
+
+  if(S.selected === p.id){
+    ctx.strokeStyle = css("--accent"); ctx.lineWidth = 3;
+    ctx.strokeRect(Math.min(G.a.x,G.b.x)-PX*0.3, Math.min(G.a.y,G.b.y)-PX*0.3,
+                   Math.abs(G.b.x-G.a.x)+PX*0.6, Math.abs(G.b.y-G.a.y)+PX*0.6);
+  }
+  drawElectrons(p, I);
+}
+
+function nodeDrop(p, sol){
+  const va = sol.volt.get(nodeId(p.c,p.r)) ?? 0;
+  const bt = termB(p), vb = sol.volt.get(nodeId(bt.c,bt.r)) ?? 0;
+  return va - vb;
+}
+
+function canShowElectrons(p){
+  if(p.type==="voltmeter") return false;
+  if(p.type==="switch") return p.closed;
+  if(p.type==="fuse") return !p.blown;
+  if(p.type==="test") return MATERIALS[p.material].conductor;
+  return true;
+}
+
+/* ELECTRONS.
+   Spacing is CONSTANT, so density never thins after a bulb — that is what
+   shows that current is not used up. Speed ∝ |I|. Direction is opposite
+   conventional current: electrons run from − toward +. */
+function drawElectrons(p, I){
+  if(!canShowElectrons(p)) return;
+  const G = partGeom(p);
+  const len = Math.hypot(G.b.x-G.a.x, G.b.y-G.a.y);
+  const n = Math.max(1, Math.round(len / CONFIG.ELECTRON_SPACING));
+  const elec = I >= 0 ? -1 : 1;
+  ctx.fillStyle = css("--electron");
+  for(let k=0;k<n;k++){
+    const t = ((k/n) + (p.phase||0)*elec + 1) % 1;
+    const x = G.a.x + (G.b.x-G.a.x)*t, y = G.a.y + (G.b.y-G.a.y)*t;
+    ctx.beginPath(); ctx.arc(x, y, Math.max(2.4, PX*0.055), 0, 7); ctx.fill();
+  }
+}
+
+function drawCell(p, lead, sym){
+  const s = PX*0.16, longEnd = p.flip ? -1 : 1;
+  ctx.strokeStyle = css("--text"); ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-s*longEnd, -PX*0.20); ctx.lineTo(-s*longEnd, PX*0.20); ctx.stroke();
+  ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(s*longEnd, -PX*0.11); ctx.lineTo(s*longEnd, PX*0.11); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-lead,0); ctx.lineTo(-s,0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(s,0); ctx.lineTo(lead,0); ctx.stroke();
+  ctx.fillStyle = css("--text-2");
+  ctx.font = `700 ${Math.max(12.5,PX*0.18)}px ${css("--font")}`;
+  ctx.textAlign = "center";
+  ctx.fillText("+", -s*longEnd, PX*0.38);
+  ctx.fillText("−",  s*longEnd, PX*0.38);
+  if(!sym){
+    ctx.fillStyle = css("--text-3");
+    ctx.font = `700 ${Math.max(12.5,PX*0.20)}px ${css("--mono")||"monospace"}`;
+    ctx.fillText(p.value.toFixed(1)+"V", 0, -PX*0.32);
+  }
+}
+
+function drawBulb(p, I, lead, sym){
+  const R = PX*0.24, P = I*I*p.value;
+  const bright = Math.max(0, Math.min(1, P / 4));
+  if(bright > 0.02){
+    const g = ctx.createRadialGradient(0,0,R*0.3, 0,0,R*3.1);
+    g.addColorStop(0, `rgba(255,190,60,${0.85*bright})`);
+    g.addColorStop(1, "rgba(255,190,60,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0,0,R*3.1,0,7); ctx.fill();
+  }
+  ctx.beginPath(); ctx.arc(0,0,R,0,7);
+  ctx.fillStyle = bright>0.02 ? mix("#FFF6DC", css("--glow"), bright) : (sym ? "transparent" : "#E8EDF0");
+  ctx.fill();
+  ctx.strokeStyle = css("--text"); ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-R*0.7,-R*0.7); ctx.lineTo(R*0.7,R*0.7);
+  ctx.moveTo(R*0.7,-R*0.7); ctx.lineTo(-R*0.7,R*0.7); ctx.lineWidth=2; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-lead,0); ctx.lineTo(-R,0); ctx.moveTo(R,0); ctx.lineTo(lead,0);
+  ctx.lineWidth = Math.max(3,PX*0.075); ctx.strokeStyle = css("--wire"); ctx.stroke();
+}
+
+function drawSwitch(p, lead, sym){
+  ctx.strokeStyle = css("--text"); ctx.lineWidth = 3;
+  ctx.fillStyle = css("--text");
+  ctx.beginPath(); ctx.arc(-lead,0,3.2,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(lead,0,3.2,0,7); ctx.fill();
+  if(!sym){
+    ctx.fillStyle = css("--panel");
+    ctx.strokeStyle = css("--text");
+    ctx.lineWidth = 2;
+    ctx.fillRect(-lead*0.35, -PX*0.16, lead*0.7, PX*0.22);
+    ctx.strokeRect(-lead*0.35, -PX*0.16, lead*0.7, PX*0.22);
+  }
+  ctx.strokeStyle = css("--text"); ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-lead,0);
+  if(p.closed) ctx.lineTo(lead,0);
+  else ctx.lineTo(lead*0.55, -PX*0.26);
+  ctx.stroke();
+  if(!p.closed){
+    ctx.strokeStyle = css("--warn"); ctx.setLineDash([3,3]); ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(0, -PX*0.04, PX*0.18, 0.2, 2.6); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function drawResistor(p, lead, sym){
+  const w = PX*0.30, h = PX*0.13;
+  ctx.strokeStyle = css("--text"); ctx.lineWidth = 2.5;
+  if(sym){
+    ctx.beginPath(); ctx.moveTo(-w,0);
+    for(let i=0;i<6;i++) ctx.lineTo(-w + (i+0.5)*(2*w/6), (i%2?1:-1)*h);
+    ctx.lineTo(w,0); ctx.stroke();
+  } else {
+    ctx.fillStyle = "#C8A063"; ctx.fillRect(-w,-h, 2*w, 2*h);
+    ctx.strokeRect(-w,-h, 2*w, 2*h);
+  }
+  ctx.beginPath(); ctx.moveTo(-lead,0); ctx.lineTo(-w,0); ctx.moveTo(w,0); ctx.lineTo(lead,0);
+  ctx.lineWidth = Math.max(3,PX*0.075); ctx.strokeStyle=css("--wire"); ctx.stroke();
+  ctx.fillStyle = css("--text-3");
+  ctx.font=`700 ${Math.max(12.5,PX*0.19)}px ${css("--mono")||"monospace"}`;
+  ctx.textAlign="center"; ctx.fillText(p.value+"Ω", 0, -PX*0.30);
+}
+
+function drawFuse(p, lead, sym){
+  const w = PX*0.28, h = PX*0.11;
+  ctx.strokeStyle = p.blown ? css("--crit") : css("--text"); ctx.lineWidth = 2.5;
+  if(sym){
+    ctx.strokeRect(-w,-h,2*w,2*h);
+  } else {
+    ctx.fillStyle = p.blown ? "rgba(160,23,63,.12)" : "rgba(255,255,255,.35)";
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(-w,-h,2*w,2*h,h) : ctx.rect(-w,-h,2*w,2*h);
+    ctx.fill(); ctx.stroke();
+  }
+  ctx.beginPath();
+  if(p.blown){
+    ctx.moveTo(-w,0); ctx.lineTo(-w*0.25,0); ctx.moveTo(w*0.25,0); ctx.lineTo(w,0);
+    ctx.strokeStyle = css("--crit");
+  } else {
+    ctx.moveTo(-w,0); ctx.lineTo(w,0);
+  }
+  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-lead,0); ctx.lineTo(-w,0); ctx.moveTo(w,0); ctx.lineTo(lead,0);
+  ctx.lineWidth=Math.max(3,PX*0.075); ctx.strokeStyle=css("--wire"); ctx.stroke();
+  if(p.blown){
+    ctx.strokeStyle = css("--warn"); ctx.setLineDash([3,3]); ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(0, 0, PX*0.16, 0, 7); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function drawMeter(letter, text, lead){
+  const R = PX*0.25;
+  ctx.beginPath(); ctx.arc(0,0,R,0,7);
+  ctx.fillStyle = css("--panel"); ctx.fill();
+  ctx.strokeStyle = css("--text"); ctx.lineWidth=2.5; ctx.stroke();
+  ctx.fillStyle = css("--text"); ctx.textAlign="center";
+  ctx.font = `700 ${Math.max(12.5,PX*0.22)}px ${css("--font")}`;
+  ctx.fillText(letter, 0, R*0.28);
+  ctx.font = `700 ${Math.max(12.5,PX*0.19)}px ${css("--mono")||"monospace"}`;
+  ctx.fillText(text, 0, -PX*0.32);
+  ctx.beginPath(); ctx.moveTo(-lead,0); ctx.lineTo(-R,0); ctx.moveTo(R,0); ctx.lineTo(lead,0);
+  ctx.lineWidth=Math.max(3,PX*0.075); ctx.strokeStyle=css("--wire"); ctx.stroke();
+}
+
+const MAT_COLOR = { copper:"#C1743A", iron:"#8A929A", graphite:"#3C4147",
+                    plastic:"#3EA0C8", wood:"#B08048", rubber:"#4A4A4A" };
+function drawTest(p, lead){
+  const w = PX*0.30, h = PX*0.12;
+  ctx.fillStyle = MAT_COLOR[p.material]; ctx.fillRect(-w,-h,2*w,2*h);
+  ctx.strokeStyle = css("--text"); ctx.lineWidth=2; ctx.strokeRect(-w,-h,2*w,2*h);
+  ctx.beginPath(); ctx.moveTo(-lead,0); ctx.lineTo(-w,0); ctx.moveTo(w,0); ctx.lineTo(lead,0);
+  ctx.lineWidth=Math.max(3,PX*0.075); ctx.strokeStyle=css("--wire"); ctx.stroke();
+  ctx.fillStyle = css("--text-2"); ctx.textAlign="center";
+  ctx.font = `700 ${Math.max(12.5,PX*0.17)}px ${css("--font")}`;
+  ctx.fillText(T(p.material), 0, PX*0.40);
+}
+
+function drawGhost(d){
+  ctx.save(); ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = css("--accent"); ctx.lineWidth = 4;
+  const a = {x:gx(d.c),y:gy(d.r)}, b = d.dir==="h" ? {x:gx(d.c+1),y:gy(d.r)} : {x:gx(d.c),y:gy(d.r+1)};
+  ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  ctx.fillStyle = css("--accent");
+  [a,b].forEach(pt=>{ ctx.beginPath(); ctx.arc(pt.x,pt.y,6,0,7); ctx.fill(); });
+  ctx.restore();
+}
+
+function mix(a,b,t){
+  const pa = hex(a), pb = hex(b);
+  return `rgb(${Math.round(pa[0]+(pb[0]-pa[0])*t)},${Math.round(pa[1]+(pb[1]-pa[1])*t)},${Math.round(pa[2]+(pb[2]-pa[2])*t)})`;
+}
+function hex(s){
+  s = s.trim();
+  if(s.startsWith("#")){
+    const v = s.length===4 ? s.slice(1).split("").map(x=>x+x).join("") : s.slice(1);
+    return [parseInt(v.slice(0,2),16), parseInt(v.slice(2,4),16), parseInt(v.slice(4,6),16)];
+  }
+  const m = s.match(/\d+/g); return m ? m.slice(0,3).map(Number) : [0,0,0];
+}
+const fmtA = I => (Math.abs(I)>=100 ? Math.abs(I).toFixed(0) : Math.abs(I).toFixed(2)) + " A";
+const fmtV = V => Math.abs(V).toFixed(1) + " V";
+
+/* ======================================================================
+   6. CONTROLS
+   ====================================================================== */
+const TRAY = [
+  {type:"cell"},{type:"wire"},{type:"bulb"},{type:"switch"},
+  {type:"resistor"},{type:"ammeter"},{type:"voltmeter"},{type:"fuse"}
+];
+const TESTS = ["copper","iron","graphite","plastic","wood","rubber"];
+
+function buildTray(){
+  const tray = el("tray"); tray.innerHTML = "";
+  const lab = t => { const d=document.createElement("div"); d.className="tray__label"; d.textContent=t; return d; };
+  tray.appendChild(lab(T("parts")));
+  TRAY.forEach(t=> tray.appendChild(partButton(t.type)));
+  tray.appendChild(lab(T("testObjects")));
+  TESTS.forEach(m => tray.appendChild(partButton("test", m)));
+}
+function partButton(type, material){
+  const b = document.createElement("button");
+  b.className = "part"; b.type = "button";
+  b.dataset.type = type; if(material) b.dataset.material = material;
+  b.setAttribute("aria-pressed","false");
+  b.innerHTML = `${trayIcon(type,material)}<span>${T(material||type)}</span>`;
+  b.setAttribute("aria-label", T(material||type));
+  b.addEventListener("click", ()=> armPart(type, material, b));
+  b.addEventListener("pointerdown", ev=>{ armPart(type,material,b); startTrayDrag(ev,type,material); });
+  return b;
+}
+function trayIcon(type, material){
+  const c = MAT_COLOR[material] || "#6B7B84";
+  const S_=`stroke="currentColor" fill="none" stroke-width="2.4" stroke-linecap="round"`;
+  switch(type){
+    case "cell": return `<svg width="34" height="26" viewBox="0 0 34 26" aria-hidden="true"><line x1="2" y1="13" x2="12" y2="13" ${S_}/><line x1="12" y1="5" x2="12" y2="21" ${S_}/><line x1="19" y1="9" x2="19" y2="17" stroke="currentColor" stroke-width="5"/><line x1="19" y1="13" x2="32" y2="13" ${S_}/></svg>`;
+    case "wire": return `<svg width="34" height="26" viewBox="0 0 34 26" aria-hidden="true"><line x1="2" y1="13" x2="32" y2="13" ${S_}/></svg>`;
+    case "bulb": return `<svg width="34" height="26" viewBox="0 0 34 26" aria-hidden="true"><circle cx="17" cy="13" r="7" ${S_}/><line x1="12" y1="8" x2="22" y2="18" ${S_}/><line x1="22" y1="8" x2="12" y2="18" ${S_}/><line x1="2" y1="13" x2="10" y2="13" ${S_}/><line x1="24" y1="13" x2="32" y2="13" ${S_}/></svg>`;
+    case "switch": return `<svg width="34" height="26" viewBox="0 0 34 26" aria-hidden="true"><line x1="2" y1="13" x2="11" y2="13" ${S_}/><line x1="11" y1="13" x2="23" y2="5" ${S_}/><line x1="23" y1="13" x2="32" y2="13" ${S_}/><circle cx="11" cy="13" r="2" fill="currentColor"/><circle cx="23" cy="13" r="2" fill="currentColor"/></svg>`;
+    case "resistor": return `<svg width="34" height="26" viewBox="0 0 34 26" aria-hidden="true"><line x1="2" y1="13" x2="8" y2="13" ${S_}/><rect x="8" y="8" width="18" height="10" ${S_}/><line x1="26" y1="13" x2="32" y2="13" ${S_}/></svg>`;
+    case "ammeter": return `<svg width="34" height="26" viewBox="0 0 34 26" aria-hidden="true"><circle cx="17" cy="13" r="8" ${S_}/><text x="17" y="17" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor">A</text><line x1="2" y1="13" x2="9" y2="13" ${S_}/><line x1="25" y1="13" x2="32" y2="13" ${S_}/></svg>`;
+    case "voltmeter": return `<svg width="34" height="26" viewBox="0 0 34 26" aria-hidden="true"><circle cx="17" cy="13" r="8" ${S_}/><text x="17" y="17" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor">V</text><line x1="2" y1="13" x2="9" y2="13" ${S_}/><line x1="25" y1="13" x2="32" y2="13" ${S_}/></svg>`;
+    case "fuse": return `<svg width="34" height="26" viewBox="0 0 34 26" aria-hidden="true"><rect x="9" y="8" width="16" height="10" ${S_}/><line x1="9" y1="13" x2="25" y2="13" ${S_}/><line x1="2" y1="13" x2="9" y2="13" ${S_}/><line x1="25" y1="13" x2="32" y2="13" ${S_}/></svg>`;
+    default: return `<svg width="34" height="26" viewBox="0 0 34 26" aria-hidden="true"><rect x="7" y="9" width="20" height="8" fill="${c}" stroke="currentColor" stroke-width="1.6"/><line x1="2" y1="13" x2="7" y2="13" ${S_}/><line x1="27" y1="13" x2="32" y2="13" ${S_}/></svg>`;
+  }
+}
+function armPart(type, material, btn){
+  S.armed = { type, material };
+  document.querySelectorAll(".part").forEach(b=>b.setAttribute("aria-pressed","false"));
+  if(btn) btn.setAttribute("aria-pressed","true");
+}
+
+function defaultsFor(type, material){
+  const base = { value:0, closed:true, blown:false, flip:false, phase:0 };
+  if(type==="cell")     base.value = CONFIG.CELL_V;
+  if(type==="bulb")     base.value = CONFIG.BULB_R;
+  if(type==="resistor") base.value = CONFIG.RESISTOR_R;
+  if(type==="test")     base.material = material;
+  return base;
+}
+function addPart(type, c, r, dir, material){
+  if(c<0||r<0) return null;
+  if(dir==="h" && c>=COLS-1) return null;
+  if(dir==="v" && r>=ROWS-1) return null;
+  if(S.parts.some(p=>p.c===c && p.r===r && p.dir===dir)) return null;
+  const p = Object.assign({ id:S.nextId++, type, c, r, dir }, defaultsFor(type, material));
+  S.parts.push(p);
+  return p;
+}
+function removePart(id){ S.parts = S.parts.filter(p=>p.id!==id); if(S.selected===id) closePopover(); }
+
+function partsTouching(c, r){
+  return S.parts.filter(p=>{
+    const b = termB(p);
+    return (p.c===c && p.r===r) || (b.c===c && b.r===r);
+  });
+}
+
+function toBoard(ev){
+  const r = cv.getBoundingClientRect();
+  return { x:(ev.clientX-r.left)*(BOARD_W/r.width), y:(ev.clientY-r.top)*(BOARD_H/r.height) };
+}
+function nearestSlot(x,y){
+  const c = Math.round((x-OX)/PX), r = Math.round((y-OY)/PX);
+  const fx = (x-OX)/PX - c, fy = (y-OY)/PX - r;
+  const dir = Math.abs(fx) > Math.abs(fy) ? "h" : "v";
+  const cc = dir==="h" ? (fx<0 ? c-1 : c) : c;
+  const rr = dir==="v" ? (fy<0 ? r-1 : r) : r;
+  return { c:Math.max(0,Math.min(COLS-1,cc)), r:Math.max(0,Math.min(ROWS-1,rr)), dir };
+}
+function nearestNode(x,y){
+  return {
+    c: Math.max(0, Math.min(COLS-1, Math.round((x-OX)/PX))),
+    r: Math.max(0, Math.min(ROWS-1, Math.round((y-OY)/PX)))
+  };
+}
+function hitPart(x,y){
+  for(let i=S.parts.length-1;i>=0;i--){
+    const p = S.parts[i], G = partGeom(p);
+    const dx = G.b.x-G.a.x, dy = G.b.y-G.a.y, L2 = dx*dx+dy*dy || 1;
+    let t = ((x-G.a.x)*dx + (y-G.a.y)*dy)/L2; t = Math.max(0,Math.min(1,t));
+    const px = G.a.x+dx*t, py = G.a.y+dy*t;
+    if(Math.hypot(x-px, y-py) < PX*0.30) return p;
+  }
+  return null;
+}
+function startTrayDrag(ev, type, material){
+  ev.preventDefault();
+  const move = e=>{
+    const b = cv.getBoundingClientRect();
+    if(e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom){ S.drag=null; return; }
+    const {x,y} = toBoard(e); const s = nearestSlot(x,y);
+    S.drag = { ghost:true, type, material, c:s.c, r:s.r, dir:s.dir };
+  };
+  const up = e=>{
+    window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up);
+    if(S.drag && S.drag.ghost){ addPart(type, S.drag.c, S.drag.r, S.drag.dir, material); }
+    S.drag = null; afterMutate();
+  };
+  window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
+}
+
+cv.addEventListener("pointermove", ev=>{
+  const {x,y} = toBoard(ev);
+  S.lastPtr = {x,y};
+  const n = nearestNode(x,y);
+  S.cursor.c = n.c; S.cursor.r = n.r;
+  if(S.armed && !S.drag){
+    const s = nearestSlot(x,y);
+    S.hover = { c:s.c, r:s.r, dir:s.dir };
+  } else {
+    S.hover = null;
+  }
+});
+cv.addEventListener("pointerleave", ()=>{ S.hover = null; });
+
+cv.addEventListener("pointerdown", ev=>{
+  ev.preventDefault(); cv.focus();
+  const {x,y} = toBoard(ev);
+  S.lastPtr = {x,y};
+  const hit = hitPart(x,y);
+  if(hit){
+    let moved = false;
+    let longPress = false;
+    const orig = { c:hit.c, r:hit.r, dir:hit.dir };
+    const hold = setTimeout(()=>{ longPress = true; openPopover(hit); }, 520);
+    const move = e=>{
+      const q = toBoard(e);
+      if(Math.hypot(q.x-x, q.y-y) > PX*0.28){
+        moved = true; clearTimeout(hold);
+        const s = nearestSlot(q.x,q.y);
+        hit.c=s.c; hit.r=s.r; hit.dir=s.dir;
+        S.drag = { ghost:false };
+      }
+    };
+    const up = e=>{
+      clearTimeout(hold);
+      window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up);
+      S.drag = null;
+      const q = toBoard(e); const b = cv.getBoundingClientRect();
+      const outside = e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom;
+      if(outside){ removePart(hit.id); }
+      else if(!moved && !longPress){
+        if(hit.type==="switch"){ hit.closed = !hit.closed; }
+        else openPopover(hit);
+      } else if(moved){
+        if(S.parts.some(p=>p!==hit && p.c===hit.c && p.r===hit.r && p.dir===hit.dir))
+          Object.assign(hit, orig);
+      }
+      afterMutate();
+    };
+    window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
+  } else if(S.armed){
+    const s = nearestSlot(x,y);
+    addPart(S.armed.type, s.c, s.r, s.dir, S.armed.material);
+    afterMutate();
+  }
+});
+cv.addEventListener("contextmenu", ev=>{
+  ev.preventDefault();
+  const {x,y} = toBoard(ev);
+  const hit = hitPart(x,y);
+  if(hit){ openPopover(hit); afterMutate(); }
+});
+
+cv.addEventListener("keydown", ev=>{
+  const k = ev.key;
+  if(k==="ArrowLeft") S.cursor.c = Math.max(0,S.cursor.c-1);
+  else if(k==="ArrowRight") S.cursor.c = Math.min(COLS-1,S.cursor.c+1);
+  else if(k==="ArrowUp") S.cursor.r = Math.max(0,S.cursor.r-1);
+  else if(k==="ArrowDown") S.cursor.r = Math.min(ROWS-1,S.cursor.r+1);
+  else if(k==="Enter"||k===" "){
+    if(S.armed) addPart(S.armed.type, S.cursor.c, S.cursor.r, ev.shiftKey?"v":"h", S.armed.material);
+  } else if(k==="Delete"||k==="Backspace"){
+    const hovered = hitPart(S.lastPtr.x, S.lastPtr.y);
+    if(hovered) removePart(hovered.id);
+    else {
+      const hits = partsTouching(S.cursor.c, S.cursor.r);
+      if(hits.length) removePart(hits[hits.length-1].id);
+    }
+  } else return;
+  ev.preventDefault(); afterMutate();
+});
+
+let popover = null;
+function closePopover(){ if(popover){ popover.remove(); popover=null; } S.selected=null; }
+function openPopover(p){
+  closePopover(); S.selected = p.id;
+  const G = partGeom(p);
+  const d = document.createElement("div");
+  d.className = "popover";
+  const scale = cv.getBoundingClientRect().width / BOARD_W;
+  d.style.left = Math.max(4, G.mx*scale - 90) + "px";
+  d.style.top  = (G.my*scale + 26) + "px";
+  let inner = `<h4>${T(p.material||p.type)}${p.type==="test" ? " — " + (MATERIALS[p.material].conductor ? T("conductor") : T("insulator")) : ""}</h4>`;
+  if(p.type==="cell" || p.type==="bulb" || p.type==="resistor"){
+    const min = p.type==="cell" ? 1.5 : 1, max = p.type==="cell" ? 12 : 100;
+    const stepv = p.type==="cell" ? 0.5 : 1;
+    inner += `<div class="row"><input type="range" id="pv" min="${min}" max="${max}" step="${stepv}" value="${p.value}" aria-label="${T("value")}">
+              <span class="val" id="pvv">${p.value}${p.type==="cell"?"V":"Ω"}</span></div>`;
+  }
+  if(p.type==="switch"){
+    inner += `<div class="row"><button class="btn btn--ghost" id="ptog" style="flex:1">${p.closed?T("closed"):T("open")}</button></div>`;
+  }
+  inner += `<div class="acts">
+      ${p.type==="cell"?`<button class="btn btn--ghost" id="prev">${T("reverse")}</button>`:""}
+      <button class="btn" id="pdel" style="background:var(--crit);color:#fff">${T("remove")}</button></div>`;
+  d.innerHTML = inner;
+  el("stageInner").appendChild(d); popover = d;
+
+  const pv = d.querySelector("#pv");
+  if(pv) pv.addEventListener("input", ()=>{ p.value = +pv.value;
+    d.querySelector("#pvv").textContent = pv.value + (p.type==="cell"?"V":"Ω"); afterMutate(); });
+  const tog = d.querySelector("#ptog");
+  if(tog) tog.addEventListener("click", ()=>{ p.closed=!p.closed; tog.textContent = p.closed?T("closed"):T("open"); afterMutate(); });
+  const rev = d.querySelector("#prev");
+  if(rev) rev.addEventListener("click", ()=>{ p.flip=!p.flip; afterMutate(); });
+  d.querySelector("#pdel").addEventListener("click", ()=>{ removePart(p.id); closePopover(); afterMutate(); });
+}
+document.addEventListener("pointerdown", e=>{
+  if(popover && !popover.contains(e.target) && e.target!==cv) closePopover();
+}, true);
+
+const PRESETS = {
+  pEmpty: () => [],
+  pSimple: () => ([
+    {type:"cell",c:3,r:3,dir:"h"},{type:"wire",c:4,r:3,dir:"h"},{type:"wire",c:5,r:3,dir:"h"},
+    {type:"wire",c:6,r:3,dir:"v"},{type:"bulb",c:6,r:4,dir:"h"},{type:"wire",c:7,r:4,dir:"v"},
+    {type:"wire",c:7,r:5,dir:"h"},{type:"wire",c:6,r:5,dir:"h"},{type:"wire",c:5,r:5,dir:"h"},
+    {type:"wire",c:4,r:5,dir:"h"},{type:"wire",c:3,r:5,dir:"h"},{type:"wire",c:3,r:3,dir:"v"},
+    {type:"wire",c:3,r:4,dir:"v"}
+  ]),
+  pSeries: () => ([
+    {type:"cell",c:3,r:3,dir:"h"},{type:"wire",c:4,r:3,dir:"h"},
+    {type:"bulb",c:5,r:3,dir:"h"},{type:"wire",c:6,r:3,dir:"h"},{type:"bulb",c:7,r:3,dir:"h"},
+    {type:"wire",c:8,r:3,dir:"v"},{type:"wire",c:8,r:4,dir:"v"},
+    {type:"wire",c:7,r:5,dir:"h"},{type:"wire",c:6,r:5,dir:"h"},{type:"wire",c:5,r:5,dir:"h"},
+    {type:"wire",c:4,r:5,dir:"h"},{type:"wire",c:3,r:5,dir:"h"},
+    {type:"wire",c:3,r:3,dir:"v"},{type:"wire",c:3,r:4,dir:"v"}
+  ]),
+  pParallel: () => ([
+    // Top rail: cell then two branch nodes. No outer wire loop around the bulbs.
+    {type:"cell",c:3,r:2,dir:"h"},{type:"wire",c:4,r:2,dir:"h"},{type:"wire",c:5,r:2,dir:"h"},{type:"wire",c:6,r:2,dir:"h"},
+    {type:"wire",c:3,r:2,dir:"v"},{type:"wire",c:3,r:3,dir:"v"},
+    {type:"wire",c:5,r:2,dir:"v"},{type:"bulb",c:5,r:3,dir:"v"},
+    {type:"wire",c:7,r:2,dir:"v"},{type:"bulb",c:7,r:3,dir:"v"},
+    {type:"wire",c:3,r:4,dir:"h"},{type:"wire",c:4,r:4,dir:"h"},{type:"wire",c:5,r:4,dir:"h"},{type:"wire",c:6,r:4,dir:"h"}
+  ]),
+  pSwitch: () => ([
+    {type:"cell",c:3,r:3,dir:"h"},{type:"switch",c:4,r:3,dir:"h"},{type:"wire",c:5,r:3,dir:"h"},
+    {type:"wire",c:6,r:3,dir:"v"},{type:"bulb",c:6,r:4,dir:"h"},{type:"wire",c:7,r:4,dir:"v"},
+    {type:"wire",c:7,r:5,dir:"h"},{type:"wire",c:6,r:5,dir:"h"},{type:"wire",c:5,r:5,dir:"h"},
+    {type:"wire",c:4,r:5,dir:"h"},{type:"wire",c:3,r:5,dir:"h"},
+    {type:"wire",c:3,r:3,dir:"v"},{type:"wire",c:3,r:4,dir:"v"}
+  ])
+};
+function loadPreset(key){
+  S.parts = []; S.nextId = 1; S.viPoints = []; closePopover();
+  (PRESETS[key]()||[]).forEach(d => addPart(d.type, d.c, d.r, d.dir, d.material));
+  afterMutate();
+}
+function buildPresets(){
+  const box = el("presets"); box.innerHTML = "";
+  const lab = document.createElement("div"); lab.className="tray__label"; lab.textContent = T("presets");
+  box.appendChild(lab);
+  Object.keys(PRESETS).forEach(k=>{
+    const b = document.createElement("button");
+    b.className="btn btn--ghost btn--sm"; b.type="button"; b.textContent = T(k);
+    b.addEventListener("click", ()=>loadPreset(k));
+    box.appendChild(b);
+  });
+}
+
+/* ======================================================================
+   7. GUIDE
+   ====================================================================== */
+const TASKS = [
+  { keys:["t1","t1h","t1p"],
+    fix:()=>loadPreset("pSimple"),
+    done:()=> litBulbs().length >= 1 },
+  { keys:["t2","t2h","t2p"],
+    fix:()=>loadPreset("pSeries"),
+    done:()=> describe(S.sol||{cur:new Map(),solvable:true}).kind==="series" },
+  { keys:["t3","t3h","t3p"],
+    fix:()=>loadPreset("pParallel"),
+    done:()=>{
+      const d = describe(S.sol||{cur:new Map(),solvable:true});
+      if(d.kind==="parallel") S.guide.memo.sawParallel = true;
+      return S.guide.memo.sawParallel && litBulbs().length===1;
+    } },
+  { keys:["t4","t4h","t4p"],
+    fix:()=> loadPreset("pSimple"),
+    done:()=> Object.keys(S.guide.memo.tested||{}).length >= 6 },
+  { keys:["t5","t5h","t5p"],
+    fix:()=>{
+      S.parts=[]; S.nextId=1; closePopover();
+      [["cell",3,3,"h"],["wire",4,3,"h"],["fuse",5,3,"h"],["wire",6,3,"v"],["wire",6,4,"h"],
+       ["wire",5,4,"h"],["wire",4,4,"h"],["wire",3,4,"h"],["wire",3,3,"v"]]
+       .forEach(([t,c,r,d])=>addPart(t,c,r,d));
+      afterMutate();
+    },
+    done:()=> S.everShorted && S.everBlown }
+];
+const litBulbs = () => S.parts.filter(p=>p.type==="bulb" &&
+  Math.abs((S.sol?.cur.get(p.id))||0) > 1e-3);
+
+function renderGuide(){
+  const t = TASKS[S.guide.i];
+  el("gNum").textContent = (S.guide.i+1)+"/"+TASKS.length;
+  el("tStep").textContent = T("step");
+  el("gDots").innerHTML = TASKS.map((_,i)=>
+    `<span class="guide__dot ${i<S.guide.i?"on":""} ${i===S.guide.i?"now":""}"></span>`).join("");
+  const box = el("guide");
+  if(S.guide.done){
+    box.classList.add("done");
+    el("gTask").innerHTML = `<span class="tick" aria-hidden="true">✓</span> ${T(t.keys[2])}`;
+    el("gHint").textContent = "";
+    el("gShow").hidden = true; el("gNext").hidden = false;
+    el("gNext").textContent = S.guide.i===TASKS.length-1 ? T("finish") : T("next");
+  } else {
+    box.classList.remove("done");
+    el("gTask").textContent = T(t.keys[0]);
+    el("gHint").textContent = T(t.keys[1]);
+    el("gShow").hidden = false; el("gNext").hidden = true;
+    el("gShow").textContent = T("showMe");
+  }
+}
+function checkGuide(){
+  if(S.guide.done) return;
+  const sol = S.sol;
+  if(sol){
+    S.guide.memo.tested = S.guide.memo.tested || {};
+    for(const p of S.parts){
+      if(p.type!=="test") continue;
+      const hasCurrentPath = Math.abs(sol.cur.get(p.id)||0) > 1e-9 ||
+        (sol.hasCell && Math.abs(nodeDrop(p,sol)) > 0.2);
+      if(hasCurrentPath) S.guide.memo.tested[p.material] = true;
+    }
+  }
+  if(TASKS[S.guide.i].done()){ S.guide.done = true; renderGuide(); }
+}
+el("gShow").addEventListener("click", ()=>{ const f = TASKS[S.guide.i].fix; if(f) f(); });
+el("gNext").addEventListener("click", ()=>{
+  if(S.guide.i===TASKS.length-1){ showScreen("quiz"); return; }
+  S.guide.i++; S.guide.done=false; renderGuide();
+});
+
+/* ======================================================================
+   8. QUIZ
+   ====================================================================== */
+const QUESTIONS = [
+  { q:"q1", opts:["q1a","q1b","q1c","q1d"], a:1, why:"q1w" },
+  { q:"q2", opts:["q2a","q2b","q2c","q2d"], a:2, why:"q2w" },
+  { q:"q3", opts:["q3a","q3b","q3c","q3d"], a:1, why:"q3w" },
+  { q:"q4", opts:["q4a","q4b","q4c","q4d"], a:1, why:"q4w" },
+  { q:"q5", opts:["q5a","q5b","q5c","q5d"], a:1, why:"q5w" }
+];
+function buildQuiz(){
+  const host = el("quiz"); host.innerHTML = ""; const KEYS = ["A","B","C","D"];
+  let answered = 0, score = 0;
+  QUESTIONS.forEach((Q,qi)=>{
+    const w = document.createElement("div"); w.className = "q panel";
+    w.innerHTML = `<div class="q__n">${qi+1} / ${QUESTIONS.length}</div>
+      <p class="q__t">${T(Q.q)}</p><div class="opts"></div><p class="fb" id="fb${qi}"></p>`;
+    const box = w.querySelector(".opts");
+    Q.opts.forEach((ok,oi)=>{
+      const b = document.createElement("button");
+      b.type="button"; b.className="opt";
+      b.innerHTML = `<span class="opt__k">${KEYS[oi]}</span><span>${T(ok)}</span>`;
+      b.addEventListener("click", ()=>{
+        if(w.dataset.done) return; w.dataset.done="1";
+        const right = oi===Q.a; answered++; if(right) score++;
+        box.querySelectorAll(".opt").forEach((btn,bi)=>{
+          btn.disabled = true;
+          if(bi===Q.a) btn.classList.add("correct");
+          if(bi===oi && !right) btn.classList.add("wrong");
+        });
+        const fb = el("fb"+qi);
+        fb.className = "fb show " + (right?"ok":"no");
+        fb.innerHTML = `<b>${right?"✓":"✗"}</b> ${T(Q.why)}`;
+        upd();
+      });
+      box.appendChild(b);
+    });
+    host.appendChild(w);
+  });
+  const bar = document.createElement("div"); bar.className="panel score";
+  bar.innerHTML = `<span class="score__v" id="sv">0 / ${QUESTIONS.length}</span>
+    <span id="sm" style="color:var(--text-2);font-size:14.5px"></span>
+    <button class="btn btn--ghost" id="sRetry" style="margin-inline-start:auto">${T("tryAgain")}</button>`;
+  host.appendChild(bar);
+  function upd(){
+    el("sv").textContent = `${score} / ${QUESTIONS.length}`;
+    const left = QUESTIONS.length - answered;
+    el("sm").textContent = left>0 ? `${left} ${T("left")}`
+      : score===QUESTIONS.length ? T("scoreAll") : score>=3 ? T("scoreMid") : T("scoreLow");
+  }
+  upd();
+  el("sRetry").addEventListener("click", buildQuiz);
+}
+
+/* ======================================================================
+   9. VIEW SYNC
+   ====================================================================== */
+function afterMutate(){
+  refreshModel();
+  sync();
+}
+
+function sync(){
+  const sol = S.sol || refreshModel();
+  const m = readMeters(sol);
+
+  if(!sol.solvable){
+    el("rCur").textContent = "—";
+    el("rVol").textContent = "—";
+    el("rRes").textContent = "— Ω";
+    el("rPow").textContent = "—";
+  } else {
+    el("rCur").textContent = m.I===null ? "—" : fmtA(m.I||0);
+    el("rVol").textContent = m.V===null ? "—" : fmtV(m.V||0);
+    el("rRes").textContent = m.R===null ? "— Ω" : (m.R>=1000? (m.R/1000).toFixed(1)+" kΩ" : m.R.toFixed(1)+" Ω");
+    el("rPow").textContent = m.P===null ? "—" : ((m.P>=1000? (m.P/1000).toFixed(2)+" kW" : m.P.toFixed(2)+" W"));
+  }
+
+  const d = describe(sol);
+  let msg = T(d.key);
+  if(d.n) msg = msg.replace("{n}", d.n);
+  const badge = d.kind==="crit" ? "badge--crit" : d.kind==="open"||d.kind==="empty"||d.kind==="nocell"||d.kind==="bad" ? "badge--warn" : "badge--good";
+  el("narr").innerHTML = `<span class="badge ${badge}">●</span> ${msg}`;
+  cv.setAttribute("aria-label", msg);
+
+  if(sol.solvable && m.I > 1e-4 && m.V > 0){
+    const last = S.viPoints[S.viPoints.length-1];
+    if(!last || Math.abs(last.v-m.V)>1e-3 || Math.abs(last.i-m.I)>1e-3){
+      S.viPoints.push({v:m.V,i:m.I});
+      if(S.viPoints.length > CONFIG.MAX_VI_POINTS) S.viPoints.shift();
+    }
+  }
+  drawVI();
+  checkGuide();
+}
+
+const vg = el("viGraph"), vctx = vg.getContext("2d");
+function drawVI(){
+  const d = dpr();
+  const w = vg.clientWidth, h = 150;
+  if(vg.width !== Math.round(w*d)){ vg.width=Math.round(w*d); vg.height=Math.round(h*d); }
+  vctx.setTransform(d,0,0,d,0,0); vctx.clearRect(0,0,w,h);
+  const padL=42, padB=26, padT=8, padR=8;
+  const pw=w-padL-padR, ph=h-padT-padB;
+  const maxV = Math.max(12, ...S.viPoints.map(p=>p.v));
+  const maxI = Math.max(1, ...S.viPoints.map(p=>p.i));
+  const X = v => padL + v/maxV*pw, Y = i => padT + ph - i/maxI*ph;
+
+  vctx.strokeStyle = css("--hairline"); vctx.lineWidth=1;
+  vctx.beginPath(); vctx.moveTo(padL,padT); vctx.lineTo(padL,padT+ph); vctx.lineTo(padL+pw,padT+ph); vctx.stroke();
+  vctx.fillStyle = css("--text-3"); vctx.font = `12.5px ${css("--mono")||"monospace"}`;
+  vctx.textAlign="right"; vctx.fillText(maxI.toFixed(1), padL-6, padT+9);
+  vctx.fillText("0", padL-6, padT+ph);
+  vctx.textAlign="center"; vctx.fillText(maxV.toFixed(0)+" V", padL+pw, padT+ph+16);
+  vctx.textAlign="left"; vctx.fillText("A", 6, padT+9);
+
+  const sol = S.sol;
+  if(sol && sol.solvable){
+    const m = readMeters(sol);
+    if(m.I>1e-4 && m.V>0){
+      vctx.strokeStyle = css("--accent"); vctx.setLineDash([5,4]); vctx.lineWidth=1.6;
+      vctx.beginPath(); vctx.moveTo(X(0),Y(0)); vctx.lineTo(X(maxV), Y(m.I/m.V*maxV)); vctx.stroke();
+      vctx.setLineDash([]);
+    }
+  }
+  S.viPoints.forEach((p,k)=>{
+    const age = k/Math.max(1,S.viPoints.length-1);
+    vctx.globalAlpha = 0.35 + 0.65*age;
+    vctx.fillStyle = css("--accent");
+    vctx.beginPath(); vctx.arc(X(p.v), Y(p.i), 3.6, 0, 7); vctx.fill();
+  });
+  vctx.globalAlpha = 1;
+}
+
+/* ======================================================================
+   10. LOOP
+   ====================================================================== */
+const mqReduce = matchMedia("(prefers-reduced-motion: reduce)");
+let REDUCED = mqReduce.matches;
+mqReduce.addEventListener("change", ()=>{ REDUCED = mqReduce.matches; });
+let prev = performance.now(), acc = 0, syncT = 0;
+function frame(now){
+  const dt = Math.min(0.1,(now-prev)/1000); prev = now;
+  if(S.running){
+    if(REDUCED){
+      acc += dt; if(acc > 0.5){ acc = 0; step(0.5*S.speed); syncT = 1; }
+    } else {
+      step(dt*S.speed);
+      syncT += dt;
+    }
+    if(syncT > 0.12){ syncT = 0; sync(); }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+
+/* ======================================================================
+   11. WIRING UP
+   ====================================================================== */
+function setRunning(on){
+  S.running = on;
+  el("icPlay").innerHTML = on
+    ? '<rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/>'
+    : '<path d="M7 4 L19 12 L7 20 Z" fill="#fff"/>';
+  el("btnPlay").setAttribute("aria-pressed", String(on));
+  el("btnPlay").setAttribute("aria-label", on ? T("pause") : T("play"));
+}
+
+function applyLang(){
+  document.documentElement.lang = LANG;
+  document.documentElement.dir  = LANG==="ur" ? "rtl" : "ltr";
+  el("tTitle").textContent = T("title");   el("tSub").textContent = T("sub");
+  el("tNavTitle").textContent = T("navTitle");
+  el("navBench").textContent = T("bench"); el("navQuiz").textContent = T("quiz");
+  el("btnLang").textContent = T("lang");
+  el("btnProfile").textContent = dim ? T("bright") : T("dim");
+  el("tReadings").textContent = T("readings");
+  el("tCur").textContent = T("current"); el("tVol").textContent = T("voltage");
+  el("tRes").textContent = T("resistance"); el("tPow").textContent = T("power");
+  el("tSpeed").textContent = T("speed");
+  el("btnStep").textContent = T("stepBtn");
+  el("btnReset").setAttribute("aria-label", T("reset"));
+  el("tGraph").textContent = T("graph"); el("tGraphNote").textContent = T("graphNote") + " " + T("ohmHint");
+  el("viGraph").setAttribute("aria-label", T("graph") + ". " + T("ohmHint"));
+  el("vReal").textContent = T("realistic"); el("vSym").textContent = T("symbols");
+  el("tQuizTitle").textContent = T("quizTitle"); el("tQuizSub").textContent = T("quizSub");
+  el("boardDesc").textContent = T("boardDesc");
+  el("speed").setAttribute("aria-label", T("speed"));
+  setRunning(S.running);
+  buildTray(); buildPresets(); renderGuide(); buildQuiz();
+  if(S.sol) sync(); else afterMutate();
+}
+el("btnLang").addEventListener("click", ()=>{ LANG = LANG==="en" ? "ur" : "en"; applyLang(); });
+
+el("btnProfile").addEventListener("click", ()=>{
+  dim = !dim;
+  if(dim) document.documentElement.setAttribute("data-profile","dim");
+  else document.documentElement.removeAttribute("data-profile");
+  el("btnProfile").textContent = dim ? T("bright") : T("dim");
+});
+el("vReal").addEventListener("click", ()=>{ S.view="real";
+  el("vReal").setAttribute("aria-pressed","true"); el("vSym").setAttribute("aria-pressed","false"); });
+el("vSym").addEventListener("click", ()=>{ S.view="sym";
+  el("vSym").setAttribute("aria-pressed","true"); el("vReal").setAttribute("aria-pressed","false"); });
+
+el("btnPlay").addEventListener("click", ()=> setRunning(!S.running));
+el("btnStep").addEventListener("click", ()=>{ step(0.25); sync(); });
+el("speed").addEventListener("input", e=>{ S.speed = +e.target.value; });
+el("btnReset").addEventListener("click", ()=>{
+  S.parts=[]; S.nextId=1; S.viPoints=[]; S.sol=null; S.armed=null; S.selected=null;
+  S.everShorted=false; S.everBlown=false; S.drag=null; S.hover=null;
+  S.guide = { i:0, done:false, memo:{} };
+  S.speed = 1; el("speed").value = 1;
+  closePopover(); document.querySelectorAll(".part").forEach(b=>b.setAttribute("aria-pressed","false"));
+  setRunning(true);
+  renderGuide(); afterMutate();
+});
+
+function showScreen(which){
+  el("scBench").classList.toggle("on", which==="bench");
+  el("scQuiz").classList.toggle("on", which==="quiz");
+  el("navBench").setAttribute("aria-current", which==="bench"?"page":"false");
+  el("navQuiz").setAttribute("aria-current", which==="quiz"?"page":"false");
+  scrollTo({top:0});
+  if(which==="bench"){ fitBoard(); afterMutate(); }
+}
+el("navBench").addEventListener("click", ()=>showScreen("bench"));
+el("navQuiz").addEventListener("click", ()=>showScreen("quiz"));
+
+addEventListener("resize", ()=>{ fitBoard(); drawVI(); });
+
+fitBoard();
+applyLang();
+loadPreset("pEmpty");
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

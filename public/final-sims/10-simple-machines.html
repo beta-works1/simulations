@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<title>Simple Machines: Levers, Pulleys &amp; Mechanical Advantage — PCTB Class 8 Science</title>
+<!--
+==========================================================================
+ SIMPLE MACHINES: LEVERS, PULLEYS & MECHANICAL ADVANTAGE  ·  Sim 10 of 10
+ PCTB / SNC Class 8 General Science — Work, Energy and Simple Machines
+
+ LEARNING OBJECTIVES
+   1. A machine does not shrink the work. It trades force for distance
+      (or distance for force). The job feels easier; the work is the same
+      (ignoring friction).
+   2. A lever has fulcrum, load, and effort. Their order sets the class
+      and whether force or distance is multiplied.
+   3. Three classes: fulcrum in the middle (seesaw), load in the middle
+      (wheelbarrow), effort in the middle (fishing rod).
+   4. Fulcrum closer to the load → less effort FORCE, more effort DISTANCE.
+      Both numbers must move. That trade is this sim's reason to exist.
+   5. A single fixed pulley only turns the pull around (MA = 1). A movable
+      pulley or block-and-tackle cuts the force and lengthens the rope.
+   6. MA = load force ÷ effort force — read it live, do not hide it in algebra.
+   7. Friction steals some of that advantage: real effort > ideal MA.
+
+ MISCONCEPTIONS (quiz)
+   - Machines reduce the total work.
+   - Moving the fulcrum closer to the load is only an upside.
+   - Any pulley reduces the force needed.
+   - Any tool with a pivot is the same class of lever.
+   - MA > 1 means extra force for free.
+
+ SIMPLIFICATIONS
+   - No torque units, no W=Fd derivation to solve, no wedge/screw/gears.
+   - Friction is a simple extra-effort factor, not a µ calculation.
+
+ TEACHER: CONFIG. LIFT_CM is the fixed load height used to quote effort
+   distance. MAX_PUSH is how hard the student can press. FRICTION is the
+   extra effort multiplier in Mode 2. ARM_MIN stops the fulcrum sitting
+   on the load. If effort FORCE falls while effort DISTANCE stays flat
+   as the fulcrum moves, that is the send-back bug.
+
+ No error dialogs. A poorly placed fulcrum just will not lift.
+==========================================================================
+-->
+<style>
+:root{
+  --accent:#1F6FD0; --good:#237A46; --warn:#8C5A05; --crit:#A0173F;
+  --panel:#FFFFFF; --panel-2:#F2F4F5; --panel-border:#8A8A8A;
+  --text:#14202A; --text-2:#46565F; --text-3:#71828C;
+  --effort:#1F6FD0; --load:#C45C12; --fulc:#237A46;
+  --board:#EEF2F4; --grid:#D3DBDF; --hairline:#DCE1E4;
+  --shadow:0 2px 8px rgba(20,32,42,.14); --focus:#14202A; --on-accent:#FFFFFF;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --radius:12px;
+}
+:root[data-profile="dim"]{
+  --accent:#4E9BF0; --good:#4FB27A; --warn:#D0A03A; --crit:#E0648F;
+  --panel:#1A2126; --panel-2:#242D33; --panel-border:#5F6C74;
+  --text:#F1F5F7; --text-2:#C3CFD5; --text-3:#95A4AD;
+  --effort:#4E9BF0; --load:#F0A040; --fulc:#4FB27A;
+  --board:#131A1F; --grid:#26313A; --hairline:#3B464D;
+  --shadow:0 2px 10px rgba(0,0,0,.5); --focus:#FFFFFF; --on-accent:#0B1220;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{ font-family:var(--font); background:var(--panel-2); color:var(--text); font-size:16px; line-height:1.45; overflow-x:hidden; }
+:focus-visible{ outline:3px solid var(--focus); outline-offset:2px; border-radius:4px; }
+.sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.wrap{ max-width:1400px; margin:0 auto; padding:10px 10px 80px; }
+:root[dir="rtl"] body{ font-family:system-ui,"Noto Nastaliq Urdu","Segoe UI",Tahoma,sans-serif; }
+:root[dir="rtl"] .stage__inner{ direction:ltr; }
+.head{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; padding:2px 2px 10px; }
+.head__title{ font-size:clamp(19px,2.3vw,25px); font-weight:700; margin:0; letter-spacing:-.02em; }
+.head__sub{ margin:0; font-size:14.5px; color:var(--text-2); }
+.head__spacer{ margin-inline-start:auto; display:flex; gap:8px; flex-wrap:wrap; }
+.panel{ background:var(--panel); border:1px solid var(--panel-border); border-radius:var(--radius); box-shadow:var(--shadow); padding:12px 14px; }
+.panel__title{ font-size:15px; font-weight:700; margin:0 0 10px; }
+.guide{
+  background:var(--panel); border:2px solid var(--accent); border-radius:var(--radius);
+  padding:10px 13px; margin-bottom:10px;
+  display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center;
+}
+@media (max-width:760px){ .guide{ grid-template-columns:1fr; } }
+.guide.done{ border-color:var(--good); }
+.guide__badge{ min-width:72px; padding:6px 10px; border-radius:9px; text-align:center; background:var(--panel-2); border:1px solid var(--panel-border); }
+.guide__badgeTop{ font-size:12.5px; font-weight:700; letter-spacing:.06em; color:var(--text-3); }
+.guide__badgeNum{ font-size:20px; font-weight:700; font-family:var(--mono); font-variant-numeric:tabular-nums; }
+.guide__task{ font-size:17px; font-weight:700; margin:0; }
+.guide__hint{ font-size:14px; margin:4px 0 0; color:var(--text-2); }
+.guide__dots{ display:flex; gap:6px; margin-top:8px; }
+.guide__dot{ width:9px; height:9px; border-radius:50%; background:var(--hairline); }
+.guide__dot.on{ background:var(--good); }
+.guide__dot.now{ background:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent); }
+.guide__acts{ display:flex; gap:8px; flex-wrap:wrap; }
+.btn{
+  font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 16px; border-radius:9px; white-space:nowrap;
+  background:var(--accent); color:var(--on-accent); border:1px solid rgba(0,0,0,.28);
+}
+.btn:hover{ filter:brightness(1.08); }
+.btn--ghost{ background:var(--panel); color:var(--text); border-color:var(--panel-border); }
+.btn--go{ background:var(--good); color:#fff; }
+.btn--sm{ font-size:13.5px; padding:0 12px; }
+.btn[aria-pressed="true"]{ box-shadow:inset 0 0 0 2px var(--focus); }
+.round{
+  width:48px; height:48px; border-radius:50%; cursor:pointer; padding:0;
+  border:1px solid rgba(0,0,0,.35); display:grid; place-items:center; background:var(--btn,#E2E6E9);
+}
+.round--play{ --btn:var(--good); }
+.round--reset{ --btn:var(--warn); }
+.main{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,340px); gap:10px; align-items:start; }
+@media (max-width:1080px){ .main{ grid-template-columns:1fr; } }
+.tray{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+.seg{ display:inline-flex; border:1px solid var(--panel-border); border-radius:9px; overflow:hidden; flex-wrap:wrap; }
+.seg button{
+  font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 12px; border:0; background:var(--panel); color:var(--text-2);
+  border-inline-end:1px solid var(--panel-border);
+}
+.seg button:last-child{ border-inline-end:0; }
+.seg button[aria-pressed="true"]{ background:var(--accent); color:var(--on-accent); }
+.stage{ border:1px solid var(--panel-border); border-radius:var(--radius); overflow:hidden; background:var(--board); }
+.stage__inner{ position:relative; }
+#board{ display:block; width:100%; height:auto; touch-action:none; }
+.stage__bar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 10px; background:var(--panel); border-top:1px solid var(--hairline); }
+.reads{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.read{ background:var(--panel-2); border:1px solid var(--hairline); border-radius:9px; padding:8px 10px; }
+.read__k{ font-size:12.5px; color:var(--text-3); font-weight:700; }
+.read__v{ font-family:var(--mono); font-size:18px; font-variant-numeric:tabular-nums; font-weight:700; }
+.read--ma .read__v{ color:var(--accent); }
+.narr{ font-size:15px; line-height:1.5; margin:10px 0 0; }
+.row{ display:flex; align-items:center; gap:8px; margin:8px 0; flex-wrap:wrap; }
+.row label{ font-size:13.5px; font-weight:700; color:var(--text-2); min-width:92px; }
+.val{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:14px; min-width:52px; }
+#tGraphCvs{ display:block; width:100%; height:176px; }
+.graph-note{ font-size:13px; color:var(--text-3); margin:6px 0 0; }
+.legend{ display:flex; gap:12px; flex-wrap:wrap; margin-top:10px; font-size:12.5px; color:var(--text-2); align-items:center; }
+.leg-f, .leg-d{ display:inline-flex; align-items:center; gap:6px; }
+.leg-f i, .leg-d i{ display:block; background:currentColor; border-radius:2px; }
+.leg-f i{ width:22px; height:10px; color:var(--effort); }
+.leg-d i{ width:36px; height:3px; color:var(--warn); }
+.screen{ display:none; } .screen.on{ display:block; }
+.q{ margin-bottom:10px; }
+.q__n{ font-size:12.5px; color:var(--text-3); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.q__t{ font-size:17px; font-weight:700; margin:6px 0 12px; }
+.opts{ display:grid; gap:8px; }
+.opt{
+  display:flex; align-items:flex-start; gap:10px; text-align:start; width:100%;
+  min-height:52px; padding:12px 14px; cursor:pointer; border-radius:9px;
+  font-family:inherit; font-size:15.5px; background:var(--panel-2); color:var(--text);
+  border:2px solid var(--panel-border);
+}
+.opt.correct{ border-color:var(--good); background:color-mix(in srgb,var(--good) 14%,var(--panel)); }
+.opt.wrong{ border-color:var(--crit); background:color-mix(in srgb,var(--crit) 12%,var(--panel)); }
+.opt__k{ font-family:var(--mono); font-size:14px; color:var(--text-3); min-width:1.2em; }
+.fb{ display:none; margin:10px 0 0; padding:11px 13px; font-size:14.5px; border-radius:8px; background:var(--panel-2); border-inline-start:5px solid var(--panel-border); }
+.fb.show{ display:block; } .fb.ok{ border-inline-start-color:var(--good); } .fb.no{ border-inline-start-color:var(--crit); }
+.score{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.score__v{ font-family:var(--mono); font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; }
+.nav{
+  position:sticky; bottom:6px; z-index:40; margin-top:10px; border-radius:10px;
+  background:#101418; color:#fff; display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:6px 13px;
+}
+.nav__t{ font-size:14.5px; font-weight:700; margin-inline-end:auto; }
+.navbtn{ cursor:pointer; background:transparent; border:2px solid transparent; border-radius:8px; color:#B9C0C5; font-family:inherit; font-size:14px; font-weight:700; padding:5px 11px; min-height:44px; }
+.navbtn[aria-current="page"]{ color:#fff; border-color:#fff; }
+input[type=range]{ -webkit-appearance:none; appearance:none; height:44px; background:transparent; cursor:pointer; flex:1; min-width:80px; }
+input[type=range]::-webkit-slider-runnable-track{ height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border); }
+input[type=range]::-moz-range-track{ height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border); }
+input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:26px; height:30px; margin-top:-12px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45); }
+input[type=range]::-moz-range-thumb{ width:26px; height:30px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45); }
+.pz{ padding:8px 10px; border-radius:9px; background:var(--panel-2); border:1px solid var(--hairline); font-size:14.5px; margin:0 0 8px; }
+@media (prefers-reduced-motion:reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="screen on" id="scBench">
+  <header class="head">
+    <h1 class="head__title" id="tTitle">Simple Machines</h1>
+    <p class="head__sub" id="tSub">Less force always costs more distance. That trade is mechanical advantage — not a free gain.</p>
+    <span class="head__spacer">
+      <button class="btn btn--ghost btn--sm" id="btnLang" type="button">اردو</button>
+      <button class="btn btn--ghost btn--sm" id="btnProfile" type="button">Dim room</button>
+    </span>
+  </header>
+  <section class="guide" id="guide" aria-live="polite">
+    <div class="guide__badge">
+      <div class="guide__badgeTop" id="tStep">TASK</div>
+      <div class="guide__badgeNum" id="gNum">1/5</div>
+    </div>
+    <div>
+      <p class="guide__task" id="gTask">—</p>
+      <p class="guide__hint" id="gHint">—</p>
+      <div class="guide__dots" id="gDots" aria-hidden="true"></div>
+    </div>
+    <div class="guide__acts">
+      <button class="btn btn--ghost" id="gShow" type="button">Show me</button>
+      <button class="btn btn--go" id="gNext" type="button" hidden>Next</button>
+    </div>
+  </section>
+  <div class="main">
+    <div>
+      <div class="tray" id="modeTray"></div>
+      <div class="stage">
+        <div class="stage__inner" id="stageInner">
+          <canvas id="board" role="img" aria-label="Lever and pulley bench" aria-describedby="boardDesc" tabindex="0"></canvas>
+          <p class="sr" id="boardDesc">Drag the fulcrum. Watch effort force and effort distance move in opposite directions. A fat short arrow is a big force over a short move. A thin long arrow is a small force over a long move.</p>
+        </div>
+        <div class="stage__bar">
+          <button class="round round--play" id="btnPlay" type="button" aria-pressed="true" aria-label="Pause">
+            <svg width="20" height="20" viewBox="0 0 24 24" id="icPlay" aria-hidden="true"><rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/></svg>
+          </button>
+          <button class="btn btn--ghost btn--sm" id="btnStep" type="button">Step</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px">
+            <span id="tSpeed">Speed</span>
+            <input type="range" id="speed" min="0.25" max="2" step="0.25" value="1" style="width:96px" aria-label="Speed" />
+          </label>
+          <button class="round round--reset" id="btnReset" type="button" aria-label="Reset">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 1 0 6.5 4.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M12 1.5V8.5L6.5 5z" fill="#fff"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:10px" id="modeOpts"></div>
+    </div>
+    <div>
+      <div class="panel">
+        <h2 class="panel__title" id="tReadings">Live readings</h2>
+        <div class="reads" aria-live="polite">
+          <div class="read"><div class="read__k" id="kA">Effort force</div><div class="read__v" id="rA">—</div></div>
+          <div class="read"><div class="read__k" id="kB">Load force</div><div class="read__v" id="rB">—</div></div>
+          <div class="read"><div class="read__k" id="kC">Effort distance</div><div class="read__v" id="rC">—</div></div>
+          <div class="read"><div class="read__k" id="kD">Load height</div><div class="read__v" id="rD">—</div></div>
+          <div class="read read--ma"><div class="read__k" id="kE">Mechanical advantage</div><div class="read__v" id="rE">—</div></div>
+          <div class="read"><div class="read__k" id="kF">Lift</div><div class="read__v" id="rF">—</div></div>
+        </div>
+        <p class="narr" id="narr" aria-live="polite">—</p>
+        <div class="legend" aria-hidden="true">
+          <span class="leg-f"><i></i><span id="legF">fat + short = large force, small move</span></span>
+          <span class="leg-d"><i></i><span id="legD">thin + long = small force, large move</span></span>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:10px">
+        <h2 class="panel__title" id="tGraph">The trade-off</h2>
+        <canvas id="tGraphCvs" role="img" aria-label="Effort force versus effort distance. The point slides along constant work."></canvas>
+        <p class="graph-note" id="tGraphNote">Force down, distance up. Same work. Never one without the other.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="screen" id="scQuiz">
+  <header class="head">
+    <h1 class="head__title" id="tQuizTitle">Check what you have learned</h1>
+    <p class="head__sub" id="tQuizSub">Five questions, with the answer explained straight away.</p>
+  </header>
+  <div id="quiz" style="max-width:840px;margin:0 auto"></div>
+</div>
+<nav class="nav" aria-label="Screens">
+  <span class="nav__t" id="tNavTitle">Simple Machines</span>
+  <button class="navbtn" id="navBench" type="button" aria-current="page">Bench</button>
+  <button class="navbtn" id="navQuiz" type="button">Quiz</button>
+</nav>
+</div>
+
+<script>
+"use strict";
+/* ======================================================================
+   1. CONFIG
+   Effort force Fe and effort distance dE are locked together:
+   Fe × dE = load × lift height (ideal). Sliding the fulcrum MUST
+   move both numbers — never only one.
+   ====================================================================== */
+const CONFIG = {
+  LIFT_CM: 40,       // quoted load height; effort distance = LIFT_CM × (dE/dL)
+  MAX_PUSH: 85,      // N the student can apply in free play
+  ARM_MIN: 0.16,     // fulcrum cannot sit on an end (keeps MA finite)
+  FRICTION: 1.18,    // Mode 2 extra effort when "with friction" is on
+  LOAD_MIN: 40,
+  LOAD_MAX: 200,
+  LOAD0: 90,
+  PULL_SPEED: 55,    // cm of rope per second while holding Pull
+  SAMPLE_DT: 0.12
+};
+
+const TOOLS = {
+  seesaw: { klass:1, u:0.50, load:80 },
+  barrow: { klass:2, u:0.32, load:120 },
+  rod:    { klass:3, u:0.28, load:36 }
+};
+
+const PUZZLES = [
+  { type:"lever",  load:150, maxE:58, u:0.50, klass:1, t:"pz1", why:"pz1w" },
+  { type:"pulley", load:130, maxE:75, pulley:"fixed", friction:false, t:"pz2", why:"pz2w" },
+  { type:"lever",  load:110, maxE:48, u:0.34, klass:1, t:"pz3", why:"pz3w" },
+  { type:"pulley", load:180, maxE:72, pulley:"fixed", friction:true,  t:"pz4", why:"pz4w" },
+  { type:"pulley", load:240, maxE:90, pulley:"movable", friction:false, t:"pz5", why:"pz5w" }
+];
+
+const STRANDS = { fixed:1, movable:2, block:3 };
+
+/* ======================================================================
+   2. STRINGS
+   ====================================================================== */
+const STRINGS = {
+  en: {
+    title:"Simple Machines: Levers, Pulleys & Mechanical Advantage",
+    sub:"Less force always costs more distance. Mechanical advantage is a trade, not extra force from nowhere.",
+    navTitle:"Simple Machines", bench:"Bench", quiz:"Quiz", lang:"اردو", dim:"Dim room", bright:"Bright room",
+    play:"Play", pause:"Pause", stepBtn:"Step", speed:"Speed", reset:"Reset",
+    readings:"Live readings", graph:"The trade-off (constant work)",
+    graphNote:"As you slide the fulcrum, the point moves along a curve of the same work: effort force × effort distance stays equal to load × load height.",
+    boardDesc:"Drag the fulcrum along the bar. Effort force and effort distance must move in opposite directions. Fat short arrows mean large force over a small move.",
+    quizTitle:"Check what you have learned", quizSub:"Five questions, with the answer explained straight away.",
+    tryAgain:"Try again", score:"Score", next:"Next", show:"Show me", task:"TASK",
+    m1:"Lever playground", m2:"Pulley systems", m3:"MA challenge",
+    effortF:"Effort force", loadF:"Load force", effortD:"Effort distance", loadD:"Load height",
+    ma:"Mechanical advantage", lift:"Lift",
+    can:"will lift", stuck:"will not budge", lifting:"lifting…",
+    load:"Load", fulcrum:"Fulcrum", effort:"Effort",
+    holdLift:"Hold to lift", pulling:"Hold to pull",
+    frictionOff:"Ideal (no friction)", frictionOn:"With friction",
+    pFixed:"Single fixed", pMove:"Movable", pBlock:"Block and tackle",
+    seesaw:"Seesaw", barrow:"Wheelbarrow", rod:"Fishing rod",
+    classQ:"Which class is this tool?",
+    c1:"Class 1 — fulcrum in the middle",
+    c2:"Class 2 — load in the middle",
+    c3:"Class 3 — effort in the middle",
+    nPlay:"Drag the fulcrum. Watch four numbers move together: two forces, two distances. That is the whole lesson.",
+    nToward:"You've moved the fulcrum closer to the load — the push you need just dropped, but watch how much further your hand has to travel now to lift it the same height.",
+    nAway:"Fulcrum nearer your hand. You must push harder, but a small hand-move lifts the load a long way.",
+    nStuck:"Your push is not enough. The load does not move. Slide the fulcrum closer to the load — you will need less force, and a longer push.",
+    nLift:"The load is up. Check the panel: the smaller force travelled the longer distance. Work is the same mix, rearranged.",
+    nC1:"Class 1: the fulcrum sits between load and effort — a seesaw. MA can be more or less than 1, depending where the fulcrum is.",
+    nC2:"Class 2: the load sits between fulcrum and effort — a wheelbarrow. MA is always greater than 1.",
+    nC3:"Class 3: the effort sits between fulcrum and load — a fishing rod. MA is less than 1: extra force, extra load distance.",
+    nWrong:"Not that class. Look which of the three sits in the middle: fulcrum, load, or effort.",
+    nFixed:"Same force as lifting the crate by hand. The fixed pulley only turned your pull around. Rope length = height gained.",
+    nMove:"Two ropes share the load. About half the force, twice the rope, for the same height.",
+    nBlock:"Three ropes share the load. About a third of the force, three times the rope — the same trade as a long lever.",
+    nFric:"Friction eats some of the advantage. You pull harder than the ideal MA on the panel. The extra effort is lost, not gained as height.",
+    nIdeal:"Ideal case: effort × rope matches load × height. No extra pull.",
+    nPzOk:"Puzzle solved. MA {ma}. {why}",
+    nPzGo:"Hit the effort ceiling, then lift. The machine must make Fe small enough — and you will pay in distance.",
+    legF:"fat + short = large force, small move",
+    legD:"thin + long = small force, large move",
+    t1:"Slide the fulcrum from the centre toward the load. Watch effort force drop while effort distance grows.",
+    h1:"Drag the green triangle. You do not press “I’m done” — both numbers must move.",
+    p1:"Less force, more distance. That is mechanical advantage, not a free upgrade.",
+    t2:"Pick a real tool and name its lever class.",
+    h2:"Seesaw, wheelbarrow, or fishing rod — then choose which point sits in the middle.",
+    p2:"The three classes are different arrangements, not three names for the same pivot.",
+    t3:"Lift the same load with a single fixed pulley, then with a block-and-tackle, and compare effort.",
+    h3:"Pull in both setups. Fixed only turns the rope around; the block cuts the force and lengthens the pull.",
+    p3:"Same crate, same height. Block: smaller force, longer rope. Fixed: same force, same rope, new direction.",
+    t4:"Turn on “with friction” and pull. Notice you need more effort than the ideal case.",
+    h4:"Lift once ideal, once with friction. Real machines leak a little advantage.",
+    p4:"Friction does not change the idea of the trade — it just makes you pay a bit more force than MA predicts.",
+    t5:"Solve at least 3 puzzles in the Mechanical Advantage Challenge.",
+    h5:"Each puzzle has an effort ceiling. Reposition the fulcrum or pick a pulley until you can lift.",
+    p5:"You never got extra force from nowhere. You bought a smaller push with a longer move.",
+    pz1:"Lift this 150 N crate. You can only push 58 N. The fulcrum starts in the middle — that will not budge.",
+    pz1w:"Closer to the load lengthens the effort arm. Fe fell below 58 N; the hand now travels further for the same 40 cm lift.",
+    pz2:"This 130 N crate must rise with no more than 75 N on the rope. A single fixed pulley will not cut the force.",
+    pz2w:"A fixed pulley only changes direction (MA = 1). Movable or block-and-tackle shares the load across more strands.",
+    pz3:"110 N load, 48 N max push, fulcrum too near your hand. Fix the trade.",
+    pz3w:"You gave the effort a longer arm than the load. Force down, distance up.",
+    pz4:"180 N with friction on, ceiling 72 N. Ideal MA of 2 is not enough once friction steals a slice.",
+    pz4w:"Friction raises the real effort above W / strands. You needed the extra strand of the block-and-tackle.",
+    pz5:"240 N, ceiling 90 N. Even a movable pulley leaves you short. Pick the system with more supporting ropes.",
+    pz5w:"Three strands: about 80 N ideal. That clears 90 N. Two strands would still be 120 N.",
+    nextPz:"Next puzzle",
+    q1:"Does a simple machine reduce the total amount of work you have to do (ignoring friction)?",
+    q1a:"Yes — that is why we call it a machine.",
+    q1b:"No. It trades force for distance (or distance for force). The work is rearranged, not shrunk.",
+    q1c:"Only levers do; pulleys actually shrink the work.",
+    q1w:"Work is force × distance. Cut the force and the distance you must move grows by the same factor. The job is the same size.",
+    q2:"You slide the fulcrum closer to the load. What happens?",
+    q2a:"Effort force falls, and that is the only change — a free improvement.",
+    q2b:"Effort force falls AND the effort end must travel further to lift the load the same height. There is no free upside.",
+    q2c:"Effort force rises because the bar is now unbalanced.",
+    q2w:"MA = effort arm ÷ load arm. Growing that ratio cuts Fe and grows effort distance together. Both live numbers move in this sim.",
+    q3:"A single fixed pulley is used to lift a crate. What does it change?",
+    q3a:"It always halves the effort force.",
+    q3b:"It changes the direction of the pull. Effort force stays about the same as lifting the crate directly.",
+    q3c:"It removes gravity from the crate.",
+    q3w:"MA = 1 for a single fixed pulley. Only a movable pulley or a block-and-tackle shares the load across more ropes.",
+    q4:"A seesaw, a wheelbarrow, and a fishing rod all have a pivot. Are they the same class of lever?",
+    q4a:"Yes — any tool with a fulcrum is Class 1.",
+    q4b:"No. Class depends on which of fulcrum, load, and effort sits in the middle — and the three tools are three different arrangements.",
+    q4c:"Only if they are the same length.",
+    q4w:"Seesaw: fulcrum in the middle (Class 1). Wheelbarrow: load in the middle (Class 2). Fishing rod: effort in the middle (Class 3).",
+    q5:"Mechanical advantage greater than 1 means you are getting extra force for free. True or false?",
+    q5a:"True — MA is a bonus multiplier nature gives you.",
+    q5b:"False. MA > 1 means a smaller effort FORCE, always paired with a larger effort DISTANCE. It is a trade, not a gift.",
+    q5c:"True for pulleys, false for levers.",
+    q5w:"Read the panel: when MA goes up, effort force goes down and effort distance goes up. You never get more force out without moving your end further."
+  },
+  ur: {
+    title:"سادہ مشینیں: لیور، گھرے اور میکانی فائدہ",
+    sub:"کم زور کی قیمت ہمیشہ زیادہ فاصلہ ہے۔ میکانی فائدہ سودا ہے، مفت زور نہیں۔",
+    navTitle:"سادہ مشینیں", bench:"بینچ", quiz:"سوالات", lang:"English", dim:"مدھم کمرہ", bright:"روشن کمرہ",
+    play:"چلائیں", pause:"روکیں", stepBtn:"قدم", speed:"رفتار", reset:"ری سیٹ",
+    readings:"لائیو ریڈنگز", graph:"سودا (ایک جیسا کام)",
+    graphNote:"تکیہ کھिसکانے پر نقطہ اسی کام کے منحنی پر چلتا ہے: زور × فاصلہ = بار × اونچائی۔",
+    boardDesc:"تکیہ کھिसکائیں۔ زور اور فاصلہ الٹی سمتوں میں چلیں۔ موٹا چھوٹا تیر بڑا زور، چھوٹی حرکت۔",
+    quizTitle:"جو سیکھا ہے جانچیں", quizSub:"پانچ سوال، جواب فوراً سمجھایا جاتا ہے۔",
+    tryAgain:"دوبارہ کوشش", score:"اسکور", next:"آگے", show:"دکھاؤ", task:"کام",
+    m1:"لیور کا میدان", m2:"گھروں کے نظام", m3:"میکانی فائدہ کا چیلنج",
+    effortF:"کوشش کا زور", loadF:"بار کا زور", effortD:"کوشش کا فاصلہ", loadD:"بار کی اونچائی",
+    ma:"میکانی فائدہ", lift:"اٹھان",
+    can:"اٹھے گا", stuck:"ہلے گا نہیں", lifting:"اٹھ رہا…",
+    load:"بار", fulcrum:"تکیہ", effort:"کوشش",
+    holdLift:"دبا کر اٹھائیں", pulling:"کھینچے رکھیں",
+    frictionOff:"مثالی (رگڑ نہیں)", frictionOn:"رگڑ کے ساتھ",
+    pFixed:"ایک ساکن گھرا", pMove:"متحرک گھرا", pBlock:"بلاک اینڈ ٹیکل",
+    seesaw:"جھولا", barrow:"ٹھیلہ", rod:"ماہی گیری کی چھڑی",
+    classQ:"یہ اوزار کس قسم کا لیور ہے؟",
+    c1:"قسم 1 — تکیہ بیچ میں",
+    c2:"قسم 2 — بار بیچ میں",
+    c3:"قسم 3 — کوشش بیچ میں",
+    nPlay:"تکیہ کھिसکائیں۔ چار عدد اکٹھے چلیں: دو زور، دو فاصلے۔ یہی سبق ہے۔",
+    nToward:"تکیہ بار کے قریب کیا — مطلوبہ دھکا کم ہوا، مگر اسی اونچائی کے لیے ہاتھ اب زیادہ سفر کرے گا۔",
+    nAway:"تکیہ ہاتھ کے قریب۔ زیادہ زور چاہیے، مگر چھوٹی حرکت بار کو دور لے جاتی ہے۔",
+    nStuck:"آپ کا دھکا کافی نہیں۔ بار نہیں ہلا۔ تکیہ بار کے قریب کریں — کم زور، لمبی دھکیل۔",
+    nLift:"بار اوپر ہے۔ پینل دیکھیں: چھوٹے زور نے لمبا فاصلہ طے کیا۔ کام وہی رہا، ترتیب بدل گئی۔",
+    nC1:"قسم 1: تکیہ بار اور کوشش کے بیچ — جھولا۔ MA 1 سے کم یا زیادہ ہو سکتا ہے۔",
+    nC2:"قسم 2: بار تکیہ اور کوشش کے بیچ — ٹھیلہ۔ MA ہمیشہ 1 سے بڑا۔",
+    nC3:"قسم 3: کوشش تکیہ اور بار کے بیچ — چھڑی۔ MA 1 سے چھوٹا: زیادہ زور، بار کا زیادہ فاصلہ۔",
+    nWrong:"وہ قسم نہیں۔ دیکھیں بیچ میں کون ہے: تکیہ، بار، یا کوشش۔",
+    nFixed:"ہاتھ سے اٹھانے جتنا ہی زور۔ ساکن گھرا نے صرف سمت بدل دی۔ رسی = اونچائی۔",
+    nMove:"دو رسیاں بار بانٹتی ہیں۔ تقریباً آدھا زور، دگنی رسی، وہی اونچائی۔",
+    nBlock:"تین رسیاں۔ تقریباً تہائی زور، تگنی رسی — لمبے لیور جیسا سودا۔",
+    nFric:"رگڑ فائدے کا کچھ حصہ کھا جاتی ہے۔ مثالی MA سے زیادہ کھینچنا پڑتا ہے۔",
+    nIdeal:"مثالی: کوشش × رسی = بار × اونچائی۔ کوئی زائد کھینچاؤ نہیں۔",
+    nPzOk:"پہیلی حل۔ MA {ma}۔ {why}",
+    nPzGo:"زور کی حد تک پہنچیں، پھر اٹھائیں۔ مشین Fe چھوٹا کرے گی — فاصلے میں قیمت دینی ہوگی۔",
+    legF:"موٹا + چھوٹا = بڑا زور، چھوٹی حرکت",
+    legD:"پتلا + لمبا = چھوٹا زور، بڑی حرکت",
+    t1:"تکیہ مرکز سے بار کی طرف کھیسکائیں۔ زور گرے، فاصلہ بڑھے۔",
+    h1:"سبز تکون کھینچیں۔ 'میں ہو گیا' نہیں — دونوں عدد چلیں۔",
+    p1:"کم زور، زیادہ فاصلہ۔ یہ میکانی فائدہ ہے، مفت ترقی نہیں۔",
+    t2:"ایک حقیقی اوزار چنیں اور اس کی لیور قسم بتائیں۔",
+    h2:"جھولا، ٹھیلہ، یا چھڑی — پھر بتائیں بیچ میں کون سا نقطہ ہے۔",
+    p2:"تین قسمیں تین ترتیبیں ہیں، ایک ہی تکیے کے تین نام نہیں۔",
+    t3:"وہی بار ساکن گھرے سے اٹھائیں، پھر بلاک اینڈ ٹیکل سے، زور کا موازنہ کریں۔",
+    h3:"دونوں میں کھینچیں۔ ساکن صرف سمت بدلتا ہے؛ بلاک زور کاٹتا اور رسی لمبی کرتا ہے۔",
+    p3:"وہی صندوق، وہی اونچائی۔ بلاک: کم زور، لمبی رسی۔ ساکن: وہی زور، وہی رسی، نئی سمت۔",
+    t4:"'رگڑ کے ساتھ' چالو کر کے کھینچیں۔ مثالی سے زیادہ زور چاہیے گا۔",
+    h4:"ایک بار مثالی، ایک بار رگڑ۔ حقیقی مشین فائدہ تھوڑا بہاتی ہے۔",
+    p4:"رگڑ سودے کا خیال نہیں بدلتی — صرف MA سے کچھ زیادہ زور لیتی ہے۔",
+    t5:"میکانی فائدہ کے چیلنج میں کم از کم 3 پہیلیاں حل کریں۔",
+    h5:"ہر پہیلی کی زور حد ہے۔ تکیہ ہلائیں یا گھرا چنیں تاکہ اٹھ سکے۔",
+    p5:"کہیں سے زائد زور نہیں ملا۔ چھوٹے دھکے کو لمبی حرکت سے خریدا۔",
+    pz1:"150 N کا صندوق اٹھائیں۔ صرف 58 N دبا سکتے ہیں۔ تکیہ بیچ میں ہے — نہیں ہلے گا۔",
+    pz1w:"بار کے قریب کوشش کا بازو لمبا ہوا۔ Fe 58 سے نیچے آیا؛ 40 cm اٹھان پر ہاتھ اب زیادہ چلے گا۔",
+    pz2:"130 N صندوق 75 N سے زیادہ رسی پر نہیں۔ اکیلے ساکن گھرے سے زور نہیں کٹے گا۔",
+    pz2w:"ساکن گھرا صرف سمت بدلتا ہے (MA = 1)۔ متحرک یا بلاک زیادہ تاروں پر بار بانٹتے ہیں۔",
+    pz3:"110 N بار، 48 N حد، تکیہ ہاتھ کے قریب۔ سودا ٹھیک کریں۔",
+    pz3w:"کوشش کو بار سے لمبا بازو دیا۔ زور نیچے، فاصلہ اوپر۔",
+    pz4:"180 N رگڑ کے ساتھ، حد 72 N۔ دو تاروں کا مثالی MA رگڑ کے بعد کافی نہیں۔",
+    pz4w:"رگڑ حقیقی زور کو W / تاروں سے اوپر لے جاتی ہے۔ بلاک کی تیسری تار چاہیے تھی۔",
+    pz5:"240 N، حد 90 N۔ متحرک گھرا بھی کم پڑتا ہے۔ زیادہ سہارا دینے والی رسیوں والا نظام چنیں۔",
+    pz5w:"تین تار: تقریباً 80 N مثالی۔ 90 سے نیچے۔ دو تار پھر بھی 120 N۔",
+    nextPz:"اگلی پہیلی",
+    q1:"کیا سادہ مشین (رگڑ نظرانداز) آپ کا کل کام کم کر دیتی ہے؟",
+    q1a:"ہاں — اسی لیے اسے مشین کہتے ہیں۔",
+    q1b:"نہیں۔ یہ زور کو فاصلے سے بدلتی ہے (یا الٹ)۔ کام گھٹتا نہیں، ترتیب بدلتی ہے۔",
+    q1c:"صرف لیور؛ گھرے کام حقیقتاً گھٹا دیتے ہیں۔",
+    q1w:"کام = زور × فاصلہ۔ زور کاٹیں تو وہ فاصلہ اتنے ہی گنا بڑھتا ہے۔ کام کا سائز وہی رہتا ہے۔",
+    q2:"تکیہ بار کے قریب کھिसکایا۔ کیا ہوتا ہے؟",
+    q2a:"کوشش کا زور گرتا ہے اور بس — مفت بہتری۔",
+    q2b:"زور گرتا ہے اور کوشش والے سرے کو وہی اونچائی اٹھانے کے لیے زیادہ سفر کرنا پڑتا ہے۔ مفت فائدہ نہیں۔",
+    q2c:"زور بڑھتا ہے کیونکہ سلاخ اب غیر متوازن ہے۔",
+    q2w:"MA = کوشش بازو ÷ بار بازو۔ یہ نسبت بڑھے تو Fe گرتا اور فاصلہ بڑھتا ہے۔ دونوں عدد چلتے ہیں۔",
+    q3:"ایک ساکن گھرا صندوق اٹھاتا ہے۔ یہ کیا بدلتا ہے؟",
+    q3a:"ہمیشہ کوشش کا زور آدھا کر دیتا ہے۔",
+    q3b:"کھینچنے کی سمت بدلتا ہے۔ زور تقریباً ہاتھ سے اٹھانے جتنا ہی رہتا ہے۔",
+    q3c:"صندوق سے ثقل ہٹا دیتا ہے۔",
+    q3w:"ساکن گھرے کا MA = 1۔ صرف متحرک گھرا یا بلاک بار کو زیادہ رسیوں پر بانٹتے ہیں۔",
+    q4:"جھولا، ٹھیلہ اور ماہی گیری کی چھڑی سب میں تکیہ ہے۔ کیا یہ ایک ہی قسم کے لیور ہیں؟",
+    q4a:"ہاں — جس اوزار میں تکیہ ہو وہ قسم 1 ہے۔",
+    q4b:"نہیں۔ قسم اس سے بنتی ہے کہ تکیہ، بار یا کوشش میں سے کون بیچ میں ہے — تین اوزار تین ترتیبیں۔",
+    q4c:"صرف اگر لمبائی ایک جیسی ہو۔",
+    q4w:"جھولا: تکیہ بیچ میں (1)۔ ٹھیلہ: بار بیچ میں (2)۔ چھڑی: کوشش بیچ میں (3)۔",
+    q5:"MA 1 سے بڑا یعنی مفت زائد زور۔ درست یا غلط؟",
+    q5a:"درست — MA فطرت کا بونس ہے۔",
+    q5b:"غلط۔ MA > 1 چھوٹا زور ہے، ہمیشہ بڑے فاصلے کے ساتھ۔ سودا ہے، تحفہ نہیں۔",
+    q5c:"گھروں کے لیے درست، لیور کے لیے غلط۔",
+    q5w:"پینل پڑھیں: MA بڑھے تو زور گرے اور فاصلہ بڑھے۔ اپنا سرا مزید حرکت دیے بغیر زیادہ زور نہیں ملتا۔"
+  }
+};
+let LANG = "en";
+function T(k){ return (STRINGS[LANG]&&STRINGS[LANG][k]) || STRINGS.en[k] || k; }
+function el(id){ return document.getElementById(id); }
+function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+function fillTpl(s, map){ return s.replace(/\{(\w+)\}/g, (_,k)=> map[k] ?? ""); }
+function fmtN(n){ return (Math.round(n*10)/10).toFixed(n>=20?0:1); }
+function fmtMA(n){ return (Math.round(n*100)/100).toFixed(2); }
+
+/* ======================================================================
+   3. STATE
+   ====================================================================== */
+function initial(){
+  return {
+    mode: 1,
+    running: true,
+    speed: 1,
+    klass: 1,
+    tool: null,
+    classGuess: null,
+    u: 0.50,
+    loadN: CONFIG.LOAD0,
+    maxPush: CONFIG.MAX_PUSH,
+    pose: 0,
+    hold: false,
+    shake: 0,
+    pulley: "fixed",
+    friction: false,
+    rope: 0,
+    pz: 0,
+    pzSolved: false,
+    lastDir: 0,
+    tSim: 0,
+    seen: {
+      fulc:false, classOk:false,
+      liftFixed:false, liftBlock:false,
+      liftIdeal:false, liftFric:false,
+      puzzles:0, pzGot:{}
+    },
+    guide: { i:0, done:false }
+  };
+}
+let S = initial();
+let dim = false;
+const drag = { kind:null };
+
+const W = 900, H = 500;
+const canvas = el("board");
+const ctx = canvas.getContext("2d");
+const gcv = el("tGraphCvs");
+const gctx = gcv.getContext("2d");
+let cssW=900, cssH=500;
+function dpr(){ return Math.min(2, window.devicePixelRatio||1); }
+function fitBoard(){
+  const wrap = el("stageInner");
+  const w = Math.max(280, wrap.clientWidth);
+  const h = Math.max(300, Math.min(540, Math.round(w * H/W)));
+  cssW=w; cssH=h;
+  const d=dpr();
+  canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+}
+
+function station(){
+  if(S.mode===3) return PUZZLES[S.pz].type;
+  if(S.mode===2) return "pulley";
+  return "lever";
+}
+
+function maxPush(){
+  return S.mode===3 ? PUZZLES[S.pz].maxE : S.maxPush;
+}
+
+/* ======================================================================
+   4. PHYSICS / MODEL
+   Class 1: effort left, load right, fulcrum slides. u↑ (toward load)
+   shortens the load arm → Fe ↓ and dEffort ↑ together.
+   ====================================================================== */
+function leverMeasure(){
+  const bar0=90, bar1=810, L=bar1-bar0;
+  const u = clamp(S.u, CONFIG.ARM_MIN, 1-CONFIG.ARM_MIN);
+  const klass = S.klass;
+  let fulc, load, effort;
+  if(klass===1){
+    effort = bar0; load = bar1; fulc = bar0 + u*L;
+  } else if(klass===2){
+    fulc = bar0; effort = bar1; load = bar0 + lerp(0.20, 0.52, u)*L;
+  } else {
+    fulc = bar0; load = bar1; effort = bar0 + lerp(0.18, 0.48, u)*L;
+  }
+  const dE = Math.abs(effort - fulc);
+  const dL = Math.abs(load - fulc);
+  const MA = dE / dL;
+  const Fe = S.loadN / MA;
+  const dLoad = CONFIG.LIFT_CM;
+  const dEffort = dLoad * (dE / dL); /* = dLoad * MA — locked to Fe by Fe*dEffort = load*dLoad */
+  const can = Fe <= maxPush() + 0.05;
+  return { kind:"lever", bar0, bar1, fulc, load, effort, dE, dL, MA, Fe, Fl:S.loadN, dLoad, dEffort, can, klass, u };
+}
+function pulleyMeasure(){
+  const n = STRANDS[S.pulley] || 1;
+  const FeIdeal = S.loadN / n;
+  const Fe = FeIdeal * (S.friction ? CONFIG.FRICTION : 1);
+  const MA = S.loadN / Fe; /* live MA = load ÷ actual effort, so friction lowers it */
+  const dLoad = CONFIG.LIFT_CM;
+  const dEffort = dLoad * n; /* rope for that height follows strands, not the friction-cut MA */
+  const h = Math.min(dLoad, S.rope / n);
+  const can = Fe <= maxPush() + 0.05;
+  return { kind:"pulley", n, MA, Fe, FeIdeal, Fl:S.loadN, dLoad, dEffort, h, rope:S.rope, can, pulley:S.pulley };
+}
+function measure(){ return station()==="pulley" ? pulleyMeasure() : leverMeasure(); }
+
+function noteLift(m){
+  if(m.kind==="pulley" && m.h>6){
+    if(S.pulley==="fixed") S.seen.liftFixed = true;
+    if(S.pulley==="block") S.seen.liftBlock = true;
+    if(S.friction) S.seen.liftFric = true;
+    else S.seen.liftIdeal = true;
+  }
+  if(m.kind==="lever" && S.pose>0.55){
+    /* lever lift still counts as a successful raise for puzzles */
+  }
+}
+function checkPuzzle(m){
+  if(S.mode!==3 || S.pzSolved) return;
+  const lifted = m.kind==="pulley" ? m.h>12 : S.pose>0.55;
+  if(m.can && lifted){
+    S.pzSolved = true;
+    if(!S.seen.pzGot[S.pz]){
+      S.seen.pzGot[S.pz] = true;
+      S.seen.puzzles++;
+    }
+  }
+}
+
+function step(dt){
+  S.tSim += dt;
+  const m = measure();
+  if(S.shake>0) S.shake = Math.max(0, S.shake - dt*3);
+  if(m.kind==="lever"){
+    const want = S.hold || (S.running && m.can && S.mode!==3);
+    if(S.hold && !m.can){ S.shake = 1; S.pose = Math.max(0, S.pose - dt*2); }
+    else if(want && m.can) S.pose = Math.min(1, S.pose + dt*0.85*S.speed);
+    else if(!S.hold) S.pose = Math.max(0, S.pose - dt*1.1*S.speed);
+  } else {
+    const pulling = S.hold || (S.running && m.can && S.mode!==3);
+    if(pulling && m.can){
+      S.rope = Math.min(m.dEffort, S.rope + CONFIG.PULL_SPEED*dt*S.speed);
+      noteLift(pulleyMeasure());
+    } else if(S.hold && !m.can){ S.shake = 1; }
+    else if(!S.hold && S.mode!==3) S.rope = Math.max(0, S.rope - CONFIG.PULL_SPEED*0.6*dt*S.speed);
+  }
+  checkPuzzle(measure());
+}
+
+function applyTool(id){
+  const t = TOOLS[id];
+  S.tool = id; S.klass = t.klass; S.u = t.u; S.loadN = t.load;
+  S.classGuess = null; S.pose = 0;
+}
+function applyPuzzle(){
+  const p = PUZZLES[S.pz];
+  S.pzSolved = false; S.pose = 0; S.rope = 0; S.hold = false; S.tool = null; S.classGuess = null;
+  S.loadN = p.load;
+  if(p.type==="lever"){ S.klass = p.klass||1; S.u = p.u; }
+  else { S.pulley = p.pulley||"fixed"; S.friction = !!p.friction; }
+}
+
+/* ======================================================================
+   5. RENDER
+   ====================================================================== */
+function label(text, x, y, opt){
+  opt = opt||{};
+  ctx.font = (opt.bold?"700 ":"600 ")+(opt.size||13)+"px "+css("--font");
+  ctx.fillStyle = opt.fill || css("--text");
+  ctx.textAlign = opt.align || "center";
+  ctx.textBaseline = opt.base || "middle";
+  ctx.fillText(text, x, y);
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function arrow(x, y, ang, len, thick, color){
+  ctx.save();
+  ctx.translate(x,y); ctx.rotate(ang);
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.lineWidth = thick; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0, -len); ctx.stroke();
+  const h = Math.max(8, thick*1.4);
+  ctx.beginPath();
+  ctx.moveTo(0, -len);
+  ctx.lineTo(-h*0.55, -len+h);
+  ctx.lineTo(h*0.55, -len+h);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+/* Fat+short = large force. Thin+long = small force / large distance. */
+function forceArrow(x,y,ang,norm,color){
+  const n = clamp(norm,0,1);
+  arrow(x,y,ang, lerp(92, 32, n), lerp(2.5, 15, n), color);
+}
+function distArrow(x,y,ang,norm,color){
+  const n = clamp(norm,0,1);
+  arrow(x,y,ang, lerp(26, 108, n), lerp(8, 2.2, n), color);
+}
+
+function barAngle(m){
+  const maxTh = 0.22;
+  const sgn = m.klass===1 ? 1 : -1;
+  let th = sgn * S.pose * maxTh;
+  if(S.shake>0) th += Math.sin(S.tSim*28)*0.012*S.shake;
+  return th;
+}
+function rot(px, py, ox, oy, th){
+  const dx=px-ox, dy=py-oy, c=Math.cos(th), s=Math.sin(th);
+  return { x:ox+dx*c-dy*s, y:oy+dx*s+dy*c };
+}
+
+function drawCrate(x,y,n){
+  roundRect(x-28, y-36, 56, 44, 6);
+  ctx.fillStyle = css("--load"); ctx.fill();
+  label(fmtN(n)+" N", x, y-16, { size:12, fill:"#fff", bold:true });
+}
+function drawFulcrum(x,y){
+  ctx.beginPath();
+  ctx.moveTo(x, y); ctx.lineTo(x-22, y+36); ctx.lineTo(x+22, y+36); ctx.closePath();
+  ctx.fillStyle = css("--fulc"); ctx.fill();
+  ctx.strokeStyle = css("--text"); ctx.lineWidth=1.5; ctx.stroke();
+}
+function drawLever(m){
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+  const y0 = 250;
+  const th = barAngle(m);
+  const F = rot(m.fulc, y0, m.fulc, y0, th);
+  const E = rot(m.effort, y0, m.fulc, y0, th);
+  const L = rot(m.load, y0, m.fulc, y0, th);
+  ctx.strokeStyle = css("--hairline"); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(60, y0+36); ctx.lineTo(840, y0+36); ctx.stroke();
+  ctx.strokeStyle = css("--text"); ctx.lineWidth=14; ctx.lineCap="round";
+  ctx.beginPath(); ctx.moveTo(E.x, E.y); ctx.lineTo(L.x, L.y); ctx.stroke();
+  drawFulcrum(F.x, F.y+8);
+  drawCrate(L.x, L.y-8, m.Fl);
+  ctx.beginPath(); ctx.arc(E.x, E.y, 16, 0, Math.PI*2);
+  ctx.fillStyle = css("--effort"); ctx.fill();
+  label("E", E.x, E.y, { size:13, fill:"#fff", bold:true });
+  label("F", F.x, F.y+52, { size:13, fill:css("--fulc"), bold:true });
+  label("L", L.x, L.y+28, { size:13, fill:css("--load"), bold:true });
+  const fN = clamp(m.Fe / Math.max(m.Fl, maxPush()), 0, 1);
+  const dN = clamp(m.dEffort / (CONFIG.LIFT_CM*4), 0, 1);
+  const down = m.klass===1;
+  forceArrow(E.x + (down? -36: 36), E.y, down? Math.PI: 0, fN, css("--effort"));
+  distArrow(E.x + (down? 36: -36), E.y, down? Math.PI: 0, dN, css("--warn"));
+  forceArrow(L.x+40, L.y-10, 0, clamp(m.Fl/200,0.25,1), css("--load"));
+  distArrow(L.x-44, L.y-10, 0, clamp(m.dLoad/(CONFIG.LIFT_CM*2),0.15,0.5), css("--warn"));
+  const tool = S.tool ? T(S.tool) : (m.klass===1?T("c1"):m.klass===2?T("c2"):T("c3"));
+  label(tool, 20, 24, { size:14, align:"left", bold:true, fill:css("--text-2") });
+  if(!m.can) label(T("stuck"), W/2, 56, { size:16, bold:true, fill:css("--crit") });
+}
+function pulleyWheel(x,y,r){
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle = css("--panel"); ctx.fill();
+  ctx.strokeStyle = css("--text"); ctx.lineWidth=3; ctx.stroke();
+  ctx.beginPath(); ctx.arc(x,y,r*0.35,0,Math.PI*2);
+  ctx.fillStyle = css("--fulc"); ctx.fill();
+}
+function drawPulley(m){
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = css("--text-2");
+  ctx.fillRect(200, 48, 500, 14);
+  const n = m.n;
+  const hPx = m.h * 3.4;
+  const crateY = 390 - hPx;
+  const topY = 78;
+  const x0 = 340;
+  const gap = 28;
+  ctx.strokeStyle = css("--effort"); ctx.lineWidth=3;
+  if(n===1){
+    pulleyWheel(430, topY, 22);
+    ctx.beginPath(); ctx.moveTo(400, topY); ctx.lineTo(400, crateY-36); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(460, topY); ctx.lineTo(460, 120+m.rope*1.6); ctx.stroke();
+    ctx.beginPath(); ctx.arc(460, 128+m.rope*1.6, 12, 0, Math.PI*2);
+    ctx.fillStyle = css("--effort"); ctx.fill();
+    drawCrate(400, crateY, m.Fl);
+  } else {
+    const wheels = n===2 ? 2 : 3;
+    for(let i=0;i<Math.min(2,wheels);i++) pulleyWheel(x0+i*gap, topY, 18);
+    if(n>=2) pulleyWheel(x0+gap*0.5, crateY-58, 18);
+    if(n>=3){ pulleyWheel(x0+gap*1.5, topY, 18); pulleyWheel(x0+gap, crateY-58, 16); }
+    ctx.beginPath();
+    for(let i=0;i<n;i++){
+      const x = x0 + i*gap*0.7;
+      ctx.moveTo(x, topY+18); ctx.lineTo(x, crateY-48);
+    }
+    ctx.stroke();
+    const pullX = x0 + n*gap*0.7 + 36;
+    const pullY = 110 + m.rope*1.35;
+    ctx.beginPath(); ctx.moveTo(x0 + (n-1)*gap*0.7, topY); ctx.lineTo(pullX, topY); ctx.lineTo(pullX, pullY); ctx.stroke();
+    ctx.beginPath(); ctx.arc(pullX, pullY, 12, 0, Math.PI*2);
+    ctx.fillStyle = css("--effort"); ctx.fill();
+    drawCrate(x0+gap*0.5, crateY, m.Fl);
+  }
+  const fN = clamp(m.Fe / Math.max(m.Fl, maxPush()), 0, 1);
+  const dN = clamp(m.dEffort / (CONFIG.LIFT_CM*4), 0, 1);
+  forceArrow(700, 210, Math.PI, fN, css("--effort"));
+  distArrow(760, 210, Math.PI, dN, css("--warn"));
+  forceArrow(520, crateY, 0, clamp(m.Fl/220,0.3,1), css("--load"));
+  label(T(S.pulley==="fixed"?"pFixed":S.pulley==="movable"?"pMove":"pBlock"), 20, 24, { size:14, align:"left", bold:true, fill:css("--text-2") });
+  if(S.friction) label(T("frictionOn"), 20, 46, { size:13, align:"left", fill:css("--warn") });
+  if(!m.can) label(T("stuck"), W/2, 28, { size:16, bold:true, fill:css("--crit") });
+}
+function draw(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const d=dpr();
+  ctx.setTransform(d*cssW/W, 0, 0, d*cssH/H, 0, 0);
+  const m = measure();
+  if(m.kind==="lever") drawLever(m); else drawPulley(m);
+}
+
+function drawGraph(){
+  const d=dpr(), w=gcv.clientWidth||300, h=176;
+  if(gcv.width!==Math.round(w*d)){ gcv.width=Math.round(w*d); gcv.height=Math.round(h*d); }
+  gctx.setTransform(d,0,0,d,0,0);
+  gctx.clearRect(0,0,w,h);
+  gctx.fillStyle = css("--panel-2"); gctx.fillRect(0,0,w,h);
+  const padL=40, padB=24, padT=10, padR=12;
+  const pw=w-padL-padR, ph=h-padT-padB;
+  gctx.strokeStyle=css("--hairline"); gctx.lineWidth=1;
+  gctx.beginPath(); gctx.moveTo(padL,padT); gctx.lineTo(padL,padT+ph); gctx.lineTo(padL+pw,padT+ph); gctx.stroke();
+  const m = measure();
+  gctx.fillStyle = css("--text-3");
+  gctx.font = "11px "+css("--font");
+  gctx.textAlign = "center";
+  if(m.kind==="lever"){
+    const work = m.Fl * m.dLoad; /* Fe × dE = work along this curve (ideal lever) */
+    const dMin = CONFIG.LIFT_CM * (CONFIG.ARM_MIN/(1-CONFIG.ARM_MIN));
+    const dMax = CONFIG.LIFT_CM * ((1-CONFIG.ARM_MIN)/CONFIG.ARM_MIN);
+    const Fmax = work / dMin;
+    const X = de => padL + (de-dMin)/(dMax-dMin)*pw;
+    const Y = f => padT+ph - clamp(f,0,Fmax)/Fmax*ph;
+    gctx.beginPath(); gctx.strokeStyle = css("--effort"); gctx.lineWidth=2;
+    let first=true;
+    for(let i=0;i<=48;i++){
+      const de = lerp(dMin, dMax, i/48);
+      const fe = work / de;
+      const x=X(de), y=Y(fe);
+      if(first){ gctx.moveTo(x,y); first=false; } else gctx.lineTo(x,y);
+    }
+    gctx.stroke();
+    gctx.beginPath(); gctx.fillStyle = css("--accent");
+    gctx.arc(X(clamp(m.dEffort,dMin,dMax)), Y(m.Fe), 6, 0, Math.PI*2); gctx.fill();
+    gctx.textAlign="left";
+    gctx.fillStyle = css("--text-3");
+    gctx.fillText("dE", padL+pw-14, padT+ph+16);
+    gctx.save(); gctx.translate(14, padT+ph/2); gctx.rotate(-Math.PI/2);
+    gctx.textAlign="center"; gctx.fillText("Fe", 0, 0); gctx.restore();
+  } else {
+    const items = [
+      { id:"fixed", n:1 }, { id:"movable", n:2 }, { id:"block", n:3 }
+    ];
+    const barW = pw/3 - 10;
+    items.forEach((it,i)=>{
+      const fe = (m.Fl / it.n) * (S.friction?CONFIG.FRICTION:1);
+      const x = padL + i*(pw/3) + 8;
+      const bh = clamp(fe / (m.Fl*1.15), 0, 1) * ph;
+      gctx.fillStyle = it.id===S.pulley ? css("--effort") : css("--hairline");
+      gctx.fillRect(x, padT+ph-bh, barW, bh);
+      gctx.fillStyle = css("--text");
+      gctx.font = "11px "+css("--font");
+      gctx.textAlign="center";
+      gctx.fillText(fmtN(fe)+" N", x+barW/2, padT+ph-bh-8);
+      gctx.fillStyle = css("--text-3");
+      gctx.fillText(it.n+"×", x+barW/2, padT+ph+14);
+    });
+  }
+}
+
+function narrFor(m){
+  if(S.mode===3){
+    if(S.pzSolved) return fillTpl(T("nPzOk"), { ma:fmtMA(m.MA), why:T(PUZZLES[S.pz].why) });
+    return T(PUZZLES[S.pz].t)+" "+T("nPzGo");
+  }
+  if(m.kind==="pulley"){
+    if(S.hold && !m.can) return T("nStuck");
+    if(S.friction) return T("nFric");
+    if(S.pulley==="fixed") return T("nFixed");
+    if(S.pulley==="movable") return T("nMove");
+    return T("nBlock");
+  }
+  if(S.classGuess && S.tool){
+    if(S.classGuess===TOOLS[S.tool].klass) return T(S.classGuess===1?"nC1":S.classGuess===2?"nC2":"nC3");
+    return T("nWrong");
+  }
+  if(S.hold && !m.can) return T("nStuck");
+  if(S.pose>0.7) return T("nLift");
+  if(S.lastDir>0) return T("nToward");
+  if(S.lastDir<0) return T("nAway");
+  return T("nPlay");
+}
+
+function sync(){
+  const m = measure();
+  el("kA").textContent=T("effortF"); el("kB").textContent=T("loadF");
+  el("kC").textContent=T("effortD"); el("kD").textContent=T("loadD");
+  el("kE").textContent=T("ma"); el("kF").textContent=T("lift");
+  el("rA").textContent=fmtN(m.Fe)+" N";
+  el("rB").textContent=fmtN(m.Fl)+" N";
+  el("rC").textContent=fmtN(m.dEffort)+" cm";
+  el("rD").textContent=fmtN(m.dLoad)+" cm";
+  el("rE").textContent=fmtMA(m.MA)+"×";
+  el("rF").textContent = m.can ? (S.hold||S.pose>0.05||(m.h||0)>1 ? T("lifting"): T("can")) : T("stuck");
+  el("narr").textContent = narrFor(m);
+  drawGraph();
+  checkGuide();
+}
+
+/* ======================================================================
+   6. CONTROLS
+   ====================================================================== */
+function setMode(mode){
+  S.mode = mode;
+  S.hold = false; S.pose = 0; S.rope = 0;
+  if(mode!==1){ S.tool=null; S.classGuess=null; }
+  if(mode===1){ S.klass=1; S.maxPush=CONFIG.MAX_PUSH; if(!S.loadN) S.loadN=CONFIG.LOAD0; }
+  if(mode===3) applyPuzzle();
+  buildModeTray(); buildOpts(); sync();
+}
+function buildModeTray(){
+  const host=el("modeTray"); host.innerHTML="";
+  const seg=document.createElement("div"); seg.className="seg";
+  [[1,"m1"],[2,"m2"],[3,"m3"]].forEach(([m,k])=>{
+    const b=document.createElement("button"); b.type="button";
+    b.textContent=T(k); b.setAttribute("aria-pressed", String(S.mode===m));
+    b.addEventListener("click", ()=>setMode(m));
+    seg.appendChild(b);
+  });
+  host.appendChild(seg);
+}
+function togBtn(label, pressed, fn){
+  const b=document.createElement("button"); b.type="button"; b.className="btn btn--ghost btn--sm";
+  b.textContent=label; b.setAttribute("aria-pressed", String(pressed));
+  b.addEventListener("click", fn); return b;
+}
+function bindHold(b){
+  const on=()=>{ S.hold=true; };
+  const off=()=>{ S.hold=false; };
+  b.addEventListener("pointerdown", e=>{ e.preventDefault(); on(); try{ b.setPointerCapture(e.pointerId);}catch(_){} });
+  b.addEventListener("pointerup", off);
+  b.addEventListener("pointercancel", off);
+  b.addEventListener("keydown", e=>{ if(e.key===" "||e.key==="Enter"){ e.preventDefault(); on(); }});
+  b.addEventListener("keyup", off);
+}
+function buildOpts(){
+  const host=el("modeOpts"); host.innerHTML="";
+  const st = station();
+  if(S.mode===3){
+    const p=document.createElement("p"); p.className="pz";
+    p.textContent = T(PUZZLES[S.pz].t)+"  ·  ≤ "+PUZZLES[S.pz].maxE+" N";
+    host.appendChild(p);
+    if(S.pzSolved){
+      const n=document.createElement("button"); n.type="button"; n.className="btn btn--go";
+      n.textContent=T("nextPz");
+      n.addEventListener("click", ()=>{
+        S.pz = (S.pz+1)%PUZZLES.length; applyPuzzle(); buildOpts(); sync();
+      });
+      host.appendChild(n);
+    }
+  }
+  if(st==="lever"){
+    if(S.mode===1){
+      const tools=document.createElement("div"); tools.className="row";
+      ["seesaw","barrow","rod"].forEach(id=>{
+        tools.appendChild(togBtn(T(id), S.tool===id, ()=>{ applyTool(id); buildOpts(); sync(); }));
+      });
+      host.appendChild(tools);
+      if(S.tool){
+        const q=document.createElement("div"); q.className="row";
+        const lab=document.createElement("label"); lab.textContent=T("classQ"); q.appendChild(lab);
+        [1,2,3].forEach(c=>{
+          q.appendChild(togBtn(T("c"+c), S.classGuess===c, ()=>{
+            S.classGuess=c;
+            if(c===TOOLS[S.tool].klass) S.seen.classOk=true;
+            buildOpts(); sync();
+          }));
+        });
+        host.appendChild(q);
+      }
+      const r=document.createElement("div"); r.className="row";
+      r.innerHTML='<label>'+T("load")+'</label>';
+      const sl=document.createElement("input"); sl.type="range";
+      sl.min=String(CONFIG.LOAD_MIN); sl.max=String(CONFIG.LOAD_MAX); sl.step="5"; sl.value=String(S.loadN);
+      sl.setAttribute("aria-label", T("load"));
+      const v=document.createElement("span"); v.className="val"; v.textContent=fmtN(S.loadN)+" N";
+      sl.addEventListener("input", ()=>{ S.loadN=+sl.value; v.textContent=fmtN(S.loadN)+" N"; S.pose=0; sync(); });
+      r.appendChild(sl); r.appendChild(v); host.appendChild(r);
+    }
+    const lift=document.createElement("button"); lift.type="button"; lift.className="btn";
+    lift.textContent=T("holdLift"); bindHold(lift); host.appendChild(lift);
+  } else {
+    if(!(S.mode===3 && S.pzSolved)){
+      const row=document.createElement("div"); row.className="row";
+      [["fixed","pFixed"],["movable","pMove"],["block","pBlock"]].forEach(([id,k])=>{
+        row.appendChild(togBtn(T(k), S.pulley===id, ()=>{ S.pulley=id; S.rope=0; buildOpts(); sync(); }));
+      });
+      host.appendChild(row);
+      host.appendChild(togBtn(S.friction?T("frictionOn"):T("frictionOff"), S.friction, ()=>{
+        S.friction=!S.friction; S.rope=0; buildOpts(); sync();
+      }));
+    }
+    const pull=document.createElement("button"); pull.type="button"; pull.className="btn";
+    pull.textContent=T("pulling"); bindHold(pull); host.appendChild(pull);
+  }
+}
+
+function worldPtr(e){
+  const r=canvas.getBoundingClientRect();
+  return { x:(e.clientX-r.left)*W/r.width, y:(e.clientY-r.top)*H/r.height };
+}
+canvas.addEventListener("pointerdown", e=>{
+  const m=measure();
+  const p=worldPtr(e);
+  if(m.kind==="lever"){
+    if(Math.hypot(p.x-m.fulc, p.y-258)<42){
+      drag.kind="fulc";
+      try{ canvas.setPointerCapture(e.pointerId);}catch(_){}
+    }
+  }
+});
+canvas.addEventListener("pointermove", e=>{
+  if(drag.kind!=="fulc") return;
+  const p=worldPtr(e);
+  const m=leverMeasure();
+  const u0=S.u;
+  S.u = clamp((p.x-m.bar0)/(m.bar1-m.bar0), CONFIG.ARM_MIN, 1-CONFIG.ARM_MIN);
+  if(S.klass===1 && Math.abs(S.u-0.5)>0.10) S.seen.fulc=true;
+  S.lastDir = S.u>u0 ? 1 : S.u<u0 ? -1 : S.lastDir;
+  S.pose=0;
+  sync();
+});
+canvas.addEventListener("pointerup", ()=>{ drag.kind=null; });
+canvas.addEventListener("keydown", e=>{
+  if(station()!=="lever") return;
+  if(e.key==="ArrowRight"||e.key==="ArrowLeft"){
+    const u0=S.u;
+    S.u = clamp(S.u + (e.key==="ArrowRight"?0.03:-0.03), CONFIG.ARM_MIN, 1-CONFIG.ARM_MIN);
+    if(S.klass===1 && Math.abs(S.u-0.5)>0.10) S.seen.fulc=true;
+    S.lastDir = S.u>u0?1:-1; S.pose=0; e.preventDefault(); sync();
+  }
+  if(e.key===" "){ e.preventDefault(); S.hold=true; }
+});
+canvas.addEventListener("keyup", e=>{ if(e.key===" ") S.hold=false; });
+
+/* ======================================================================
+   7. GUIDE
+   ====================================================================== */
+const TASKS = [
+  {
+    t:"t1", h:"h1", p:"p1",
+    done:()=> S.seen.fulc,
+    show:()=>{ S.mode=1; S.klass=1; S.tool=null; S.u=0.78; S.seen.fulc=true; S.lastDir=1; S.loadN=90; }
+  },
+  {
+    t:"t2", h:"h2", p:"p2",
+    done:()=> S.seen.classOk,
+    show:()=>{ applyTool("barrow"); S.classGuess=2; S.seen.classOk=true; S.mode=1; }
+  },
+  {
+    t:"t3", h:"h3", p:"p3",
+    done:()=> S.seen.liftFixed && S.seen.liftBlock,
+    show:()=>{ S.mode=2; S.pulley="block"; S.friction=false; S.rope=CONFIG.LIFT_CM*3; S.seen.liftFixed=true; S.seen.liftBlock=true; }
+  },
+  {
+    t:"t4", h:"h4", p:"p4",
+    done:()=> S.seen.liftIdeal && S.seen.liftFric,
+    show:()=>{ S.mode=2; S.friction=true; S.pulley="movable"; S.rope=50; S.seen.liftIdeal=true; S.seen.liftFric=true; }
+  },
+  {
+    t:"t5", h:"h5", p:"p5",
+    done:()=> S.seen.puzzles>=3,
+    show:()=>{
+      S.mode=3; S.pz=0; applyPuzzle();
+      [0,1,2].forEach(i=>{ S.seen.pzGot[i]=true; });
+      S.seen.puzzles=Math.max(S.seen.puzzles,3); S.pzSolved=true;
+    }
+  }
+];
+function renderGuide(){
+  const i=S.guide.i, task=TASKS[i];
+  el("gNum").textContent=(i+1)+"/5";
+  el("gTask").textContent=T(task.t);
+  el("gHint").textContent = S.guide.done ? T(task.p) : T(task.h);
+  el("gShow").textContent=T("show");
+  el("gNext").textContent=T("next");
+  el("tStep").textContent=T("task");
+  el("gNext").hidden = !S.guide.done || i>=4;
+  el("guide").classList.toggle("done", S.guide.done);
+  const dots=el("gDots"); dots.innerHTML="";
+  TASKS.forEach((_,k)=>{
+    const d=document.createElement("span"); d.className="guide__dot";
+    if(k<i) d.classList.add("on"); if(k===i) d.classList.add("now");
+    dots.appendChild(d);
+  });
+}
+function checkGuide(){
+  const task=TASKS[S.guide.i];
+  if(!S.guide.done && task.done()){ S.guide.done=true; renderGuide(); }
+}
+el("gShow").addEventListener("click", ()=>{
+  TASKS[S.guide.i].show();
+  buildModeTray(); buildOpts(); renderGuide(); sync();
+});
+el("gNext").addEventListener("click", ()=>{
+  if(S.guide.i<4){ S.guide.i++; S.guide.done=false; renderGuide(); }
+});
+
+/* ======================================================================
+   8. QUIZ
+   ====================================================================== */
+const QUESTIONS = [
+  { q:"q1", opts:["q1a","q1b","q1c"], ans:1, why:"q1w" },
+  { q:"q2", opts:["q2a","q2b","q2c"], ans:1, why:"q2w" },
+  { q:"q3", opts:["q3a","q3b","q3c"], ans:1, why:"q3w" },
+  { q:"q4", opts:["q4a","q4b","q4c"], ans:1, why:"q4w" },
+  { q:"q5", opts:["q5a","q5b","q5c"], ans:1, why:"q5w" }
+];
+function buildQuiz(){
+  const host=el("quiz"); host.innerHTML="";
+  let score=0, answered=0;
+  QUESTIONS.forEach((Q, qi)=>{
+    const box=document.createElement("div"); box.className="panel q"; box.style.marginBottom="12px";
+    box.innerHTML = '<div class="q__n">Q '+(qi+1)+'</div><p class="q__t">'+T(Q.q)+'</p><div class="opts"></div><div class="fb"></div>';
+    const opts=box.querySelector(".opts"), fb=box.querySelector(".fb");
+    Q.opts.forEach((ok, oi)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="opt";
+      b.innerHTML='<span class="opt__k">'+"ABC"[oi]+'</span><span>'+T(ok)+'</span>';
+      b.addEventListener("click", ()=>{
+        if(b.disabled) return;
+        opts.querySelectorAll(".opt").forEach(o=>o.disabled=true);
+        const good = oi===Q.ans;
+        b.classList.add(good?"correct":"wrong");
+        opts.children[Q.ans].classList.add("correct");
+        fb.className="fb show "+(good?"ok":"no");
+        fb.textContent=T(Q.why);
+        answered++; if(good) score++;
+        if(answered===QUESTIONS.length){
+          const s=document.createElement("div"); s.className="panel score"; s.style.marginTop="12px";
+          s.innerHTML='<span>'+T("score")+'</span><span class="score__v">'+score+' / '+QUESTIONS.length+'</span>';
+          const again=document.createElement("button"); again.className="btn"; again.textContent=T("tryAgain");
+          again.addEventListener("click", buildQuiz); s.appendChild(again);
+          host.appendChild(s);
+        }
+      });
+      opts.appendChild(b);
+    });
+    host.appendChild(box);
+  });
+}
+
+/* ======================================================================
+   9. LOOP
+   ====================================================================== */
+const mqReduce = matchMedia("(prefers-reduced-motion: reduce)");
+let REDUCED = mqReduce.matches;
+mqReduce.addEventListener("change", ()=>{ REDUCED = mqReduce.matches; });
+let prev = performance.now(), acc=0, syncT=0;
+function frame(now){
+  const dt=Math.min(0.1,(now-prev)/1000); prev=now;
+  if(S.running || S.hold){
+    if(REDUCED){ acc+=dt; if(acc>0.5){ acc=0; step(0.5*S.speed); syncT=1; } }
+    else { step(dt*(S.running?S.speed:1)); syncT+=dt; }
+    if(syncT>CONFIG.SAMPLE_DT){ syncT=0; sync(); }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+function setRunning(on){
+  S.running=on;
+  el("icPlay").innerHTML = on
+    ? '<rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/>'
+    : '<path d="M7 4 L19 12 L7 20 Z" fill="#fff"/>';
+  el("btnPlay").setAttribute("aria-pressed", String(on));
+  el("btnPlay").setAttribute("aria-label", on ? T("pause") : T("play"));
+}
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.documentElement.dir=LANG==="ur"?"rtl":"ltr";
+  el("tTitle").textContent=T("title"); el("tSub").textContent=T("sub");
+  el("tNavTitle").textContent=T("navTitle");
+  el("navBench").textContent=T("bench"); el("navQuiz").textContent=T("quiz");
+  el("btnLang").textContent=T("lang");
+  el("btnProfile").textContent=dim?T("bright"):T("dim");
+  el("tReadings").textContent=T("readings");
+  el("tSpeed").textContent=T("speed"); el("btnStep").textContent=T("stepBtn");
+  el("btnReset").setAttribute("aria-label", T("reset"));
+  el("tGraph").textContent=T("graph"); el("tGraphNote").textContent=T("graphNote");
+  el("tQuizTitle").textContent=T("quizTitle"); el("tQuizSub").textContent=T("quizSub");
+  el("boardDesc").textContent=T("boardDesc");
+  el("legF").textContent=T("legF"); el("legD").textContent=T("legD");
+  el("gShow").textContent=T("show"); el("gNext").textContent=T("next");
+  setRunning(S.running);
+  buildModeTray(); buildOpts(); renderGuide(); buildQuiz(); sync();
+}
+el("btnLang").addEventListener("click", ()=>{ LANG = LANG==="en"?"ur":"en"; applyLang(); });
+el("btnProfile").addEventListener("click", ()=>{
+  dim=!dim;
+  if(dim) document.documentElement.setAttribute("data-profile","dim");
+  else document.documentElement.removeAttribute("data-profile");
+  el("btnProfile").textContent=dim?T("bright"):T("dim");
+});
+el("btnPlay").addEventListener("click", ()=> setRunning(!S.running));
+el("btnStep").addEventListener("click", ()=>{ S.hold=true; step(0.25); S.hold=false; sync(); });
+el("speed").addEventListener("input", e=>{ S.speed=+e.target.value; });
+el("btnReset").addEventListener("click", ()=>{
+  const mode=S.mode, guide=S.guide, seen=S.seen;
+  S=initial(); S.mode=mode; S.guide=guide; S.seen=seen;
+  if(mode===3) applyPuzzle();
+  el("speed").value=1;
+  setRunning(true);
+  buildModeTray(); buildOpts(); renderGuide(); sync();
+});
+function showScreen(which){
+  el("scBench").classList.toggle("on", which==="bench");
+  el("scQuiz").classList.toggle("on", which==="quiz");
+  el("navBench").setAttribute("aria-current", which==="bench"?"page":"false");
+  el("navQuiz").setAttribute("aria-current", which==="quiz"?"page":"false");
+  scrollTo({top:0});
+  if(which==="bench") fitBoard();
+}
+el("navBench").addEventListener("click", ()=>showScreen("bench"));
+el("navQuiz").addEventListener("click", ()=>showScreen("quiz"));
+addEventListener("resize", ()=>{ fitBoard(); drawGraph(); });
+
+fitBoard();
+applyLang();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

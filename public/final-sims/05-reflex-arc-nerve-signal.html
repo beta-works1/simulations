@@ -1,0 +1,2523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<title>Reflex Arc &amp; Nerve Signal — PCTB Class 8 Science</title>
+<!--
+==========================================================================
+ REFLEX ARC & NERVE SIGNAL  ·  Sim 5 of 5
+ PCTB / SNC Class 8 General Science — Nervous system: reflex action
+
+ LEARNING OBJECTIVES (all reachable by watching / building the arc)
+   1. Neuron: dendrites receive, cell body, axon sends. A synapse is a
+      small GAP — a chemical hand-off, not a soldered wire.
+   2. Sensory / afferent: receptor → CNS. Motor / efferent: CNS → effector.
+      Relay / interneuron sits in the spinal cord.
+   3. A reflex is fast, automatic, protective. It does NOT wait for the
+      conscious brain — the spinal cord handles it.
+   4. Strict order: Stimulus → Receptor → Sensory Neuron → Spinal Cord
+      (relay / synapse) → Motor Neuron → Effector → Response.
+   5. A SEPARATE, slower branch goes up to the brain. Awareness (pain /
+      "Ouch!") arrives AFTER the arm has already pulled back.
+   6. Reflexes exist because waiting for conscious processing would be
+      too slow to protect you.
+   7. Voluntary action routes through the brain and takes measurably longer.
+
+ MISCONCEPTIONS TARGETED BY THE QUIZ
+   - "Feeling pain is what makes you pull away"     (pull first, pain after)
+   - "The brain must approve a reflex"              (spinal cord, no wait)
+   - "Any fast response is a reflex"                (catching a seen ball is voluntary)
+   - "A synapse is a direct wired connection"       (real gap + small delay)
+   - "Sensory and motor do the same job both ways"  (one direction each)
+
+ THE ONE BUG THIS FILE MUST NEVER SHIP
+   In Mode 2 the arm MUST physically move BEFORE the "Ouch!" bubble.
+   Two independent clocks at the spinal split: (a) motor → muscle → arm,
+   (b) longer brain path. Ouch is gated on armMoved already being true
+   from a PREVIOUS frame, plus OUCH_AFTER_ARM_MS. Same-instant arrival
+   is a failed lesson.
+
+ SIMPLIFICATIONS FOR CLASS 8
+   - No neurotransmitter names, ion channels, or action-potential voltage.
+   - Synapse = tiny visible gap, chemical jump, small delay. Nothing deeper.
+   - No real conduction velocity (m/s) and no myelination.
+   - No ANS (sympathetic / parasympathetic). No cerebrum / cerebellum /
+     medulla lesson — "brain" here means "where you become aware."
+   - Stylised diagrammatic neurons (dots, lines, pulses), not cell art.
+   - Mode 3 reaction timer is HONESTLY voluntary (routes through the brain).
+
+ TEACHER: every tunable lives in CONFIG. Safe to adjust: SYNAPSE_MS,
+   MOTOR_MS, BRAIN_*_MS, OUCH_AFTER_ARM_MS, DEFAULT_SPEED, KNEE_JERK_MS,
+   REACTION_ROUNDS, REACTION_TASK_N, SORT_NEED. Timings are pedagogical
+   milliseconds, not metres per second.
+   One file, double-click to run. No server, no build, no internet.
+==========================================================================
+-->
+<style>
+:root{
+  --accent:#1F6FD0;
+  --good:#237A46;
+  --warn:#8C5A05;
+  --crit:#A0173F;
+  --panel:#FFFFFF;
+  --panel-2:#F2F4F5;
+  --panel-border:#8A8A8A;
+  --text:#14202A;
+  --text-2:#46565F;
+  --text-3:#71828C;
+
+  --sensory:#C45C14;
+  --relay:#6B3AA0;
+  --motor:#0F7A6B;
+  --aware:#A0173F;
+
+  --board:#EEF2F4;
+  --grid:#D3DBDF;
+  --hairline:#DCE1E4;
+  --shadow:0 2px 8px rgba(20,32,42,.14);
+  --focus:#14202A;
+  --on-accent:#FFFFFF;
+  --skin:#E8C4A0;
+  --skin-2:#D4A882;
+  --hot:#C4320A;
+  --glow:#FFB020;
+
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --radius:12px;
+  --space:8px;
+}
+:root[data-profile="dim"]{
+  --accent:#4E9BF0;
+  --good:#4FB27A;
+  --warn:#D0A03A;
+  --crit:#E0648F;
+  --panel:#1A2126;
+  --panel-2:#242D33;
+  --panel-border:#5F6C74;
+  --text:#F1F5F7;
+  --text-2:#C3CFD5;
+  --text-3:#95A4AD;
+  --sensory:#E8893A;
+  --relay:#B07AE0;
+  --motor:#3CB8A4;
+  --aware:#E0648F;
+  --board:#131A1F;
+  --grid:#26313A;
+  --hairline:#3B464D;
+  --shadow:0 2px 10px rgba(0,0,0,.5);
+  --focus:#FFFFFF;
+  --on-accent:#0B1220;
+  --skin:#C49A78;
+  --skin-2:#A87C5C;
+  --hot:#F2572A;
+  --glow:#FFC44D;
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  font-family:var(--font);
+  background:var(--panel-2);
+  color:var(--text);
+  font-size:16px;
+  line-height:1.45;
+  overflow-x:hidden;
+}
+:focus-visible{
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+  border-radius:4px;
+}
+.sr{
+  position:absolute; width:1px; height:1px; overflow:hidden;
+  clip:rect(0 0 0 0); white-space:nowrap;
+}
+.wrap{ max-width:1400px; margin:0 auto; padding:10px 10px 80px; }
+
+:root[dir="rtl"] body{
+  font-family:system-ui,"Noto Nastaliq Urdu","Segoe UI",Tahoma,sans-serif;
+}
+:root[dir="rtl"] .stage__inner{ direction:ltr; }
+
+.head{
+  display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+  padding:2px 2px 10px;
+}
+.head__title{ font-size:clamp(19px,2.3vw,25px); font-weight:700; margin:0; letter-spacing:-.02em; }
+.head__sub{ margin:0; font-size:14.5px; color:var(--text-2); }
+.head__spacer{ margin-inline-start:auto; display:flex; gap:8px; flex-wrap:wrap; }
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--panel-border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:12px 14px;
+}
+.panel__title{ font-size:15px; font-weight:700; margin:0 0 10px; }
+
+.guide{
+  background:var(--panel);
+  border:2px solid var(--accent);
+  border-radius:var(--radius);
+  padding:10px 13px;
+  margin-bottom:10px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:12px;
+  align-items:center;
+}
+@media (max-width:760px){ .guide{ grid-template-columns:1fr; } }
+.guide.done{ border-color:var(--good); }
+.guide__badge{
+  min-width:72px; padding:6px 10px; border-radius:9px; text-align:center;
+  background:var(--panel-2); border:1px solid var(--panel-border);
+}
+.guide__badgeTop{ font-size:12.5px; font-weight:700; letter-spacing:.06em; color:var(--text-3); }
+.guide__badgeNum{
+  font-size:20px; font-weight:700; font-family:var(--mono);
+  font-variant-numeric:tabular-nums;
+}
+.guide__task{ font-size:17px; font-weight:700; margin:0; }
+.guide__hint{ font-size:14px; margin:4px 0 0; color:var(--text-2); }
+.guide__dots{ display:flex; gap:6px; margin-top:8px; }
+.guide__dot{ width:9px; height:9px; border-radius:50%; background:var(--hairline); }
+.guide__dot.on{ background:var(--good); }
+.guide__dot.now{ background:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent); }
+.guide__acts{ display:flex; gap:8px; flex-wrap:wrap; }
+.tick{ color:var(--good); font-weight:700; }
+
+.btn{
+  font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 16px; border-radius:9px; white-space:nowrap;
+  background:var(--accent); color:var(--on-accent); border:1px solid rgba(0,0,0,.28);
+  box-shadow:0 1px 2px rgba(0,0,0,.18);
+  transition:filter .15s ease, transform .12s ease;
+}
+.btn:hover{ filter:brightness(1.08); }
+.btn:active{ transform:translateY(1px); }
+.btn--ghost{ background:var(--panel); color:var(--text); border-color:var(--panel-border); }
+.btn--go{ background:var(--good); color:#fff; }
+.btn--sm{ min-height:44px; font-size:13.5px; padding:0 12px; }
+.round{
+  width:48px; height:48px; border-radius:50%; cursor:pointer; padding:0;
+  border:1px solid rgba(0,0,0,.35); display:grid; place-items:center;
+  box-shadow:var(--shadow); background:var(--btn,#E2E6E9);
+}
+.round--play{ --btn:var(--good); }
+.round--reset{ --btn:var(--warn); }
+
+.main{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,330px); gap:10px; align-items:start; }
+.main > div{ min-width:0; }
+@media (max-width:1080px){ .main{ grid-template-columns:minmax(0,1fr); } }
+
+.tray{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+.tray__label{
+  width:100%; font-size:12.5px; font-weight:700; color:var(--text-3);
+  margin:4px 0 2px; letter-spacing:.04em; text-transform:uppercase;
+}
+.part{
+  min-width:74px; min-height:66px; padding:6px 8px 4px; cursor:grab;
+  border:2px solid var(--panel-border); border-radius:10px; background:var(--panel);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  font-family:inherit; font-size:12.5px; font-weight:600; color:var(--text);
+  touch-action:none; user-select:none;
+  transition:border-color .15s ease, background .15s ease;
+}
+.part:hover{ border-color:var(--accent); }
+.part[aria-pressed="true"]{
+  border-color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 14%,var(--panel));
+}
+.part.used{ opacity:.38; cursor:default; }
+.part--mode{ min-width:88px; cursor:pointer; }
+.part .dot{
+  width:12px; height:12px; border-radius:50%;
+  border:1px solid rgba(0,0,0,.35);
+}
+
+.stage{
+  border:1px solid var(--panel-border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  background:var(--board);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
+}
+.stage__inner{ position:relative; }
+#board{ display:block; width:100%; height:auto; touch-action:none; cursor:crosshair; }
+.stage__bar{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  padding:8px 10px; background:var(--panel); border-top:1px solid var(--hairline);
+}
+.seg{ display:inline-flex; border:1px solid var(--panel-border); border-radius:9px; overflow:hidden; }
+.seg button{
+  font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 13px; border:0; background:var(--panel); color:var(--text-2);
+  border-inline-end:1px solid var(--panel-border);
+}
+.seg button:last-child{ border-inline-end:0; }
+.seg button[aria-pressed="true"]{ background:var(--accent); color:var(--on-accent); }
+
+.legend{
+  display:grid; gap:6px; margin-bottom:10px;
+}
+.legend__row{
+  display:flex; align-items:center; gap:8px; min-height:28px;
+  font-size:13.5px; font-weight:700;
+}
+.legend__sw{
+  width:14px; height:14px; border-radius:50%; flex:0 0 14px;
+  border:1px solid rgba(0,0,0,.4);
+}
+.legend__sw.sensory{ background:var(--sensory); }
+.legend__sw.relay{ background:var(--relay); }
+.legend__sw.motor{ background:var(--motor); }
+.legend__sw.aware{ background:var(--aware); }
+
+.steps{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:6px;
+  margin-bottom:10px;
+}
+.step{
+  border:1px solid var(--hairline); border-radius:8px; padding:6px 8px;
+  background:var(--panel-2); font-size:12.5px; font-weight:700; color:var(--text-3);
+  min-height:44px; display:flex; align-items:center;
+}
+.step.on{
+  color:var(--text); border-color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 14%,var(--panel));
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent);
+}
+.step.done{ color:var(--good); border-color:var(--good); }
+
+.clocks{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+.clock{
+  background:var(--panel-2); border:1px solid var(--hairline);
+  border-radius:9px; padding:8px 10px;
+}
+.clock__k{ font-size:12.5px; color:var(--text-3); font-weight:700; }
+.clock__v{
+  font-family:var(--mono); font-size:20px; font-variant-numeric:tabular-nums; font-weight:700;
+}
+.clock.win{ border-color:var(--good); background:color-mix(in srgb,var(--good) 12%,var(--panel)); }
+
+.reads{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.read{
+  background:var(--panel-2); border:1px solid var(--hairline);
+  border-radius:9px; padding:8px 10px;
+}
+.read__k{ font-size:12.5px; color:var(--text-3); font-weight:700; }
+.read__v{
+  font-family:var(--mono); font-size:18px; font-variant-numeric:tabular-nums; font-weight:700;
+}
+
+.honest{
+  margin:8px 0 0; padding:10px 12px; border-radius:9px;
+  background:color-mix(in srgb,var(--warn) 14%,var(--panel));
+  border:1px solid var(--warn); font-size:13.5px; color:var(--text);
+}
+.narr{ font-size:15px; line-height:1.5; margin:10px 0 0; }
+.extra{ font-size:13.5px; color:var(--text-2); margin:8px 0 0; }
+
+#pChart{ display:block; width:100%; height:132px; }
+.graph-note{ font-size:13px; color:var(--text-3); margin:6px 0 0; }
+
+.row{ display:flex; align-items:center; gap:8px; margin:8px 0; flex-wrap:wrap; }
+.chk{
+  display:flex; align-items:center; gap:8px; min-height:44px;
+  font-size:14px; font-weight:600; cursor:pointer;
+}
+.chk input{ width:20px; height:20px; accent-color:var(--accent); }
+
+.screen{ display:none; }
+.screen.on{ display:block; }
+.q{ margin-bottom:10px; }
+.q__n{ font-size:12.5px; color:var(--text-3); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.q__t{ font-size:17px; font-weight:700; margin:6px 0 12px; }
+.opts{ display:grid; gap:8px; }
+.opt{
+  display:flex; align-items:flex-start; gap:10px; text-align:start; width:100%;
+  min-height:52px; padding:12px 14px; cursor:pointer; border-radius:9px;
+  font-family:inherit; font-size:15.5px; background:var(--panel-2); color:var(--text);
+  border:2px solid var(--panel-border);
+}
+.opt:hover:not(:disabled){ border-color:var(--accent); background:var(--panel); }
+.opt.correct{ border-color:var(--good); background:color-mix(in srgb,var(--good) 14%,var(--panel)); }
+.opt.wrong{ border-color:var(--crit); background:color-mix(in srgb,var(--crit) 12%,var(--panel)); }
+.opt__k{ font-family:var(--mono); font-size:14px; color:var(--text-3); min-width:1.2em; }
+.fb{
+  display:none; margin:10px 0 0; padding:11px 13px; font-size:14.5px; border-radius:8px;
+  background:var(--panel-2); border-inline-start:5px solid var(--panel-border);
+}
+.fb.show{ display:block; }
+.fb.ok{ border-inline-start-color:var(--good); }
+.fb.no{ border-inline-start-color:var(--crit); }
+.score{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.score__v{ font-family:var(--mono); font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; }
+
+.nav{
+  position:sticky; bottom:6px; z-index:40; margin-top:10px; border-radius:10px;
+  background:#101418; color:#fff; display:flex; align-items:center; gap:9px;
+  flex-wrap:wrap; padding:6px 13px;
+}
+.nav__t{ font-size:14.5px; font-weight:700; margin-inline-end:auto; }
+.navbtn{
+  cursor:pointer; background:transparent; border:2px solid transparent; border-radius:8px;
+  color:#B9C0C5; font-family:inherit; font-size:14px; font-weight:700;
+  padding:5px 11px; min-height:44px;
+}
+.navbtn[aria-current="page"]{ color:#fff; border-color:#fff; }
+
+input[type=range]{
+  -webkit-appearance:none; appearance:none; height:44px; background:transparent; cursor:pointer;
+  flex:1; min-width:80px;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border);
+}
+input[type=range]::-moz-range-track{
+  height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border);
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:26px; height:30px; margin-top:-12px;
+  border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45);
+}
+input[type=range]::-moz-range-thumb{
+  width:26px; height:30px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45);
+}
+.val{
+  font-family:var(--mono); font-size:14px; font-variant-numeric:tabular-nums;
+  min-width:52px; text-align:end;
+}
+
+#ghost{
+  position:fixed; pointer-events:none; z-index:80;
+  min-width:72px; min-height:44px; max-width:min(240px,80vw); padding:8px 12px;
+  border:2px solid var(--accent); border-radius:10px;
+  background:var(--panel); color:var(--text);
+  font-weight:700; font-size:12.5px; line-height:1.3; box-shadow:var(--shadow);
+  display:none; align-items:center; gap:6px;
+  white-space:normal; overflow-wrap:break-word; text-align:center;
+}
+#ghost.on{ display:flex; }
+
+/* Mode 4: HTML grid overlay — canvas cards were 160px wide on a 170px stride
+   with nowrap fillText, so labels bled into neighbours. */
+.stage__inner.is-sort #board{ display:none; }
+.sort{
+  display:flex; flex-direction:column; gap:10px; padding:10px;
+  min-width:0; min-height:280px;
+}
+.sort[hidden]{ display:none !important; }
+:root[dir="rtl"] .sort{ direction:rtl; }
+.sort__deck{
+  display:grid; gap:10px; min-width:0; align-content:start;
+  grid-template-columns:repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+}
+@media (min-width:720px){
+  .sort__deck{ grid-template-columns:repeat(5, minmax(0, 1fr)); }
+}
+.scard{
+  appearance:none; -webkit-appearance:none;
+  display:flex; align-items:center; justify-content:center;
+  box-sizing:border-box; min-width:0; width:100%; max-width:100%;
+  min-height:64px; margin:0; padding:12px 10px;
+  border:2px solid var(--panel-border); border-radius:10px;
+  background:var(--panel); color:var(--text);
+  font-family:inherit; cursor:grab; touch-action:none;
+  text-align:center; white-space:normal;
+  user-select:none; -webkit-user-select:none;
+  box-shadow:var(--shadow);
+}
+.sort__deck > *, .sort__binDeck > *, .sort__bins > *{ min-width:0; }
+.scard:hover{ border-color:var(--accent); }
+.scard.is-ok{
+  border-color:var(--good);
+  background:color-mix(in srgb,var(--good) 12%,var(--panel));
+}
+.scard.is-no{ border-color:var(--warn); }
+.scard.is-sel{ box-shadow:0 0 0 3px var(--focus); }
+.scard.is-drag{ opacity:.42; cursor:grabbing; pointer-events:none; }
+.scard__label{
+  display:block; min-width:0; pointer-events:none;
+  font-size:12.5px; font-weight:700; line-height:1.3;
+  white-space:normal; overflow-wrap:anywhere; word-break:break-word;
+}
+.sort__msg{
+  margin:0; min-height:1.4em; padding:0 4px;
+  font-size:13.5px; line-height:1.4; color:var(--text);
+  text-align:center; overflow-wrap:break-word;
+}
+.sort__bins{
+  display:grid; gap:10px; min-width:0;
+  grid-template-columns:repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+}
+.sort__bin{
+  box-sizing:border-box; min-width:0; min-height:88px;
+  display:flex; flex-direction:column; gap:8px;
+  padding:8px; border-radius:12px; border:2px solid;
+}
+.sort__bin--r{
+  border-color:var(--crit);
+  background:color-mix(in srgb,var(--crit) 12%,var(--board));
+  color:var(--crit);
+}
+.sort__bin--v{
+  border-color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 12%,var(--board));
+  color:var(--accent);
+}
+.sort__binTitle{
+  font-size:14px; font-weight:700; text-align:center;
+  overflow-wrap:break-word; line-height:1.3;
+}
+.sort__binDeck{
+  display:grid; gap:8px; min-width:0; min-height:44px; align-content:start;
+  grid-template-columns:repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+}
+.sort__bin .scard{ color:var(--text); }
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="screen on" id="scBench">
+  <header class="head">
+    <h1 class="head__title" id="tTitle">Reflex Arc &amp; Nerve Signal</h1>
+    <p class="head__sub" id="tSub">The arm pulls back first. Pain arrives later — the brain was not asked.</p>
+    <span class="head__spacer">
+      <button class="btn btn--ghost btn--sm" id="btnLang" type="button">اردو</button>
+      <button class="btn btn--ghost btn--sm" id="btnProfile" type="button">Dim room</button>
+    </span>
+  </header>
+
+  <section class="guide" id="guide" aria-live="polite">
+    <div class="guide__badge">
+      <div class="guide__badgeTop" id="tStep">TASK</div>
+      <div class="guide__badgeNum" id="gNum">1/5</div>
+    </div>
+    <div>
+      <p class="guide__task" id="gTask">—</p>
+      <p class="guide__hint" id="gHint">—</p>
+      <div class="guide__dots" id="gDots" aria-hidden="true"></div>
+    </div>
+    <div class="guide__acts">
+      <button class="btn btn--ghost" id="gShow" type="button">Show me</button>
+      <button class="btn btn--go" id="gNext" type="button" hidden>Next</button>
+    </div>
+  </section>
+
+  <div class="main">
+    <div>
+      <div class="tray" id="modeTray" role="tablist" aria-label="Modes"></div>
+      <div class="tray" id="toolTray"></div>
+
+      <div class="stage">
+        <div class="stage__inner" id="stageInner">
+          <canvas id="board" role="img" aria-label="Reflex arc stage" aria-describedby="boardDesc" tabindex="0"></canvas>
+          <p class="sr" id="boardDesc">A stylised body. A hot flame. Colour-coded neurons. The arm pulls back before the brain feels pain.</p>
+          <div class="sort" id="sortUI" hidden tabindex="0" role="application" aria-label="Sort reflex or voluntary">
+            <div class="sort__deck" id="sortDeck"></div>
+            <p class="sort__msg" id="sortMsg" aria-live="polite"></p>
+            <div class="sort__bins">
+              <div class="sort__bin sort__bin--r" data-bin="r">
+                <div class="sort__binTitle" id="binRTitle">Reflex (involuntary)</div>
+                <div class="sort__binDeck" id="binRDeck"></div>
+              </div>
+              <div class="sort__bin sort__bin--v" data-bin="v">
+                <div class="sort__binTitle" id="binVTitle">Voluntary</div>
+                <div class="sort__binDeck" id="binVDeck"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="stage__bar">
+          <div class="seg" id="modeOpts" role="group"></div>
+          <button class="round round--play" id="btnPlay" type="button" aria-pressed="true" aria-label="Pause">
+            <svg width="20" height="20" viewBox="0 0 24 24" id="icPlay" aria-hidden="true"><rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/></svg>
+          </button>
+          <button class="btn btn--ghost btn--sm" id="btnStep" type="button">Step</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px">
+            <span id="tSpeed">Speed</span>
+            <input type="range" id="speed" min="0.2" max="2" step="0.05" value="0.35" style="width:96px" aria-label="Speed" />
+            <span class="val" id="speedVal">0.35×</span>
+          </label>
+          <button class="round round--reset" id="btnReset" type="button" aria-label="Reset">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 1 0 6.5 4.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M12 1.5V8.5L6.5 5z" fill="#fff"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2 class="panel__title" id="tReadings">Live instruments</h2>
+        <div class="legend" id="neuronLeg" aria-label="Neuron types"></div>
+        <div class="steps" id="stepTrack" aria-live="polite"></div>
+        <div class="clocks" id="clocks">
+          <div class="clock" id="clkRef">
+            <div class="clock__k" id="tClkRef">Reflex pull</div>
+            <div class="clock__v" id="vClkRef">—</div>
+          </div>
+          <div class="clock" id="clkVol">
+            <div class="clock__k" id="tClkVol">Voluntary pull</div>
+            <div class="clock__v" id="vClkVol">—</div>
+          </div>
+        </div>
+        <div class="reads">
+          <div class="read"><div class="read__k" id="tSample">Now</div><div class="read__v" id="rSample" style="font-size:15px">—</div></div>
+          <div class="read"><div class="read__k" id="tExtraK">Delay</div><div class="read__v" id="rExtra">—</div></div>
+        </div>
+        <p class="honest" id="honest" hidden></p>
+        <p class="narr" id="narr" aria-live="polite">—</p>
+        <div id="extraCtrls"></div>
+      </div>
+
+      <div class="panel" style="margin-top:10px">
+        <h2 class="panel__title" id="tGraph">Two clocks after the split</h2>
+        <canvas id="pChart" role="img" aria-label="Motor vs brain arrival chart"></canvas>
+        <p class="graph-note" id="tGraphNote">Motor path vs brain path. The arm mark must sit left of Ouch.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="scQuiz">
+  <header class="head">
+    <h1 class="head__title" id="tQuizTitle">Check what you have learned</h1>
+    <p class="head__sub" id="tQuizSub">Five questions, with the answer explained straight away.</p>
+  </header>
+  <div id="quiz" style="max-width:840px;margin:0 auto"></div>
+</div>
+
+<nav class="nav" aria-label="Screens">
+  <span class="nav__t" id="tNavTitle">Reflex Arc &amp; Nerve Signal</span>
+  <button class="navbtn" id="navBench" type="button" aria-current="page">Bench</button>
+  <button class="navbtn" id="navQuiz"  type="button">Quiz</button>
+</nav>
+</div>
+<div id="ghost" aria-hidden="true"></div>
+
+<script>
+"use strict";
+/* ======================================================================
+   1. CONFIG — pedagogical milliseconds, not metres per second.
+   ====================================================================== */
+const CONFIG = {
+  WORLD_W: 900,
+  WORLD_H: 540,
+
+  /* Slow-motion default so every hop — especially the synapse gap — is visible. */
+  DEFAULT_SPEED: 0.35,
+  SPEED_MIN: 0.2,
+  SPEED_MAX: 2,
+
+  /* Shared inbound path (receptor → sensory → spinal synapses). */
+  APPROACH_MS: 900,       // hand moving toward the flame (before any pulse)
+  RECEPTOR_MS: 180,       // receptor fires
+  SENSORY_MS: 720,        // fingertip → spinal cord along the sensory axon
+  SYNAPSE_MS: 280,        // pause + spark across a REAL gap. Not a wire.
+  RELAY_MS: 220,          // short interneuron hop inside the cord
+
+  /* Motor branch after the split: short. This is why the reflex is fast. */
+  MOTOR_MS: 560,          // ventral horn → muscle
+  ARM_PULL_MS: 420,       // muscle shortens; arm visibly withdraws
+
+  /* Brain branch after the SAME split: more distance + more synapses.
+     That is the whole scientific reason awareness is late.
+     These numbers are relative teaching times, not real conduction m/s. */
+  BRAIN_UP_MS: 680,       // up the cord toward the brain
+  BRAIN_CORTEX_MS: 820,   // remaining distance to awareness
+  BRAIN_ARRIVE_MS: 200,   // "arrives" at the bit that feels pain
+  /* Hard floor so ouch cannot appear in the same moment as the arm,
+     even if a huge dt tries to finish both branches at once. */
+  OUCH_AFTER_ARM_MS: 450,
+
+  /* Voluntary: the signal MUST go up, the brain DECIDES, then down.
+     Extra synapses + extra distance → stopwatch is longer. */
+  VOL_UP_MS: 920,
+  VOL_DECIDE_MS: 480,
+  VOL_DOWN_MS: 920,
+
+  KNEE_JERK_MS: 50,       // Class 8 honesty fact for Mode 3
+  REACTION_ROUNDS: 5,
+  REACTION_TASK_N: 3,
+  REACTION_WAIT_MIN: 900,
+  REACTION_WAIT_MAX: 2800,
+
+  NUDGE_MS: 480,
+  SLOT_R: 34,
+  SORT_NEED: 6,
+  SPARK_N: 9,
+  TRACE_MAX: 220
+};
+
+const PIECES = [
+  { id:"receptor", slot:"receptor", color:"sensory" },
+  { id:"sensory",  slot:"sensory",  color:"sensory" },
+  { id:"spinal",   slot:"spinal",   color:"relay" },
+  { id:"motor",    slot:"motor",    color:"motor" },
+  { id:"effector", slot:"effector", color:"motor" },
+  { id:"brain",    slot:"brain",    color:"aware" }
+];
+
+const SORT_CARDS = [
+  { id:"knee",    reflex:true  },
+  { id:"blink",   reflex:true  },
+  { id:"hotpan",  reflex:true  },
+  { id:"sneeze",  reflex:true  },
+  { id:"cough",   reflex:true  },
+  { id:"pin",     reflex:true  },
+  { id:"wave",    reflex:false },
+  { id:"ball",    reflex:false },
+  { id:"laces",   reflex:false },
+  { id:"pen",     reflex:false }
+];
+
+const TRACK = ["stimulus","receptor","sensory","spinal","motor","effector"];
+
+/* ======================================================================
+   2. STRINGS
+   ====================================================================== */
+const STRINGS = {
+en:{
+  title:"Reflex Arc & Nerve Signal",
+  sub:"The arm pulls back first. Pain arrives later — the brain was not asked.",
+  navTitle:"Reflex Arc & Nerve Signal", bench:"Bench", quiz:"Quiz",
+  lang:"اردو", dim:"Dim room", bright:"Bright room",
+  step:"TASK", showMe:"Show me", next:"Next", finish:"Go to the quiz",
+  readings:"Live instruments",
+  speed:"Speed", play:"Play", pause:"Pause", reset:"Reset", stepBtn:"Step",
+  graph:"Two clocks after the split",
+  graph1:"Place every part. A wrong slot nudges — it does not scold.",
+  graph2:"Motor path (short) vs brain path (longer). Arm mark sits LEFT of Ouch.",
+  graph3:"This click goes through your brain. A spinal reflex is faster than this.",
+  graph4:"Fast + protective + no decision = reflex. Seeing it coming = voluntary.",
+  quizTitle:"Check what you have learned",
+  quizSub:"Five questions, with the answer explained straight away.",
+  tryAgain:"Try again", left:"questions left.",
+  scoreAll:"Five out of five — you can teach the delay.",
+  scoreMid:"Solid. Replay Mode 2 and watch the arm move before Ouch.",
+  scoreLow:"Open Mode 2 at slow speed. The split is the whole lesson.",
+  boardDesc:"A stylised body. A hot flame. Colour-coded neurons. The arm pulls back before the brain feels pain.",
+  sample:"Now", extraK:"Delay",
+  m1:"Build arc", m2:"Watch impulse", m3:"Reaction", m4:"Sort",
+  m1full:"Build the reflex arc", m2full:"Watch the impulse", m3full:"Reaction timer", m4full:"Reflex or voluntary?",
+  trayPieces:"Drag a labelled part onto an empty spot on the body",
+  trayWatch:"Watch the pulse. Toggle voluntary to send it through the brain.",
+  trayReact:"Wait for the icon. Then tap as fast as you can.",
+  traySort:"Drag each card into Reflex or Voluntary",
+  legSensory:"Sensory / afferent — receptor → CNS",
+  legRelay:"Relay / interneuron — inside the spinal cord",
+  legMotor:"Motor / efferent — CNS → muscle",
+  legAware:"Brain path / awareness — slower, after the split",
+  clkRef:"Reflex pull", clkVol:"Voluntary pull",
+  volToggle:"Make it Voluntary instead",
+  touch:"Touch the flame",
+  again:"Play again",
+  receptor:"Receptor", sensory:"Sensory neuron", spinal:"Spinal cord / relay",
+  motor:"Motor neuron", effector:"Effector (muscle)", brain:"Brain",
+  stimulus:"Stimulus", response:"Response",
+  narIdle:"Press Play (or Touch the flame). Watch the arm — then wait for Ouch.",
+  narApproach:"Hand moving toward the heat. No signal yet.",
+  narReceptor:"Stimulus hits the receptor in the fingertip. The sensory neuron is about to fire.",
+  narSensory:"Pulse racing along the sensory (afferent) neuron toward the spinal cord.",
+  narSyn1:"The signal just jumped the synapse — a real gap, not a wire. Small delay on purpose.",
+  narRelay:"Relay neuron inside the spinal cord. The brain has not heard about this yet.",
+  narSyn2:"Jumped into the motor neuron. The muscle is about to react. The brain still does not know.",
+  narSplit:"SPLIT. One copy goes to the muscle. A second, longer copy starts climbing to the brain.",
+  narMotor:"Motor (efferent) neuron. Spinal cord → effector. Short path, on purpose.",
+  narArm:"The arm is pulling back. That is the reflex. Pain has not arrived.",
+  narBrain:"Still climbing toward the brain — more distance, more synapses, so it is late.",
+  narOuch:"Ouch! Awareness arrived AFTER the arm already moved. Waiting for the brain would have been too slow.",
+  narVolUp:"Voluntary path: up to the brain first. Extra distance. Extra synapse jumps.",
+  narVolDecide:"Brain decides: pull away. Only now will a signal go back down.",
+  narVolDown:"Descending to the spinal cord, then the motor neuron, then the muscle. Longer than a reflex.",
+  narVolArm:"Arm pulls back — after the brain approved it. Check the stopwatch against the reflex.",
+  narBuild:"Drop each labelled part on the matching empty spot. A wrong spot nudges back.",
+  narBuildOk:"That belongs there.",
+  narNudge:"Not that job — this piece does something else. Try another empty spot.",
+  narAll:"All six in place. Watch one pulse travel the whole arc.",
+  narReactWait:"Wait… the icon will appear without a countdown. This is a voluntary reaction.",
+  narReactGo:"Now! Tap.",
+  narReactEarly:"Too soon — that was a guess, not a reaction. Wait for the icon.",
+  narReactDone:"Your fastest click was about {x} ms. A real knee-jerk reflex is faster than that — about 50 ms — because it skips the brain entirely.",
+  honest:"This timer measures VOLUNTARY reaction time (eyes → brain → finger). It is not a spinal reflex.",
+  binR:"Reflex (involuntary)", binV:"Voluntary",
+  knee:"Doctor's knee-tap", blink:"Blink — something flies at the eye",
+  hotpan:"Pulling a hand off a hot pan", sneeze:"Sneezing",
+  cough:"Coughing at a tickle in the throat", pin:"Jerking a leg from a pin-prick",
+  wave:"Waving at a friend", ball:"Catching a ball you saw coming",
+  laces:"Tying shoelaces", pen:"Deciding to pick up a pen",
+  whyKnee:"Knee-jerk: receptor in the tendon → spinal cord → thigh muscle. No decision.",
+  whyBlink:"Blink-to-threat is protective and automatic. The eyelid does not wait for a plan.",
+  whyHotpan:"Hot-pan withdrawal is the arc on this bench. Muscle first, pain later.",
+  whySneeze:"Sneezing is a protective reflex to clear the nose. You do not choose the burst.",
+  whyCough:"A tickle in the throat triggers a cough reflex. Fast, protective, not a decision.",
+  whyPin:"Pin-prick withdrawal is the same idea as the hot pan: spinal cord, not a plan.",
+  whyWave:"Waving is a chosen greeting. It routes through the brain.",
+  whyBall:"You saw the ball coming, aimed, and caught it. Fast, but voluntary — the brain was in the loop.",
+  whyLaces:"Tying laces is a learned, deliberate sequence. Slow on purpose.",
+  whyPen:"Deciding to pick up a pen is the definition of voluntary.",
+  noKnee:"A knee-jerk is the textbook spinal reflex — fast, protective, no conscious decision.",
+  noBlink:"If something flies at the eye, blinking is automatic. That is a reflex, not a choice.",
+  noHotpan:"Pulling off a hot pan is a reflex. The arm moves before you feel the ouch.",
+  noSneeze:"You can sometimes hold a sneeze, but the burst itself is a reflex, not a greeting.",
+  noCough:"A cough at a tickle is protective and automatic — reflex, not a planned speech.",
+  noPin:"Jerking from a pin-prick does not wait for you to think. Spinal cord.",
+  noWave:"Waving at a friend is a decision. Fast + protective + no decision would be a reflex.",
+  noBall:"Catching a ball you SAW coming is voluntary. A true reflex does not need you to notice it first.",
+  noLaces:"Shoelaces take a plan. Reflexes are fast, protective, and skip the plan.",
+  noPen:"Picking up a pen because you decided to is voluntary. No threat, no automatic arc.",
+  t1:"Build the reflex arc: place all six parts on the matching spots.",
+  t1h:"Receptor, sensory neuron, spinal cord / relay, motor neuron, effector, brain. A wrong spot nudges.",
+  t1p:"The arc is a one-way chain. The brain sits on a side branch, not in the middle of the reflex.",
+  t2:"Watch one full reflex at slow speed — arm first, then Ouch.",
+  t2h:"Leave Voluntary off. Press Play. Do not look away at the split.",
+  t2p:"Two clocks. The muscle wins. Pain is the late letter, not the command.",
+  t3:"Turn on Voluntary and compare the two stopwatches.",
+  t3h:"Watch the reflex once, then the voluntary path. The brain loop is visibly longer.",
+  t3p:"Voluntary spends extra time going up, deciding, and coming back down.",
+  t4:"Finish 3 rounds of the reaction timer.",
+  t4h:"Wait for the icon. Your click is voluntary — it goes through your brain.",
+  t4p:"Your click is slower than a ~50 ms knee-jerk because a reflex skips the brain.",
+  t5:"Sort at least 6 cards into Reflex or Voluntary.",
+  t5h:"Ask: was it fast, protective, and without a decision?",
+  t5p:"Seeing it coming, or choosing it, makes it voluntary — even if it looks snappy.",
+  q1:"Feeling pain is what makes you pull your hand away from heat.",
+  q1a:"True — you feel it, then you move",
+  q1b:"False — the arm pulls back first. Pain (Ouch!) arrives later, after a slower trip to the brain.",
+  q1c:"True — the brain must feel it or the muscle will not work",
+  q1d:"False — there is no pain in a reflex, ever",
+  q1w:"Watch Mode 2. The motor copy reaches the muscle while the brain copy is still climbing. Pain is awareness, not the command.",
+  q2:"The brain must approve a reflex before the muscle is allowed to move.",
+  q2a:"True — every movement needs the brain's permission",
+  q2b:"False — a reflex is handled at the spinal cord. It does not wait for the brain.",
+  q2c:"True for the arm, false for the knee",
+  q2d:"False — reflexes start in the muscle and go backwards",
+  q2w:"If the brain had to sign off, you would be burned. That is why the arc shortcuts at the cord.",
+  q3:"Any fast response is a reflex.",
+  q3a:"True — speed is the definition",
+  q3b:"False — catching a ball you saw coming is fast but voluntary. A reflex is automatic and protective, and it skips a conscious decision.",
+  q3c:"True if it happens in under a second",
+  q3d:"False — only the knee-jerk counts as a reflex",
+  q3w:"Mode 4: the ball you watched is a plan. The hot pan you did not plan is a reflex.",
+  q4:"A synapse is a direct wired connection, like two wires twisted together.",
+  q4a:"True — the pulse never stops",
+  q4b:"False — a synapse is a real gap. The signal is handed across chemically, and that takes a small extra delay.",
+  q4c:"True inside the spinal cord, false in the brain",
+  q4d:"False — synapses only exist in the brain",
+  q4w:"Mode 2 pauses and sparks across the gap on purpose. More synapses (the brain path) means more delay.",
+  q5:"Sensory and motor neurons do the same job, just in both directions.",
+  q5a:"True — they are two names for one wire",
+  q5b:"False — sensory / afferent carries receptor → CNS. Motor / efferent carries CNS → effector. One direction each.",
+  q5c:"True, and the relay neuron is optional",
+  q5d:"False — motor neurons feel the heat, sensory neurons move the arm",
+  q5w:"Colour + label: orange inbound, teal outbound. They do not swap jobs."
+},
+ur:{
+  title:"اضطرابی قوس اور عصبی اشارہ",
+  sub:"پہلے بازو ہٹتا ہے۔ درد بعد میں آتا ہے — دماغ سے اجازت نہیں لی گئی۔",
+  navTitle:"اضطرابی قوس اور عصبی اشارہ", bench:"میز", quiz:"سوالات",
+  lang:"English", dim:"کم روشنی", bright:"تیز روشنی",
+  step:"کام", showMe:"دکھاؤ", next:"اگلا", finish:"سوالات کی طرف",
+  readings:"براہِ راست آلات",
+  speed:"رفتار", play:"چلائیں", pause:"روکیں", reset:"ری سیٹ", stepBtn:"قدم",
+  graph:"تقسیم کے بعد دو گھڑیاں",
+  graph1:"ہر حصہ رکھو۔ غلط جگہ جھٹکا دیتی ہے — ڈانٹ نہیں۔",
+  graph2:"حرکی راستہ (چھوٹا) بمقابلہ دماغی راستہ (لمبا)۔ بازو کا نشان Ouch سے بائیں ہے۔",
+  graph3:"یہ کلک دماغ سے گزرتا ہے۔ ریڑھ کی اضطراری حرکت اس سے تیز ہے۔",
+  graph4:"تیز + حفاظتی + بغیر فیصلہ = اضطراری۔ دیکھ کر پکڑنا = ارادی۔",
+  quizTitle:"دیکھیں آپ نے کیا سیکھا",
+  quizSub:"پانچ سوال، جواب فوراً وضاحت کے ساتھ۔",
+  tryAgain:"دوبارہ کوشش", left:"سوال باقی۔",
+  scoreAll:"پانچ میں سے پانچ — اب آپ یہ تاخیر سمجھا سکتے ہو۔",
+  scoreMid:"اچھا۔ موڈ 2 دوبارہ دیکھو: پہلے بازو، پھر Ouch۔",
+  scoreLow:"موڈ 2 آہستہ چلاؤ۔ تقسیم ہی پورا سبق ہے۔",
+  boardDesc:"سادہ جسم، گرم شعلہ، رنگ دار عصبی خلیے۔ بازو درد سے پہلے ہٹتا ہے۔",
+  sample:"اب", extraK:"تاخیر",
+  m1:"قوس بناؤ", m2:"اشارہ دیکھو", m3:"ردعمل", m4:"چھانٹو",
+  m1full:"اضطرابی قوس بناؤ", m2full:"اشارہ دیکھو", m3full:"ردعمل گھڑی", m4full:"اضطرابی یا ارادی؟",
+  trayPieces:"نام والا حصہ جسم کے خالی نشان پر رکھو",
+  trayWatch:"نبض دیکھو۔ ارادی آن کرو تو اشارہ دماغ سے جائے گا۔",
+  trayReact:"نشان کا انتظار کرو، پھر جتنی جلدی ہو سکے دباؤ۔",
+  traySort:"ہر کارڈ اضطراری یا ارادی میں رکھو",
+  legSensory:"حسی / افیرنٹ — مستقبلہ → مرکزی نظام",
+  legRelay:"ربطی / انٹرنیورون — ریڑھ کی ہڈی کے اندر",
+  legMotor:"حرکی / ایفیرنٹ — مرکزی نظام → پٹھا",
+  legAware:"دماغی راستہ / آگاہی — تقسیم کے بعد، سست",
+  clkRef:"اضطرابی کھینچنا", clkVol:"ارادی کھینچنا",
+  volToggle:"اسے ارادی عمل بناؤ",
+  touch:"شعلے کو چھواؤ",
+  again:"دوبارہ چلاؤ",
+  receptor:"مستقبلہ", sensory:"حسی عصبی خلیہ", spinal:"ریڑھ / ربطی",
+  motor:"حرکی عصبی خلیہ", effector:"مؤثر (پٹھا)", brain:"دماغ",
+  stimulus:"محرک", response:"ردعمل",
+  narIdle:"چلاؤ دباؤ (یا شعلہ چھواؤ)۔ پہلے بازو دیکھو — پھر Ouch کا انتظار۔",
+  narApproach:"ہاتھ گرمی کی طرف جا رہا ہے۔ ابھی کوئی اشارہ نہیں۔",
+  narReceptor:"محرک انگلی کے مستقبلے پر لگا۔ حسی خلیہ اب فائر کرے گا۔",
+  narSensory:"نبض حسی (افیرنٹ) خلیے پر ریڑھ کی طرف دوڑ رہی ہے۔",
+  narSyn1:"اشارہ سائنپس سے کودا — اصلی خلا، تار نہیں۔ چھوٹی تاخیر جان بوجھ کر۔",
+  narRelay:"ریڑھ کے اندر ربطی خلیہ۔ دماغ کو ابھی خبر نہیں۔",
+  narSyn2:"حرکی خلیے میں کودا۔ پٹھا اب رد کرے گا۔ دماغ اب بھی نہیں جانتا۔",
+  narSplit:"تقسیم۔ ایک نقل پٹھے کو۔ دوسری، لمبی نقل دماغ کی طرف چڑھنے لگی۔",
+  narMotor:"حرکی (ایفیرنٹ) خلیہ۔ ریڑھ → مؤثر۔ چھوٹا راستہ، جان بوجھ کر۔",
+  narArm:"بازو ہٹ رہا ہے۔ یہ اضطراری عمل ہے۔ درد ابھی نہیں آیا۔",
+  narBrain:"اب بھی دماغ کی طرف — زیادہ فاصلہ، زیادہ سائنپس، اس لیے دیر۔",
+  narOuch:"اوہ! آگاہی اس کے بعد آئی جب بازو پہلے ہی ہٹ چکا۔ دماغ کا انتظار جل جانے کا سبب بنتا۔",
+  narVolUp:"ارادی راستہ: پہلے دماغ تک۔ اضافی فاصلہ۔ اضافی سائنپس۔",
+  narVolDecide:"دماغ نے فیصلہ کیا: ہٹاؤ۔ اب اشارہ نیچے جائے گا۔",
+  narVolDown:"ریڑھ کی طرف اتر رہا ہے، پھر حرکی خلیہ، پھر پٹھا۔ اضطراری سے لمبا۔",
+  narVolArm:"بازو ہٹا — دماغ کی منظوری کے بعد۔ گھڑی کا اضطراری سے موازنہ کرو۔",
+  narBuild:"ہر نام والا حصہ درست خالی جگہ پر رکھو۔ غلط جگہ واپس جھٹکتی ہے۔",
+  narBuildOk:"یہ یہاں کا ہے۔",
+  narNudge:"یہ اس کا کام نہیں — یہ حصہ کچھ اور کرتا ہے۔ دوسری خالی جگہ دیکھو۔",
+  narAll:"چھوں جگہ پر۔ ایک نبض پوری قوس پر دیکھو۔",
+  narReactWait:"انتظار… نشان بغیر الٹی گنتی کے آئے گا۔ یہ ارادی رد عمل ہے۔",
+  narReactGo:"اب! دباؤ۔",
+  narReactEarly:"جلدی — یہ اندازہ تھا، رد عمل نہیں۔ نشان کا انتظار کرو۔",
+  narReactDone:"تمہاری تیز ترین کلک تقریباً {x} ملی سیکنڈ۔ اصلی گھٹنے کی جھٹک اس سے تیز ہے — تقریباً 50 ms — کیونکہ وہ دماغ کو چھوڑ دیتی ہے۔",
+  honest:"یہ گھڑی ارادی رد عمل ناپتی ہے (آنکھ → دماغ → انگلی)۔ یہ ریڑھ کی اضطراری حرکت نہیں۔",
+  binR:"اضطرابی (غیر ارادی)", binV:"ارادی",
+  knee:"ڈاکٹر کا گھٹنے پر ضرب", blink:"پلک — آنکھ پر کچھ آرہا ہو",
+  hotpan:"گرم ہانڈی سے ہاتھ ہٹانا", sneeze:"چھینک",
+  cough:"گلے کی کھجل پر کھانسی", pin:"سوئی چبھنے پر ٹانگ جھٹکنا",
+  wave:"دوست کو ہاتھ ہلانا", ball:"دیکھ کر گیند پکڑنا",
+  laces:"جوتے کے فیتے باندھنا", pen:"قلم اٹھانے کا فیصلہ",
+  whyKnee:"گھٹنے کی جھٹک: رجحان → ریڑھ → ران کا پٹھا۔ کوئی فیصلہ نہیں۔",
+  whyBlink:"خطرے پر پلک حفاظتی اور خود کار ہے۔ منصوبے کا انتظار نہیں۔",
+  whyHotpan:"گرم ہانڈی وہی قوس ہے جو اس میز پر ہے۔ پہلے پٹھا، بعد میں درد۔",
+  whySneeze:"چھینک ناک صاف کرنے کی حفاظتی اضطراری حرکت ہے۔ پھٹنے کا انتخاب نہیں۔",
+  whyCough:"گلے کی کھجل کھانسی کی اضطراری حرکت جگا تی ہے۔ تیز، حفاظتی، فیصلہ نہیں۔",
+  whyPin:"سوئی سے ہٹنا گرم ہانڈی جیسا ہے: ریڑھ، منصوبہ نہیں۔",
+  whyWave:"ہاتھ ہلانا منتخب سلام ہے۔ یہ دماغ سے گزرتا ہے۔",
+  whyBall:"گیند دیکھی، نشانہ لگایا، پکڑی۔ تیز، مگر ارادی — دماغ حلقے میں تھا۔",
+  whyLaces:"فیتے سیکھا ہوا ارادی سلسلہ ہیں۔ جان بوجھ کر آہستہ۔",
+  whyPen:"قلم اٹھانے کا فیصلہ ارادی عمل کی تعریف ہے۔",
+  noKnee:"گھٹنے کی جھٹک درسی اضطراری حرکت ہے — تیز، حفاظتی، بغیر سوچے۔",
+  noBlink:"آنکھ پر چیز آئے تو پلک خود کار ہے۔ یہ اضطراری ہے، انتخاب نہیں۔",
+  noHotpan:"گرم ہانڈی سے ہٹنا اضطراری ہے۔ بازو Ouch سے پہلے ہلتا ہے۔",
+  noSneeze:"کبھی چھینک روک سکتے ہو، مگر پھٹنا خود اضطراری ہے، سلام نہیں۔",
+  noCough:"کھجل پر کھانسی حفاظتی اور خود کار ہے — اضطراری، تقریر نہیں۔",
+  noPin:"سوئی سے جھٹکنا سوچ کا انتظار نہیں کرتا۔ ریڑھ کی ہڈی۔",
+  noWave:"دوست کو ہاتھ ہلانا فیصلہ ہے۔ تیز + حفاظتی + بغیر فیصلہ = اضطراری ہوتا۔",
+  noBall:"دیکھ کر گیند پکڑنا ارادی ہے۔ اصلی اضطراری کو پہلے نوٹس کی ضرورت نہیں۔",
+  noLaces:"فیتوں کو منصوبہ چاہیے۔ اضطراری تیز، حفاظتی، منصوبہ چھوڑتی ہے۔",
+  noPen:"فیصلے سے قلم اٹھانا ارادی ہے۔ نہ خطرہ، نہ خود کار قوس۔",
+  t1:"اضطرابی قوس بناؤ: چھوں حصے درست جگہوں پر رکھو۔",
+  t1h:"مستقبلہ، حسی خلیہ، ریڑھ/ربطی، حرکی خلیہ، مؤثر، دماغ۔ غلط جگہ جھٹکتی ہے۔",
+  t1p:"قوس ایک طرفہ زنجیر ہے۔ دماغ سائیڈ برانچ پر ہے، اضطراری کے بیچ میں نہیں۔",
+  t2:"ایک پوری اضطراری حرکت آہستہ دیکھو — پہلے بازو، پھر Ouch۔",
+  t2h:"ارادی بند رکھو۔ چلاؤ دباؤ۔ تقسیم پر نظر نہ ہٹاؤ۔",
+  t2p:"دو گھڑیاں۔ پٹھا جیتتا ہے۔ درد دیر سے خط ہے، حکم نہیں۔",
+  t3:"ارادی آن کرو اور دونوں گھڑیاں موازنہ کرو۔",
+  t3h:"ایک بار اضطراری، پھر ارادی راستہ۔ دماغی حلقہ صاف لمبا ہے۔",
+  t3p:"ارادی اوپر جانے، فیصلہ کرنے، اور واپس اترنے میں وقت لگاتا ہے۔",
+  t4:"ردعمل گھڑی کے تین راؤنڈ پورے کرو۔",
+  t4h:"نشان کا انتظار۔ تمہاری کلک ارادی ہے — دماغ سے گزرتی ہے۔",
+  t4p:"تمہاری کلک ~50 ms گھٹنے کی جھٹک سے سست ہے کیونکہ اضطراری دماغ چھوڑتی ہے۔",
+  t5:"کم از کم 6 کارڈ اضطراری یا ارادی میں چھانٹو۔",
+  t5h:"پوچھو: کیا یہ تیز، حفاظتی، اور بغیر فیصلہ تھا؟",
+  t5p:"دیکھ کر آنا، یا چننا، اسے ارادی بناتا ہے — چاہے تیز لگے۔",
+  q1:"درد محسوس کرنا ہی ہاتھ کو گرمی سے ہٹاتا ہے۔",
+  q1a:"درست — پہلے محسوس، پھر حرکت",
+  q1b:"غلط — پہلے بازو ہٹتا ہے۔ درد (Ouch!) بعد میں آتا ہے، دماغ کے سست سفر کے بعد۔",
+  q1c:"درست — دماغ محسوس کیے بغیر پٹھا نہیں چلے گا",
+  q1d:"غلط — اضطراری میں درد کبھی نہیں ہوتا",
+  q1w:"موڈ 2 دیکھو۔ حرکی نقل پٹھے تک پہنچتی ہے جب دماغی نقل ابھی چڑھ رہی ہو۔ درد آگاہی ہے، حکم نہیں۔",
+  q2:"پٹھے کے ہلنے سے پہلے دماغ کو اضطراری کی منظوری دینی چاہیے۔",
+  q2a:"درست — ہر حرکت کو دماغ کی اجازت چاہیے",
+  q2b:"غلط — اضطراری ریڑھ کی ہڈی سنبھالتی ہے۔ دماغ کا انتظار نہیں۔",
+  q2c:"بازو کے لیے درست، گھٹنے کے لیے غلط",
+  q2d:"غلط — اضطراری پٹھے سے الٹی سمت جاتی ہے",
+  q2w:"اگر دماغ دستخط کرتا تو جل جاتے۔ اس لیے قوس ریڑھ پر مختصر ہوتی ہے۔",
+  q3:"کوئی بھی تیز رد عمل اضطراری ہے۔",
+  q3a:"درست — رفتار ہی تعریف ہے",
+  q3b:"غلط — دیکھ کر گیند پکڑنا تیز مگر ارادی ہے۔ اضطراری خود کار، حفاظتی، اور سوچے بغیر ہوتی ہے۔",
+  q3c:"درست اگر ایک سیکنڈ سے کم میں ہو",
+  q3d:"غلط — صرف گھٹنے کی جھٹک اضطراری ہے",
+  q3w:"موڈ 4: دیکھی ہوئی گیند منصوبہ ہے۔ نہ سوچی ہانڈی اضطراری ہے۔",
+  q4:"سائنپس سیدھا تار کا جوڑ ہے، جیسے دو تار بٹے ہوں۔",
+  q4a:"درست — نبض کبھی نہیں رکتتی",
+  q4b:"غلط — سائنپس اصلی خلا ہے۔ اشارہ کیمیاوی طور پر پکڑایا جاتا ہے، اور اس میں چھوٹی تاخیر ہے۔",
+  q4c:"ریڑھ میں درست، دماغ میں غلط",
+  q4d:"غلط — سائنپس صرف دماغ میں ہوتے ہیں",
+  q4w:"موڈ 2 جان بوجھ کر خلا پر رک کر چنگاری دکھاتا ہے۔ زیادہ سائنپس (دماغی راستہ) زیادہ تاخیر۔",
+  q5:"حسی اور حرکی خلیے ایک ہی کام دونوں سمتوں میں کرتے ہیں۔",
+  q5a:"درست — ایک تار کے دو نام",
+  q5b:"غلط — حسی / افیرنٹ مستقبلہ → مرکزی نظام۔ حرکی / ایفیرنٹ مرکزی نظام → مؤثر۔ ہر ایک ایک سمت۔",
+  q5c:"درست، اور ربطی خلیہ اختیاری ہے",
+  q5d:"غلط — حرکی خلیے گرمی محسوس کرتے ہیں، حسی خلیے بازو ہلاتے ہیں",
+  q5w:"رنگ + لیبل: نارنجی اندر، سبز-نیل باہر۔ کام نہیں بدلتے۔"
+}
+};
+
+let LANG = "en";
+const T = k => STRINGS[LANG][k] ?? STRINGS.en[k] ?? k;
+const el = id => document.getElementById(id);
+let dim = false;
+
+/* ======================================================================
+   3. STATE
+   ====================================================================== */
+function emptyImpulse(voluntary){
+  return {
+    voluntary: !!voluntary,
+    phase: "idle",          // idle | approach | travel | done
+    approachT: 0,
+    t: 0,                   // ms since contact
+    sharedT: 0,
+    motorT: 0,
+    brainT: 0,
+    split: false,
+    armMoved: false,
+    armMovedAt: null,
+    armPull: 0,
+    ouch: false,
+    ouchAt: null,
+    decided: false,
+    sparks: [],
+    trace: [],
+    stopwatch: 0,
+    frozen: null
+  };
+}
+function seed(){
+  const slots = {};
+  PIECES.forEach(p => { slots[p.slot] = null; });
+  const cards = {};
+  SORT_CARDS.forEach((c,i) => {
+    cards[c.id] = { bin:null, correct:null, x: 40 + (i%5)*170, y: 40 + Math.floor(i/5)*88, homeX: 40 + (i%5)*170, homeY: 40 + Math.floor(i/5)*88 };
+  });
+  return {
+    mode: 2,
+    running: true,
+    speed: CONFIG.DEFAULT_SPEED,
+    impulse: emptyImpulse(false),
+    lastReflex: null,
+    lastVoluntary: null,
+    seenReflexSeq: false,     // arm then ouch observed
+    seenVoluntary: false,
+    slots,
+    selectedPiece: "receptor",
+    nudge: null,
+    celebrateT: 0,
+    react: {
+      round: 0,
+      phase: "idle",          // idle | wait | go | result
+      remaining: 0,
+      shownAt: 0,
+      times: [],
+      best: null,
+      last: null
+    },
+    cards,
+    sortSel: null,
+    sortMsg: "",
+    sortOk: 0,
+    sparks: [],
+    narr: "narIdle",
+    guide: { i:0, done:false }
+  };
+}
+const S = seed();
+const drag = { kind:null, id:null, x:0, y:0, moved:false, ox:0, oy:0 };
+
+/* ======================================================================
+   4. PHYSICS / MODEL
+   Two clocks after the spinal split. step() advances them independently.
+   draw() only reads. The arm and Ouch are NEVER set in the same instant.
+   ====================================================================== */
+const W = CONFIG.WORLD_W, H = CONFIG.WORLD_H;
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function dist(a,b){ return Math.hypot(b.x-a.x, b.y-a.y); }
+function lerpPt(a,b,t){ return { x:lerp(a.x,b.x,t), y:lerp(a.y,b.y,t) }; }
+
+function sharedDur(){
+  return CONFIG.RECEPTOR_MS + CONFIG.SENSORY_MS + CONFIG.SYNAPSE_MS + CONFIG.RELAY_MS + CONFIG.SYNAPSE_MS;
+}
+function motorDur(){ return CONFIG.MOTOR_MS + CONFIG.ARM_PULL_MS; }
+function brainDur(){
+  /* Two extra synapses vs the motor hop: more hand-offs, more delay. */
+  return CONFIG.BRAIN_UP_MS + CONFIG.SYNAPSE_MS + CONFIG.BRAIN_CORTEX_MS + CONFIG.SYNAPSE_MS + CONFIG.BRAIN_ARRIVE_MS;
+}
+function volSharedDur(){
+  return CONFIG.RECEPTOR_MS + CONFIG.SENSORY_MS + CONFIG.SYNAPSE_MS;
+}
+function volUpDur(){ return CONFIG.VOL_UP_MS + CONFIG.SYNAPSE_MS + CONFIG.VOL_DECIDE_MS; }
+function volDownDur(){ return CONFIG.SYNAPSE_MS + CONFIG.VOL_DOWN_MS + CONFIG.SYNAPSE_MS + CONFIG.MOTOR_MS + CONFIG.ARM_PULL_MS; }
+function reflexArmMs(){ return sharedDur() + CONFIG.MOTOR_MS; }
+function reflexOuchMs(){
+  return Math.max(sharedDur() + brainDur(), reflexArmMs() + CONFIG.OUCH_AFTER_ARM_MS);
+}
+function volArmMs(){ return volSharedDur() + volUpDur() + CONFIG.SYNAPSE_MS + CONFIG.VOL_DOWN_MS + CONFIG.SYNAPSE_MS + CONFIG.MOTOR_MS; }
+
+function startApproach(){
+  const vol = S.impulse.voluntary;
+  S.impulse = emptyImpulse(vol);
+  S.impulse.phase = "approach";
+  S.impulse.approachT = 0;
+  S.narr = "narApproach";
+}
+function resetImpulseKeepTimes(){
+  const vol = S.impulse.voluntary;
+  const frozenRef = S.lastReflex, frozenVol = S.lastVoluntary;
+  const seenR = S.seenReflexSeq, seenV = S.seenVoluntary;
+  S.impulse = emptyImpulse(vol);
+  S.lastReflex = frozenRef; S.lastVoluntary = frozenVol;
+  S.seenReflexSeq = seenR; S.seenVoluntary = seenV;
+  S.narr = "narIdle";
+}
+
+/* Body joints. armPull 0 = at the flame, 1 = withdrawn. approach 0–1. */
+function geom(){
+  const I = S.impulse;
+  const ap = I.phase==="idle" ? 0 : I.phase==="approach" ? clamp(I.approachT / CONFIG.APPROACH_MS, 0, 1) : 1;
+  const pull = I.armPull;
+  const shoulder = { x:330, y:222 };
+  const elbowReach = { x:228, y:318 };
+  const elbowPull  = { x:268, y:268 };
+  const wristReach = { x:128, y:372 };
+  const wristPull  = { x:210, y:268 };
+  const elbow = lerpPt(elbowReach, elbowPull, pull);
+  const wrist = lerpPt(lerpPt({x:168,y:340}, wristReach, ap), wristPull, pull);
+  const tip   = lerpPt(lerpPt({x:148,y:352}, {x:96,y:388}, ap), {x:188,y:248}, pull);
+  const muscle = lerpPt(shoulder, elbow, 0.45);
+  muscle.x += 8; muscle.y += 10;
+  const cord = { x:455, y:268, top:138, bot:400 };
+  const brain = { x:470, y:78 };
+  const flame = { x:72, y:400 };
+  const syn1 = { x:438, y:292 };          // dorsal gap, sensory → relay
+  const syn1b = { x:452, y:292 };
+  const syn2 = { x:452, y:318 };          // ventral gap, relay → motor
+  const syn2b = { x:438, y:318 };
+  const synB1 = { x:462, y:168 };
+  const synB1b = { x:468, y:148 };
+  const synB2 = { x:478, y:108 };
+  const synB2b = { x:474, y:92 };
+  return { shoulder, elbow, wrist, tip, muscle, cord, brain, flame, syn1, syn1b, syn2, syn2b, synB1, synB1b, synB2, synB2b, ap, pull };
+}
+
+function pathSensory(g){
+  return [ g.tip, {x:g.wrist.x+8,y:g.wrist.y-6}, {x:g.elbow.x+10,y:g.elbow.y-8}, {x:g.shoulder.x+12,y:g.shoulder.y+8}, {x:g.cord.x-28,y:g.syn1.y}, g.syn1 ];
+}
+function pathRelay(g){
+  return [ g.syn1b, {x:g.cord.x+2, y:305}, g.syn2 ];
+}
+function pathMotor(g){
+  return [ g.syn2b, {x:g.cord.x-22,y:g.syn2b.y+8}, {x:g.shoulder.x+8,y:g.shoulder.y+18}, g.muscle ];
+}
+function pathBrain(g){
+  return [ {x:g.cord.x+6,y:300}, {x:g.cord.x+8,y:220}, g.synB1, g.synB1b, {x:g.brain.x-6,y:128}, g.synB2, g.synB2b, g.brain ];
+}
+function pathVolUp(g){
+  return [ g.syn1b, {x:g.cord.x+8,y:240}, g.synB1, g.synB1b, g.brain ];
+}
+function pathVolDown(g){
+  return [ g.brain, {x:g.cord.x+10,y:160}, {x:g.cord.x+4,y:280}, g.syn2, g.syn2b, {x:g.shoulder.x+8,y:g.shoulder.y+18}, g.muscle ];
+}
+
+function polyLen(pts){
+  let L=0; for(let i=1;i<pts.length;i++) L+=dist(pts[i-1],pts[i]); return L;
+}
+function along(pts, t){
+  if(!pts.length) return {x:0,y:0};
+  if(t<=0) return {x:pts[0].x,y:pts[0].y};
+  const L = polyLen(pts); if(L<1e-6) return {x:pts[0].x,y:pts[0].y};
+  let d = clamp(t,0,1)*L;
+  for(let i=1;i<pts.length;i++){
+    const seg=dist(pts[i-1],pts[i]);
+    if(d<=seg) return lerpPt(pts[i-1], pts[i], d/Math.max(1e-9,seg));
+    d-=seg;
+  }
+  return {x:pts[pts.length-1].x, y:pts[pts.length-1].y};
+}
+
+function spawnSpark(a, b, kind){
+  for(let i=0;i<CONFIG.SPARK_N;i++){
+    const t = i/(CONFIG.SPARK_N-1);
+    S.impulse.sparks.push({
+      x: lerp(a.x,b.x,t*0.15), y: lerp(a.y,b.y,t*0.15),
+      tx: b.x, ty: b.y,
+      vx: (b.x-a.x)*0.008 + (Math.random()-0.5)*0.4,
+      vy: (b.y-a.y)*0.008 + (Math.random()-0.5)*0.4,
+      life: 1,
+      kind
+    });
+  }
+}
+function stepSparks(dt){
+  const sp = S.impulse.sparks;
+  for(let i=sp.length-1;i>=0;i--){
+    const p=sp[i];
+    p.x += p.vx * dt * 60;
+    p.y += p.vy * dt * 60;
+    p.x = lerp(p.x, p.tx, 0.08);
+    p.y = lerp(p.y, p.ty, 0.08);
+    p.life -= dt * 2.2;
+    if(p.life<=0) sp.splice(i,1);
+  }
+}
+
+/* Where is the inbound pulse, 0–1 along shared, and which named hop? */
+function sharedHop(sharedT){
+  const a=CONFIG.RECEPTOR_MS, b=a+CONFIG.SENSORY_MS, c=b+CONFIG.SYNAPSE_MS, d=c+CONFIG.RELAY_MS, e=d+CONFIG.SYNAPSE_MS;
+  if(sharedT < a) return { id:"receptor", t:sharedT/a, syn:false, kind:"sensory" };
+  if(sharedT < b) return { id:"sensory", t:(sharedT-a)/CONFIG.SENSORY_MS, syn:false, kind:"sensory" };
+  if(sharedT < c) return { id:"syn1", t:(sharedT-b)/CONFIG.SYNAPSE_MS, syn:true, kind:"sensory" };
+  if(sharedT < d) return { id:"relay", t:(sharedT-c)/CONFIG.RELAY_MS, syn:false, kind:"relay" };
+  if(sharedT < e) return { id:"syn2", t:(sharedT-d)/CONFIG.SYNAPSE_MS, syn:true, kind:"relay" };
+  return { id:"split", t:1, syn:false, kind:"relay" };
+}
+function brainHop(brainT){
+  const a=CONFIG.BRAIN_UP_MS, b=a+CONFIG.SYNAPSE_MS, c=b+CONFIG.BRAIN_CORTEX_MS, d=c+CONFIG.SYNAPSE_MS, e=d+CONFIG.BRAIN_ARRIVE_MS;
+  if(brainT < a) return { id:"brainUp", t:brainT/a, syn:false };
+  if(brainT < b) return { id:"synB1", t:(brainT-a)/CONFIG.SYNAPSE_MS, syn:true };
+  if(brainT < c) return { id:"cortex", t:(brainT-b)/CONFIG.BRAIN_CORTEX_MS, syn:false };
+  if(brainT < d) return { id:"synB2", t:(brainT-c)/CONFIG.SYNAPSE_MS, syn:true };
+  if(brainT < e) return { id:"arrive", t:(brainT-d)/CONFIG.BRAIN_ARRIVE_MS, syn:false };
+  return { id:"arrive", t:1, syn:false };
+}
+function volHop(sharedT, motorT){
+  /* motorT here is reused as the post-spinal voluntary clock. */
+  const u0 = volSharedDur();
+  if(sharedT < CONFIG.RECEPTOR_MS) return { id:"receptor", t:sharedT/CONFIG.RECEPTOR_MS, kind:"sensory", syn:false };
+  if(sharedT < CONFIG.RECEPTOR_MS+CONFIG.SENSORY_MS) return { id:"sensory", t:(sharedT-CONFIG.RECEPTOR_MS)/CONFIG.SENSORY_MS, kind:"sensory", syn:false };
+  if(sharedT < u0) return { id:"syn1", t:(sharedT-(CONFIG.RECEPTOR_MS+CONFIG.SENSORY_MS))/CONFIG.SYNAPSE_MS, kind:"sensory", syn:true };
+  const t = motorT;
+  const a=CONFIG.VOL_UP_MS, b=a+CONFIG.SYNAPSE_MS, c=b+CONFIG.VOL_DECIDE_MS, d=c+CONFIG.SYNAPSE_MS, e=d+CONFIG.VOL_DOWN_MS, f=e+CONFIG.SYNAPSE_MS, g=f+CONFIG.MOTOR_MS, h=g+CONFIG.ARM_PULL_MS;
+  if(t < a) return { id:"volUp", t:t/a, kind:"aware", syn:false };
+  if(t < b) return { id:"synVU", t:(t-a)/CONFIG.SYNAPSE_MS, kind:"aware", syn:true };
+  if(t < c) return { id:"decide", t:(t-b)/CONFIG.VOL_DECIDE_MS, kind:"aware", syn:false };
+  if(t < d) return { id:"synVD", t:(t-c)/CONFIG.SYNAPSE_MS, kind:"aware", syn:true };
+  if(t < e) return { id:"volDown", t:(t-d)/CONFIG.VOL_DOWN_MS, kind:"motor", syn:false };
+  if(t < f) return { id:"synVM", t:(t-e)/CONFIG.SYNAPSE_MS, kind:"motor", syn:true };
+  if(t < g) return { id:"motor", t:(t-f)/CONFIG.MOTOR_MS, kind:"motor", syn:false };
+  if(t < h) return { id:"muscle", t:(t-g)/CONFIG.ARM_PULL_MS, kind:"motor", syn:false };
+  return { id:"muscle", t:1, kind:"motor", syn:false };
+}
+
+function currentStepId(){
+  const I=S.impulse;
+  if(I.phase==="idle" || I.phase==="approach") return "stimulus";
+  if(I.voluntary){
+    const h = volHop(I.sharedT, I.motorT);
+    if(h.id==="receptor") return "receptor";
+    if(h.id==="sensory" || h.id==="syn1") return "sensory";
+    if(h.id==="volUp" || h.id==="synVU" || h.id==="decide") return "spinal";
+    if(h.id==="synVD" || h.id==="volDown" || h.id==="synVM" || h.id==="motor") return "motor";
+    return I.armMoved ? "effector" : "motor";
+  }
+  if(!I.split){
+    const h=sharedHop(I.sharedT);
+    if(h.id==="receptor") return "receptor";
+    if(h.id==="sensory" || h.id==="syn1") return "sensory";
+    return "spinal";
+  }
+  if(!I.armMoved) return I.motorT < CONFIG.MOTOR_MS ? "motor" : "effector";
+  return "effector";
+}
+
+function setNarrFromModel(){
+  const I=S.impulse;
+  if(I.phase==="idle"){ S.narr="narIdle"; return; }
+  if(I.phase==="approach"){ S.narr="narApproach"; return; }
+  if(I.voluntary){
+    const h=volHop(I.sharedT, I.motorT);
+    if(I.armMoved){ S.narr="narVolArm"; return; }
+    const map={ receptor:"narReceptor", sensory:"narSensory", syn1:"narSyn1", volUp:"narVolUp", synVU:"narVolUp", decide:"narVolDecide", synVD:"narVolDown", volDown:"narVolDown", synVM:"narSyn2", motor:"narMotor", muscle:"narVolArm" };
+    S.narr = map[h.id] || "narVolUp";
+    return;
+  }
+  if(I.ouch){ S.narr="narOuch"; return; }
+  if(I.armMoved){ S.narr = I.brainT < brainDur() ? "narBrain" : "narArm"; return; }
+  if(!I.split){
+    const h=sharedHop(I.sharedT);
+    const map={ receptor:"narReceptor", sensory:"narSensory", syn1:"narSyn1", relay:"narRelay", syn2:"narSyn2", split:"narSplit" };
+    S.narr = map[h.id] || "narSensory";
+    return;
+  }
+  S.narr = I.motorT < CONFIG.MOTOR_MS ? "narMotor" : "narArm";
+}
+
+let lastSynKey = "";
+function maybeSpark(key, a, b, kind){
+  if(key===lastSynKey) return;
+  lastSynKey = key;
+  spawnSpark(a,b,kind);
+}
+
+function recordTrace(){
+  const I=S.impulse;
+  if(I.phase!=="travel") return;
+  const motorP = I.split || I.voluntary ? clamp(I.motorT / (I.voluntary ? (volUpDur()+volDownDur()) : motorDur()), 0, 1) : 0;
+  const brainP = I.voluntary ? clamp(I.motorT / volUpDur(), 0, 1) : (I.split ? clamp(I.brainT / brainDur(), 0, 1) : 0);
+  I.trace.push({ t:I.t, motor: I.split || (I.voluntary && I.sharedT>=volSharedDur()) ? motorP : 0, brain: brainP, arm:I.armMoved, ouch:I.ouch });
+  if(I.trace.length > CONFIG.TRACE_MAX) I.trace.shift();
+}
+
+function stepImpulse(dt){
+  const I = S.impulse;
+  const ms = dt * 1000;
+  const g = geom();
+  stepSparks(dt);
+
+  if(I.phase==="approach"){
+    I.approachT += ms;
+    if(I.approachT >= CONFIG.APPROACH_MS){
+      I.phase = "travel";
+      I.t = 0; I.sharedT = 0; I.motorT = 0; I.brainT = 0;
+      I.split = false; I.armMoved = false; I.ouch = false;
+      lastSynKey = "";
+    }
+    setNarrFromModel();
+    return;
+  }
+  if(I.phase!=="travel") return;
+
+  /* Snapshot BEFORE this frame so ouch cannot share the arm's birthday. */
+  const armWasMoved = I.armMoved;
+
+  I.t += ms;
+  if(!I.frozen) I.stopwatch = I.t;
+
+  if(I.voluntary){
+    const sh = volSharedDur();
+    if(I.sharedT < sh){
+      I.sharedT = Math.min(sh, I.sharedT + ms);
+      const h = volHop(I.sharedT, 0);
+      if(h.syn) maybeSpark("v-syn1", g.syn1, g.syn1b, "sensory");
+    } else {
+      I.motorT += ms;
+      const h = volHop(I.sharedT, I.motorT);
+      if(h.id==="synVU") maybeSpark("v-synU", g.synB1, g.synB1b, "aware");
+      if(h.id==="synVD") maybeSpark("v-synD", g.synB2, g.brain, "aware");
+      if(h.id==="synVM") maybeSpark("v-synM", g.syn2, g.syn2b, "motor");
+      if(h.id==="decide") I.decided = true;
+      const motorStart = volUpDur() + CONFIG.SYNAPSE_MS + CONFIG.VOL_DOWN_MS + CONFIG.SYNAPSE_MS;
+      if(!I.armMoved && I.motorT >= motorStart){
+        I.armMoved = true;
+        I.armMovedAt = I.t;
+        I.frozen = I.t;
+        I.stopwatch = I.t;
+        S.lastVoluntary = Math.round(I.t);
+        S.seenVoluntary = true;
+      }
+      if(I.armMoved){
+        I.armPull = clamp((I.motorT - motorStart) / CONFIG.ARM_PULL_MS, 0, 1);
+      }
+      /* Voluntary awareness is the DECISION, which happens BEFORE the arm.
+         No delayed Ouch bubble — that bubble is the reflex lesson. */
+      if(I.armPull >= 1 && I.phase==="travel") I.phase = "done";
+    }
+    recordTrace();
+    setNarrFromModel();
+    return;
+  }
+
+  /* -------- REFLEX: inbound, then TWO INDEPENDENT BRANCHES -------- */
+  const sh = sharedDur();
+  if(!I.split){
+    I.sharedT = Math.min(sh, I.sharedT + ms);
+    const h = sharedHop(I.sharedT);
+    if(h.id==="syn1") maybeSpark("r-syn1", g.syn1, g.syn1b, "sensory");
+    if(h.id==="syn2") maybeSpark("r-syn2", g.syn2, g.syn2b, "motor");
+    if(I.sharedT >= sh){
+      I.split = true;
+      I.motorT = 0;
+      I.brainT = 0;
+    }
+  } else {
+    I.motorT += ms;
+    I.brainT += ms;
+    const bh = brainHop(I.brainT);
+    if(bh.id==="synB1") maybeSpark("r-synB1", g.synB1, g.synB1b, "aware");
+    if(bh.id==="synB2") maybeSpark("r-synB2", g.synB2, g.synB2b, "aware");
+
+    /* (a) motor → muscle → ARM. Set armMoved as soon as the motor axon arrives. */
+    if(!I.armMoved && I.motorT >= CONFIG.MOTOR_MS){
+      I.armMoved = true;
+      I.armMovedAt = I.t;
+      I.frozen = I.t;
+      I.stopwatch = I.t;
+      S.lastReflex = Math.round(I.t);
+    }
+    if(I.armMoved){
+      I.armPull = clamp((I.motorT - CONFIG.MOTOR_MS) / CONFIG.ARM_PULL_MS, 0, 1);
+    }
+
+    /* (b) Ouch only if the arm ALREADY moved on a previous frame
+       AND the brain path has finished AND the floor delay has passed.
+       This is the entire lesson. Do not collapse it. */
+    const brainDone = I.brainT >= brainDur();
+    if(!I.ouch && armWasMoved && brainDone && I.armMovedAt != null &&
+       (I.t - I.armMovedAt) >= CONFIG.OUCH_AFTER_ARM_MS){
+      I.ouch = true;
+      I.ouchAt = I.t;
+      S.seenReflexSeq = true;
+    }
+    if(I.ouch && I.armPull >= 1) I.phase = "done";
+  }
+  recordTrace();
+  setNarrFromModel();
+}
+
+function stepNudge(dt){
+  if(!S.nudge) return;
+  S.nudge.t += dt * 1000;
+  if(S.nudge.t >= CONFIG.NUDGE_MS) S.nudge = null;
+}
+function stepCelebrate(dt){
+  if(S.celebrateT>0){
+    S.celebrateT += dt;
+    stepImpulse(dt);
+  }
+}
+
+function stepReaction(rawDt){
+  const R = S.react;
+  if(S.mode!==3) return;
+  if(R.phase==="wait"){
+    R.remaining -= rawDt * 1000;
+    if(R.remaining <= 0){
+      R.phase = "go";
+      R.shownAt = performance.now();
+      S.narr = "narReactGo";
+    }
+  }
+}
+
+function beginWait(){
+  const R = S.react;
+  if(R.round >= CONFIG.REACTION_ROUNDS){ R.phase="result"; return; }
+  R.phase = "wait";
+  R.remaining = CONFIG.REACTION_WAIT_MIN + Math.random()*(CONFIG.REACTION_WAIT_MAX-CONFIG.REACTION_WAIT_MIN);
+  R.shownAt = 0;
+  S.narr = "narReactWait";
+}
+function tapReaction(){
+  const R = S.react;
+  if(R.phase==="idle"){ beginWait(); return; }
+  if(R.phase==="wait"){
+    S.narr = "narReactEarly";
+    beginWait();
+    return;
+  }
+  if(R.phase==="go"){
+    const ms = Math.max(1, Math.round(performance.now() - R.shownAt));
+    R.times.push(ms);
+    R.last = ms;
+    if(R.best==null || ms<R.best) R.best = ms;
+    R.round += 1;
+    if(R.round >= CONFIG.REACTION_ROUNDS){
+      R.phase = "result";
+      S.narr = "narReactDone";
+    } else {
+      beginWait();
+    }
+  }
+}
+
+function step(dt, rawDt){
+  stepNudge(dt);
+  if(S.mode===2 || (S.mode===1 && S.celebrateT>0)) stepImpulse(dt);
+  if(S.mode===3) stepReaction(rawDt);
+}
+
+/* Discrete events for Step button + reduced-motion: still ordered arm THEN ouch. */
+function stepEvent(){
+  const I = S.impulse;
+  if(S.mode===3){ tapReaction(); return; }
+  if(S.mode!==2 && !(S.mode===1 && S.celebrateT>0)) return;
+  if(I.phase==="idle"){ startApproach(); I.approachT = CONFIG.APPROACH_MS; stepImpulse(0); return; }
+  if(I.phase==="approach"){ I.approachT = CONFIG.APPROACH_MS; stepImpulse(0.016); return; }
+  if(I.phase==="done"){ startApproach(); return; }
+  if(I.voluntary){
+    const marks = [CONFIG.RECEPTOR_MS, CONFIG.RECEPTOR_MS+CONFIG.SENSORY_MS, volSharedDur()];
+    if(I.sharedT < volSharedDur()){
+      const next = marks.find(m => m > I.sharedT + 1) ?? volSharedDur();
+      I.sharedT = next; stepImpulse(0); return;
+    }
+    const motorStart = volUpDur() + CONFIG.SYNAPSE_MS + CONFIG.VOL_DOWN_MS + CONFIG.SYNAPSE_MS;
+    const vmarks = [CONFIG.VOL_UP_MS, volUpDur(), volUpDur()+CONFIG.SYNAPSE_MS, motorStart, motorStart+CONFIG.ARM_PULL_MS];
+    const next = vmarks.find(m => m > I.motorT + 1);
+    const jump = (next ?? (motorStart+CONFIG.ARM_PULL_MS)) - I.motorT;
+    stepImpulse(Math.max(0.016, jump/1000));
+    return;
+  }
+  if(!I.split){
+    const marks = [CONFIG.RECEPTOR_MS, CONFIG.RECEPTOR_MS+CONFIG.SENSORY_MS, CONFIG.RECEPTOR_MS+CONFIG.SENSORY_MS+CONFIG.SYNAPSE_MS, sharedDur()-CONFIG.SYNAPSE_MS, sharedDur()];
+    const next = marks.find(m => m > I.sharedT + 1) ?? sharedDur();
+    I.sharedT = Math.min(next, sharedDur());
+    stepImpulse(0);
+    return;
+  }
+  if(!I.armMoved){
+    const jump = (CONFIG.MOTOR_MS + 8) - I.motorT;
+    stepImpulse(Math.max(0.016, jump/1000));
+    return;
+  }
+  if(!I.ouch){
+    /* Advance brain (and time) enough for ouch, but armWasMoved is already true. */
+    const needB = brainDur() - I.brainT + 20;
+    const needD = CONFIG.OUCH_AFTER_ARM_MS - (I.t - I.armMovedAt) + 20;
+    stepImpulse(Math.max(0.05, Math.max(needB, needD)/1000));
+    return;
+  }
+  I.armPull = 1; I.phase="done";
+}
+
+/* ======================================================================
+   5. RENDER
+   ====================================================================== */
+const canvas = el("board");
+const ctx = canvas.getContext("2d");
+const chart = el("pChart");
+const cctx = chart.getContext("2d");
+let cssW=900, cssH=540;
+function dpr(){ return Math.min(2, window.devicePixelRatio||1); }
+function fitBoard(){
+  const wrap = el("stageInner");
+  const w = Math.max(280, wrap.clientWidth);
+  const h = Math.max(300, Math.min(560, Math.round(w * H/W)));
+  cssW=w; cssH=h;
+  const d=dpr();
+  canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+  chart.width=Math.round((el("pChart").clientWidth||300)*d);
+  chart.height=Math.round(132*d);
+  chart.style.height="132px";
+}
+function worldPtr(e){
+  const r = canvas.getBoundingClientRect();
+  return { x:(e.clientX-r.left)*(W/r.width), y:(e.clientY-r.top)*(H/r.height) };
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(x,y,w,h,r);
+  else {
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
+  }
+}
+function label(text, x, y, opt){
+  opt = opt||{};
+  ctx.fillStyle = opt.fill || css("--text");
+  ctx.font = (opt.bold?"700 ":"600 ")+(opt.size||13)+"px "+css("--font");
+  ctx.textAlign = opt.align||"center";
+  ctx.textBaseline = opt.base||"middle";
+  ctx.fillText(text, x, y);
+}
+function chip(text, x, y, opt){
+  /* Panel behind a label so it never sits on a line or node. */
+  opt = opt||{};
+  const size = opt.size||12;
+  ctx.save();
+  ctx.font = (opt.bold?"700 ":"600 ")+size+"px "+css("--font");
+  ctx.textAlign = opt.align||"center";
+  ctx.textBaseline = "middle";
+  const w = ctx.measureText(text).width;
+  const h = size + 10;
+  const align = opt.align||"center";
+  const bx = align==="right" ? x-w : align==="left" ? x : x-w/2;
+  const dim = document.documentElement.getAttribute("data-profile")==="dim";
+  ctx.fillStyle = dim ? "rgba(16,20,24,0.9)" : "rgba(255,255,255,0.92)";
+  roundRect(bx-6, y-h/2, w+12, h, 6); ctx.fill();
+  ctx.strokeStyle = dim ? "rgba(255,255,255,0.12)" : "rgba(20,32,42,0.08)";
+  ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = opt.fill || css("--text");
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+function kindColor(k){
+  if(k==="sensory") return css("--sensory");
+  if(k==="relay") return css("--relay");
+  if(k==="motor") return css("--motor");
+  return css("--aware");
+}
+
+function strokePoly(pts, color, width, dash){
+  if(pts.length<2) return;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap="round"; ctx.lineJoin="round";
+  ctx.setLineDash(dash||[]);
+  ctx.stroke(); ctx.setLineDash([]);
+}
+function drawGap(a,b,color){
+  ctx.beginPath(); ctx.arc(a.x,a.y,5,0,Math.PI*2); ctx.fillStyle=color; ctx.fill();
+  ctx.beginPath(); ctx.arc(b.x,b.y,5,0,Math.PI*2); ctx.fillStyle=color; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+  ctx.setLineDash([3,4]); ctx.strokeStyle=css("--text-3"); ctx.lineWidth=1.5; ctx.stroke(); ctx.setLineDash([]);
+}
+function drawPulse(pt, color){
+  ctx.beginPath(); ctx.arc(pt.x, pt.y, 11, 0, Math.PI*2);
+  ctx.fillStyle = color; ctx.globalAlpha=0.35; ctx.fill(); ctx.globalAlpha=1;
+  ctx.beginPath(); ctx.arc(pt.x, pt.y, 6, 0, Math.PI*2); ctx.fillStyle="#fff"; ctx.fill();
+  ctx.beginPath(); ctx.arc(pt.x, pt.y, 4.5, 0, Math.PI*2); ctx.fillStyle=color; ctx.fill();
+}
+
+function drawFlame(g){
+  const x=g.flame.x, y=g.flame.y;
+  ctx.fillStyle = "#6a4a2a";
+  roundRect(x-10, y-8, 20, 28, 3); ctx.fill();
+  ctx.fillStyle = css("--hot");
+  ctx.beginPath(); ctx.moveTo(x, y-54); ctx.quadraticCurveTo(x+18,y-20,x,y-8); ctx.quadraticCurveTo(x-18,y-20,x,y-54); ctx.fill();
+  ctx.fillStyle = css("--glow");
+  ctx.beginPath(); ctx.moveTo(x, y-42); ctx.quadraticCurveTo(x+9,y-18,x,y-10); ctx.quadraticCurveTo(x-9,y-18,x,y-42); ctx.fill();
+  label(T("stimulus"), x, y+32, { size:12, fill:css("--hot"), bold:true });
+}
+
+function drawBody(g){
+  /* torso */
+  ctx.fillStyle = css("--skin");
+  roundRect(418, 150, 78, 210, 30); ctx.fill();
+  ctx.strokeStyle = css("--skin-2"); ctx.lineWidth=2; ctx.stroke();
+  /* head */
+  ctx.beginPath(); ctx.arc(g.brain.x-4, g.brain.y+6, 36, 0, Math.PI*2);
+  ctx.fillStyle = css("--skin"); ctx.fill(); ctx.strokeStyle=css("--skin-2"); ctx.stroke();
+  /* brain highlight */
+  ctx.beginPath(); ctx.ellipse(g.brain.x, g.brain.y, 22, 16, -0.3, 0, Math.PI*2);
+  ctx.fillStyle = colorMix("--aware", 0.35); ctx.fill();
+  ctx.strokeStyle = css("--aware"); ctx.lineWidth=2; ctx.stroke();
+  if(!g.hideLabels){
+    chip(T("brain"), g.brain.x+56, g.brain.y-14, { size:12, fill:css("--aware"), bold:true, align:"left" });
+  }
+  /* spinal cord */
+  ctx.fillStyle = colorMix("--relay", 0.25);
+  roundRect(g.cord.x-14, g.cord.top, 28, g.cord.bot-g.cord.top, 12); ctx.fill();
+  ctx.strokeStyle = css("--relay"); ctx.lineWidth=2; roundRect(g.cord.x-14, g.cord.top, 28, g.cord.bot-g.cord.top, 12); ctx.stroke();
+  if(!g.hideLabels){
+    chip(T("spinal"), g.cord.x+26, g.cord.top+16, { size:12, fill:css("--relay"), bold:true, align:"left" });
+  }
+  /* upper arm + forearm */
+  ctx.strokeStyle = css("--skin-2"); ctx.lineWidth=18; ctx.lineCap="round";
+  ctx.beginPath(); ctx.moveTo(g.shoulder.x, g.shoulder.y); ctx.lineTo(g.elbow.x, g.elbow.y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(g.elbow.x, g.elbow.y); ctx.lineTo(g.wrist.x, g.wrist.y); ctx.stroke();
+  ctx.strokeStyle = css("--skin"); ctx.lineWidth=14;
+  ctx.beginPath(); ctx.moveTo(g.shoulder.x, g.shoulder.y); ctx.lineTo(g.elbow.x, g.elbow.y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(g.elbow.x, g.elbow.y); ctx.lineTo(g.wrist.x, g.wrist.y); ctx.stroke();
+  /* muscle bulge */
+  ctx.beginPath(); ctx.ellipse(g.muscle.x, g.muscle.y, 16, 11, 0.4, 0, Math.PI*2);
+  ctx.fillStyle = colorMix("--motor", 0.45); ctx.fill();
+  ctx.strokeStyle = css("--motor"); ctx.lineWidth=2; ctx.stroke();
+  if(!g.hideLabels){
+    chip(T("effector"), g.muscle.x-6, g.muscle.y+38, { size:12, fill:css("--motor"), bold:true, align:"right" });
+  }
+  /* hand */
+  ctx.beginPath(); ctx.arc(g.tip.x+8, g.tip.y-4, 14, 0, Math.PI*2);
+  ctx.fillStyle = css("--skin"); ctx.fill(); ctx.strokeStyle=css("--skin-2"); ctx.lineWidth=2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(g.tip.x, g.tip.y, 5, 0, Math.PI*2);
+  ctx.fillStyle = css("--sensory"); ctx.fill();
+  if(!g.hideLabels){
+    chip(T("receptor"), g.tip.x-22, g.tip.y-18, { size:12, fill:css("--sensory"), bold:true, align:"right" });
+  }
+}
+
+function colorMix(token, a){
+  /* tiny helper: token colour at alpha over board */
+  const c = css(token);
+  ctx.save();
+  /* parse #rrggbb */
+  const n = c.replace("#","");
+  if(n.length>=6){
+    const r=parseInt(n.slice(0,2),16), g=parseInt(n.slice(2,4),16), b=parseInt(n.slice(4,6),16);
+    ctx.restore();
+    return "rgba("+r+","+g+","+b+","+a+")";
+  }
+  ctx.restore();
+  return c;
+}
+
+function drawPaths(g){
+  strokePoly(pathSensory(g), css("--sensory"), 5);
+  strokePoly(pathRelay(g), css("--relay"), 5);
+  strokePoly(pathMotor(g), css("--motor"), 5);
+  strokePoly(pathBrain(g), css("--aware"), 4, [5,5]);
+  drawGap(g.syn1, g.syn1b, css("--sensory"));
+  drawGap(g.syn2, g.syn2b, css("--motor"));
+  drawGap(g.synB1, g.synB1b, css("--aware"));
+  drawGap(g.synB2, g.synB2b, css("--aware"));
+  if(!g.hideLabels){
+    const sMid = along(pathSensory(g), 0.38);
+    const mMid = along(pathMotor(g), 0.55);
+    chip(T("sensory"), sMid.x, sMid.y-28, { size:12, fill:css("--sensory"), bold:true });
+    chip(T("motor"), mMid.x, mMid.y+28, { size:12, fill:css("--motor"), bold:true });
+  }
+}
+
+function pulsePos(g){
+  const I=S.impulse;
+  if(I.phase!=="travel" && I.phase!=="done") return [];
+  const out=[];
+  if(I.voluntary){
+    const h=volHop(I.sharedT, I.motorT);
+    if(h.id==="receptor") out.push({ p:g.tip, k:"sensory" });
+    else if(h.id==="sensory") out.push({ p:along(pathSensory(g), h.t), k:"sensory" });
+    else if(h.id==="syn1") out.push({ p:lerpPt(g.syn1, g.syn1b, h.t), k:"sensory", syn:true });
+    else if(h.id==="volUp") out.push({ p:along(pathVolUp(g), h.t*0.7), k:"aware" });
+    else if(h.id==="synVU") out.push({ p:lerpPt(g.synB1, g.synB1b, h.t), k:"aware", syn:true });
+    else if(h.id==="decide") out.push({ p:g.brain, k:"aware" });
+    else if(h.id==="synVD") out.push({ p:lerpPt(g.brain, {x:g.cord.x+10,y:160}, h.t), k:"aware", syn:true });
+    else if(h.id==="volDown") out.push({ p:along(pathVolDown(g), 0.15+h.t*0.55), k:"motor" });
+    else if(h.id==="synVM") out.push({ p:lerpPt(g.syn2, g.syn2b, h.t), k:"motor", syn:true });
+    else if(h.id==="motor") out.push({ p:along(pathMotor(g), h.t), k:"motor" });
+    else out.push({ p:g.muscle, k:"motor" });
+    return out;
+  }
+  if(!I.split){
+    const h=sharedHop(I.sharedT);
+    if(h.id==="receptor") out.push({ p:g.tip, k:"sensory" });
+    else if(h.id==="sensory") out.push({ p:along(pathSensory(g), h.t), k:"sensory" });
+    else if(h.id==="syn1") out.push({ p:lerpPt(g.syn1, g.syn1b, h.t), k:"sensory", syn:true });
+    else if(h.id==="relay") out.push({ p:along(pathRelay(g), h.t), k:"relay" });
+    else if(h.id==="syn2") out.push({ p:lerpPt(g.syn2, g.syn2b, h.t), k:"relay", syn:true });
+    else out.push({ p:g.syn2b, k:"motor" });
+    return out;
+  }
+  /* After split: TWO pulses. Motor and brain are independent. */
+  const mt = clamp(I.motorT / CONFIG.MOTOR_MS, 0, 1);
+  if(I.motorT < CONFIG.MOTOR_MS) out.push({ p:along(pathMotor(g), mt), k:"motor" });
+  else out.push({ p:g.muscle, k:"motor" });
+  const bh = brainHop(I.brainT);
+  const bpts = pathBrain(g);
+  if(bh.id==="brainUp") out.push({ p:along(bpts, bh.t*0.35), k:"aware" });
+  else if(bh.id==="synB1") out.push({ p:lerpPt(g.synB1, g.synB1b, bh.t), k:"aware", syn:true });
+  else if(bh.id==="cortex") out.push({ p:along(bpts, 0.45+bh.t*0.35), k:"aware" });
+  else if(bh.id==="synB2") out.push({ p:lerpPt(g.synB2, g.synB2b, bh.t), k:"aware", syn:true });
+  else out.push({ p:g.brain, k:"aware" });
+  return out;
+}
+
+function drawSparks(){
+  S.impulse.sparks.forEach(p=>{
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.beginPath(); ctx.arc(p.x, p.y, 3.2, 0, Math.PI*2);
+    ctx.fillStyle = kindColor(p.kind); ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+}
+
+function drawOuch(g){
+  const I=S.impulse;
+  if(I.voluntary && I.decided && !I.armMoved){
+    bubble(g.brain.x+48, g.brain.y-36, T("narVolDecide").split(":")[0] || "…");
+  }
+  if(!I.ouch) return;
+  bubble(g.brain.x+56, g.brain.y-42, "Ouch!");
+}
+function bubble(x,y,text){
+  ctx.font = "700 16px "+css("--font");
+  const w = Math.max(70, ctx.measureText(text).width + 24);
+  ctx.fillStyle = css("--panel");
+  roundRect(x, y, w, 36, 12); ctx.fill();
+  ctx.strokeStyle = css("--aware"); ctx.lineWidth=2; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+16, y+36); ctx.lineTo(x+8, y+48); ctx.lineTo(x+28, y+36); ctx.fill(); ctx.stroke();
+  label(text, x+w/2, y+18, { size:16, fill:css("--aware"), bold:true });
+}
+
+function drawMode2(){
+  const g = geom();
+  /* bench */
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = colorMix("--warn", 0.12);
+  roundRect(20, 430, 260, 90, 12); ctx.fill();
+  drawFlame(g);
+  drawBody(g);
+  drawPaths(g);
+  pulsePos(g).forEach(q => drawPulse(q.p, kindColor(q.k)));
+  drawSparks();
+  drawOuch(g);
+  if(S.impulse.split && !S.impulse.voluntary){
+    label("SPLIT", g.cord.x+36, 340, { size:12, fill:css("--text"), bold:true, align:"left" });
+  }
+}
+
+function slotPts(g){
+  return {
+    receptor: g.tip,
+    sensory: along(pathSensory(g), 0.28),
+    spinal: { x:g.cord.x, y:300 },
+    motor: along(pathMotor(g), 0.68),
+    effector: g.muscle,
+    brain: g.brain
+  };
+}
+
+const SLOT_LAB = {
+  receptor: { dx:-46, dy:-6, align:"right" },
+  sensory:  { dx:0, dy:-46, align:"center" },
+  spinal:   { dx:50, dy:0, align:"left" },
+  motor:    { dx:0, dy:46, align:"center" },
+  effector: { dx:-8, dy:44, align:"right" },
+  brain:    { dx:54, dy:-12, align:"left" }
+};
+function drawMode1(){
+  const g = geom();
+  g.hideLabels = true;
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+  drawFlame(g); drawBody(g); drawPaths(g);
+  const pts = slotPts(g);
+  PIECES.forEach(p=>{
+    const pt = pts[p.slot];
+    const filled = S.slots[p.slot];
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, CONFIG.SLOT_R-6, 0, Math.PI*2);
+    ctx.strokeStyle = filled ? kindColor(p.color) : css("--text-3");
+    ctx.setLineDash(filled ? [] : [5,4]);
+    ctx.lineWidth = 2.5; ctx.stroke(); ctx.setLineDash([]);
+    if(!filled){
+      label("?", pt.x, pt.y, { size:16, fill:css("--text-3"), bold:true });
+    } else {
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, 10, 0, Math.PI*2);
+      ctx.fillStyle = kindColor(p.color); ctx.fill();
+      const off = SLOT_LAB[p.slot] || { dx:0, dy:-46, align:"center" };
+      chip(T(filled), pt.x+off.dx, pt.y+off.dy, {
+        size:12, fill:kindColor(p.color), bold:true, align:off.align
+      });
+    }
+  });
+  if(S.nudge){
+    const k = clamp(S.nudge.t / CONFIG.NUDGE_MS, 0, 1);
+    const wob = Math.sin(k*Math.PI*3)*10*(1-k);
+    const x = lerp(S.nudge.x, S.nudge.tx, k) + wob;
+    const y = lerp(S.nudge.y, S.nudge.ty, k);
+    ctx.beginPath(); ctx.arc(x,y,14,0,Math.PI*2);
+    ctx.fillStyle = kindColor(S.nudge.color); ctx.globalAlpha=0.85; ctx.fill(); ctx.globalAlpha=1;
+    label(T(S.nudge.id), x, y-20, { size:12, bold:true, fill:kindColor(S.nudge.color) });
+  }
+  if(S.celebrateT>0){
+    pulsePos(g).forEach(q => drawPulse(q.p, kindColor(q.k)));
+    drawSparks();
+  }
+}
+
+function cardRect(id){
+  const c = S.cards[id];
+  return { x:c.x, y:c.y, w:160, h:76 };
+}
+function binRects(){
+  return {
+    r: { x:40, y:430, w:400, h:90 },
+    v: { x:460, y:430, w:400, h:90 }
+  };
+}
+function drawMode4(){
+  /* Cards and bins live in the HTML overlay (.sort). Canvas is hidden in Mode 4. */
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+}
+
+function drawMode3(){
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+  const R=S.react;
+  label(T("m3full"), W/2, 48, { size:20, bold:true });
+  if(R.phase==="idle"){
+    label(T("narReactWait"), W/2, 260, { size:16, fill:css("--text-2") });
+    roundRect(W/2-90, 300, 180, 52, 12); ctx.fillStyle=css("--accent"); ctx.fill();
+    label(T("touch").replace(T("stimulus")||"x","Go"), W/2, 326, { size:16, fill:css("--on-accent"), bold:true });
+    /* start hint */
+    label(T("trayReact"), W/2, 370, { size:13, fill:css("--text-3") });
+  } else if(R.phase==="wait"){
+    ctx.beginPath(); ctx.arc(W/2, 260, 50, 0, Math.PI*2);
+    ctx.fillStyle = css("--panel-2"); ctx.fill();
+    ctx.strokeStyle = css("--panel-border"); ctx.lineWidth=3; ctx.stroke();
+    label("…", W/2, 260, { size:28, fill:css("--text-3"), bold:true });
+  } else if(R.phase==="go"){
+    /* stimulus icon — hot pan */
+    ctx.beginPath(); ctx.arc(W/2, 250, 64, 0, Math.PI*2);
+    ctx.fillStyle = css("--hot"); ctx.fill();
+    ctx.fillStyle = css("--glow");
+    ctx.beginPath(); ctx.arc(W/2, 250, 28, 0, Math.PI*2); ctx.fill();
+    label("!", W/2, 250, { size:36, fill:"#fff", bold:true });
+    label(T("narReactGo"), W/2, 340, { size:18, fill:css("--hot"), bold:true });
+  } else {
+    const best = R.best==null ? "—" : R.best+" ms";
+    label(best, W/2, 230, { size:36, bold:true, fill:css("--accent") });
+    const msg = T("narReactDone").replace("{x}", String(R.best||"—"));
+    wrapLabel(msg, W/2, 290, 720, 16);
+  }
+}
+
+function wrapLabel(text, x, y, maxW, size){
+  ctx.font = "600 "+size+"px "+css("--font");
+  const words = text.split(" ");
+  let line="", yy=y;
+  ctx.fillStyle = css("--text"); ctx.textAlign="center"; ctx.textBaseline="top";
+  words.forEach(w=>{
+    const test = line ? line+" "+w : w;
+    if(ctx.measureText(test).width > maxW){ ctx.fillText(line, x, yy); yy+=size+6; line=w; }
+    else line=test;
+  });
+  if(line) ctx.fillText(line, x, yy);
+}
+
+function draw(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const d=dpr();
+  ctx.setTransform(d*cssW/W, 0, 0, d*cssH/H, 0, 0);
+  if(S.mode===1) drawMode1();
+  else if(S.mode===2) drawMode2();
+  else if(S.mode===3) drawMode3();
+  else drawMode4();
+}
+
+function drawChart(){
+  const d=dpr();
+  const w=chart.width, h=chart.height;
+  cctx.setTransform(1,0,0,1,0,0); cctx.clearRect(0,0,w,h);
+  cctx.fillStyle = css("--panel-2"); cctx.fillRect(0,0,w,h);
+  cctx.strokeStyle = css("--hairline"); cctx.strokeRect(0.5,0.5,w-1,h-1);
+  const tr = S.impulse.trace;
+  const pad=18, iw=w-pad*2, ih=h-pad*2;
+  function Y(v){ return pad + ih*(1-v); }
+  function X(t, maxT){ return pad + (t/Math.max(1,maxT))*iw; }
+  const maxT = Math.max(reflexOuchMs(), volArmMs(), 1);
+  /* axes */
+  cctx.strokeStyle = css("--panel-border"); cctx.beginPath();
+  cctx.moveTo(pad, pad); cctx.lineTo(pad, pad+ih); cctx.lineTo(pad+iw, pad+ih); cctx.stroke();
+  if(!tr.length){
+    cctx.fillStyle = css("--text-3"); cctx.font="12px "+css("--font");
+    cctx.fillText("—", pad+8, pad+16);
+    return;
+  }
+  function line(key, color){
+    cctx.beginPath(); cctx.strokeStyle=color; cctx.lineWidth=2;
+    tr.forEach((p,i)=>{
+      const x=X(p.t, maxT), y=Y(p[key]);
+      if(i===0) cctx.moveTo(x,y); else cctx.lineTo(x,y);
+    });
+    cctx.stroke();
+  }
+  line("motor", css("--motor"));
+  line("brain", css("--aware"));
+  const I=S.impulse;
+  if(I.armMovedAt!=null){
+    const x=X(I.armMovedAt, maxT);
+    cctx.strokeStyle=css("--motor"); cctx.setLineDash([4,3]);
+    cctx.beginPath(); cctx.moveTo(x,pad); cctx.lineTo(x,pad+ih); cctx.stroke(); cctx.setLineDash([]);
+    cctx.fillStyle=css("--motor"); cctx.font="11px "+css("--font");
+    cctx.fillText("arm", x+4, pad+12);
+  }
+  if(I.ouchAt!=null){
+    const x=X(I.ouchAt, maxT);
+    cctx.strokeStyle=css("--aware"); cctx.setLineDash([4,3]);
+    cctx.beginPath(); cctx.moveTo(x,pad); cctx.lineTo(x,pad+ih); cctx.stroke(); cctx.setLineDash([]);
+    cctx.fillStyle=css("--aware"); cctx.font="11px "+css("--font");
+    cctx.fillText("Ouch", x+4, pad+24);
+  }
+}
+
+function msTxt(v){ return v==null ? "—" : Math.round(v)+" ms"; }
+
+function sync(){
+  const I=S.impulse;
+  el("vClkRef").textContent = msTxt(S.lastReflex ?? (I.phase==="travel" && !I.voluntary && !I.frozen ? I.stopwatch : (I.frozen && !I.voluntary ? I.frozen : null)));
+  el("vClkVol").textContent = msTxt(S.lastVoluntary ?? (I.phase==="travel" && I.voluntary && !I.frozen ? I.stopwatch : (I.frozen && I.voluntary ? I.frozen : null)));
+  el("clkRef").classList.toggle("win", S.lastReflex!=null && S.lastVoluntary!=null && S.lastReflex < S.lastVoluntary);
+  el("clkVol").classList.toggle("win", false);
+  const stepId = currentStepId();
+  const host = el("stepTrack");
+  host.innerHTML = TRACK.map(id=>{
+    const on = id===stepId;
+    const idx = TRACK.indexOf(id), cur = TRACK.indexOf(stepId);
+    const done = idx < cur;
+    return `<div class="step ${on?"on":""} ${done?"done":""}">${T(id)}</div>`;
+  }).join("");
+  el("rSample").textContent = T(stepId);
+  let delay = "—";
+  if(I.armMoved && I.ouch && I.ouchAt!=null && I.armMovedAt!=null){
+    delay = Math.round(I.ouchAt - I.armMovedAt)+" ms";
+  } else if(I.armMoved && !I.ouch && !I.voluntary){
+    delay = T("narArm").slice(0, 18)+"…";
+  }
+  el("rExtra").textContent = delay;
+  let narr = T(S.narr);
+  if(S.narr==="narReactDone") narr = T("narReactDone").replace("{x}", String(S.react.best||"—"));
+  el("narr").textContent = narr;
+  el("tGraphNote").textContent = T("graph"+S.mode);
+  el("honest").hidden = S.mode!==3;
+  el("honest").textContent = T("honest");
+  el("speedVal").textContent = S.speed.toFixed(2)+"×";
+  const clocks = el("clocks");
+  clocks.style.display = S.mode===2 ? "grid" : "none";
+  if(S.mode===3){
+    el("tSample").textContent = T("m3");
+    el("rSample").textContent = S.react.round+" / "+CONFIG.REACTION_ROUNDS;
+    el("tExtraK").textContent = "Best";
+    el("rExtra").textContent = msTxt(S.react.best);
+  } else if(S.mode===4){
+    el("tSample").textContent = T("m4");
+    el("rSample").textContent = S.sortOk+" / "+SORT_CARDS.length;
+    el("tExtraK").textContent = T("extraK");
+    el("rExtra").textContent = S.sortMsg ? "·" : "—";
+    syncSortUI();
+  } else {
+    el("tSample").textContent = T("sample");
+    el("tExtraK").textContent = T("extraK");
+  }
+  drawChart();
+}
+
+/* ======================================================================
+   6. CONTROLS
+   ====================================================================== */
+function setMode(m){
+  S.mode = m;
+  if(m===2 && S.impulse.phase==="idle") S.narr="narIdle";
+  if(m===1) S.narr="narBuild";
+  if(m===3) S.narr="narReactWait";
+  if(m===4) S.narr="t5h";
+  el("stageInner").classList.toggle("is-sort", m===4);
+  el("sortUI").hidden = m!==4;
+  if(m===4){
+    buildSortUI();
+    try{ el("sortUI").focus({preventScroll:true}); }catch(_){}
+  } else {
+    fitBoard();
+  }
+  buildModeTray(); buildModeOpts(); buildToolTray(); buildExtra();
+  sync(); checkGuide();
+}
+
+function buildModeTray(){
+  const host=el("modeTray"); host.innerHTML="";
+  [1,2,3,4].forEach(m=>{
+    const b=document.createElement("button");
+    b.type="button"; b.className="part part--mode";
+    b.setAttribute("role","tab");
+    b.setAttribute("aria-pressed", String(S.mode===m));
+    b.innerHTML = `<span>${T("m"+m)}</span>`;
+    b.addEventListener("click", ()=>setMode(m));
+    host.appendChild(b);
+  });
+}
+function buildModeOpts(){
+  const host=el("modeOpts"); host.innerHTML="";
+  if(S.mode===2){
+    const b=document.createElement("button");
+    b.type="button"; b.textContent=T("volToggle");
+    b.setAttribute("aria-pressed", String(!!S.impulse.voluntary));
+    b.addEventListener("click", ()=>{
+      S.impulse.voluntary = !S.impulse.voluntary;
+      startApproach();
+      buildModeOpts(); sync();
+    });
+    host.appendChild(b);
+    const t=document.createElement("button");
+    t.type="button"; t.textContent=T("touch");
+    t.addEventListener("click", ()=> startApproach());
+    host.appendChild(t);
+  } else if(S.mode===3){
+    const t=document.createElement("button");
+    t.type="button"; t.textContent=T("again");
+    t.addEventListener("click", ()=>{
+      S.react.round=0; S.react.times=[]; S.react.best=null; S.react.last=null; S.react.phase="idle";
+      S.narr="narReactWait"; sync();
+    });
+    host.appendChild(t);
+  }
+}
+function pieceDot(color){
+  return `<span class="dot" style="background:${kindColor(color)}"></span>`;
+}
+function buildToolTray(){
+  const host=el("toolTray"); host.innerHTML="";
+  const cap=document.createElement("div"); cap.className="tray__label";
+  if(S.mode===1){
+    cap.textContent=T("trayPieces"); host.appendChild(cap);
+    PIECES.forEach(p=>{
+      const used = Object.values(S.slots).includes(p.id);
+      const b=document.createElement("button");
+      b.type="button"; b.className="part"+(used?" used":"");
+      b.disabled = used;
+      b.setAttribute("aria-pressed", String(S.selectedPiece===p.id));
+      b.innerHTML = pieceDot(p.color)+`<span>${T(p.id)}</span>`;
+      if(!used){
+        b.addEventListener("pointerdown", e=>{ S.selectedPiece=p.id; startDrag("piece", p.id, e); buildToolTray(); });
+        b.addEventListener("click", ()=>{ S.selectedPiece=p.id; buildToolTray(); });
+      }
+      host.appendChild(b);
+    });
+  } else if(S.mode===2){
+    cap.textContent=T("trayWatch"); host.appendChild(cap);
+  } else if(S.mode===3){
+    cap.textContent=T("trayReact"); host.appendChild(cap);
+  } else {
+    cap.textContent=T("traySort"); host.appendChild(cap);
+  }
+}
+function buildLegend(){
+  el("neuronLeg").innerHTML =
+    `<div class="legend__row"><span class="legend__sw sensory"></span><span>${T("legSensory")}</span></div>
+     <div class="legend__row"><span class="legend__sw relay"></span><span>${T("legRelay")}</span></div>
+     <div class="legend__row"><span class="legend__sw motor"></span><span>${T("legMotor")}</span></div>
+     <div class="legend__row"><span class="legend__sw aware"></span><span>${T("legAware")}</span></div>`;
+}
+function buildExtra(){
+  const host=el("extraCtrls"); host.innerHTML="";
+  if(S.mode===2){
+    host.innerHTML = `<label class="chk"><input type="checkbox" id="chkVol" ${S.impulse.voluntary?"checked":""}/> ${T("volToggle")}</label>
+      <p class="extra">${T("graph2")}</p>`;
+    el("chkVol").addEventListener("change", e=>{
+      S.impulse.voluntary = e.target.checked;
+      startApproach(); buildModeOpts(); sync();
+    });
+  } else if(S.mode===3){
+    host.innerHTML = `<p class="extra">${T("graph3")}</p>`;
+  }
+}
+
+function buildSortUI(){
+  const deck = el("sortDeck");
+  if(!deck.dataset.ready){
+    SORT_CARDS.forEach(sc=>{
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "scard";
+      b.dataset.id = sc.id;
+      b.innerHTML = `<span class="scard__label"></span>`;
+      b.addEventListener("pointerdown", e=>{
+        if(e.button && e.button!==0) return;
+        e.preventDefault();
+        S.sortSel = sc.id;
+        startDrag("card", sc.id, e);
+        syncSortUI();
+      });
+      deck.appendChild(b);
+    });
+    deck.dataset.ready = "1";
+  }
+  SORT_CARDS.forEach(sc=>{
+    const b = deck.parentNode.querySelector('.scard[data-id="'+sc.id+'"]') || document.querySelector('.scard[data-id="'+sc.id+'"]');
+    if(b) b.querySelector(".scard__label").textContent = T(sc.id);
+  });
+  el("binRTitle").textContent = T("binR");
+  el("binVTitle").textContent = T("binV");
+  syncSortUI();
+}
+function syncSortUI(){
+  const root = el("sortUI");
+  const on = S.mode===4;
+  root.hidden = !on;
+  el("stageInner").classList.toggle("is-sort", on);
+  if(!on) return;
+  const deck = el("sortDeck");
+  const binR = el("binRDeck");
+  const binV = el("binVDeck");
+  SORT_CARDS.forEach(sc=>{
+    const b = document.querySelector('.scard[data-id="'+sc.id+'"]');
+    if(!b) return;
+    const c = S.cards[sc.id];
+    b.classList.toggle("is-ok", c.correct===true);
+    b.classList.toggle("is-no", c.correct===false);
+    b.classList.toggle("is-sel", S.sortSel===sc.id);
+    b.classList.toggle("is-drag", drag.kind==="card" && drag.id===sc.id);
+    const home = (c.correct===true && c.bin) ? (c.bin==="r" ? binR : binV) : deck;
+    if(b.parentNode!==home) home.appendChild(b);
+  });
+  el("sortMsg").textContent = S.sortMsg || "";
+}
+
+function startDrag(kind, id, e){
+  drag.kind=kind; drag.id=id; drag.moved=false;
+  drag.x=e.clientX; drag.y=e.clientY;
+  const g=el("ghost");
+  g.classList.add("on");
+  g.textContent = T(id);
+  g.style.left=(e.clientX+10)+"px"; g.style.top=(e.clientY+10)+"px";
+  try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+}
+
+function hitSlot(p){
+  const pts = slotPts(geom());
+  let best=null, bestD=CONFIG.SLOT_R;
+  for(const k of Object.keys(pts)){
+    const d=Math.hypot(p.x-pts[k].x, p.y-pts[k].y);
+    if(d<bestD){ bestD=d; best=k; }
+  }
+  return best;
+}
+function placePiece(pieceId, slot){
+  const piece = PIECES.find(p=>p.id===pieceId);
+  if(!piece || !slot) return;
+  if(S.slots[slot]) return;
+  if(piece.slot===slot){
+    S.slots[slot] = pieceId;
+    S.narr = "narBuildOk";
+    const all = PIECES.every(p=>S.slots[p.slot]===p.id);
+    if(all){
+      S.narr = "narAll";
+      S.celebrateT = 0.001;
+      S.impulse = emptyImpulse(false);
+      startApproach();
+    }
+  } else {
+    const pts = slotPts(geom());
+    S.nudge = { id:pieceId, color:piece.color, x:pts[slot].x, y:pts[slot].y, tx:pts[slot].x-40, ty:40, t:0 };
+    S.narr = "narNudge";
+  }
+  buildToolTray();
+}
+
+function hitCard(p){
+  for(let i=SORT_CARDS.length-1;i>=0;i--){
+    const id=SORT_CARDS[i].id; const r=cardRect(id);
+    if(p.x>r.x && p.x<r.x+r.w && p.y>r.y && p.y<r.y+r.h) return id;
+  }
+  return null;
+}
+function hitSortBin(e){
+  const node = document.elementFromPoint(e.clientX, e.clientY);
+  const binEl = node && node.closest("[data-bin]");
+  const bin = binEl && binEl.getAttribute("data-bin");
+  return (bin==="r" || bin==="v") ? bin : null;
+}
+function dropCard(id, bin){
+  const sc = SORT_CARDS.find(c=>c.id===id);
+  const c=S.cards[id];
+  if(!bin){ c.x=c.homeX; c.y=c.homeY; return; }
+  const want = sc.reflex ? "r" : "v";
+  const cap = id.charAt(0).toUpperCase()+id.slice(1);
+  if(bin===want){
+    c.bin=bin; c.correct=true;
+    S.sortMsg = T("why"+cap);
+    S.sortOk = SORT_CARDS.filter(s=>S.cards[s.id].correct).length;
+  } else {
+    c.correct=false; c.bin=null; c.x=c.homeX; c.y=c.homeY;
+    S.sortMsg = T("no"+cap);
+  }
+}
+
+function handleSortKeys(e){
+  if(S.mode!==4) return;
+  if(e.key==="1" || e.key==="2"){
+    const id = S.sortSel || SORT_CARDS[0].id;
+    dropCard(id, e.key==="1" ? "r" : "v"); e.preventDefault();
+  }
+  const ids=SORT_CARDS.map(c=>c.id);
+  const i=Math.max(0, ids.indexOf(S.sortSel));
+  if(e.key==="ArrowRight"){ S.sortSel=ids[Math.min(ids.length-1,i+1)]; e.preventDefault(); }
+  if(e.key==="ArrowLeft"){ S.sortSel=ids[Math.max(0,(i<0?1:i)-1)]; e.preventDefault(); }
+}
+
+addEventListener("pointermove", e=>{
+  if(!drag.kind) return;
+  if(Math.hypot(e.clientX-drag.x, e.clientY-drag.y)>6) drag.moved=true;
+  const g=el("ghost");
+  g.style.left=(e.clientX+10)+"px"; g.style.top=(e.clientY+10)+"px";
+  if(drag.kind==="card"){
+    const p=worldPtr(e);
+    drag.wx=p.x; drag.wy=p.y;
+    S.cards[drag.id].x = p.x-80; S.cards[drag.id].y = p.y-38;
+  }
+});
+addEventListener("pointerup", e=>{
+  if(!drag.kind) return;
+  const g=el("ghost"); g.classList.remove("on");
+  const p = worldPtr(e);
+  if(drag.kind==="piece"){
+    const slot = hitSlot(p);
+    if(slot) placePiece(drag.id, slot);
+  } else if(drag.kind==="card"){
+    dropCard(drag.id, hitSortBin(e));
+  }
+  drag.kind=null; drag.id=null;
+  sync(); checkGuide();
+});
+
+canvas.addEventListener("pointerdown", e=>{
+  const p=worldPtr(e);
+  if(S.mode===1){
+    const slot=hitSlot(p);
+    if(slot && S.selectedPiece){ placePiece(S.selectedPiece, slot); sync(); checkGuide(); }
+  }
+  if(S.mode===2){
+    const g=geom();
+    if(Math.hypot(p.x-g.flame.x, p.y-g.flame.y)<50 || Math.hypot(p.x-g.tip.x,p.y-g.tip.y)<40){
+      startApproach();
+    }
+  }
+  if(S.mode===3) tapReaction();
+  if(S.mode===4){
+    const id=hitCard(p);
+    if(id){
+      drag.kind="card"; drag.id=id; drag.moved=false; drag.x=e.clientX; drag.y=e.clientY;
+      try{ canvas.setPointerCapture(e.pointerId); }catch(_){}
+    }
+  }
+});
+
+canvas.addEventListener("keydown", e=>{
+  if(S.mode===1){
+    const ids=PIECES.map(p=>p.id);
+    const i=Math.max(0, ids.indexOf(S.selectedPiece));
+    if(e.key==="ArrowRight"){ S.selectedPiece=ids[Math.min(ids.length-1,i+1)]; e.preventDefault(); buildToolTray(); }
+    if(e.key==="ArrowLeft"){ S.selectedPiece=ids[Math.max(0,i-1)]; e.preventDefault(); buildToolTray(); }
+    if(e.key==="Enter" || e.key===" "){
+      const empty = PIECES.find(p=>!S.slots[p.slot]);
+      if(empty) placePiece(S.selectedPiece, empty.slot);
+      e.preventDefault();
+    }
+  }
+  if(S.mode===2 && (e.key==="Enter"||e.key===" ")){ startApproach(); e.preventDefault(); }
+  if(S.mode===3 && (e.key==="Enter"||e.key===" ")){ tapReaction(); e.preventDefault(); }
+  handleSortKeys(e);
+  sync(); checkGuide();
+});
+el("sortUI").addEventListener("keydown", e=>{
+  handleSortKeys(e);
+  if(S.mode===4){ sync(); checkGuide(); }
+});
+
+/* ======================================================================
+   7. GUIDE
+   ====================================================================== */
+const TASKS = [
+  { keys:["t1","t1h","t1p"],
+    fix:()=>{
+      setMode(1);
+      PIECES.forEach(p=> S.slots[p.slot]=p.id);
+      S.narr="narAll"; S.celebrateT=0.001; S.impulse=emptyImpulse(false); startApproach();
+      buildToolTray();
+    },
+    done:()=> PIECES.every(p=>S.slots[p.slot]===p.id)
+  },
+  { keys:["t2","t2h","t2p"],
+    fix:()=>{
+      setMode(2); S.impulse.voluntary=false; S.speed=CONFIG.DEFAULT_SPEED; el("speed").value=S.speed;
+      startApproach(); setRunning(true);
+    },
+    done:()=> S.seenReflexSeq && S.lastReflex!=null
+  },
+  { keys:["t3","t3h","t3p"],
+    fix:()=>{
+      setMode(2);
+      S.lastReflex = Math.round(reflexArmMs());
+      S.lastVoluntary = Math.round(volArmMs());
+      S.seenReflexSeq = true; S.seenVoluntary = true;
+      S.impulse.voluntary = true; startApproach(); setRunning(true);
+    },
+    done:()=> S.seenReflexSeq && S.seenVoluntary && S.lastReflex!=null && S.lastVoluntary!=null
+  },
+  { keys:["t4","t4h","t4p"],
+    fix:()=>{
+      setMode(3);
+      S.react.times=[240,210,198]; S.react.best=198; S.react.round=3; S.react.phase="result"; S.react.last=198;
+      S.narr="narReactDone";
+    },
+    done:()=> S.react.times.length >= CONFIG.REACTION_TASK_N
+  },
+  { keys:["t5","t5h","t5p"],
+    fix:()=>{
+      setMode(4);
+      SORT_CARDS.slice(0,6).forEach(sc=>{
+        dropCard(sc.id, sc.reflex ? "r" : "v");
+      });
+    },
+    done:()=> S.sortOk >= CONFIG.SORT_NEED
+  }
+];
+
+function renderGuide(){
+  const t = TASKS[S.guide.i];
+  el("gNum").textContent = (S.guide.i+1)+"/"+TASKS.length;
+  el("tStep").textContent = T("step");
+  el("gDots").innerHTML = TASKS.map((_,i)=>
+    `<span class="guide__dot ${i<S.guide.i?"on":""} ${i===S.guide.i?"now":""}"></span>`).join("");
+  const box = el("guide");
+  if(S.guide.done){
+    box.classList.add("done");
+    el("gTask").innerHTML = `<span class="tick" aria-hidden="true">✓</span> ${T(t.keys[2])}`;
+    el("gHint").textContent = "";
+    el("gShow").hidden = true; el("gNext").hidden = false;
+    el("gNext").textContent = S.guide.i===TASKS.length-1 ? T("finish") : T("next");
+  } else {
+    box.classList.remove("done");
+    el("gTask").textContent = T(t.keys[0]);
+    el("gHint").textContent = T(t.keys[1]);
+    el("gShow").hidden = false; el("gNext").hidden = true;
+    el("gShow").textContent = T("showMe");
+  }
+}
+function checkGuide(){
+  if(S.guide.done) return;
+  if(TASKS[S.guide.i].done()){ S.guide.done = true; renderGuide(); }
+}
+el("gShow").addEventListener("click", ()=>{ const f=TASKS[S.guide.i].fix; if(f) f(); sync(); checkGuide(); });
+el("gNext").addEventListener("click", ()=>{
+  if(S.guide.i===TASKS.length-1){ showScreen("quiz"); return; }
+  S.guide.i++; S.guide.done=false;
+  if(S.guide.i===0) setMode(1);
+  if(S.guide.i===1) setMode(2);
+  if(S.guide.i===2) setMode(2);
+  if(S.guide.i===3) setMode(3);
+  if(S.guide.i===4) setMode(4);
+  renderGuide(); sync();
+});
+
+/* ======================================================================
+   8. QUIZ
+   ====================================================================== */
+const QUESTIONS = [
+  { q:"q1", opts:["q1a","q1b","q1c","q1d"], a:1, why:"q1w" },
+  { q:"q2", opts:["q2a","q2b","q2c","q2d"], a:1, why:"q2w" },
+  { q:"q3", opts:["q3a","q3b","q3c","q3d"], a:1, why:"q3w" },
+  { q:"q4", opts:["q4a","q4b","q4c","q4d"], a:1, why:"q4w" },
+  { q:"q5", opts:["q5a","q5b","q5c","q5d"], a:1, why:"q5w" }
+];
+function buildQuiz(){
+  const host=el("quiz"); host.innerHTML=""; const KEYS=["A","B","C","D"];
+  let answered=0, score=0;
+  QUESTIONS.forEach((Q,qi)=>{
+    const w=document.createElement("div"); w.className="q panel";
+    w.innerHTML = `<div class="q__n">${qi+1} / ${QUESTIONS.length}</div>
+      <p class="q__t">${T(Q.q)}</p><div class="opts"></div><p class="fb" id="fb${qi}"></p>`;
+    const box=w.querySelector(".opts");
+    Q.opts.forEach((ok,oi)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="opt";
+      b.innerHTML = `<span class="opt__k">${KEYS[oi]}</span><span>${T(ok)}</span>`;
+      b.addEventListener("click", ()=>{
+        if(w.dataset.done) return; w.dataset.done="1";
+        const right=oi===Q.a; answered++; if(right) score++;
+        box.querySelectorAll(".opt").forEach((btn,bi)=>{
+          btn.disabled=true;
+          if(bi===Q.a) btn.classList.add("correct");
+          if(bi===oi && !right) btn.classList.add("wrong");
+        });
+        const fb=el("fb"+qi);
+        fb.className="fb show "+(right?"ok":"no");
+        fb.innerHTML = `<b>${right?"✓":"✗"}</b> ${T(Q.why)}`;
+        upd();
+      });
+      box.appendChild(b);
+    });
+    host.appendChild(w);
+  });
+  const bar=document.createElement("div"); bar.className="panel score";
+  bar.innerHTML = `<span class="score__v" id="sv">0 / ${QUESTIONS.length}</span>
+    <span id="sm" style="color:var(--text-2);font-size:14.5px"></span>
+    <button class="btn btn--ghost" id="sRetry" style="margin-inline-start:auto">${T("tryAgain")}</button>`;
+  host.appendChild(bar);
+  function upd(){
+    el("sv").textContent = score+" / "+QUESTIONS.length;
+    const left=QUESTIONS.length-answered;
+    el("sm").textContent = left? left+" "+T("left") : (score===5?T("scoreAll"): score>=3?T("scoreMid"):T("scoreLow"));
+  }
+  el("sRetry").addEventListener("click", ()=>buildQuiz());
+  upd();
+}
+
+/* ======================================================================
+   9. LOOP
+   ====================================================================== */
+const mqReduce = matchMedia("(prefers-reduced-motion: reduce)");
+let REDUCED = mqReduce.matches;
+mqReduce.addEventListener("change", ()=>{ REDUCED = mqReduce.matches; });
+let prev = performance.now(), acc=0, syncT=0;
+function frame(now){
+  const dt=Math.min(0.1,(now-prev)/1000); prev=now;
+  if(S.running){
+    if(REDUCED){
+      acc+=dt;
+      if(acc>0.55){ acc=0; if(S.mode===2 || S.celebrateT>0) stepEvent(); else step(0.55, 0.55); syncT=1; }
+    } else {
+      step(dt*S.speed, dt);
+      syncT+=dt;
+    }
+    if(syncT>0.12){ syncT=0; sync(); checkGuide(); }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+
+function setRunning(on){
+  S.running=on;
+  el("icPlay").innerHTML = on
+    ? '<rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/>'
+    : '<path d="M7 4 L19 12 L7 20 Z" fill="#fff"/>';
+  el("btnPlay").setAttribute("aria-pressed", String(on));
+  el("btnPlay").setAttribute("aria-label", on? T("pause"):T("play"));
+  if(on && S.mode===2 && S.impulse.phase==="idle") startApproach();
+  if(on && S.mode===2 && S.impulse.phase==="done") startApproach();
+}
+
+function applyLang(){
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = LANG==="ur" ? "rtl" : "ltr";
+  el("tTitle").textContent=T("title"); el("tSub").textContent=T("sub");
+  el("tNavTitle").textContent=T("navTitle");
+  el("navBench").textContent=T("bench"); el("navQuiz").textContent=T("quiz");
+  el("btnLang").textContent=T("lang");
+  el("btnProfile").textContent = dim? T("bright"):T("dim");
+  el("tReadings").textContent=T("readings");
+  el("tSample").textContent=T("sample"); el("tExtraK").textContent=T("extraK");
+  el("tSpeed").textContent=T("speed");
+  el("btnStep").textContent=T("stepBtn");
+  el("btnReset").setAttribute("aria-label", T("reset"));
+  el("tGraph").textContent=T("graph");
+  el("tClkRef").textContent=T("clkRef"); el("tClkVol").textContent=T("clkVol");
+  el("tQuizTitle").textContent=T("quizTitle"); el("tQuizSub").textContent=T("quizSub");
+  el("boardDesc").textContent=T("boardDesc");
+  el("speed").setAttribute("aria-label", T("speed"));
+  buildLegend();
+  setRunning(S.running);
+  buildModeTray(); buildModeOpts(); buildToolTray(); buildExtra(); buildSortUI(); renderGuide(); buildQuiz();
+  sync();
+}
+
+el("btnLang").addEventListener("click", ()=>{ LANG = LANG==="en"?"ur":"en"; applyLang(); });
+el("btnProfile").addEventListener("click", ()=>{
+  dim=!dim;
+  if(dim) document.documentElement.setAttribute("data-profile","dim");
+  else document.documentElement.removeAttribute("data-profile");
+  el("btnProfile").textContent = dim? T("bright"):T("dim");
+});
+el("btnPlay").addEventListener("click", ()=> setRunning(!S.running));
+el("btnStep").addEventListener("click", ()=>{ stepEvent(); sync(); checkGuide(); });
+el("speed").addEventListener("input", e=>{ S.speed=+e.target.value; el("speedVal").textContent=S.speed.toFixed(2)+"×"; });
+el("btnReset").addEventListener("click", ()=>{
+  const fresh=seed();
+  Object.keys(S).forEach(k=>{ delete S[k]; });
+  Object.assign(S, fresh);
+  S.speed=CONFIG.DEFAULT_SPEED; el("speed").value=CONFIG.DEFAULT_SPEED;
+  lastSynKey="";
+  setRunning(true);
+  applyLang();
+});
+
+function showScreen(which){
+  el("scBench").classList.toggle("on", which==="bench");
+  el("scQuiz").classList.toggle("on", which==="quiz");
+  el("navBench").setAttribute("aria-current", which==="bench"?"page":"false");
+  el("navQuiz").setAttribute("aria-current", which==="quiz"?"page":"false");
+  scrollTo({top:0});
+  if(which==="bench"){ fitBoard(); sync(); }
+}
+el("navBench").addEventListener("click", ()=>showScreen("bench"));
+el("navQuiz").addEventListener("click", ()=>showScreen("quiz"));
+addEventListener("resize", ()=>{ fitBoard(); drawChart(); });
+
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+    this.moveTo(x+r,y); this.arcTo(x+w,y,x+w,y+h,r); this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r); this.arcTo(x,y,x+w,y,r);
+  };
+}
+
+fitBoard();
+applyLang();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

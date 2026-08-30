@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<title>States of Matter &amp; Change of State — PCTB Class 8 Science</title>
+<!--
+==========================================================================
+ STATES OF MATTER & CHANGE OF STATE  ·  Sim 7 of 10
+ PCTB / SNC Class 8 General Science — Matter and Its States
+
+ LEARNING OBJECTIVES
+   1. Particles are always in motion; heat speeds them up, cooling slows them.
+   2. Solid: tight lattice, vibrate in place — holds its own shape.
+   3. Liquid: close but sliding — takes container shape, keeps volume.
+   4. Gas: far apart, fast, independent — fills shape AND volume.
+   5. Melting, freezing, boiling, condensation, sublimation = same particles
+      rearranging. None created or destroyed.
+   6. During a change of state, temperature stays FLAT. Energy goes into
+      breaking/forming arrangements, not into raising T, until the change
+      finishes. That plateau is this sim's reason to exist.
+   7. Evaporation happens below boiling, from the surface only.
+
+ MISCONCEPTIONS (quiz)
+   - More heat during melting/boiling raises T right away (it does not).
+   - Melting = dissolving (dissolving needs a solvent; this sim is heat only).
+   - Evaporation only at boiling point.
+   - Gas is just "more heated" liquid (spacing and freedom change too).
+   - Sublimation is just fast evaporation (no liquid stage at all).
+
+ SIMPLIFICATIONS
+   - No latent-heat joules, no c values shown, no plasma, no H-bonds.
+   - Water 0°C / 100°C; wax and iron for contrast; camphor-style sublimation.
+   - Uniform coloured dots, not molecule art.
+
+ TEACHER: CONFIG. Lm/Lb set how LONG the plateau lasts. Tm/Tb are the
+   temperatures of those flats. HEAT_RATE controls how fast the graph runs.
+   The graph T is computed from energy bands — it cannot creep during a
+   mixed-state plateau.
+
+ Same particles the whole time. Heat and cool freely. No error dialogs.
+==========================================================================
+-->
+<style>
+:root{
+  --accent:#1F6FD0; --good:#237A46; --warn:#8C5A05; --crit:#A0173F;
+  --panel:#FFFFFF; --panel-2:#F2F4F5; --panel-border:#8A8A8A;
+  --text:#14202A; --text-2:#46565F; --text-3:#71828C;
+  --cold:#2B6CB0; --warm:#E07A12; --hot:#C4320A;
+  --board:#EEF2F4; --grid:#D3DBDF; --hairline:#DCE1E4;
+  --shadow:0 2px 8px rgba(20,32,42,.14); --focus:#14202A; --on-accent:#FFFFFF;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --radius:12px;
+}
+:root[data-profile="dim"]{
+  --accent:#4E9BF0; --good:#4FB27A; --warn:#D0A03A; --crit:#E0648F;
+  --panel:#1A2126; --panel-2:#242D33; --panel-border:#5F6C74;
+  --text:#F1F5F7; --text-2:#C3CFD5; --text-3:#95A4AD;
+  --cold:#6BA3E8; --warm:#F0A040; --hot:#F2572A;
+  --board:#131A1F; --grid:#26313A; --hairline:#3B464D;
+  --shadow:0 2px 10px rgba(0,0,0,.5); --focus:#FFFFFF; --on-accent:#0B1220;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{ font-family:var(--font); background:var(--panel-2); color:var(--text); font-size:16px; line-height:1.45; overflow-x:hidden; }
+:focus-visible{ outline:3px solid var(--focus); outline-offset:2px; border-radius:4px; }
+.sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.wrap{ max-width:1400px; margin:0 auto; padding:10px 10px 80px; }
+:root[dir="rtl"] body{ font-family:system-ui,"Noto Nastaliq Urdu","Segoe UI",Tahoma,sans-serif; }
+:root[dir="rtl"] .stage__inner{ direction:ltr; }
+.head{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; padding:2px 2px 10px; }
+.head__title{ font-size:clamp(19px,2.3vw,25px); font-weight:700; margin:0; letter-spacing:-.02em; }
+.head__sub{ margin:0; font-size:14.5px; color:var(--text-2); }
+.head__spacer{ margin-inline-start:auto; display:flex; gap:8px; flex-wrap:wrap; }
+.panel{ background:var(--panel); border:1px solid var(--panel-border); border-radius:var(--radius); box-shadow:var(--shadow); padding:12px 14px; }
+.panel__title{ font-size:15px; font-weight:700; margin:0 0 10px; }
+.guide{
+  background:var(--panel); border:2px solid var(--accent); border-radius:var(--radius);
+  padding:10px 13px; margin-bottom:10px;
+  display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center;
+}
+@media (max-width:760px){ .guide{ grid-template-columns:1fr; } }
+.guide.done{ border-color:var(--good); }
+.guide__badge{ min-width:72px; padding:6px 10px; border-radius:9px; text-align:center; background:var(--panel-2); border:1px solid var(--panel-border); }
+.guide__badgeTop{ font-size:12.5px; font-weight:700; letter-spacing:.06em; color:var(--text-3); }
+.guide__badgeNum{ font-size:20px; font-weight:700; font-family:var(--mono); font-variant-numeric:tabular-nums; }
+.guide__task{ font-size:17px; font-weight:700; margin:0; }
+.guide__hint{ font-size:14px; margin:4px 0 0; color:var(--text-2); }
+.guide__dots{ display:flex; gap:6px; margin-top:8px; }
+.guide__dot{ width:9px; height:9px; border-radius:50%; background:var(--hairline); }
+.guide__dot.on{ background:var(--good); }
+.guide__dot.now{ background:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent); }
+.guide__acts{ display:flex; gap:8px; flex-wrap:wrap; }
+.btn{
+  font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 16px; border-radius:9px; white-space:nowrap;
+  background:var(--accent); color:var(--on-accent); border:1px solid rgba(0,0,0,.28);
+}
+.btn:hover{ filter:brightness(1.08); }
+.btn--ghost{ background:var(--panel); color:var(--text); border-color:var(--panel-border); }
+.btn--go{ background:var(--good); color:#fff; }
+.btn--sm{ font-size:13.5px; padding:0 12px; }
+.round{
+  width:48px; height:48px; border-radius:50%; cursor:pointer; padding:0;
+  border:1px solid rgba(0,0,0,.35); display:grid; place-items:center; background:var(--btn,#E2E6E9);
+}
+.round--play{ --btn:var(--good); }
+.round--reset{ --btn:var(--warn); }
+.main{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,330px); gap:10px; align-items:start; }
+@media (max-width:1080px){ .main{ grid-template-columns:1fr; } }
+.tray{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+.seg{ display:inline-flex; border:1px solid var(--panel-border); border-radius:9px; overflow:hidden; flex-wrap:wrap; }
+.seg button{
+  font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 12px; border:0; background:var(--panel); color:var(--text-2);
+  border-inline-end:1px solid var(--panel-border);
+}
+.seg button:last-child{ border-inline-end:0; }
+.seg button[aria-pressed="true"]{ background:var(--accent); color:var(--on-accent); }
+.stage{ border:1px solid var(--panel-border); border-radius:var(--radius); overflow:hidden; background:var(--board); }
+.stage__inner{ position:relative; }
+#board{ display:block; width:100%; height:auto; touch-action:none; }
+.stage__bar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 10px; background:var(--panel); border-top:1px solid var(--hairline); }
+.reads{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.read{ background:var(--panel-2); border:1px solid var(--hairline); border-radius:9px; padding:8px 10px; }
+.read__k{ font-size:12.5px; color:var(--text-3); font-weight:700; }
+.read__v{ font-family:var(--mono); font-size:18px; font-variant-numeric:tabular-nums; font-weight:700; }
+.narr{ font-size:15px; line-height:1.5; margin:10px 0 0; }
+.row{ display:flex; align-items:center; gap:8px; margin:8px 0; flex-wrap:wrap; }
+.row label{ font-size:13.5px; font-weight:700; color:var(--text-2); min-width:88px; }
+.val{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:14px; min-width:52px; }
+#tGraphCvs{ display:block; width:100%; height:168px; cursor:pointer; }
+.graph-note{ font-size:13px; color:var(--text-3); margin:6px 0 0; }
+.badge{
+  display:inline-flex; font-size:13.5px; font-weight:700; padding:4px 10px; border-radius:20px;
+  background:color-mix(in srgb,var(--accent) 14%,transparent); color:var(--accent);
+}
+.screen{ display:none; } .screen.on{ display:block; }
+.q{ margin-bottom:10px; }
+.q__n{ font-size:12.5px; color:var(--text-3); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.q__t{ font-size:17px; font-weight:700; margin:6px 0 12px; }
+.opts{ display:grid; gap:8px; }
+.opt{
+  display:flex; align-items:flex-start; gap:10px; text-align:start; width:100%;
+  min-height:52px; padding:12px 14px; cursor:pointer; border-radius:9px;
+  font-family:inherit; font-size:15.5px; background:var(--panel-2); color:var(--text);
+  border:2px solid var(--panel-border);
+}
+.opt.correct{ border-color:var(--good); background:color-mix(in srgb,var(--good) 14%,var(--panel)); }
+.opt.wrong{ border-color:var(--crit); background:color-mix(in srgb,var(--crit) 12%,var(--panel)); }
+.opt__k{ font-family:var(--mono); font-size:14px; color:var(--text-3); min-width:1.2em; }
+.fb{ display:none; margin:10px 0 0; padding:11px 13px; font-size:14.5px; border-radius:8px; background:var(--panel-2); border-inline-start:5px solid var(--panel-border); }
+.fb.show{ display:block; } .fb.ok{ border-inline-start-color:var(--good); } .fb.no{ border-inline-start-color:var(--crit); }
+.score{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.score__v{ font-family:var(--mono); font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; }
+.nav{
+  position:sticky; bottom:6px; z-index:40; margin-top:10px; border-radius:10px;
+  background:#101418; color:#fff; display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:6px 13px;
+}
+.nav__t{ font-size:14.5px; font-weight:700; margin-inline-end:auto; }
+.navbtn{ cursor:pointer; background:transparent; border:2px solid transparent; border-radius:8px; color:#B9C0C5; font-family:inherit; font-size:14px; font-weight:700; padding:5px 11px; min-height:44px; }
+.navbtn[aria-current="page"]{ color:#fff; border-color:#fff; }
+input[type=range]{ -webkit-appearance:none; appearance:none; height:44px; background:transparent; cursor:pointer; flex:1; min-width:80px; }
+input[type=range]::-webkit-slider-runnable-track{ height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border); }
+input[type=range]::-moz-range-track{ height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border); }
+input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:26px; height:30px; margin-top:-12px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45); }
+input[type=range]::-moz-range-thumb{ width:26px; height:30px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45); }
+@media (prefers-reduced-motion:reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="screen on" id="scBench">
+  <header class="head">
+    <h1 class="head__title" id="tTitle">States of Matter</h1>
+    <p class="head__sub" id="tSub">Same particles. Heat them, cool them — watch the graph go flat while they change state.</p>
+    <span class="head__spacer">
+      <button class="btn btn--ghost btn--sm" id="btnLang" type="button">اردو</button>
+      <button class="btn btn--ghost btn--sm" id="btnProfile" type="button">Dim room</button>
+    </span>
+  </header>
+  <section class="guide" id="guide" aria-live="polite">
+    <div class="guide__badge">
+      <div class="guide__badgeTop" id="tStep">TASK</div>
+      <div class="guide__badgeNum" id="gNum">1/5</div>
+    </div>
+    <div>
+      <p class="guide__task" id="gTask">—</p>
+      <p class="guide__hint" id="gHint">—</p>
+      <div class="guide__dots" id="gDots" aria-hidden="true"></div>
+    </div>
+    <div class="guide__acts">
+      <button class="btn btn--ghost" id="gShow" type="button">Show me</button>
+      <button class="btn btn--go" id="gNext" type="button" hidden>Next</button>
+    </div>
+  </section>
+  <div class="main">
+    <div>
+      <div class="tray" id="viewTray"></div>
+      <div class="stage">
+        <div class="stage__inner" id="stageInner">
+          <canvas id="board" role="img" aria-label="Particle view of a substance changing state" aria-describedby="boardDesc" tabindex="0"></canvas>
+          <p class="sr" id="boardDesc">The same particles. In a solid they vibrate in a lattice. In a liquid they slide. In a gas they fly and escape. The graph goes flat while two states mix.</p>
+        </div>
+        <div class="stage__bar">
+          <button class="round round--play" id="btnPlay" type="button" aria-pressed="true" aria-label="Pause">
+            <svg width="20" height="20" viewBox="0 0 24 24" id="icPlay" aria-hidden="true"><rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/></svg>
+          </button>
+          <button class="btn btn--ghost btn--sm" id="btnStep" type="button">Step</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px">
+            <span id="tSpeed">Speed</span>
+            <input type="range" id="speed" min="0.25" max="2" step="0.25" value="1" style="width:96px" aria-label="Speed" />
+          </label>
+          <button class="round round--reset" id="btnReset" type="button" aria-label="Reset">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 1 0 6.5 4.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M12 1.5V8.5L6.5 5z" fill="#fff"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:10px" id="modeOpts"></div>
+    </div>
+    <div>
+      <div class="panel">
+        <h2 class="panel__title" id="tReadings">Live readings</h2>
+        <div class="reads" aria-live="polite">
+          <div class="read"><div class="read__k" id="kT">Temperature</div><div class="read__v" id="rT">—</div></div>
+          <div class="read"><div class="read__k" id="kS">State</div><div class="read__v" id="rS">—</div></div>
+        </div>
+        <p style="margin:10px 0 0"><span class="badge" id="stateBadge">Solid</span></p>
+        <p class="narr" id="narr" aria-live="polite">—</p>
+      </div>
+      <div class="panel" style="margin-top:10px">
+        <h2 class="panel__title" id="tGraph">Temperature vs time</h2>
+        <canvas id="tGraphCvs" role="img" aria-label="Heating and cooling graph. Click a point to jump the particles to that moment."></canvas>
+        <p class="graph-note" id="tGraphNote">Click the graph to jump the particles to that moment. Flat means two states are mixing.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="screen" id="scQuiz">
+  <header class="head">
+    <h1 class="head__title" id="tQuizTitle">Check what you have learned</h1>
+    <p class="head__sub" id="tQuizSub">Five questions, with the answer explained straight away.</p>
+  </header>
+  <div id="quiz" style="max-width:840px;margin:0 auto"></div>
+</div>
+<nav class="nav" aria-label="Screens">
+  <span class="nav__t" id="tNavTitle">States of Matter</span>
+  <button class="navbtn" id="navBench" type="button" aria-current="page">Bench</button>
+  <button class="navbtn" id="navQuiz" type="button">Quiz</button>
+</nav>
+</div>
+<script>
+"use strict";
+/* ======================================================================
+   1. CONFIG
+   Temperature is a FUNCTION of stored energy. During latent bands, T is
+   pinned to Tm or Tb — it cannot creep while two states coexist.
+   Lm / Lb are qualitative "how long the plateau lasts", not joules.
+   ====================================================================== */
+const CONFIG = {
+  N: 72,
+  HEAT_RATE: 22,
+  COOL_RATE: 22,
+  SAMPLE_DT: 0.12
+};
+const SUBS = {
+  /* Lm / Lb = how long the T-flat lasts (qualitative). T is pinned to Tm/Tb for the whole band. */
+  water: { id:"water", Tm:0, Tb:100, T0:-18, Tmax:140, cS:1, cL:1, cG:0.55, Lm:55, Lb:95, heatScale:1 },
+  wax:   { id:"wax",   Tm:62, Tb:250, T0:20, Tmax:320, cS:1, cL:1, cG:0.55, Lm:48, Lb:80, heatScale:1.1 },
+  iron:  { id:"iron",  Tm:1538, Tb:2862, T0:20, Tmax:3100, cS:0.09, cL:0.09, cG:0.05, Lm:14, Lb:22, heatScale:1.15 }
+};
+const SUBL = { T0:-90, Ts:-78, Tmax:20, cS:1, cG:0.6, Ls:45, heatScale:1 };
+
+const STRINGS = {
+  en: {
+    title:"States of Matter & Change of State",
+    sub:"Same particles. Heat them or cool them. The graph goes flat while they change state.",
+    navTitle:"States of Matter", bench:"Bench", quiz:"Quiz", lang:"اردو", dim:"Dim room", bright:"Bright room",
+    play:"Play", pause:"Pause", stepBtn:"Step", speed:"Speed", reset:"Reset",
+    readings:"Live readings", graph:"Temperature vs time",
+    graphNote:"Click any point to jump the particles to that moment. A flat line means two states are mixing — heat is rearranging particles, not raising temperature.",
+    boardDesc:"Same particles. Solid: lattice vibration. Liquid: sliding. Gas: free and escaping. Graph is flat during a mixed state.",
+    quizTitle:"Check what you have learned", quizSub:"Five questions, with the answer explained straight away.",
+    tryAgain:"Try again", score:"Score", next:"Next", show:"Show me", task:"TASK",
+    vMain:"Heat & cool", vEvap:"Evaporation vs boiling", vSubl:"Sublimation",
+    water:"Water", wax:"Wax", iron:"Iron",
+    heat:"Add heat", cool:"Remove heat",
+    temp:"Temperature", state:"State now",
+    solid:"Solid", melting:"Melting", liquid:"Liquid", boiling:"Boiling", gas:"Gas",
+    freezing:"Freezing", condensing:"Condensing", subliming:"Subliming",
+    fan:"Moving air", area:"Surface area", dishHeat:"Warmth (not boiling)",
+    nSolid:"Particles are locked in a lattice. They only vibrate — that is why a solid keeps its shape.",
+    nMelt:"Temperature has stopped rising. Every bit of heat is pulling particles out of the lattice, not making them hotter.",
+    nLiq:"Particles stay close but slide. The liquid takes the beaker's shape and keeps a fixed volume.",
+    nBoil:"Temperature is flat again, higher this time. Heat is freeing particles into gas throughout the liquid.",
+    nGas:"Particles are far apart and fast. They fly out of the open top — a gas fills any space it can.",
+    nFreeze:"Heat is leaving. Particles are locking back into a lattice. Temperature holds still until freezing finishes.",
+    nCond:"Gas is turning back to liquid. Same particles, closer together again.",
+    nEvap:"Evaporation is only at the surface, below boiling. More warmth, more area, or a breeze — and it speeds up.",
+    nBoilCmp:"Boiling happens throughout the liquid, at one fixed temperature.",
+    nSubl:"No puddle. The solid is becoming gas directly. The graph never visits a liquid plateau.",
+    t1:"Heat a solid through melting. Watch the graph go flat while solid and liquid mix.",
+    h1:"Turn up Add heat. Do not skip — wait until the mix becomes all liquid.",
+    p1:"The line stayed flat for the whole mix. Heat was busy breaking the lattice.",
+    t2:"Keep heating through boiling. A second, higher flat plateau should appear.",
+    h2:"Same idea, higher temperature. Wait until the liquid is gone.",
+    p2:"Two flats: one at melting, one at boiling. That is the whole lesson.",
+    t3:"Cool the gas back through condensation and freezing, to a solid again.",
+    h3:"Turn Add heat down and Remove heat up. Same particles, reverse path.",
+    p3:"The same dots locked back into a lattice. Nothing was created or destroyed.",
+    t4:"On Evaporation vs boiling, speed up the dish with fan, area, or warmth — without boiling it.",
+    h4:"Stay below boiling. Evaporation is a surface trick.",
+    p4:"The dish lost particles from the top only. The boiling beaker erupted throughout.",
+    t5:"Run sublimation from solid to gas. The graph should skip any liquid plateau.",
+    h5:"Heat the camphor-style solid. There is no puddle on the way.",
+    p5:"Solid → gas, no liquid stage. That is not just 'fast evaporation'.",
+    q1:"You keep heating ice that is already melting. What happens to the temperature until it is all water?",
+    q1a:"It rises immediately because more heat always means hotter.",
+    q1b:"It stays the same until every bit of ice has melted — the extra heat is used to free particles, not to raise temperature.",
+    q1c:"It drops, because melting uses up heat.",
+    q1w:"The plateau lasts for the whole mixed state. The thermometer does not climb until the lattice is gone.",
+    q2:"Melting ice in a warm room is not the same as salt dissolving in water. Why?",
+    q2a:"They are the same: both turn a solid into a liquid.",
+    q2b:"Melting is a state change from heat alone. Dissolving needs a solvent and is a different process.",
+    q2c:"Dissolving is just faster melting.",
+    q2w:"This bench only melts with heat. No second substance is mixed in. Dissolving would need a solvent.",
+    q3:"A puddle dries on a cool, windy day. The water never reaches 100°C. What is happening?",
+    q3a:"It is boiling, just slowly.",
+    q3b:"Evaporation from the surface, which can happen at any temperature. Boiling is a different, throughout-the-liquid process at one fixed temperature.",
+    q3c:"The water is sublimating.",
+    q3w:"Evaporation is surface-only and works below boiling point. Wind and area speed it up. Boiling is not required.",
+    q4:"How is a gas different from a hot liquid, besides energy?",
+    q4a:"Only the energy is different — the particles are packed the same.",
+    q4b:"Gas particles are much farther apart and free to fly independently, so a gas fills the container's volume as well as its shape.",
+    q4c:"Gas particles are a new substance created by heat.",
+    q4w:"Same particles, new arrangement: spacing and freedom, not a new material.",
+    q5:"Dry ice / camphor seems to vanish without a puddle. Is that just very fast evaporation?",
+    q5a:"Yes — evaporation so fast you miss the liquid.",
+    q5b:"No. Sublimation is solid → gas with no liquid stage at all. A different path, not a speed-up.",
+    q5c:"The solid is dissolving into the air like salt in water.",
+    q5w:"The graph skips the liquid plateau. There is no liquid to evaporate."
+  },
+  ur: {
+    title:"مادے کی حالتیں اور تبدیلی",
+    sub:"وہی ذرات۔ گرم کریں یا ٹھنڈا۔ جب حالت بدلے تو گراف سیدھا رہتا ہے۔",
+    navTitle:"حالتیں", bench:"بینچ", quiz:"سوالات", lang:"English", dim:"مدھم کمرہ", bright:"روشن کمرہ",
+    play:"چلائیں", pause:"روکیں", stepBtn:"قدم", speed:"رفتار", reset:"ری سیٹ",
+    readings:"لائیو ریڈنگز", graph:"درجہ حرارت اور وقت",
+    graphNote:"گراف پر کلک کریں تو ذرات اس لمحے پر جائیں گے۔ سیدھی لکیر کا مطلب دو حالتیں مل رہی ہیں۔",
+    boardDesc:"وہی ذرات۔ ٹھوس جال میں کانپتے ہیں۔ مائع پھسلتے ہیں۔ گیس اڑ کر نکل جاتی ہے۔",
+    quizTitle:"جو سیکھا ہے جانچیں", quizSub:"پانچ سوال، جواب فوراً۔",
+    tryAgain:"دوبارہ", score:"اسکور", next:"آگے", show:"دکھاؤ", task:"کام",
+    vMain:"گرم اور ٹھنڈا", vEvap:"تبخیر اور ابال", vSubl:"تصعید",
+    water:"پانی", wax:"موم", iron:"لوہا",
+    heat:"حرارت بڑھائیں", cool:"حرارت نکالیں",
+    temp:"درجہ حرارت", state:"حالت",
+    solid:"ٹھوس", melting:"پگھلاؤ", liquid:"مائع", boiling:"ابال", gas:"گیس",
+    freezing:"جمنا", condensing:"تکثیف", subliming:"تصعید",
+    fan:"ہوا", area:"سطح", dishHeat:"گرمی (ابال نہیں)",
+    nSolid:"ذرات جال میں بند ہیں۔ صرف کانپتے ہیں — اس لیے ٹھوس شکل رکھتا ہے۔",
+    nMelt:"درجہ حرارت رک گیا۔ ساری حرارت جال توڑ رہی ہے، گرم نہیں کر رہی۔",
+    nLiq:"ذرات قریب ہیں مگر پھسلتے ہیں۔ برتن کی شکل لیتے ہیں، حجم باقی رہتا ہے۔",
+    nBoil:"درجہ حرارت پھر سیدھا ہے۔ حرارت ذرات کو گیس بنا رہی ہے۔",
+    nGas:"ذرات دور اور تیز ہیں۔ کھلے منہ سے نکل رہے ہیں — گیس جگہ بھر دیتی ہے۔",
+    nFreeze:"حرارت نکل رہی ہے۔ ذرات پھر جال بن رہے ہیں۔",
+    nCond:"گیس مائع بن رہی ہے۔ وہی ذرات، قریب۔",
+    nEvap:"تبخیر صرف سطح سے، ابال سے نیچے۔ گرمی، سطح، ہوا — تیز ہو جاتی ہے۔",
+    nBoilCmp:"ابال پورے مائع میں ہوتا ہے، ایک مقررہ درجہ حرارت پر۔",
+    nSubl:"کوئی تالاب نہیں۔ ٹھوس سیدھا گیس بن رہا ہے۔ گراف مائع کی سیدھی لکیر پر نہیں جاتا۔",
+    t1:"ٹھوس کو پگھلاؤ سے گزار کر گرم کریں۔ گراف سیدھا رہے۔",
+    h1:"حرارت بڑھائیں۔ مکسچر پورا مائع ہونے تک انتظار کریں۔",
+    p1:"پوری ملاوٹ کے دوران لکیر سیدھی رہی۔ حرارت جال توڑ رہی تھی۔",
+    t2:"ابال تک گرم رکھیں۔ دوسری، اونچی سیدھی لکیر آئے۔",
+    h2:"وہی خیال، اونچا درجہ حرارت۔ مائع ختم ہونے تک انتظار۔",
+    p2:"دو سیدھی لکیريں: پگھلاؤ اور ابال۔ یہی سبق ہے۔",
+    t3:"گیس کو ٹھنڈا کر کے تکثیف اور جمنے سے ٹھوس بنائیں۔",
+    h3:"حرارت کم، ٹھنڈک زیادہ۔ وہی ذرات، الٹا راستہ۔",
+    p3:"وہی نقطے پھر جال میں بند۔ کچھ بنا یا مٹا نہیں۔",
+    t4:"تبخیر والے برتن کو پنکھا، سطح یا گرمی سے تیز کریں — ابال کے بغیر۔",
+    h4:"ابال سے نیچے۔ تبخیر سطح کا کام ہے۔",
+    p4:"برتن سے ذرات صرف اوپر سے گئے۔ ابلتے برتن میں پورے مائع سے۔",
+    t5:"تصعید چلائیں: ٹھوس سے گیس۔ گراف مائع کی لکیر چھوڑ دے۔",
+    h5:"ٹھوس گرم کریں۔ راستے میں تالاب نہیں۔",
+    p5:"ٹھوس → گیس، مائع نہیں۔ یہ تیز تبخیر نہیں۔",
+    q1:"پگھلتی برف کو گرم رکھیں۔ پانی بننے تک درجہ حرارت کیا ہوگا؟",
+    q1a:"فوراً بڑھے گا کیونکہ زیادہ حرارت ہمیشہ زیادہ گرمی ہے۔",
+    q1b:"جب تک ساری برف نہ پگھلے وہی رہے گا — اضافی حرارت ذرات آزاد کر رہی ہے، درجہ حرارت نہیں بڑھا رہی۔",
+    q1c:"گرے گا کیونکہ پگھلاؤ حرارت کھا جاتا ہے۔",
+    q1w:"ملاوٹ کے دوران تختی سیدھی رہتی ہے۔ جال ختم ہونے تک تھرمامیٹر نہیں چڑھتا۔",
+    q2:"برف پگھلنا نمک گھلنے جیسا کیوں نہیں؟",
+    q2a:"ایک ہی ہیں: دونوں ٹھوس کو مائع بناتے ہیں۔",
+    q2b:"پگھلاؤ صرف حرارت سے حالت بدلتی ہے۔ گھلنا سالوینٹ مانگتا ہے — الگ عمل۔",
+    q2c:"گھلنا صرف تیز پگھلاؤ ہے۔",
+    q2w:"اس بینچ پر صرف حرارت ہے۔ دوسرا مادہ نہیں ملا۔ گھلنے کو سالوینٹ چاہیے۔",
+    q3:"ٹھنڈی ہوا دار دن میں تالاب سوکھتا ہے، 100°C نہیں۔ کیا ہو رہا ہے؟",
+    q3a:"آہستہ ابال۔",
+    q3b:"سطح سے تبخیر، جو کسی بھی درجہ حرارت پر ہو سکتی ہے۔ ابال الگ عمل ہے، پورے مائع میں، ایک درجہ حرارت پر۔",
+    q3c:"تصعید۔",
+    q3w:"تبخیر سطح سے اور ابال سے نیچے۔ ہوا اور سطح اسے تیز کرتی ہے۔ ابال ضروری نہیں۔",
+    q4:"گیس گرم مائع سے انرژی کے علاوہ کیسے مختلف ہے؟",
+    q4a:"صرف انرژی — ذرات اتنے ہی قریب ہیں۔",
+    q4b:"گیس کے ذرات بہت دور اور آزاد ہیں، اس لیے گیس برتن کا حجم بھی بھر دیتی ہے۔",
+    q4c:"حرارت نے نیا مادہ بنا دیا۔",
+    q4w:"وہی ذرات، نئی ترتیب: فاصلہ اور آزادی، نیا مادہ نہیں۔",
+    q5:"خشک برف بغیر تالاب کے غائب۔ کیا یہ تیز تبخیر ہے؟",
+    q5a:"ہاں — اتنی تیز کہ مائع نظر نہیں آیا۔",
+    q5b:"نہیں۔ تصعید ٹھوس → گیس ہے، مائع کی منزل کے بغیر۔ الگ راستہ، صرف رفتار نہیں۔",
+    q5c:"ٹھوس ہوا میں گھل رہا ہے جیسے نمک پانی میں۔",
+    q5w:"گراف مائع کی سیدھی لکیر چھوڑ دیتا ہے۔ تبخیر کے لیے مائع ہی نہیں۔"
+  }
+};
+let LANG="en";
+function T(k){ return (STRINGS[LANG]&&STRINGS[LANG][k]) || STRINGS.en[k] || k; }
+function el(id){ return document.getElementById(id); }
+function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+function bands(sub){
+  const eM0 = sub.cS * (sub.Tm - sub.T0);
+  const eM1 = eM0 + sub.Lm;
+  const eB0 = eM1 + sub.cL * (sub.Tb - sub.Tm);
+  const eB1 = eB0 + sub.Lb;
+  const eMax = eB1 + sub.cG * (sub.Tmax - sub.Tb);
+  return { eM0, eM1, eB0, eB1, eMax };
+}
+/* Never skip a latent band in one tick — land on the next edge instead. */
+function advanceEnergy(E, dE, lo, hi, edges){
+  if(!dE) return clamp(E, lo, hi);
+  const next = E + dE;
+  if(dE > 0){
+    for(let i=0;i<edges.length;i++){
+      const e = edges[i];
+      if(E < e && next >= e) return clamp(e, lo, hi);
+    }
+  } else {
+    for(let i=edges.length-1;i>=0;i--){
+      const e = edges[i];
+      if(E > e && next <= e) return clamp(e, lo, hi);
+    }
+  }
+  return clamp(next, lo, hi);
+}
+function thermo(sub, E, heating){
+  const b = bands(sub);
+  E = clamp(E, 0, b.eMax);
+  let T, phase, s=0, l=0, g=0;
+  if(E < b.eM0){
+    T = sub.T0 + E/sub.cS; phase="solid"; s=1;
+  } else if(E < b.eM1){
+    T = sub.Tm; /* PINNED — T cannot creep while solid+liquid coexist */
+    const f = (E - b.eM0) / sub.Lm;
+    s=1-f; l=f;
+    phase = f<=0 ? "solid" : (heating ? "melting" : "freezing");
+  } else if(E < b.eB0){
+    T = sub.Tm + (E - b.eM1)/sub.cL; phase="liquid"; l=1;
+  } else if(E < b.eB1){
+    T = sub.Tb; /* PINNED — T cannot creep while liquid+gas coexist */
+    const f = (E - b.eB0) / sub.Lb;
+    l=1-f; g=f;
+    phase = f<=0 ? "liquid" : (heating ? "boiling" : "condensing");
+  } else {
+    T = sub.Tb + (E - b.eB1)/sub.cG; phase="gas"; g=1;
+  }
+  /* Hard invariant: mixed particles ⇒ T is exactly Tm or Tb. */
+  if(s>0 && l>0) T = sub.Tm;
+  if(l>0 && g>0) T = sub.Tb;
+  return { T, phase, s, l, g, E, b };
+}
+function sublThermo(E, heating){
+  const e0 = SUBL.cS * (SUBL.Ts - SUBL.T0);
+  const e1 = e0 + SUBL.Ls;
+  const eMax = e1 + SUBL.cG * (SUBL.Tmax - SUBL.Ts);
+  E = clamp(E, 0, eMax);
+  let T, phase, s=0, g=0;
+  if(E < e0){ T = SUBL.T0 + E/SUBL.cS; phase="solid"; s=1; }
+  else if(E < e1){
+    T = SUBL.Ts; /* PINNED — no liquid plateau at all */
+    const f=(E-e0)/SUBL.Ls; s=1-f; g=f;
+    phase = f<=0 ? "solid" : "subliming";
+  } else { T = SUBL.Ts + (E-e1)/SUBL.cG; phase="gas"; g=1; }
+  if(s>0 && g>0) T = SUBL.Ts;
+  return { T, phase, s, l:0, g, E, e0, e1, eMax };
+}
+/* Particle counts from the energy mix. Inside a latent band, at least one
+   of each coexisting state is on stage — so mixed view lasts the whole flat. */
+function countsOf(th){
+  const n = CONFIG.N;
+  if(th.s>0 && th.l>0 && !(th.g>0)){
+    const nS = clamp(Math.round(th.s*n), 1, n-1);
+    return { nS, nL:n-nS, nG:0 };
+  }
+  if(th.l>0 && th.g>0 && !(th.s>0)){
+    const nL = clamp(Math.round(th.l*n), 1, n-1);
+    return { nS:0, nL, nG:n-nL };
+  }
+  if(th.s>0 && th.g>0 && !(th.l>0)){
+    const nS = clamp(Math.round(th.s*n), 1, n-1);
+    return { nS, nL:0, nG:n-nS };
+  }
+  if(th.g >= 0.999) return { nS:0, nL:0, nG:n };
+  if(th.l >= 0.999) return { nS:0, nL:n, nG:0 };
+  return { nS:n, nL:0, nG:0 };
+}
+function phaseFromCounts(c, heating){
+  if(c.nS && c.nL) return heating ? "melting" : "freezing";
+  if(c.nL && c.nG) return heating ? "boiling" : "condensing";
+  if(c.nS && c.nG) return "subliming";
+  if(c.nG) return "gas";
+  if(c.nL) return "liquid";
+  return "solid";
+}
+function isMixed(c){ return (c.nS&&c.nL) || (c.nL&&c.nG) || (c.nS&&c.nG); }
+
+function seedParticles(n){
+  const p=[];
+  const box={x:250,y:80,w:400,h:360};
+  const cols=8;
+  for(let i=0;i<n;i++){
+    const c=i%cols, r=(i/cols)|0;
+    p.push({ i, x:box.x+70+c*28, y:box.y+box.h-40-r*22, vx:0, vy:0, esc:0 });
+  }
+  return p;
+}
+function initial(){
+  const sub = SUBS.water;
+  const th = thermo(sub, 0.01, true);
+  return {
+    view:"main", subId:"water",
+    E: 0.01, heat:0.55, cool:0,
+    running:true, speed:1, tSim:0, scrub:false, pinnedScrub:false,
+    pts: seedParticles(CONFIG.N),
+    hist:[],
+    everMelt:false, meltStarted:false, meltDone:false,
+    boilStarted:false, boilDone:false, wasGas:false, backSolid:false,
+    evap:{ heat:0.3, fan:0.2, area:0.4, lost:0, tweaked:false },
+    sublE: 0.01, sublStarted:false, sublDone:false,
+    guide:{ i:0, done:false }
+  };
+}
+let S = initial();
+let dim=false;
+
+const W=900, H=520;
+const canvas=el("board"), ctx=canvas.getContext("2d");
+const gcv=el("tGraphCvs"), gctx=gcv.getContext("2d");
+let cssW=900, cssH=520;
+function dpr(){ return Math.min(2, window.devicePixelRatio||1); }
+function fitBoard(){
+  const wrap=el("stageInner");
+  const w=Math.max(280, wrap.clientWidth);
+  const h=Math.max(300, Math.min(560, Math.round(w*H/W)));
+  cssW=w; cssH=h;
+  const d=dpr();
+  canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+}
+function sub(){ return SUBS[S.subId]; }
+function nowTh(){ return thermo(sub(), S.E, S.heat>=S.cool); }
+
+/* ======================================================================
+   MODEL — energy first. T is derived. Mixed-state T is a constant.
+   ====================================================================== */
+function stepMain(dt){
+  if(S.scrub) return;
+  const su=sub();
+  const b=bands(su);
+  const net = (S.heat*CONFIG.HEAT_RATE - S.cool*CONFIG.COOL_RATE) * su.heatScale;
+  const prev = thermo(su, S.E, net>=0);
+  S.E = advanceEnergy(S.E, net*dt, 0, b.eMax, [0, b.eM0, b.eM1, b.eB0, b.eB1, b.eMax]);
+  const th = thermo(su, S.E, net>=0);
+  const c = countsOf(th);
+  if(c.nS && c.nL) S.meltStarted=true;
+  if(S.meltStarted && c.nL && !c.nS && !c.nG) S.meltDone=true;
+  if(c.nL && c.nG) S.boilStarted=true;
+  if(S.boilStarted && c.nG && !c.nL && !c.nS) S.boilDone=true;
+  if(c.nG && !c.nS && !c.nL) S.wasGas=true;
+  if(S.wasGas && c.nS && !c.nL && !c.nG) S.backSolid=true;
+  if(prev.phase !== th.phase) sampleNow();
+  moveParticles(dt, th);
+}
+function moveParticles(dt, th){
+  const box={x:250,y:80,w:400,h:360};
+  const c=countsOf(th);
+  const mixed = isMixed(c);
+  /* Mixed: smooth slide. Pure state: snap so leftover lattice cannot linger after T unpins. */
+  const k = mixed ? Math.min(1, 8*dt) : 1;
+  const cols=8;
+  const amp = 1.2 + 3.5*clamp((th.T - (S.view==="subl"?SUBL.T0:sub().T0))/80, 0, 1);
+  const jig = REDUCED ? 0 : 1;
+  S.pts.forEach((p, idx)=>{
+    let role="gas";
+    if(idx < c.nS) role="solid";
+    else if(idx < c.nS+c.nL) role="liquid";
+    if(role==="solid"){
+      const col=idx%cols, r=(idx/cols)|0;
+      const tx=box.x+70+col*28, ty=box.y+box.h-40-r*22;
+      const vx = jig*Math.sin(S.tSim*18+idx)*amp;
+      const vy = jig*Math.cos(S.tSim*16+idx*0.7)*amp;
+      p.x += (tx+vx - p.x)*k;
+      p.y += (ty+vy - p.y)*k;
+      p.esc=0;
+    } else if(role==="liquid"){
+      const li = idx-c.nS;
+      const fill = 0.22 + 0.35*(c.nL/CONFIG.N);
+      const tx=box.x+40+(li%10)*32 + jig*Math.sin(S.tSim*3+li)*8;
+      const ty=box.y+box.h-24 - ((li/10)|0)*18 - jig*Math.cos(S.tSim*4+li)*6;
+      const yMax=box.y+box.h*(1-fill);
+      p.x += (tx-p.x)*k + (mixed? jig*(Math.random()-0.5)*20*dt : 0);
+      p.y += (clamp(ty, yMax, box.y+box.h-12)-p.y)*k;
+      p.esc=0;
+    } else {
+      if(!mixed && dt>=1){
+        p.x=box.x+40+Math.random()*(box.w-80);
+        p.y=box.y+40+Math.random()*(box.h-80);
+        p.vx=(Math.random()-0.5)*40; p.vy=(Math.random()-0.5)*40; p.esc=0;
+        return;
+      }
+      p.vx += (Math.random()-0.5)*120*dt;
+      p.vy += (Math.random()-0.5)*120*dt - 18*dt;
+      p.vx *= 0.99; p.vy *= 0.99;
+      p.x += p.vx*dt; p.y += p.vy*dt;
+      if(p.x<box.x+8){ p.x=box.x+8; p.vx=Math.abs(p.vx); }
+      if(p.x>box.x+box.w-8){ p.x=box.x+box.w-8; p.vx=-Math.abs(p.vx); }
+      if(p.y>box.y+box.h-8){ p.y=box.y+box.h-8; p.vy=-Math.abs(p.vy)*0.6; }
+      if(p.y < box.y-10){ p.esc = Math.min(1, p.esc+dt*0.8); p.y -= 30*dt; }
+      if(p.esc>=1 || p.y<-20){
+        p.x=box.x+40+Math.random()*(box.w-80);
+        p.y=box.y+box.h-30; p.vx=(Math.random()-0.5)*40; p.vy=-40; p.esc=0;
+      }
+    }
+  });
+}
+function stepEvap(dt){
+  const e=S.evap;
+  const rate = (0.15+e.heat)*(0.4+e.area)*(0.5+e.fan)*18;
+  e.lost = Math.min(CONFIG.N*0.7, e.lost + rate*dt);
+}
+function stepSubl(dt){
+  if(S.scrub) return;
+  const net = (S.heat*CONFIG.HEAT_RATE - S.cool*CONFIG.COOL_RATE)*SUBL.heatScale;
+  const prev = sublThermo(S.sublE, net>=0);
+  S.sublE = advanceEnergy(S.sublE, net*dt, 0, prev.eMax, [0, prev.e0, prev.e1, prev.eMax]);
+  const th = sublThermo(S.sublE, net>=0);
+  const c = countsOf(th);
+  if(c.nS && c.nG) S.sublStarted=true;
+  if(S.sublStarted && c.nG && !c.nS) S.sublDone=true;
+  if(prev.phase !== th.phase) sampleNow();
+  moveParticles(dt, { T:th.T, s:th.s, l:0, g:th.g });
+}
+function step(dt){
+  dt=clamp(dt,0,0.05);
+  if(S.scrub) return;
+  S.tSim += dt;
+  if(S.view==="main") stepMain(dt);
+  else if(S.view==="evap") stepEvap(dt);
+  else stepSubl(dt);
+}
+
+/* ======================================================================
+   RENDER
+   ====================================================================== */
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(x,y,w,h,r);
+  else { ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); }
+}
+function chip(text,x,y,color){
+  ctx.save(); ctx.font="700 12.5px "+css("--font"); ctx.textAlign="center"; ctx.textBaseline="middle";
+  const tw=ctx.measureText(text).width;
+  const dark=document.documentElement.getAttribute("data-profile")==="dim";
+  ctx.fillStyle=dark?"rgba(16,20,24,0.9)":"rgba(255,255,255,0.94)";
+  roundRect(x-tw/2-6,y-10,tw+12,20,6); ctx.fill();
+  ctx.fillStyle=color||css("--text"); ctx.fillText(text,x,y); ctx.restore();
+}
+function flameAt(x,y,pow){
+  if(pow<=0.02) return;
+  ctx.fillStyle=css("--hot");
+  ctx.beginPath(); ctx.moveTo(x,y-28*pow); ctx.quadraticCurveTo(x+14*pow,y,x,y+8); ctx.quadraticCurveTo(x-14*pow,y,x,y-28*pow); ctx.fill();
+}
+function drawBeaker(box, open){
+  ctx.strokeStyle=css("--text"); ctx.lineWidth=4; ctx.lineCap="round";
+  ctx.beginPath(); ctx.moveTo(box.x, box.y+(open?20:0)); ctx.lineTo(box.x, box.y+box.h); ctx.lineTo(box.x+box.w, box.y+box.h); ctx.lineTo(box.x+box.w, box.y+(open?20:0)); ctx.stroke();
+}
+function drawDots(th){
+  const c=countsOf(th);
+  S.pts.forEach((p,idx)=>{
+    let role="gas"; if(idx<c.nS) role="solid"; else if(idx<c.nS+c.nL) role="liquid";
+    const col = role==="solid"?css("--cold"): role==="liquid"?css("--accent"):css("--warm");
+    ctx.globalAlpha = p.esc? (1-p.esc) : 1;
+    ctx.beginPath(); ctx.arc(p.x,p.y, role==="gas"?3.6:5, 0, 7);
+    ctx.fillStyle=col; ctx.fill(); ctx.globalAlpha=1;
+  });
+}
+function drawThermometer(T, Tmin, Tmax, x, y){
+  const h=260, w=16;
+  const u=clamp((T-Tmin)/(Tmax-Tmin || 1), 0, 1);
+  ctx.save();
+  ctx.strokeStyle=css("--panel-border"); ctx.lineWidth=2;
+  ctx.fillStyle=css("--panel");
+  roundRect(x-6, y-8, w+12, h+40, 10); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=css("--hairline");
+  roundRect(x, y, w, h, 8); ctx.fill();
+  const fh=Math.max(10, h*u);
+  ctx.fillStyle = u>0.7 ? css("--hot") : u>0.35 ? css("--warm") : css("--cold");
+  roundRect(x+3, y+h-fh, w-6, fh, 5); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+w/2, y+h+8, 13, 0, 7); ctx.fill();
+  ctx.fillStyle=css("--text"); ctx.font="700 12px "+css("--mono");
+  ctx.textAlign="center"; ctx.textBaseline="bottom";
+  ctx.fillText(fmtT(T).replace("°C","°"), x+w/2, y-10);
+  ctx.restore();
+}
+function coolAt(x,y,pow){
+  if(pow<=0.02) return;
+  ctx.fillStyle=css("--cold"); ctx.globalAlpha=0.4+0.5*pow;
+  for(let i=0;i<3;i++){
+    ctx.beginPath();
+    ctx.moveTo(x-18+i*18, y+6);
+    ctx.lineTo(x-9+i*18, y-14*pow);
+    ctx.lineTo(x+i*18, y+6);
+    ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+function drawMain(){
+  ctx.fillStyle=css("--board"); ctx.fillRect(0,0,W,H);
+  const box={x:250,y:80,w:400,h:360};
+  drawBeaker(box, true);
+  flameAt(box.x+box.w/2, box.y+box.h+36, S.heat);
+  coolAt(box.x+box.w/2, box.y+box.h+42, S.cool);
+  const th=nowTh();
+  const heating=S.heat>=S.cool;
+  const phase=phaseFromCounts(countsOf(th), heating);
+  drawDots(th);
+  drawThermometer(th.T, sub().T0, sub().Tmax, 70, 90);
+  chip(T(phase)+"  ·  "+fmtT(th.T), box.x+box.w/2, 36, css("--text"));
+  chip(T(S.subId), 80, 40, css("--text-2"));
+}
+function fmtT(t){
+  if(Math.abs(t)>400) return Math.round(t)+"°C";
+  return (Math.round(t*10)/10).toFixed(1)+"°C";
+}
+function drawEvap(){
+  ctx.fillStyle=css("--board"); ctx.fillRect(0,0,W,H);
+  /* left: dish evaporation */ 
+  const d={x:80,y:220,w:lerp(120,280,S.evap.area),h:90};
+  ctx.strokeStyle=css("--text"); ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(d.x,d.y); ctx.lineTo(d.x,d.y+d.h); ctx.lineTo(d.x+d.w,d.y+d.h); ctx.lineTo(d.x+d.w,d.y); ctx.stroke();
+  const remain = Math.max(8, CONFIG.N*0.5 - S.evap.lost);
+  for(let i=0;i<remain;i++){
+    ctx.beginPath();
+    ctx.arc(d.x+16+(i%12)* (d.w-32)/12, d.y+d.h-14-((i/12)|0)*12, 4.2, 0, 7);
+    ctx.fillStyle=css("--accent"); ctx.fill();
+  }
+  const escaping = 4 + S.evap.fan*8 + S.evap.heat*6;
+  for(let i=0;i<escaping;i++){
+    const x=d.x+20+((i*37+S.tSim*40)%(d.w-40));
+    const y=d.y-10 - ((S.tSim*30+i*17)%80);
+    ctx.globalAlpha=0.7; ctx.beginPath(); ctx.arc(x,y,3,0,7); ctx.fillStyle=css("--warm"); ctx.fill(); ctx.globalAlpha=1;
+  }
+  chip(T("nEvap").split(".")[0], d.x+d.w/2, 70, css("--text-2"));
+  chip(fmtT(22+S.evap.heat*58), d.x+d.w/2, d.y+d.h+22, css("--text-3"));
+  if(S.evap.fan>0.15){
+    ctx.strokeStyle=css("--accent"); ctx.lineWidth=2;
+    for(let k=0;k<3;k++){ ctx.beginPath(); ctx.moveTo(d.x-30, d.y+20+k*16); ctx.quadraticCurveTo(d.x-8, d.y+12+k*16, d.x+10, d.y+20+k*16); ctx.stroke(); }
+  }
+  /* right: boiling */
+  const b={x:520,y:140,w:280,h:260};
+  drawBeaker(b, true);
+  flameAt(b.x+b.w/2, b.y+b.h+30, 1);
+  for(let i=0;i<36;i++){
+    ctx.beginPath();
+    ctx.arc(b.x+24+(i%8)*30 + Math.sin(S.tSim*8+i)*6, b.y+b.h-20-((i/8)|0)*22 - Math.abs(Math.sin(S.tSim*6+i))*10, 5, 0, 7);
+    ctx.fillStyle= i%5===0 ? css("--warm") : css("--accent"); ctx.fill();
+  }
+  for(let i=0;i<10;i++){
+    ctx.beginPath(); ctx.arc(b.x+40+(i*23)%220, b.y+40-((S.tSim*50+i*40)%120), 3.4, 0, 7);
+    ctx.fillStyle=css("--warm"); ctx.fill();
+  }
+  chip(T("boiling")+" 100°C", b.x+b.w/2, 48, css("--hot"));
+}
+function drawSubl(){
+  ctx.fillStyle=css("--board"); ctx.fillRect(0,0,W,H);
+  const th=sublThermo(S.sublE, S.heat>=S.cool);
+  const box={x:280,y:120,w:340,h:300};
+  ctx.strokeStyle=css("--text-3"); ctx.setLineDash([5,5]);
+  ctx.strokeRect(box.x, box.y, box.w, box.h); ctx.setLineDash([]);
+  flameAt(box.x+box.w/2, box.y+box.h+30, S.heat);
+  coolAt(box.x+box.w/2, box.y+box.h+36, S.cool);
+  drawDots(th);
+  const phase=phaseFromCounts(countsOf(th), S.heat>=S.cool);
+  chip(T(phase)+"  ·  "+Math.round(th.T)+"°C", W/2, 40, css("--text"));
+  chip(T("vSubl"), 90, 40, css("--text-2"));
+  drawThermometer(th.T, SUBL.T0, SUBL.Tmax, 70, 110);
+}
+function draw(){
+  ctx.setTransform(dpr()*cssW/W, 0, 0, dpr()*cssH/H, 0, 0);
+  ctx.clearRect(0,0,W,H);
+  if(S.view==="main") drawMain();
+  else if(S.view==="evap") drawEvap();
+  else drawSubl();
+}
+
+function sampleNow(){
+  if(S.view==="evap") return;
+  if(S.scrub) return;
+  if(S.view==="subl"){
+    const th=sublThermo(S.sublE, S.heat>=S.cool);
+    S.hist.push({ t:S.tSim, T:th.T, E:S.sublE, view:"subl", mixed:isMixed(countsOf(th)) });
+  } else {
+    const th=nowTh();
+    S.hist.push({ t:S.tSim, T:th.T, E:S.E, view:"main", mixed:isMixed(countsOf(th)) });
+  }
+  if(S.hist.length>280) S.hist.shift();
+}
+function liveRead(){
+  if(S.view==="subl"){
+    const th=sublThermo(S.sublE, S.heat>=S.cool);
+    const phase=phaseFromCounts(countsOf(th), S.heat>=S.cool);
+    return { th, phase, narr:T("nSubl") };
+  }
+  if(S.view==="evap"){
+    const dishT=22+S.evap.heat*58;
+    return { th:{ T:dishT, phase:"liquid", s:0, l:1, g:0 }, phase:"liquid", narr:T("nEvap") };
+  }
+  const th=nowTh();
+  const phase=phaseFromCounts(countsOf(th), S.heat>=S.cool);
+  const map={ solid:"nSolid", melting:"nMelt", liquid:"nLiq", boiling:"nBoil", gas:"nGas", freezing:"nFreeze", condensing:"nCond" };
+  return { th, phase, narr:T(map[phase]||"nSolid") };
+}
+function sync(){
+  sampleNow();
+  const { th, phase, narr } = liveRead();
+  el("rT").textContent=fmtT(th.T);
+  el("rS").textContent=T(phase);
+  el("stateBadge").textContent=T(phase);
+  el("narr").textContent=narr;
+  drawGraph();
+  checkGuide();
+}
+function drawGraph(){
+  const d=dpr(), w=gcv.clientWidth||300, h=168;
+  if(gcv.width!==Math.round(w*d)){ gcv.width=Math.round(w*d); gcv.height=Math.round(h*d); }
+  gctx.setTransform(d,0,0,d,0,0); gctx.clearRect(0,0,w,h);
+  const padL=44, padB=22, padT=10, padR=10, pw=w-padL-padR, ph=h-padT-padB;
+  gctx.strokeStyle=css("--hairline"); gctx.lineWidth=1;
+  gctx.beginPath(); gctx.moveTo(padL,padT); gctx.lineTo(padL,padT+ph); gctx.lineTo(padL+pw,padT+ph); gctx.stroke();
+  const pts=S.hist.filter(p=> S.view==="subl" ? p.view==="subl" : p.view==="main");
+  if(pts.length<2){
+    gctx.fillStyle=css("--text-3"); gctx.font="12.5px "+css("--font");
+    gctx.fillText("T", 8, padT+10); return;
+  }
+  const t0=pts[0].t, t1=pts[pts.length-1].t, span=Math.max(0.4, t1-t0);
+  let ymin=pts[0].T, ymax=pts[0].T;
+  pts.forEach(p=>{ ymin=Math.min(ymin,p.T); ymax=Math.max(ymax,p.T); });
+  if(ymax-ymin<8){ ymax+=4; ymin-=4; }
+  const X=t=> padL+(t-t0)/span*pw;
+  const Y=v=> padT+ph-(v-ymin)/(ymax-ymin)*ph;
+  if(S.view==="main" || S.view==="subl"){
+    gctx.setLineDash([4,3]); gctx.lineWidth=1; gctx.strokeStyle=css("--text-3");
+    const marks = S.view==="subl" ? [SUBL.Ts] : [sub().Tm, sub().Tb];
+    marks.forEach(tm=>{
+      if(tm>=ymin && tm<=ymax){
+        gctx.beginPath(); gctx.moveTo(padL, Y(tm)); gctx.lineTo(padL+pw, Y(tm)); gctx.stroke();
+      }
+    });
+    gctx.setLineDash([]);
+  }
+  gctx.beginPath(); gctx.strokeStyle=css("--accent"); gctx.lineWidth=2.4;
+  pts.forEach((p,i)=>{ const x=X(p.t), y=Y(p.T); if(i===0) gctx.moveTo(x,y); else gctx.lineTo(x,y); });
+  gctx.stroke();
+  const last=pts[pts.length-1];
+  gctx.fillStyle=css("--hot"); gctx.beginPath(); gctx.arc(X(last.t), Y(last.T), 4, 0, 7); gctx.fill();
+  gctx.fillStyle=css("--text-3"); gctx.font="12px "+css("--mono");
+  gctx.fillText(Math.round(ymax)+"°", 4, padT+10);
+  gctx.fillText(Math.round(ymin)+"°", 4, padT+ph);
+  if(S.hover){
+    gctx.strokeStyle=css("--warn"); gctx.setLineDash([3,3]);
+    gctx.beginPath(); gctx.moveTo(X(S.hover.t), padT); gctx.lineTo(X(S.hover.t), padT+ph); gctx.stroke(); gctx.setLineDash([]);
+  }
+}
+function histAtX(clientX){
+  const r=gcv.getBoundingClientRect();
+  const x=(clientX-r.left);
+  const pts=S.hist.filter(p=> S.view==="subl" ? p.view==="subl" : p.view==="main");
+  if(pts.length<2) return null;
+  const w=gcv.clientWidth||300, padL=44, padR=10, pw=w-padL-padR;
+  const t0=pts[0].t, t1=pts[pts.length-1].t, span=Math.max(0.4,t1-t0);
+  const t = t0 + clamp((x-padL)/pw,0,1)*span;
+  let best=pts[0], bd=1e9;
+  pts.forEach(p=>{ const d=Math.abs(p.t-t); if(d<bd){ bd=d; best=p; } });
+  return best;
+}
+function jumpTo(p, pin){
+  if(!p) return;
+  if(p.view==="subl") S.sublE=p.E; else S.E=p.E;
+  const th = p.view==="subl" ? sublThermo(S.sublE, S.heat>=S.cool) : nowTh();
+  moveParticles(1, th);
+  if(pin){ S.scrub=true; setRunning(false); }
+}
+gcv.addEventListener("pointermove", e=>{
+  const p=histAtX(e.clientX); S.hover=p;
+  if(p){
+    if(!S._hold) S._hold={ E:S.E, sublE:S.sublE, scrub:S.scrub };
+    S.scrub=true;
+    jumpTo(p, false);
+  }
+  draw(); drawGraph();
+});
+gcv.addEventListener("pointerleave", ()=>{
+  S.hover=null;
+  if(S._hold && !S.pinnedScrub){
+    S.E=S._hold.E; S.sublE=S._hold.sublE; S.scrub=S._hold.scrub;
+    jumpTo({ view:S.view==="subl"?"subl":"main", E:S.view==="subl"?S.sublE:S.E }, false);
+  }
+  S._hold=undefined;
+  draw(); drawGraph();
+});
+gcv.addEventListener("pointerdown", e=>{
+  const p=histAtX(e.clientX); if(!p) return;
+  S._hold=undefined;
+  S.pinnedScrub=true;
+  jumpTo(p, true);
+  sync();
+});
+
+/* ======================================================================
+   CONTROLS / GUIDE / QUIZ
+   ====================================================================== */
+function setView(v){ S.view=v; S.scrub=false; S.pinnedScrub=false; S._hold=undefined; buildViewTray(); buildOpts(); }
+function buildViewTray(){
+  const host=el("viewTray"); host.innerHTML="";
+  const seg=document.createElement("div"); seg.className="seg";
+  [["main","vMain"],["evap","vEvap"],["subl","vSubl"]].forEach(([id,k])=>{
+    const b=document.createElement("button"); b.type="button";
+    b.textContent=T(k); b.setAttribute("aria-pressed", String(S.view===id));
+    b.addEventListener("click", ()=>setView(id));
+    seg.appendChild(b);
+  });
+  host.appendChild(seg);
+}
+function sliderRow(lab, val, min, max, on){
+  const r=document.createElement("div"); r.className="row";
+  const l=document.createElement("label"); l.textContent=lab;
+  const sl=document.createElement("input"); sl.type="range"; sl.min=min; sl.max=max; sl.step="0.02"; sl.value=val;
+  sl.addEventListener("input", ()=>{ S.scrub=false; S.pinnedScrub=false; on(+sl.value); });
+  const v=document.createElement("span"); v.className="val"; v.textContent=Math.round(val*100)+"%";
+  sl.addEventListener("input", ()=> v.textContent=Math.round(+sl.value*100)+"%");
+  r.append(l,sl,v); return r;
+}
+function buildOpts(){
+  const host=el("modeOpts"); host.innerHTML="";
+  if(S.view==="main"){
+    const seg=document.createElement("div"); seg.className="seg"; seg.style.marginBottom="8px";
+    ["water","wax","iron"].forEach(id=>{
+      const b=document.createElement("button"); b.type="button";
+      b.textContent=T(id); b.setAttribute("aria-pressed", String(S.subId===id));
+      b.addEventListener("click", ()=>{
+        S.subId=id; S.E=0.01; S.hist=[]; S.tSim=0; S.scrub=false; S.pinnedScrub=false;
+        S.meltStarted=S.meltDone=S.boilStarted=S.boilDone=false; S.wasGas=S.backSolid=false;
+        S.pts=seedParticles(CONFIG.N);
+        buildOpts();
+      });
+      seg.appendChild(b);
+    });
+    host.appendChild(seg);
+    host.appendChild(sliderRow(T("heat"), S.heat, 0, 1, v=> S.heat=v));
+    host.appendChild(sliderRow(T("cool"), S.cool, 0, 1, v=> S.cool=v));
+  } else if(S.view==="evap"){
+    host.appendChild(sliderRow(T("dishHeat"), S.evap.heat, 0, 0.85, v=>{ S.evap.heat=v; S.evap.tweaked=true; }));
+    host.appendChild(sliderRow(T("area"), S.evap.area, 0.15, 1, v=>{ S.evap.area=v; S.evap.tweaked=true; }));
+    host.appendChild(sliderRow(T("fan"), S.evap.fan, 0, 1, v=>{ S.evap.fan=v; S.evap.tweaked=true; }));
+  } else {
+    host.appendChild(sliderRow(T("heat"), S.heat, 0, 1, v=> S.heat=v));
+    host.appendChild(sliderRow(T("cool"), S.cool, 0, 1, v=> S.cool=v));
+  }
+}
+
+function burstUntil(pred, maxSteps){
+  let acc=0;
+  for(let i=0;i<(maxSteps||420);i++){
+    if(pred()) break;
+    step(0.05);
+    acc+=0.05;
+    if(acc>=CONFIG.SAMPLE_DT){ acc=0; sampleNow(); }
+  }
+}
+const TASKS=[
+  { t:"t1", h:"h1", p:"p1", done:()=> S.meltDone, show:()=>{
+      S.view="main"; S.subId="water"; S.heat=1; S.cool=0; S.scrub=false; S.pinnedScrub=false;
+      S.E=0.01; S.hist=[]; S.tSim=0; S.meltStarted=false; S.meltDone=false;
+      burstUntil(()=>S.meltDone, 420);
+    }},
+  { t:"t2", h:"h2", p:"p2", done:()=> S.boilDone, show:()=>{
+      S.view="main"; S.subId="water"; S.heat=1; S.cool=0; S.scrub=false; S.pinnedScrub=false;
+      if(!S.meltDone){ S.E=0.01; S.hist=[]; burstUntil(()=>S.boilDone, 520); }
+      else burstUntil(()=>S.boilDone, 420);
+    }},
+  { t:"t3", h:"h3", p:"p3", done:()=> S.backSolid, show:()=>{
+      S.view="main"; S.subId="water"; S.heat=0; S.cool=1; S.scrub=false; S.pinnedScrub=false;
+      S.E=bands(SUBS.water).eMax; S.wasGas=false; S.backSolid=false;
+      burstUntil(()=>S.backSolid, 520);
+    }},
+  { t:"t4", h:"h4", p:"p4", done:()=> S.view==="evap" && S.evap.tweaked, show:()=>{
+      S.view="evap"; S.evap.fan=0.8; S.evap.area=0.9; S.evap.heat=0.5; S.evap.tweaked=true;
+    }},
+  { t:"t5", h:"h5", p:"p5", done:()=> S.sublDone, show:()=>{
+      S.view="subl"; S.heat=1; S.cool=0; S.scrub=false; S.pinnedScrub=false;
+      S.sublE=0.01; S.sublStarted=false; S.sublDone=false; S.hist=S.hist.filter(p=>p.view!=="subl");
+      burstUntil(()=>S.sublDone, 360);
+    }}
+];
+function renderGuide(){
+  const i=S.guide.i, task=TASKS[i];
+  el("gNum").textContent=(i+1)+"/5";
+  el("gTask").textContent=T(task.t);
+  el("gHint").textContent=S.guide.done?T(task.p):T(task.h);
+  el("gShow").textContent=T("show"); el("gNext").textContent=T("next"); el("tStep").textContent=T("task");
+  el("gNext").hidden=!S.guide.done || i>=4;
+  el("guide").classList.toggle("done", S.guide.done);
+  const dots=el("gDots"); dots.innerHTML="";
+  TASKS.forEach((_,k)=>{ const d=document.createElement("span"); d.className="guide__dot"+(k<i?" on":"")+(k===i?" now":""); dots.appendChild(d); });
+}
+function checkGuide(){ if(!S.guide.done && TASKS[S.guide.i].done()){ S.guide.done=true; renderGuide(); } }
+el("gShow").addEventListener("click", ()=>{ TASKS[S.guide.i].show(); buildViewTray(); buildOpts(); renderGuide(); sync(); });
+el("gNext").addEventListener("click", ()=>{ if(S.guide.i<4){ S.guide.i++; S.guide.done=false; renderGuide(); } });
+
+const QUESTIONS=[
+  { q:"q1", opts:["q1a","q1b","q1c"], ans:1, why:"q1w" },
+  { q:"q2", opts:["q2a","q2b","q2c"], ans:1, why:"q2w" },
+  { q:"q3", opts:["q3a","q3b","q3c"], ans:1, why:"q3w" },
+  { q:"q4", opts:["q4a","q4b","q4c"], ans:1, why:"q4w" },
+  { q:"q5", opts:["q5a","q5b","q5c"], ans:1, why:"q5w" }
+];
+function buildQuiz(){
+  const host=el("quiz"); host.innerHTML="";
+  let score=0, answered=0;
+  QUESTIONS.forEach((Q,qi)=>{
+    const box=document.createElement("div"); box.className="panel q"; box.style.marginBottom="12px";
+    box.innerHTML='<div class="q__n">Q '+(qi+1)+'</div><p class="q__t"></p><div class="opts"></div><div class="fb"></div>';
+    box.querySelector(".q__t").textContent=T(Q.q);
+    const opts=box.querySelector(".opts"), fb=box.querySelector(".fb");
+    Q.opts.forEach((ok,oi)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="opt";
+      b.innerHTML='<span class="opt__k">'+"ABC"[oi]+'</span><span></span>';
+      b.querySelector("span:last-child").textContent=T(ok);
+      b.addEventListener("click", ()=>{
+        if(b.disabled) return;
+        opts.querySelectorAll(".opt").forEach(o=>o.disabled=true);
+        const good=oi===Q.ans;
+        b.classList.add(good?"correct":"wrong");
+        opts.children[Q.ans].classList.add("correct");
+        fb.className="fb show "+(good?"ok":"no"); fb.textContent=T(Q.why);
+        answered++; if(good) score++;
+        if(answered===QUESTIONS.length){
+          const s=document.createElement("div"); s.className="panel score"; s.style.marginTop="12px";
+          s.innerHTML='<span>'+T("score")+'</span><span class="score__v">'+score+' / '+QUESTIONS.length+'</span>';
+          const again=document.createElement("button"); again.className="btn"; again.textContent=T("tryAgain");
+          again.addEventListener("click", buildQuiz); s.appendChild(again); host.appendChild(s);
+        }
+      });
+      opts.appendChild(b);
+    });
+    host.appendChild(box);
+  });
+}
+
+const mqReduce=matchMedia("(prefers-reduced-motion: reduce)");
+let REDUCED=mqReduce.matches;
+mqReduce.addEventListener("change", ()=>{ REDUCED=mqReduce.matches; });
+let prev=performance.now(), acc=0, syncT=0;
+function frame(now){
+  const dt=Math.min(0.1,(now-prev)/1000); prev=now;
+  if(S.running){
+    if(REDUCED){ acc+=dt; if(acc>0.5){ acc=0; step(0.5*S.speed); syncT=1; } }
+    else { step(dt*S.speed); syncT+=dt; }
+    if(syncT>CONFIG.SAMPLE_DT){ syncT=0; sync(); }
+  }
+  draw(); requestAnimationFrame(frame);
+}
+function setRunning(on){
+  S.running=on;
+  if(on){ S.scrub=false; S.pinnedScrub=false; }
+  el("icPlay").innerHTML=on
+    ? '<rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/>'
+    : '<path d="M7 4 L19 12 L7 20 Z" fill="#fff"/>';
+  el("btnPlay").setAttribute("aria-pressed", String(on));
+  el("btnPlay").setAttribute("aria-label", on?T("pause"):T("play"));
+}
+function applyLang(){
+  document.documentElement.lang=LANG; document.documentElement.dir=LANG==="ur"?"rtl":"ltr";
+  el("tTitle").textContent=T("title"); el("tSub").textContent=T("sub");
+  el("tNavTitle").textContent=T("navTitle");
+  el("navBench").textContent=T("bench"); el("navQuiz").textContent=T("quiz");
+  el("btnLang").textContent=T("lang");
+  el("btnProfile").textContent=dim?T("bright"):T("dim");
+  el("tReadings").textContent=T("readings"); el("kT").textContent=T("temp"); el("kS").textContent=T("state");
+  el("tSpeed").textContent=T("speed"); el("btnStep").textContent=T("stepBtn");
+  el("btnReset").setAttribute("aria-label", T("reset"));
+  el("tGraph").textContent=T("graph"); el("tGraphNote").textContent=T("graphNote");
+  el("tQuizTitle").textContent=T("quizTitle"); el("tQuizSub").textContent=T("quizSub");
+  el("boardDesc").textContent=T("boardDesc");
+  el("gShow").textContent=T("show"); el("gNext").textContent=T("next");
+  setRunning(S.running); buildViewTray(); buildOpts(); renderGuide(); buildQuiz(); sync();
+}
+el("btnLang").addEventListener("click", ()=>{ LANG=LANG==="en"?"ur":"en"; applyLang(); });
+el("btnProfile").addEventListener("click", ()=>{
+  dim=!dim;
+  if(dim) document.documentElement.setAttribute("data-profile","dim");
+  else document.documentElement.removeAttribute("data-profile");
+  el("btnProfile").textContent=dim?T("bright"):T("dim");
+});
+el("btnPlay").addEventListener("click", ()=> setRunning(!S.running));
+el("btnStep").addEventListener("click", ()=>{ S.scrub=false; S.pinnedScrub=false; step(0.25); sync(); });
+el("speed").addEventListener("input", e=> S.speed=+e.target.value);
+el("btnReset").addEventListener("click", ()=>{
+  S=initial(); el("speed").value=1; setRunning(true);
+  buildViewTray(); buildOpts(); renderGuide(); sync();
+});
+function showScreen(which){
+  el("scBench").classList.toggle("on", which==="bench");
+  el("scQuiz").classList.toggle("on", which==="quiz");
+  el("navBench").setAttribute("aria-current", which==="bench"?"page":"false");
+  el("navQuiz").setAttribute("aria-current", which==="quiz"?"page":"false");
+  if(which==="bench") fitBoard();
+}
+el("navBench").addEventListener("click", ()=>showScreen("bench"));
+el("navQuiz").addEventListener("click", ()=>showScreen("quiz"));
+addEventListener("resize", ()=>{ fitBoard(); drawGraph(); });
+fitBoard(); applyLang(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>

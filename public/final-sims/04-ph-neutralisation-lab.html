@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<title>pH &amp; Neutralisation Lab — PCTB Class 8 Science</title>
+<!--
+==========================================================================
+ pH & NEUTRALISATION LAB  ·  Sim 4 of 5
+ PCTB / SNC Class 8 General Science — Acids, bases, indicators, pH, salt
+
+ LEARNING OBJECTIVES (all reachable by dragging on the bench)
+   1. Acids taste sour; blue litmus → red. Bases taste bitter / feel soapy;
+      red litmus → blue. Neutral changes neither.
+   2. Indicators: natural (litmus, turmeric) and synthetic (phenolphthalein,
+      universal indicator).
+   3. pH 0–14: below 7 acidic (lower = stronger), 7 neutral, above 7 basic
+      (higher = stronger). HOW acidic, not just IF.
+   4. Universal indicator = full gradient; litmus = category only.
+   5. Neutralisation: Acid + Base → Salt + Water (+ heat). pH moves toward 7.
+   6. Overshoot is real: extra base after 7 makes it basic, not "safer."
+   7. Real world: antacid/stomach, lime/soil, factory waste, baking soda/bee
+      sting, vinegar-lemon/wasp sting.
+
+ MISCONCEPTIONS TARGETED BY THE QUIZ
+   - "Neutral means it has no pH / is not a chemical"
+   - "All acids are dangerous, all bases are safe"
+   - "Litmus tells you the exact pH"
+   - "Once neutralised it can never leave pH 7"
+   - "0 and 14 are equally mild because they are both ends"
+
+ THE ONE RULE THIS FILE MUST NEVER BREAK
+   Titration MUST overshoot. pH is never clamped at 7. Keep adding base and
+   the beaker goes green → blue → violet. Keep adding acid and it goes
+   acidic. Productive failure IS the lesson. There is no error dialog.
+
+ SIMPLIFICATIONS FOR CLASS 8
+   - No log pH, no [H+] mol/L, no pKa, no Henderson–Hasselbalch.
+   - Strong / weak is positional only (near the ends vs near 7).
+   - One word equation. No balancing drill. No acidic/basic salt taxonomy.
+   - Household liquids only on the bench (no HCl bottle, no NaOH, no drain
+     cleaner). Drain cleaner may appear as TEXT in the quiz.
+
+ TEACHER: every tunable lives in CONFIG. Safe to adjust: LIQUIDS[].pH,
+ DROP_ML, START_VOL_ML, REAGENT_N, TITRATION_STEEP, START_ACID_PH,
+ START_BASE_PH, PHENO_PH, PLACE_TOL, OVERSHOOT_PH, HIT_NEUTRAL, NEUTRAL_LO/HI.
+ One file, double-click to run. No server, no build, no internet.
+==========================================================================
+-->
+<style>
+:root{
+  --accent:#1F6FD0;
+  --good:#237A46;
+  --warn:#8C5A05;
+  --crit:#A0173F;
+  --panel:#FFFFFF;
+  --panel-2:#F2F4F5;
+  --panel-border:#8A8A8A;
+  --text:#14202A;
+  --text-2:#46565F;
+  --text-3:#71828C;
+
+  --acid:#C42A2A;
+  --base:#6B3AA0;
+  --indicator:#2A8F6A;
+
+  --board:#EEF2F4;
+  --grid:#D3DBDF;
+  --hairline:#DCE1E4;
+  --shadow:0 2px 8px rgba(20,32,42,.14);
+  --focus:#14202A;
+  --on-accent:#FFFFFF;
+  --glass:#7A9AAA;
+  --wood:#C4A06A;
+
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --radius:12px;
+  --space:8px;
+}
+:root[data-profile="dim"]{
+  --accent:#4E9BF0;
+  --good:#4FB27A;
+  --warn:#D0A03A;
+  --crit:#E0648F;
+  --panel:#1A2126;
+  --panel-2:#242D33;
+  --panel-border:#5F6C74;
+  --text:#F1F5F7;
+  --text-2:#C3CFD5;
+  --text-3:#95A4AD;
+  --acid:#E85A5A;
+  --base:#B07AE0;
+  --indicator:#4ECB96;
+  --board:#131A1F;
+  --grid:#26313A;
+  --hairline:#3B464D;
+  --shadow:0 2px 10px rgba(0,0,0,.5);
+  --focus:#FFFFFF;
+  --on-accent:#0B1220;
+  --glass:#6A8A98;
+  --wood:#A8844E;
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  font-family:var(--font);
+  background:var(--panel-2);
+  color:var(--text);
+  font-size:16px;
+  line-height:1.45;
+  overflow-x:hidden;
+}
+:focus-visible{
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+  border-radius:4px;
+}
+.sr{
+  position:absolute; width:1px; height:1px; overflow:hidden;
+  clip:rect(0 0 0 0); white-space:nowrap;
+}
+.wrap{ max-width:1400px; margin:0 auto; padding:10px 10px 80px; }
+
+:root[dir="rtl"] body{
+  font-family:system-ui,"Noto Nastaliq Urdu","Segoe UI",Tahoma,sans-serif;
+}
+:root[dir="rtl"] .stage__inner{ direction:ltr; }
+
+.head{
+  display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+  padding:2px 2px 10px;
+}
+.head__title{ font-size:clamp(19px,2.3vw,25px); font-weight:700; margin:0; letter-spacing:-.02em; }
+.head__sub{ margin:0; font-size:14.5px; color:var(--text-2); }
+.head__spacer{ margin-inline-start:auto; display:flex; gap:8px; flex-wrap:wrap; }
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--panel-border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:12px 14px;
+}
+.panel__title{ font-size:15px; font-weight:700; margin:0 0 10px; }
+
+.guide{
+  background:var(--panel);
+  border:2px solid var(--accent);
+  border-radius:var(--radius);
+  padding:10px 13px;
+  margin-bottom:10px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:12px;
+  align-items:center;
+}
+@media (max-width:760px){ .guide{ grid-template-columns:1fr; } }
+.guide.done{ border-color:var(--good); }
+.guide__badge{
+  min-width:72px; padding:6px 10px; border-radius:9px; text-align:center;
+  background:var(--panel-2); border:1px solid var(--panel-border);
+}
+.guide__badgeTop{ font-size:12.5px; font-weight:700; letter-spacing:.06em; color:var(--text-3); }
+.guide__badgeNum{
+  font-size:20px; font-weight:700; font-family:var(--mono);
+  font-variant-numeric:tabular-nums;
+}
+.guide__task{ font-size:17px; font-weight:700; margin:0; }
+.guide__hint{ font-size:14px; margin:4px 0 0; color:var(--text-2); }
+.guide__dots{ display:flex; gap:6px; margin-top:8px; }
+.guide__dot{ width:9px; height:9px; border-radius:50%; background:var(--hairline); }
+.guide__dot.on{ background:var(--good); }
+.guide__dot.now{ background:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent); }
+.guide__acts{ display:flex; gap:8px; flex-wrap:wrap; }
+.tick{ color:var(--good); font-weight:700; }
+
+.btn{
+  font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 16px; border-radius:9px; white-space:nowrap;
+  background:var(--accent); color:var(--on-accent); border:1px solid rgba(0,0,0,.28);
+  box-shadow:0 1px 2px rgba(0,0,0,.18);
+  transition:filter .15s ease, transform .12s ease;
+}
+.btn:hover{ filter:brightness(1.08); }
+.btn:active{ transform:translateY(1px); }
+.btn--ghost{ background:var(--panel); color:var(--text); border-color:var(--panel-border); }
+.btn--go{ background:var(--good); color:#fff; }
+.btn--sm{ min-height:44px; font-size:13.5px; padding:0 12px; }
+.round{
+  width:48px; height:48px; border-radius:50%; cursor:pointer; padding:0;
+  border:1px solid rgba(0,0,0,.35); display:grid; place-items:center;
+  box-shadow:var(--shadow); background:var(--btn,#E2E6E9);
+}
+.round--play{ --btn:var(--good); }
+.round--reset{ --btn:var(--warn); }
+
+.main{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,330px); gap:10px; align-items:start; }
+.main > div{ min-width:0; }
+@media (max-width:1080px){ .main{ grid-template-columns:minmax(0,1fr); } }
+
+.tray{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+.tray__label{
+  width:100%; font-size:12.5px; font-weight:700; color:var(--text-3);
+  margin:4px 0 2px; letter-spacing:.04em; text-transform:uppercase;
+}
+.part{
+  min-width:74px; min-height:66px; padding:6px 8px 4px; cursor:grab;
+  border:2px solid var(--panel-border); border-radius:10px; background:var(--panel);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  font-family:inherit; font-size:12.5px; font-weight:600; color:var(--text);
+  touch-action:none; user-select:none;
+  transition:border-color .15s ease, background .15s ease;
+}
+.part:hover{ border-color:var(--accent); }
+.part[aria-pressed="true"]{
+  border-color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 14%,var(--panel));
+}
+.part svg{ display:block; pointer-events:none; }
+.part--mode{ min-width:88px; cursor:pointer; }
+
+.stage{
+  border:1px solid var(--panel-border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  background:var(--board);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
+}
+.stage__inner{ position:relative; }
+#board{ display:block; width:100%; height:auto; touch-action:none; cursor:crosshair; }
+.stage__bar{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  padding:8px 10px; background:var(--panel); border-top:1px solid var(--hairline);
+}
+.seg{ display:inline-flex; border:1px solid var(--panel-border); border-radius:9px; overflow:hidden; }
+.seg button{
+  font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 13px; border:0; background:var(--panel); color:var(--text-2);
+  border-inline-end:1px solid var(--panel-border);
+}
+.seg button:last-child{ border-inline-end:0; }
+.seg button[aria-pressed="true"]{ background:var(--accent); color:var(--on-accent); }
+
+.phread{
+  display:grid; grid-template-columns:44px 1fr auto; gap:10px; align-items:center;
+  background:var(--panel-2); border:1px solid var(--hairline);
+  border-radius:9px; padding:10px;
+  margin-bottom:8px;
+}
+.phread__sw{
+  width:44px; height:44px; border-radius:8px;
+  border:1px solid var(--panel-border);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35);
+}
+.phread__kind{
+  font-size:13.5px; font-weight:800; padding:6px 10px; border-radius:20px;
+  border:1px solid var(--panel-border); white-space:nowrap;
+}
+.phread__kind.acid{ color:var(--acid); background:color-mix(in srgb,var(--acid) 14%,transparent); border-color:var(--acid); }
+.phread__kind.base{ color:var(--base); background:color-mix(in srgb,var(--base) 14%,transparent); border-color:var(--base); }
+.phread__kind.neut{ color:var(--indicator); background:color-mix(in srgb,var(--indicator) 14%,transparent); border-color:var(--indicator); }
+
+.reads{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.read{
+  background:var(--panel-2); border:1px solid var(--hairline);
+  border-radius:9px; padding:8px 10px;
+}
+.read__k{ font-size:12.5px; color:var(--text-3); font-weight:700; }
+.read__v{
+  font-family:var(--mono); font-size:18px; font-variant-numeric:tabular-nums; font-weight:700;
+}
+
+.phleg{ margin:10px 0 0; }
+.phleg__bar{
+  position:relative; height:18px; border-radius:9px;
+  border:1px solid var(--panel-border); overflow:visible;
+}
+.phleg__mark{
+  position:absolute; top:-5px; width:4px; height:28px; margin-left:-2px;
+  background:var(--text); border-radius:2px; pointer-events:none;
+  box-shadow:0 0 0 2px var(--panel);
+}
+.phleg__nums{
+  display:flex; justify-content:space-between; font-family:var(--mono);
+  font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--text-3); margin-top:6px;
+}
+.phleg__labs{
+  display:flex; justify-content:space-between; font-size:12.5px; font-weight:700; margin-top:2px;
+}
+.phleg__labs .a{ color:var(--acid); }
+.phleg__labs .n{ color:var(--indicator); }
+.phleg__labs .b{ color:var(--base); }
+
+.eq{
+  margin:10px 0 0; padding:10px 12px; border-radius:9px;
+  background:var(--panel-2); border:1px solid var(--hairline);
+  font-size:15px; font-weight:700; text-align:center;
+  transition:background .2s ease, border-color .2s ease, color .2s ease;
+}
+.eq.on{
+  background:color-mix(in srgb,var(--good) 16%,var(--panel));
+  border-color:var(--good); color:var(--good);
+}
+.narr{ font-size:15px; line-height:1.5; margin:10px 0 0; }
+.extra{ font-size:13.5px; color:var(--text-2); margin:8px 0 0; }
+
+#pChart{ display:block; width:100%; height:132px; }
+.graph-note{ font-size:13px; color:var(--text-3); margin:6px 0 0; }
+
+.row{ display:flex; align-items:center; gap:8px; margin:8px 0; flex-wrap:wrap; }
+.chk{
+  display:flex; align-items:center; gap:8px; min-height:44px;
+  font-size:14px; font-weight:600; cursor:pointer;
+}
+.chk input{ width:20px; height:20px; accent-color:var(--accent); }
+
+.screen{ display:none; }
+.screen.on{ display:block; }
+.q{ margin-bottom:10px; }
+.q__n{ font-size:12.5px; color:var(--text-3); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.q__t{ font-size:17px; font-weight:700; margin:6px 0 12px; }
+.opts{ display:grid; gap:8px; }
+.opt{
+  display:flex; align-items:flex-start; gap:10px; text-align:start; width:100%;
+  min-height:52px; padding:12px 14px; cursor:pointer; border-radius:9px;
+  font-family:inherit; font-size:15.5px; background:var(--panel-2); color:var(--text);
+  border:2px solid var(--panel-border);
+}
+.opt:hover:not(:disabled){ border-color:var(--accent); background:var(--panel); }
+.opt.correct{ border-color:var(--good); background:color-mix(in srgb,var(--good) 14%,var(--panel)); }
+.opt.wrong{ border-color:var(--crit); background:color-mix(in srgb,var(--crit) 12%,var(--panel)); }
+.opt__k{ font-family:var(--mono); font-size:14px; color:var(--text-3); min-width:1.2em; }
+.fb{
+  display:none; margin:10px 0 0; padding:11px 13px; font-size:14.5px; border-radius:8px;
+  background:var(--panel-2); border-inline-start:5px solid var(--panel-border);
+}
+.fb.show{ display:block; }
+.fb.ok{ border-inline-start-color:var(--good); }
+.fb.no{ border-inline-start-color:var(--crit); }
+.score{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.score__v{ font-family:var(--mono); font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; }
+
+.nav{
+  position:sticky; bottom:6px; z-index:40; margin-top:10px; border-radius:10px;
+  background:#101418; color:#fff; display:flex; align-items:center; gap:9px;
+  flex-wrap:wrap; padding:6px 13px;
+}
+.nav__t{ font-size:14.5px; font-weight:700; margin-inline-end:auto; }
+.navbtn{
+  cursor:pointer; background:transparent; border:2px solid transparent; border-radius:8px;
+  color:#B9C0C5; font-family:inherit; font-size:14px; font-weight:700;
+  padding:5px 11px; min-height:44px;
+}
+.navbtn[aria-current="page"]{ color:#fff; border-color:#fff; }
+
+input[type=range]{
+  -webkit-appearance:none; appearance:none; height:44px; background:transparent; cursor:pointer;
+  flex:1; min-width:80px;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border);
+}
+input[type=range]::-moz-range-track{
+  height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border);
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:26px; height:30px; margin-top:-12px;
+  border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45);
+}
+input[type=range]::-moz-range-thumb{
+  width:26px; height:30px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45);
+}
+.val{
+  font-family:var(--mono); font-size:14px; font-variant-numeric:tabular-nums;
+  min-width:52px; text-align:end;
+}
+
+#ghost{
+  position:fixed; pointer-events:none; z-index:80;
+  min-width:72px; min-height:44px; padding:8px 12px;
+  border:2px solid var(--accent); border-radius:10px;
+  background:var(--panel); color:var(--text);
+  font-weight:700; font-size:13px; box-shadow:var(--shadow);
+  display:none; align-items:center; gap:6px;
+}
+#ghost.on{ display:flex; }
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="screen on" id="scBench">
+  <header class="head">
+    <h1 class="head__title" id="tTitle">pH &amp; Neutralisation Lab</h1>
+    <p class="head__sub" id="tSub">Acid + base make salt and water — keep going and pH will leave 7.</p>
+    <span class="head__spacer">
+      <button class="btn btn--ghost btn--sm" id="btnLang" type="button">اردو</button>
+      <button class="btn btn--ghost btn--sm" id="btnProfile" type="button">Dim room</button>
+    </span>
+  </header>
+
+  <section class="guide" id="guide" aria-live="polite">
+    <div class="guide__badge">
+      <div class="guide__badgeTop" id="tStep">TASK</div>
+      <div class="guide__badgeNum" id="gNum">1/5</div>
+    </div>
+    <div>
+      <p class="guide__task" id="gTask">—</p>
+      <p class="guide__hint" id="gHint">—</p>
+      <div class="guide__dots" id="gDots" aria-hidden="true"></div>
+    </div>
+    <div class="guide__acts">
+      <button class="btn btn--ghost" id="gShow" type="button">Show me</button>
+      <button class="btn btn--go" id="gNext" type="button" hidden>Next</button>
+    </div>
+  </section>
+
+  <div class="main">
+    <div>
+      <div class="tray" id="modeTray" role="tablist" aria-label="Modes"></div>
+      <div class="tray" id="toolTray"></div>
+
+      <div class="stage">
+        <div class="stage__inner" id="stageInner">
+          <canvas id="board" role="img" aria-label="pH and neutralisation stage" aria-describedby="boardDesc" tabindex="0"></canvas>
+          <p class="sr" id="boardDesc">Household liquids, indicators, a pH scale, a titration beaker that can go past 7, and real-world match cards.</p>
+        </div>
+        <div class="stage__bar">
+          <div class="seg" id="modeOpts" role="group"></div>
+          <button class="round round--play" id="btnPlay" type="button" aria-pressed="true" aria-label="Pause">
+            <svg width="20" height="20" viewBox="0 0 24 24" id="icPlay" aria-hidden="true"><rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/></svg>
+          </button>
+          <button class="btn btn--ghost btn--sm" id="btnStep" type="button">Step</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px">
+            <span id="tSpeed">Speed</span>
+            <input type="range" id="speed" min="0.25" max="2" step="0.25" value="1" style="width:96px" aria-label="Speed" />
+          </label>
+          <button class="round round--reset" id="btnReset" type="button" aria-label="Reset">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 1 0 6.5 4.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M12 1.5V8.5L6.5 5z" fill="#fff"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2 class="panel__title" id="tReadings">Live instruments</h2>
+        <div class="phread" aria-live="polite">
+          <div class="phread__sw" id="rSwatch" aria-hidden="true"></div>
+          <div>
+            <div class="read__k" id="tPH">Live pH</div>
+            <div class="read__v" id="rPH">—</div>
+          </div>
+          <div class="phread__kind neut" id="rKind">—</div>
+        </div>
+        <div class="reads">
+          <div class="read"><div class="read__k" id="tSample">Sample</div><div class="read__v" id="rSample" style="font-size:15px">—</div></div>
+          <div class="read"><div class="read__k" id="tExtraK">Drops</div><div class="read__v" id="rExtra">—</div></div>
+        </div>
+        <div class="phleg" id="phLeg">
+          <div class="phleg__bar" id="phLegBar"><div class="phleg__mark" id="phLegMark"></div></div>
+          <div class="phleg__nums"><span>0</span><span>7</span><span>14</span></div>
+          <div class="phleg__labs"><span class="a" id="legA">Acidic</span><span class="n" id="legN">Neutral</span><span class="b" id="legB">Basic</span></div>
+        </div>
+        <p class="eq" id="eqStrip">Acid + Base → Salt + Water</p>
+        <p class="narr" id="narr" aria-live="polite">—</p>
+        <div id="extraCtrls"></div>
+      </div>
+
+      <div class="panel" style="margin-top:10px">
+        <h2 class="panel__title" id="tGraph">pH, live</h2>
+        <canvas id="pChart" role="img" aria-label="Live pH chart"></canvas>
+        <p class="graph-note" id="tGraphNote">Universal indicator paints the whole 0–14 scale. Litmus only sorts the category.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="scQuiz">
+  <header class="head">
+    <h1 class="head__title" id="tQuizTitle">Check what you have learned</h1>
+    <p class="head__sub" id="tQuizSub">Five questions, with the answer explained straight away.</p>
+  </header>
+  <div id="quiz" style="max-width:840px;margin:0 auto"></div>
+</div>
+
+<nav class="nav" aria-label="Screens">
+  <span class="nav__t" id="tNavTitle">pH &amp; Neutralisation Lab</span>
+  <button class="navbtn" id="navBench" type="button" aria-current="page">Bench</button>
+  <button class="navbtn" id="navQuiz"  type="button">Quiz</button>
+</nav>
+</div>
+<div id="ghost" aria-hidden="true"></div>
+
+<script>
+"use strict";
+/* ======================================================================
+   1. CONFIG — every tunable number a teacher might want to change.
+   ====================================================================== */
+const CONFIG = {
+  WORLD_W: 900,
+  WORLD_H: 540,
+
+  /* Household pH values. "Strong" for Class 8 = nearer 0 or 14, not a pKa. */
+  LIQUIDS: [
+    { id:"lemon",     pH:2.2, appear:[245,226,122] },
+    { id:"vinegar",   pH:2.8, appear:[236,232,214] },
+    { id:"softdrink", pH:3.2, appear:[107, 58, 34] },
+    { id:"milk",      pH:6.6, appear:[244,241,234] },
+    { id:"water",     pH:7.0, appear:[214,230,238] },
+    { id:"paste",     pH:8.2, appear:[198,230,214] },
+    { id:"soda",      pH:8.3, appear:[230,226,216] },
+    { id:"antacid",   pH:9.0, appear:[236,214,206] },
+    { id:"soap",      pH:9.5, appear:[210,226,240] }
+  ],
+
+  TASK_SET: ["lemon","water","soap"],
+  PLACE_N: 4,
+  PLACE_TOL: 1.0,          // ±1.0 pH units for task 3
+
+  NEUTRAL_LO: 6.5,         // word label "Neutral" band
+  NEUTRAL_HI: 7.5,
+  EXACT_EPS: 0.08,         // |pH-7| below this → "exactly neutral"
+  PHENO_PH: 8.2,           // phenolphthalein turns pink at / above this
+
+  /* Titration: milliequivalent mixing. NOT Henderson–Hasselbalch.
+     Equivalence is at START_VOL_ML / DROP_ML drops when concentrations match. */
+  DROP_ML: 0.40,
+  START_VOL_ML: 20,
+  REAGENT_N: 0.10,         // meq per mL  (both acid and base)
+  TITRATION_STEEP: 5,      // tanh k — steep near 7, but several drops stay inside 7±0.3 so the task is hittable
+  START_ACID_PH: 2.4,      // plateau when acid wins (household-strong, not pH 0)
+  START_BASE_PH: 12.2,     // plateau when base wins — MUST be able to pass 7
+  TEMP0: 22,
+  TEMP_TICK: 1.8,          // °C bump when the mixture crosses 7 (exothermic)
+  HIT_NEUTRAL: 0.3,        // task 4: must visit 7 ± this
+  OVERSHOOT_PH: 8.0,       // task 4: then go above this
+  DRIP_MAX: 10,            // drops per second at full slider
+
+  MIX_PH0: 7,
+
+  /* Universal-indicator colour stops. ONE map used by every mode + legend. */
+  UI_STOPS: [
+    { pH:0,  rgb:[192, 16, 32] },
+    { pH:2,  rgb:[220, 48, 28] },
+    { pH:3,  rgb:[230,110, 20] },
+    { pH:5,  rgb:[230,200, 20] },
+    { pH:6,  rgb:[160,200, 40] },
+    { pH:7,  rgb:[ 40,168, 72] },
+    { pH:8,  rgb:[ 30,150,160] },
+    { pH:9,  rgb:[ 32, 90,190] },
+    { pH:11, rgb:[ 90, 50,170] },
+    { pH:14, rgb:[140, 40,160] }
+  ]
+};
+
+const INDICATORS = [
+  { id:"red",  key:"indRed" },
+  { id:"blue", key:"indBlue" },
+  { id:"tur",  key:"indTur" },
+  { id:"phe",  key:"indPhe" },
+  { id:"ui",   key:"indUI" }
+];
+
+const SCENARIOS = [
+  { id:"stomach", pH0:2.0, remedy:"antacid",  key:"scStomach" },
+  { id:"soil",    pH0:5.0, remedy:"lime",     key:"scSoil" },
+  { id:"waste",   pH0:3.2, remedy:"treat",    key:"scWaste" },
+  { id:"bee",     pH0:3.5, remedy:"soda",     key:"scBee" },
+  { id:"wasp",    pH0:10.5,remedy:"vinegar",  key:"scWasp" }
+];
+const REMEDIES = [
+  { id:"antacid", key:"remAntacid" },
+  { id:"lime",    key:"remLime" },
+  { id:"treat",   key:"remTreat" },
+  { id:"soda",    key:"remSoda" },
+  { id:"vinegar", key:"remVinegar" }
+];
+
+/* ======================================================================
+   2. STRINGS — every user-facing string, in one place.
+   ====================================================================== */
+const STRINGS = {
+en:{
+  title:"pH & Neutralisation Lab",
+  sub:"Acid + base make salt and water — keep going and pH will leave 7.",
+  navTitle:"pH & Neutralisation Lab", bench:"Bench", quiz:"Quiz",
+  lang:"اردو", dim:"Dim room", bright:"Bright room",
+  step:"TASK", showMe:"Show me", next:"Next", finish:"Go to the quiz",
+  readings:"Live instruments",
+  speed:"Speed", play:"Play", pause:"Pause", reset:"Reset", stepBtn:"Step",
+  graph:"pH, live",
+  graph1:"Litmus sorts Acidic / Neutral / Basic. Universal indicator paints HOW much.",
+  graph2:"Drop a liquid on the number line. The token slides to its true pH.",
+  graph3:"The curve is steep near 7: one extra drop suddenly wins. It does not stop there.",
+  graph4:"Wrong remedy pushes pH farther from 7. Right remedy walks it home.",
+  quizTitle:"Check what you have learned",
+  quizSub:"Five questions, with the answer explained straight away.",
+  tryAgain:"Try again", left:"questions left.",
+  scoreAll:"Five out of five — you can teach this bench.",
+  scoreMid:"Solid. Replay the titration if overshoot still feels like a trick.",
+  scoreLow:"Open the bench again. Watch the colour go past green.",
+  boardDesc:"Household liquids, indicators, a pH scale, a titration beaker that can go past 7, and real-world match cards.",
+  phLab:"Live pH", sample:"Sample", dropsLab:"Drops", tempLab:"Temp",
+  labelled:"Show names", unlabelled:"Hide names (predict)",
+  mixOwn:"Mix your own",
+  mixHint:"Strong acid ← slider → strong base. Test it with any indicator.",
+  m1:"Indicators", m2:"pH scale", m3:"Titration", m4:"Real world",
+  m1full:"Indicator test bench", m2full:"pH scale meter", m3full:"Neutralisation", m4full:"Real-world match",
+  indRed:"Red litmus", indBlue:"Blue litmus", indTur:"Turmeric", indPhe:"Phenolphthalein", indUI:"Universal",
+  trayInd:"Indicators — drag onto a beaker",
+  trayLiq:"Liquids — drag onto the 0–14 scale",
+  trayRem:"Remedies — drag onto a card",
+  kindAcid:"Acidic", kindNeut:"Neutral", kindBase:"Basic", kindExact:"Exactly neutral",
+  lemon:"Lemon juice", vinegar:"Vinegar", softdrink:"Soft drink", milk:"Milk",
+  water:"Tap water", paste:"Toothpaste", soda:"Baking soda", antacid:"Antacid", soap:"Soap",
+  mix:"Mix your own",
+  why_lemon:"Lemon juice is very sour — strong acids sit close to 0.",
+  why_vinegar:"Vinegar is sour, a little milder than lemon, still well below 7.",
+  why_softdrink:"Soft drinks are acidic (carbonic + other acids), around pH 3.",
+  why_milk:"Milk is only slightly acidic, close to the middle of the scale.",
+  why_water:"Tap water sits at 7 — neither sour nor soapy. That is neutral.",
+  why_paste:"Toothpaste is mildly basic, which is why it feels slick, not sour.",
+  why_soda:"Baking soda solution is a mild base, a little above 8.",
+  why_antacid:"Antacid is basic on purpose — it is meant to cancel stomach acid.",
+  why_soap:"Soap solution feels slippery. Bases live above 7; this one is fairly strong.",
+  startAcid:"Start with acid", startBase:"Start with base",
+  addDrop:"Add 1 drop", dripRate:"Drip speed",
+  eq:"Acid + Base → Salt + Water",
+  eqOn:"Neutralised — Acid + Base → Salt + Water  (+ a little heat)",
+  eqHouse:"Household pair: vinegar + baking soda → a salt + water",
+  probeHint:"Dip the meter in a beaker for an exact pH number.",
+  scStomach:"Upset stomach", scSoil:"Acidic farm soil", scWaste:"Factory wastewater",
+  scBee:"Bee sting", scWasp:"Wasp sting",
+  remAntacid:"Antacid tablet", remLime:"Lime", remTreat:"Treatment base",
+  remSoda:"Baking soda", remVinegar:"Vinegar / lemon",
+  ok_stomach:"Stomach acid is too low on the scale. Antacid is a base, so pH climbs toward 7.",
+  ok_soil:"Acidic soil hurts many crops. Lime is a base — pH rises toward 7.",
+  ok_waste:"Acidic waste would harm a river. A treatment base cancels it toward 7.",
+  ok_bee:"Bee venom is acidic. Baking soda is a base, so the sting eases toward 7.",
+  ok_wasp:"Wasp venom is alkaline. Vinegar (or lemon) is an acid, so pH falls toward 7.",
+  no_mismatch:"That is not the match — watch the pH bar move the WRONG way, farther from 7.",
+  nar0:"Pick an indicator and drop it on a beaker. Colour is the result — no Submit button.",
+  narLitmusA:"Blue litmus turned red — this liquid is acidic. Litmus only tells the category.",
+  narLitmusB:"Red litmus turned blue — this liquid is basic. Litmus will not give you a number.",
+  narLitmusN:"Little change — closer to neutral. Litmus cannot say HOW close to 7.",
+  narTurB:"Turmeric went reddish-brown — that is a base (Class 8 textbook test).",
+  narTurA:"Turmeric stayed yellow — acid or neutral. Try litmus or universal next.",
+  narPheB:"Phenolphthalein turned pink — the liquid is basic (pH about 8.2 or more).",
+  narPheA:"Phenolphthalein stayed colourless — acid or neutral, not a strong base.",
+  narUI:"Universal indicator paints the whole scale: red → orange → yellow → green at 7 → blue → violet.",
+  narOver:"Past 7 — extra base made it basic, not safer. Overshoot is real.",
+  narUnder:"Past 7 the other way — extra acid made it acidic again.",
+  narCross:"It crossed 7: Acid + Base → Salt + Water, and the beaker warmed a little.",
+  narProbe:"Meter reading: exact pH. Lower than 7 is more acidic; higher is more basic.",
+  applySel:"Apply to selected beaker",
+  pickBeaker:"Selected beaker",
+  t1:"Test 3 mystery liquids with litmus and sort them: acid, base, or neutral.",
+  t1h:"Hide the names. Blue litmus → red means acid. Red litmus → blue means base. Neutral barely changes.",
+  t1p:"Litmus only sorts the category. It never prints a pH number.",
+  t2:"Test those same 3 with universal indicator. See HOW acidic or HOW basic.",
+  t2h:"Drop universal indicator on the same three. Green is near 7; red is strongly acidic; blue/violet is strongly basic.",
+  t2p:"Same three liquids, much more information. That is why chemists keep both tools.",
+  t3:"Place 4 household liquids on the 0–14 scale, within about 1 pH of the truth.",
+  t3h:"Drag tokens onto the number line. Sour ones sit near 0; soapy ones sit past 7.",
+  t3p:"pH is a number line, not a yes/no. Lemon and vinegar are both acids — lemon is stronger.",
+  t4:"Neutralise to pH 7 ± 0.3, then keep going until pH is above 8.",
+  t4h:"Add the opposite reagent drop by drop. Green at 7 is not a stop sign.",
+  t4p:"Extra base after 7 makes the solution basic. Neutralisation can overshoot.",
+  t5:"Fix at least 3 of the 5 real-world problems with the matching remedy.",
+  t5h:"Drag the right treatment onto each card. A wrong match drives pH farther from 7.",
+  t5p:"Acid problems need a base; alkaline wasp venom needs an acid. Match opposites.",
+  q1:"A liquid that is “neutral” has no pH — it is not really a chemical.",
+  q1a:"True — if it is not sour or soapy, pH does not apply",
+  q1b:"False — neutral means pH 7. Water is still a chemical with a real pH.",
+  q1c:"Neutral means pH 0",
+  q1d:"Neutral means we have not tested it yet",
+  q1w:"Neutral is a pH value: 7. It is not “no pH.” Tap water on this bench sits at 7.",
+  q2:"All acids are dangerous and all bases are safe.",
+  q2a:"True — bases are in soap, so they cannot burn",
+  q2b:"False — strength and concentration matter. Lemon juice is a mild acid you can taste; drain cleaner is a strong base that burns (it is not on this bench).",
+  q2c:"True — only acids burn skin",
+  q2d:"False — only acids are dangerous; every base is mild like toothpaste",
+  q2w:"The words acid and base do not mean “unsafe” and “safe.” How strong, and how much, decide that. Drain cleaner is a dangerous base — text only, never a bottle here.",
+  q3:"Litmus paper tells you the exact pH of a liquid.",
+  q3a:"Yes — it prints a number from 0 to 14",
+  q3b:"No — litmus only sorts Acidic / Neutral / Basic. Universal indicator shows how much.",
+  q3c:"Red litmus gives even numbers, blue gives odd numbers",
+  q3d:"Litmus turns green at 7 so you can read the value",
+  q3w:"Litmus is a category tool. Universal indicator is the colour gradient that maps onto 0–14.",
+  q4:"Once a solution is neutralised to pH 7, adding more base cannot change it.",
+  q4a:"True — it locks at 7 forever",
+  q4b:"False — extra base after 7 makes it basic. Extra acid makes it acidic. Keep adding and you leave 7.",
+  q4c:"It turns into solid salt, so pH no longer exists",
+  q4d:"It can only become more acidic, never more basic",
+  q4w:"Watch Mode 3. The graph does not flatten at 7. Overshoot is the lesson, not a bug.",
+  q5:"pH 0 and pH 14 are equally mild, because they are both ends of the scale.",
+  q5a:"Yes — both are as gentle as water",
+  q5b:"No — both ends are the strongest. pH 0 is a very strong acid; pH 14 is a very strong base. Mild liquids sit near 7.",
+  q5c:"Only 0 is strong; 14 is like soap",
+  q5d:"Only 14 is strong; 0 is like lemon",
+  q5w:"The middle is mild. The ends are fierce. Lemon (~2) is a food acid; it is not pH 0."
+},
+ur:{
+  title:"pH اور خنثی کرنے کی لیبارٹری",
+  sub:"تیزاب + قلوی سے نمک اور پانی بنتے ہیں — بڑھاتے رہیں تو pH سات پر نہیں رکی۔",
+  navTitle:"pH اور خنثی کرنے کی لیبارٹری", bench:"میز", quiz:"سوالات",
+  lang:"English", dim:"کم روشنی", bright:"تیز روشنی",
+  step:"کام", showMe:"دکھاؤ", next:"اگلا", finish:"سوالات کی طرف",
+  readings:"براہِ راست آلات",
+  speed:"رفتار", play:"چلائیں", pause:"روکیں", reset:"ری سیٹ", stepBtn:"قدم",
+  graph:"pH، براہِ راست",
+  graph1:"لٹمس صرف تیزاب / خنثی / قلوی بتاتا ہے۔ یونیورسل انڈیکیٹر مقدار دکھاتا ہے۔",
+  graph2:"مائع کو نمبر لائن پر رکھو۔ ٹوکن اصلی pH پر کھسکے گا۔",
+  graph3:"سات کے قریب گراف تیز ہے: ایک اضافی قطرہ اچانک جیت جاتا ہے۔ وہاں رکتا نہیں۔",
+  graph4:"غلط علاج pH کو 7 سے دور دھکیلتا ہے۔ درست علاج اسے 7 کی طرف لاتا ہے۔",
+  quizTitle:"دیکھیں آپ نے کیا سیکھا",
+  quizSub:"پانچ سوال، جواب فوراً وضاحت کے ساتھ۔",
+  tryAgain:"دوبارہ کوشش", left:"سوال باقی۔",
+  scoreAll:"پانچ میں سے پانچ — اب آپ یہ میز سمجھا سکتے ہو۔",
+  scoreMid:"اچھا۔ اگر اوور شوٹ عجیب لگے تو ٹائٹریشن دوبارہ چلاؤ۔",
+  scoreLow:"میز کھولو۔ رنگ کو سبز سے آگے بڑھتے دیکھو۔",
+  boardDesc:"گھریلو مائعات، انڈیکیٹر، pH پیمانہ، ایک بی کر جو 7 سے آگے جا سکتا ہے، اور حقیقی دنیا کے کارڈ۔",
+  phLab:"براہِ راست pH", sample:"نمونہ", dropsLab:"قطرے", tempLab:"درجہ حرارت",
+  labelled:"نام دکھائیں", unlabelled:"نام چھپائیں (اندازہ)",
+  mixOwn:"اپنا مکس",
+  mixHint:"مضبوط تیزاب ← سلائیڈر → مضبوط قلوی۔ کسی بھی انڈیکیٹر سے جانچو۔",
+  m1:"انڈیکیٹر", m2:"pH پیمانہ", m3:"ٹائٹریشن", m4:"حقیقی دنیا",
+  m1full:"انڈیکیٹر ٹیسٹ بینچ", m2full:"pH میٹر", m3full:"خنثی کرنا", m4full:"حقیقی جوڑی",
+  indRed:"سرخ لٹمس", indBlue:"نیلا لٹمس", indTur:"ہلدی", indPhe:"فینولفتھلین", indUI:"یونیورسل",
+  trayInd:"انڈیکیٹر — بی کر پر کھینچو",
+  trayLiq:"مائعات — 0–14 پیمانے پر کھینچو",
+  trayRem:"علاج — کارڈ پر کھینچو",
+  kindAcid:"تیزابی", kindNeut:"خنثی", kindBase:"قلوی", kindExact:"بالکل خنثی",
+  lemon:"لیموں کا رس", vinegar:"سرکہ", softdrink:"ٹھنڈا مشروب", milk:"دودھ",
+  water:"نل کا پانی", paste:"ٹوتھ پیسٹ", soda:"بیکنگ سوڈا", antacid:"اینٹاسڈ", soap:"صابن",
+  mix:"اپنا مکس",
+  why_lemon:"لیموں بہت کھٹا ہے — مضبوط تیزاب 0 کے قریب بیٹھتے ہیں۔",
+  why_vinegar:"سرکہ کھٹا ہے، لیموں سے کچھ ہلکا، پھر بھی 7 سے کافی نیچے۔",
+  why_softdrink:"ٹھنڈے مشروب تیزابی ہوتے ہیں، لگ بھگ pH 3۔",
+  why_milk:"دودھ صرف ہلکا تیزابی ہے، پیمانے کے بیچ کے قریب۔",
+  why_water:"نل کا پانی 7 پر ہے — نہ کھٹا نہ صابن جیسا۔ یہ خنثی ہے۔",
+  why_paste:"ٹوتھ پیسٹ ہلکا قلوی ہے، اس لیے کھٹا نہیں لگتا۔",
+  why_soda:"بیکنگ سوڈا ہلکا قلوی ہے، 8 سے ذرا اوپر۔",
+  why_antacid:"اینٹاسڈ جان بوجھ کر قلوی ہے — معدے کے تیزاب کو ختم کرنے کے لیے۔",
+  why_soap:"صابن پھسلن والا لگتا ہے۔ قلوی 7 سے اوپر رہتے ہیں؛ یہ کافی مضبوط ہے۔",
+  startAcid:"تیزاب سے شروع", startBase:"قلوی سے شروع",
+  addDrop:"ایک قطرہ", dripRate:"ٹپکنے کی رفتار",
+  eq:"تیزاب + قلوی → نمک + پانی",
+  eqOn:"خنثی ہو گیا — تیزاب + قلوی → نمک + پانی  (+ تھوڑی گرمی)",
+  eqHouse:"گھریلو جوڑی: سرکہ + بیکنگ سوڈا → نمک + پانی",
+  probeHint:"درست عدد کے لیے میٹر کو بی کر میں ڈبوؤ۔",
+  scStomach:"معدے کی جلن", scSoil:"تیزابی کھیت", scWaste:"کارخانے کا گندہ پانی",
+  scBee:"شہد کی مکھی کا ڈنک", scWasp:"بھڑ / وسپ کا ڈنک",
+  remAntacid:"اینٹاسڈ گولی", remLime:"چونا", remTreat:"صفائی کا قلوی",
+  remSoda:"بیکنگ سوڈا", remVinegar:"سرکہ / لیموں",
+  ok_stomach:"معدے کا تیزاب پیمانے پر بہت نیچے۔ اینٹاسڈ قلوی ہے، اس لیے pH 7 کی طرف چڑھتی ہے۔",
+  ok_soil:"تیزابی مٹی فصل کو نقصان دیتی ہے۔ چونا قلوی ہے — pH 7 کی طرف بڑھتی ہے۔",
+  ok_waste:"تیزابی فضلہ دریا کو نقصان دے گا۔ صفائی کا قلوی اسے 7 کی طرف لے جاتا ہے۔",
+  ok_bee:"مکھی کا زہر تیزابی ہے۔ بیکنگ سوڈا قلوی ہے، اس لیے ڈنک 7 کی طرف نرم ہوتا ہے۔",
+  ok_wasp:"وسپ کا زہر قلوی ہے۔ سرکہ (یا لیموں) تیزاب ہے، اس لیے pH 7 کی طرف گرتی ہے۔",
+  no_mismatch:"یہ جوڑی نہیں — دیکھو pH بار غلط سمت میں 7 سے دور جا رہی ہے۔",
+  nar0:"انڈیکیٹر چنو اور بی کر پر ڈالو۔ رنگ ہی نتیجہ ہے — Submit نہیں۔",
+  narLitmusA:"نیلا لٹمس سرخ ہوا — یہ مائع تیزابی ہے۔ لٹمس صرف قسم بتاتا ہے۔",
+  narLitmusB:"سرخ لٹمس نیلا ہوا — یہ مائع قلوی ہے۔ لٹمس عدد نہیں دیتا۔",
+  narLitmusN:"کم تبدیلی — خنثی کے قریب۔ لٹمس نہیں کہہ سکتا 7 کتنا قریب ہے۔",
+  narTurB:"ہلدی سرخی مائل بھوری ہوئی — یہ قلوی ہے (جماعت ۸ کا ٹیسٹ)۔",
+  narTurA:"ہلدی پیلی رہی — تیزاب یا خنثی۔ اب لٹمس یا یونیورسل آزماؤ۔",
+  narPheB:"فینولفتھلین گلابی ہوئی — مائع قلوی ہے (pH تقریباً 8.2 یا زیادہ)۔",
+  narPheA:"فینولفتھلین بے رنگ رہی — تیزاب یا خنثی، مضبوط قلوی نہیں۔",
+  narUI:"یونیورسل انڈیکیٹر پورا پیمانہ رنگتا ہے: سرخ → نارنجی → پیلا → 7 پر سبز → نیلا → بنفشی۔",
+  narOver:"7 سے آگے — اضافی قلوی نے اسے قلوی بنا دیا، زیادہ محفوظ نہیں۔ اوور شوٹ سچی ہے۔",
+  narUnder:"7 کے دوسری طرف — اضافی تیزاب نے اسے پھر تیزابی کر دیا۔",
+  narCross:"7 عبور ہوئی: تیزاب + قلوی → نمک + پانی، اور بی کر تھوڑا گرم ہوا۔",
+  narProbe:"میٹر کی پڑھائی: درست pH۔ 7 سے کم زیادہ تیزابی؛ زیادہ قلوی۔",
+  applySel:"منتخب بی کر پر لگاؤ",
+  pickBeaker:"منتخب بی کر",
+  t1:"تین پوشیدہ مائعات لٹمس سے جانچو اور تیزاب / قلوی / خنثی میں چھانٹو۔",
+  t1h:"نام چھپاؤ۔ نیلا لٹمس → سرخ = تیزاب۔ سرخ لٹمس → نیلا = قلوی۔ خنثی میں کم تبدیلی۔",
+  t1p:"لٹمس صرف قسم بتاتا ہے۔ وہ pH کا عدد نہیں چھاپتا۔",
+  t2:"وہی تین یونیورسل انڈیکیٹر سے جانچو۔ دیکھو کتنا تیزابی یا کتنا قلوی۔",
+  t2h:"یونیورسل انڈیکیٹر انہی تین پر ڈالو۔ سبز 7 کے قریب؛ سرخ مضبوط تیزاب؛ نیلا/بنفشی مضبوط قلوی۔",
+  t2p:"وہی تین مائع، کہیں زیادہ معلومات۔ اسی لیے دونوں اوزار رکھے جاتے ہیں۔",
+  t3:"چار گھریلو مائعات 0–14 پیمانے پر سچی pH کے قریب (±1) رکھو۔",
+  t3h:"ٹوکن نمبر لائن پر کھینچو۔ کھٹے 0 کے قریب؛ صابن والے 7 سے آگے۔",
+  t3p:"pH ہاں/نہیں نہیں، ایک نمبر لائن ہے۔ لیموں اور سرکہ دونوں تیزاب ہیں — لیموں مضبوط ہے۔",
+  t4:"pH 7 ± 0.3 تک خنثی کرو، پھر بڑھاتے رہو یہاں تک کہ pH 8 سے اوپر ہو۔",
+  t4h:"الٹا ری ایجنٹ قطرہ قطرہ ڈالو۔ 7 پر سبز رکنے کا نشان نہیں۔",
+  t4p:"7 کے بعد اضافی قلوی محلول کو قلوی بنا دیتا ہے۔ خنثی کرنا اوور شوٹ کر سکتا ہے۔",
+  t5:"پانچ میں سے کم از کم تین حقیقی مسائل درست علاج سے ٹھیک کرو۔",
+  t5h:"درست علاج کارڈ پر رکھو۔ غلط جوڑی pH کو 7 سے دور لے جاتی ہے۔",
+  t5p:"تیزابی مسئلے کو قلوی چاہیے؛ وسپ کے قلوی زہر کو تیزاب۔ الٹ جوڑو۔",
+  q1:"خنثی مائع کی کوئی pH نہیں — یہ دراصل کیمیکل ہی نہیں۔",
+  q1a:"درست — اگر کھٹا یا صابن جیسا نہیں تو pH لاگو نہیں",
+  q1b:"غلط — خنثی کا مطلب pH 7 ہے۔ پانی پھر بھی کیمیکل ہے، اور اس کی pH حقیقی ہے۔",
+  q1c:"خنثی کا مطلب pH 0",
+  q1d:"خنثی کا مطلب ابھی ٹیسٹ نہیں کیا",
+  q1w:"خنثی ایک pH قیمت ہے: 7۔ 'کوئی pH نہیں' غلط ہے۔ اس میز پر نل کا پانی 7 پر ہے۔",
+  q2:"تمام تیزاب خطرناک ہیں اور تمام قلوی محفوظ ہیں۔",
+  q2a:"درست — قلوی صابن میں ہیں اس لیے جل نہیں سکتے",
+  q2b:"غلط — طاقت اور مقدار اہم ہیں۔ لیموں ہلکا تیزاب ہے جو چکھ سکتے ہو؛ نالی صاف کرنے والا مضبوط قلوی جلاتا ہے (اس میز پر بوتل نہیں)۔",
+  q2c:"درست — صرف تیزاب جلد جلاتے ہیں",
+  q2d:"غلط — صرف تیزاب خطرناک ہیں؛ ہر قلوی ٹوتھ پیسٹ جیسا ہلکا ہے",
+  q2w:"تیزاب اور قلوی کے الفاظ 'غیر محفوظ' اور 'محفوظ' نہیں۔ کتنا مضبوط، کتنا زیادہ — یہ فیصلہ کرتا ہے۔ نالی صاف کرنے والا خطرناک قلوی ہے — صرف متن، یہاں بوتل نہیں۔",
+  q3:"لٹمس کاغذ مائع کی بالکل ٹھیک pH بتا دیتا ہے۔",
+  q3a:"ہاں — 0 سے 14 تک عدد چھاپتا ہے",
+  q3b:"نہیں — لٹمس صرف تیزابی / خنثی / قلوی چھانٹتا ہے۔ یونیورسل انڈیکیٹر مقدار دکھاتا ہے۔",
+  q3c:"سرخ لٹمس جفت عدد، نیلا طاق عدد دیتا ہے",
+  q3d:"لٹمس 7 پر سبز ہوتا ہے اس لیے قیمت پڑھ سکتے ہو",
+  q3w:"لٹمس قسم کا اوزار ہے۔ یونیورسل انڈیکیٹر وہ رنگ ہے جو 0–14 پر نقش ہوتا ہے۔",
+  q4:"جب محلول pH 7 پر خنثی ہو جائے تو مزید قلوی ڈالنے سے کچھ نہیں بدلتا۔",
+  q4a:"درست — یہ ہمیشہ 7 پر بند ہو جاتا ہے",
+  q4b:"غلط — 7 کے بعد اضافی قلوی اسے قلوی بنا دیتا ہے۔ اضافی تیزاب تیزابی۔ ڈالتے رہو تو 7 چھوٹ جاتی ہے۔",
+  q4c:"یہ ٹھوس نمک بن جاتا ہے اس لیے pH باقی نہیں رہتی",
+  q4d:"یہ صرف زیادہ تیزابی ہو سکتا ہے، زیادہ قلوی نہیں",
+  q4w:"موڈ 3 دیکھو۔ گراف 7 پر چپٹا نہیں ہوتا۔ اوور شوٹ سبق ہے، خرابی نہیں۔",
+  q5:"pH 0 اور pH 14 دونوں ہلکے ہیں، کیونکہ دونوں پیمانے کے سرے ہیں۔",
+  q5a:"ہاں — دونوں پانی جیسے نرم ہیں",
+  q5b:"نہیں — دونوں سرے سب سے مضبوط ہیں۔ pH 0 بہت مضبوط تیزاب؛ pH 14 بہت مضبوط قلوی۔ ہلکے مائع 7 کے قریب ہیں۔",
+  q5c:"صرف 0 مضبوط ہے؛ 14 صابن جیسا ہے",
+  q5d:"صرف 14 مضبوط ہے؛ 0 لیموں جیسا ہے",
+  q5w:"بیچ ہلکا ہے۔ سرے تیز ہیں۔ لیموں (~2) کھانے کا تیزاب ہے؛ وہ pH 0 نہیں۔"
+}
+};
+
+let LANG = "en";
+const T = k => STRINGS[LANG][k] ?? STRINGS.en[k] ?? k;
+const el = id => document.getElementById(id);
+let dim = false;
+
+/* ======================================================================
+   3. STATE
+   ====================================================================== */
+function emptyBeaker(){
+  return {
+    tests:{ red:false, blue:false, tur:false, phe:false, ui:false },
+    papers:[],
+    col:null,
+    colT:null
+  };
+}
+function seedTitration(startAs){
+  const acid = startAs==="acid";
+  const meq = CONFIG.START_VOL_ML * CONFIG.REAGENT_N;
+  return {
+    startAs: startAs,
+    acidMeq: acid ? meq : 0,
+    baseMeq: acid ? 0 : meq,
+    volMl: CONFIG.START_VOL_ML,
+    drops: 0,
+    ph: acid ? CONFIG.START_ACID_PH : CONFIG.START_BASE_PH,
+    phShow: acid ? CONFIG.START_ACID_PH : CONFIG.START_BASE_PH,
+    temp: CONFIG.TEMP0,
+    tempT: CONFIG.TEMP0,
+    crossed7: false,
+    hitNeutral: false,
+    overshot: false,
+    undershot: false,
+    graph: [{ d:0, ph: acid ? CONFIG.START_ACID_PH : CONFIG.START_BASE_PH }],
+    drip: 0,
+    dripAcc: 0,
+    eqOn: 0,
+    lastSide: acid ? -1 : 1
+  };
+}
+function seed(){
+  const beakers = {};
+  CONFIG.LIQUIDS.forEach(L => { beakers[L.id] = emptyBeaker(); });
+  beakers.mix = emptyBeaker();
+  const cards = {};
+  SCENARIOS.forEach(s => {
+    cards[s.id] = { pH:s.pH0, pHT:s.pH0, last:null, correct:false };
+  });
+  return {
+    mode: 1,
+    running: true,
+    speed: 1,
+    labelled: true,
+    selected: "lemon",
+    selInd: "ui",
+    selRem: "antacid",
+    mixPH: CONFIG.MIX_PH0,
+    beakers,
+    placed: {},
+    snap: [],
+    probe: { x:820, y:160, reading:null },
+    tit: seedTitration("acid"),
+    cards,
+    fx: [],
+    t: 0,
+    litmusIds: {},
+    uiIds: {},
+    narr: "nar0",
+    narrBits: null,
+    guide: { i:0, done:false, memo:{} }
+  };
+}
+const S = seed();
+const drag = { kind:null, id:null, x:0, y:0, moved:false };
+
+/* ======================================================================
+   4. PHYSICS / MODEL
+   One colour map. Titration mixes milliequivalents and is allowed to
+   leave 7 — that is the whole point of Mode 3.
+   ====================================================================== */
+const W = CONFIG.WORLD_W, H = CONFIG.WORLD_H;
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function liq(id){ return CONFIG.LIQUIDS.find(L=>L.id===id); }
+
+/* THE colour-mapping function. pH 0–14 → universal-indicator RGB.
+   Used by Mode 1 UI results, Mode 2 scale, Mode 3 beaker, Mode 4 bars,
+   the mini-legend, and the live swatch. Never replaced by a second palette. */
+function phToRGB(pH){
+  const p = clamp(pH, 0, 14);
+  const st = CONFIG.UI_STOPS;
+  for(let i=1;i<st.length;i++){
+    if(p <= st[i].pH){
+      const a=st[i-1], b=st[i];
+      const t=(p-a.pH)/Math.max(1e-9, b.pH-a.pH);
+      return [
+        Math.round(lerp(a.rgb[0], b.rgb[0], t)),
+        Math.round(lerp(a.rgb[1], b.rgb[1], t)),
+        Math.round(lerp(a.rgb[2], b.rgb[2], t))
+      ];
+    }
+  }
+  return st[st.length-1].rgb.slice();
+}
+function rgbCss(rgb){ return rgb ? "rgb("+rgb[0]+","+rgb[1]+","+rgb[2]+")" : "transparent"; }
+function phGradientCSS(){
+  return CONFIG.UI_STOPS.map(s => rgbCss(s.rgb)+" "+((s.pH/14)*100).toFixed(1)+"%").join(",");
+}
+
+function phKind(pH){
+  if(pH==null || Number.isNaN(pH)) return null;
+  if(Math.abs(pH-7) <= CONFIG.EXACT_EPS) return "exact";
+  if(pH < CONFIG.NEUTRAL_LO) return "acid";
+  if(pH > CONFIG.NEUTRAL_HI) return "base";
+  return "neutral";
+}
+function kindLabel(pH){
+  const k = phKind(pH);
+  if(k==="exact") return T("kindExact");
+  if(k==="acid") return T("kindAcid");
+  if(k==="base") return T("kindBase");
+  if(k==="neutral") return T("kindNeut");
+  return "—";
+}
+
+function samplePH(id){
+  if(id==="mix") return S.mixPH;
+  if(id==="tit") return S.tit.phShow;
+  if(id && id.startsWith("sc:")) return S.cards[id.slice(3)].pH;
+  const L = liq(id);
+  return L ? L.pH : null;
+}
+
+/* Titration pH from milliequivalents.
+   excess = (base − acid) / (base + acid)  ∈ [−1, 1]
+   tanh(k·excess) is almost flat at the ends (already very sour or soapy)
+   and STEEP near 0. That is why the live graph jumps through 7: around
+   equivalence a single extra drop suddenly wins.
+   NEVER clamp at 7. Extra base → pH > 7 (blue / violet). Extra acid → pH < 7. */
+function titrationPH(acidMeq, baseMeq){
+  const tot = acidMeq + baseMeq;
+  if(tot < 1e-12) return 7;
+  const excess = (baseMeq - acidMeq) / tot;
+  const t = Math.tanh(CONFIG.TITRATION_STEEP * excess);
+  let pH;
+  if(t < 0) pH = CONFIG.START_ACID_PH + (7 - CONFIG.START_ACID_PH) * (t + 1);
+  else      pH = 7 + (CONFIG.START_BASE_PH - 7) * t;
+  return clamp(pH, 0, 14); // scale ends only — not a 7-cap
+}
+
+function addDrop(){
+  const tit = S.tit;
+  const meq = CONFIG.DROP_ML * CONFIG.REAGENT_N;
+  if(tit.startAs==="acid") tit.baseMeq += meq;
+  else tit.acidMeq += meq;
+  tit.volMl += CONFIG.DROP_ML;
+  tit.drops += 1;
+  const prev = tit.ph;
+  tit.ph = titrationPH(tit.acidMeq, tit.baseMeq);
+  /* Record every point, including those past 7. */
+  tit.graph.push({ d:tit.drops, ph:tit.ph });
+  if(tit.graph.length > 240) tit.graph.shift();
+  if(Math.abs(tit.ph-7) <= CONFIG.HIT_NEUTRAL) tit.hitNeutral = true;
+  if(tit.ph > CONFIG.OVERSHOOT_PH) tit.overshot = true;
+  if(tit.ph < 7 - CONFIG.HIT_NEUTRAL && tit.startAs==="base") tit.undershot = true;
+  const side = tit.ph < 7 ? -1 : (tit.ph > 7 ? 1 : 0);
+  if(tit.lastSide && side && tit.lastSide !== side){
+    tit.crossed7 = true;
+    tit.eqOn = 1;
+    tit.tempT = Math.min(38, tit.tempT + CONFIG.TEMP_TICK);
+    S.narr = "narCross";
+  } else if(tit.ph > 8.0){
+    S.narr = "narOver";
+  } else if(tit.ph < 6.0 && tit.drops>4 && tit.startAs==="base"){
+    S.narr = "narUnder";
+  }
+  if(side) tit.lastSide = side;
+  const y0 = 118;
+  S.fx.push({ kind:"drop", x:188, y:y0, x2:188, y2:268, t:0, dur:0.28, rgb: phToRGB(tit.ph) });
+}
+
+function applyIndicator(id, ind, instant){
+  const b = S.beakers[id];
+  if(!b) return;
+  const pH = samplePH(id);
+  b.tests[ind] = true;
+  if(id!=="mix"){
+    if(ind==="red" || ind==="blue") S.litmusIds[id]=true;
+    if(ind==="ui") S.uiIds[id]=true;
+  }
+  let paper = null, fill = null, narr = "narUI";
+  if(ind==="red"){
+    paper = pH > CONFIG.NEUTRAL_HI ? [40,80,180] : [196,40,50];
+    narr = pH > CONFIG.NEUTRAL_HI ? "narLitmusB" : (pH < CONFIG.NEUTRAL_LO ? "narLitmusN" : "narLitmusN");
+    if(pH > CONFIG.NEUTRAL_HI) narr = "narLitmusB";
+    else if(pH < CONFIG.NEUTRAL_LO) narr = "narLitmusN";
+    else narr = "narLitmusN";
+  } else if(ind==="blue"){
+    paper = pH < CONFIG.NEUTRAL_LO ? [196,40,50] : [40,80,180];
+    narr = pH < CONFIG.NEUTRAL_LO ? "narLitmusA" : "narLitmusN";
+  } else if(ind==="tur"){
+    paper = pH > CONFIG.NEUTRAL_HI ? [160,50,30] : [230,200,40];
+    narr = pH > CONFIG.NEUTRAL_HI ? "narTurB" : "narTurA";
+  } else if(ind==="phe"){
+    if(pH >= CONFIG.PHENO_PH){ fill = [232,80,150]; narr = "narPheB"; }
+    else { narr = "narPheA"; }
+  } else if(ind==="ui"){
+    fill = phToRGB(pH);
+    narr = "narUI";
+  }
+  if(paper){
+    b.papers.push({ rgb:paper, ind });
+    if(b.papers.length>3) b.papers.shift();
+  }
+  if(fill){
+    b.colT = fill;
+    if(instant || REDUCED) b.col = fill.slice();
+  }
+  S.selected = id;
+  S.narr = narr;
+  if(!instant){
+    const lay = id==="mix" ? mixRect() : beakerRect(id);
+    if(lay) S.fx.push({ kind:"drop", x:lay.x+lay.w/2, y:lay.y-10, x2:lay.x+lay.w/2, y2:lay.y+lay.h*0.45, t:0, dur:0.32, rgb: fill||paper||[180,180,180] });
+  }
+}
+
+function placeToken(id, guess){
+  const L = liq(id);
+  if(!L) return;
+  const g = clamp(guess, 0, 14);
+  S.placed[id] = { guess:g, pH:L.pH, snap: REDUCED?1:0 };
+  S.selected = id;
+  S.narr = "why_"+id;
+  S.narrBits = null;
+}
+
+function applyRemedy(scId, remId){
+  const sc = SCENARIOS.find(s=>s.id===scId);
+  const c = S.cards[scId];
+  if(!sc || !c) return;
+  c.last = remId;
+  const ok = remId === sc.remedy;
+  c.correct = ok;
+  if(ok){
+    c.pHT = 7;
+    S.narr = "ok_"+scId;
+  } else {
+    /* Mismatch is felt: pH walks AWAY from 7. No error dialog. */
+    if(sc.pH0 < 7) c.pHT = clamp(c.pH - 1.6, 0.2, 14);
+    else c.pHT = clamp(c.pH + 1.6, 0, 13.6);
+    S.narr = "no_mismatch";
+  }
+  S.selected = "sc:"+scId;
+}
+
+function step(dt){
+  S.t += dt;
+  /* Falling drops / colour splashes */
+  S.fx.forEach(p => { p.t += dt / (p.dur||0.3); });
+  S.fx = S.fx.filter(p => p.t < 1.2);
+
+  /* Beaker colour eases toward the indicator result */
+  const k = REDUCED ? 1 : (1 - Math.exp(-dt*7));
+  Object.keys(S.beakers).forEach(id=>{
+    const b = S.beakers[id];
+    if(b.colT){
+      if(!b.col) b.col = b.colT.slice();
+      else b.col = [lerp(b.col[0],b.colT[0],k), lerp(b.col[1],b.colT[1],k), lerp(b.col[2],b.colT[2],k)];
+    }
+  });
+
+  /* Mode 2 snap to true pH */
+  Object.keys(S.placed).forEach(id=>{
+    const p = S.placed[id];
+    p.snap = Math.min(1, p.snap + dt*2.2);
+  });
+
+  /* Mode 3: drip slider adds drops while playing. pH is never capped at 7. */
+  const tit = S.tit;
+  tit.phShow = REDUCED ? tit.ph : lerp(tit.phShow, tit.ph, 1-Math.exp(-dt*10));
+  tit.temp = lerp(tit.temp, tit.tempT, 1-Math.exp(-dt*3));
+  if(tit.eqOn>0) tit.eqOn = Math.max(0, tit.eqOn - dt*0.35);
+  if(S.running && S.mode===3 && tit.drip>0){
+    tit.dripAcc += dt * tit.drip;
+    while(tit.dripAcc >= 1){ tit.dripAcc -= 1; addDrop(); }
+  }
+
+  /* Mode 4 bars ease — wrong way or toward 7 */
+  Object.keys(S.cards).forEach(id=>{
+    const c = S.cards[id];
+    c.pH = REDUCED ? c.pHT : lerp(c.pH, c.pHT, 1-Math.exp(-dt*3.5));
+  });
+}
+
+/* ======================================================================
+   5. RENDER
+   ====================================================================== */
+const canvas = el("board");
+const ctx = canvas.getContext("2d");
+let cssW=900, cssH=540, scaleX=1, scaleY=1;
+function dpr(){ return Math.min(2, window.devicePixelRatio||1); }
+function fitBoard(){
+  const wrap = el("stageInner");
+  const w = Math.max(280, wrap.clientWidth);
+  const h = Math.max(300, Math.min(560, Math.round(w * H/W)));
+  cssW=w; cssH=h;
+  const d=dpr();
+  canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+  scaleX=w/W; scaleY=h/H;
+}
+function worldPtr(e){
+  const r = canvas.getBoundingClientRect();
+  return { x:(e.clientX-r.left)*(W/r.width), y:(e.clientY-r.top)*(H/r.height) };
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(x,y,w,h,r);
+  else {
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
+  }
+}
+function label(text, x, y, opt){
+  opt = opt||{};
+  ctx.fillStyle = opt.fill || css("--text");
+  ctx.font = (opt.bold?"700 ":"600 ")+(opt.size||13)+"px "+css("--font");
+  ctx.textAlign = opt.align||"center";
+  ctx.textBaseline = opt.base||"middle";
+  ctx.fillText(text, x, y);
+}
+
+function phGrad(x0,y0,x1,y1){
+  const g = ctx.createLinearGradient(x0,y0,x1,y1);
+  CONFIG.UI_STOPS.forEach(s => g.addColorStop(s.pH/14, rgbCss(s.rgb)));
+  return g;
+}
+
+function beakerRect(id){
+  const ids = CONFIG.LIQUIDS.map(L=>L.id);
+  const i = ids.indexOf(id);
+  if(i<0) return null;
+  const cols=3, bw=108, bh=128, gapX=12, gapY=10;
+  const ox=28, oy=86;
+  const c=i%cols, r=Math.floor(i/cols);
+  return { x:ox+c*(bw+gapX), y:oy+r*(bh+gapY), w:bw, h:bh };
+}
+function mixRect(){ return { x:380, y:86, w:200, h:400 }; }
+
+function drawGlassBeaker(x, y, w, h, fillRGB, appear, papers, selected, caption, sub){
+  const left=x+10, right=x+w-10, top=y+8, bot=y+h-28;
+  const liquidTop = top + (h-28)*0.38;
+  const rgb = fillRGB || appear;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(left+2, liquidTop);
+  ctx.lineTo(left+6, bot-8);
+  ctx.quadraticCurveTo((left+right)/2, bot+10, right-6, bot-8);
+  ctx.lineTo(right-2, liquidTop);
+  ctx.closePath();
+  ctx.fillStyle = rgbCss(rgb);
+  ctx.globalAlpha = fillRGB ? 0.92 : 0.78;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  if(fillRGB){
+    ctx.fillStyle = "rgba(255,255,255,.28)";
+    ctx.beginPath();
+    ctx.ellipse((left+right)/2, liquidTop+2, (right-left)/2-4, 5, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = css("--glass");
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.moveTo(left, top+6);
+  ctx.lineTo(left+6, bot-8);
+  ctx.quadraticCurveTo((left+right)/2, bot+10, right-6, bot-8);
+  ctx.lineTo(right, top+6);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse((left+right)/2, top+8, (right-left)/2+2, 7, 0, 0, Math.PI*2);
+  ctx.strokeStyle = css("--glass");
+  ctx.stroke();
+  (papers||[]).forEach((p,i)=>{
+    const px = left+12+i*14, py = top+2;
+    ctx.fillStyle = rgbCss(p.rgb);
+    ctx.fillRect(px, py, 10, 36);
+    ctx.strokeStyle = "rgba(20,32,42,.35)";
+    ctx.strokeRect(px, py, 10, 36);
+  });
+  if(selected){
+    ctx.strokeStyle = css("--accent");
+    ctx.lineWidth = 3;
+    roundRect(x+2, y+2, w-4, h-4, 10); ctx.stroke();
+  }
+  label(caption, x+w/2, bot+14, { size:12.5, bold:true });
+  if(sub) label(sub, x+w/2, bot+26, { size:11, fill:css("--text-3") });
+  ctx.restore();
+}
+
+function liquidCaption(id){
+  if(!S.labelled && id!=="mix"){
+    const i = CONFIG.LIQUIDS.findIndex(L=>L.id===id);
+    return String.fromCharCode(65+i);
+  }
+  return T(id);
+}
+
+function drawMode1(){
+  label(T("m1full"), 28, 28, { align:"left", size:16, bold:true });
+  label(T("mixHint"), 28, 50, { align:"left", size:13, fill:css("--text-2") });
+  CONFIG.LIQUIDS.forEach(L=>{
+    const r = beakerRect(L.id);
+    const b = S.beakers[L.id];
+    drawGlassBeaker(r.x, r.y, r.w, r.h, b.col, L.appear, b.papers, S.selected===L.id, liquidCaption(L.id));
+  });
+  const m = mixRect();
+  const mb = S.beakers.mix;
+  drawGlassBeaker(m.x, m.y, m.w, 300, mb.col, [220,228,234], mb.papers, S.selected==="mix", T("mix"));
+  /* Mix slider uses the SAME universal-indicator gradient. */
+  const sx=m.x+24, sy=m.y+320, sw=m.w-48, sh=16;
+  ctx.fillStyle = phGrad(sx,0,sx+sw,0);
+  roundRect(sx, sy, sw, sh, 8); ctx.fill();
+  ctx.strokeStyle = css("--panel-border"); ctx.lineWidth=1;
+  roundRect(sx, sy, sw, sh, 8); ctx.stroke();
+  const tx = sx + (S.mixPH/14)*sw;
+  ctx.fillStyle = css("--text");
+  ctx.beginPath(); ctx.arc(tx, sy+sh/2, 11, 0, 7); ctx.fill();
+  ctx.fillStyle = rgbCss(phToRGB(S.mixPH));
+  ctx.beginPath(); ctx.arc(tx, sy+sh/2, 7, 0, 7); ctx.fill();
+  label(T("kindAcid"), sx, sy+34, { align:"left", size:12, fill:css("--acid"), bold:true });
+  label(T("kindBase"), sx+sw, sy+34, { align:"right", size:12, fill:css("--base"), bold:true });
+}
+
+function scaleGeom(){
+  return { x:40, y:300, w:820, h:48 };
+}
+function tokenX(pH){
+  const g = scaleGeom();
+  return g.x + (clamp(pH,0,14)/14)*g.w;
+}
+function probeBeakerRect(id){
+  const ids = CONFIG.LIQUIDS.map(L=>L.id);
+  const i = ids.indexOf(id);
+  const bw=86, gap=8, ox=24, oy=70;
+  return { x:ox+i*(bw+gap), y:oy, w:bw, h:100 };
+}
+
+function drawMode2(){
+  label(T("m2full"), 28, 28, { align:"left", size:16, bold:true });
+  label(T("probeHint"), 28, 50, { align:"left", size:13, fill:css("--text-2") });
+  CONFIG.LIQUIDS.forEach(L=>{
+    const r = probeBeakerRect(L.id);
+    const b = S.beakers[L.id];
+    drawGlassBeaker(r.x, r.y, r.w, r.h, b.col, L.appear, b.papers, S.selected===L.id, liquidCaption(L.id));
+  });
+  const g = scaleGeom();
+  ctx.fillStyle = phGrad(g.x,0,g.x+g.w,0);
+  roundRect(g.x, g.y, g.w, g.h, 12); ctx.fill();
+  ctx.strokeStyle = css("--panel-border"); ctx.lineWidth=1.5;
+  roundRect(g.x, g.y, g.w, g.h, 12); ctx.stroke();
+  ctx.fillStyle = css("--text");
+  ctx.font = "12.5px "+css("--mono");
+  ctx.textAlign="center"; ctx.textBaseline="top";
+  for(let n=0;n<=14;n++){
+    const x = tokenX(n);
+    ctx.fillStyle = n===7 ? css("--text") : css("--text-3");
+    ctx.fillRect(x, g.y+g.h, 1, n%7===0?10:6);
+    if(n%1===0 && (n%2===0 || n===7)) ctx.fillText(String(n), x, g.y+g.h+12);
+  }
+  label(T("kindAcid"), g.x, g.y-16, { align:"left", size:13, fill:css("--acid"), bold:true });
+  label(T("kindNeut"), g.x+g.w/2, g.y-16, { size:13, fill:css("--indicator"), bold:true });
+  label(T("kindBase"), g.x+g.w, g.y-16, { align:"right", size:13, fill:css("--base"), bold:true });
+  /* Placed tokens: guessed, then snap to true pH */
+  Object.keys(S.placed).forEach(id=>{
+    const p = S.placed[id];
+    const phNow = lerp(p.guess, p.pH, p.snap);
+    const x = tokenX(phNow);
+    const y = g.y - 28;
+    ctx.fillStyle = rgbCss(phToRGB(p.pH));
+    roundRect(x-36, y-16, 72, 28, 8); ctx.fill();
+    ctx.strokeStyle = css("--text"); ctx.lineWidth=1.2;
+    roundRect(x-36, y-16, 72, 28, 8); ctx.stroke();
+    label(T(id), x, y, { size:11.5, bold:true, fill:"#fff" });
+  });
+  /* Probe */
+  const pr = S.probe;
+  ctx.strokeStyle = css("--text-2"); ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(pr.x, pr.y-36); ctx.lineTo(pr.x, pr.y+18); ctx.stroke();
+  ctx.fillStyle = css("--panel");
+  roundRect(pr.x-28, pr.y-70, 56, 38, 8); ctx.fill();
+  ctx.strokeStyle = css("--panel-border"); ctx.stroke();
+  ctx.fillStyle = "#2a2a2a";
+  roundRect(pr.x-22, pr.y-64, 44, 18, 4); ctx.fill();
+  const rd = pr.reading;
+  label(rd==null ? "pH" : rd.toFixed(1), pr.x, pr.y-54, { size:12, bold:true, fill:"#9CFFB0" });
+  ctx.fillStyle = css("--glass");
+  ctx.beginPath(); ctx.arc(pr.x, pr.y+22, 8, 0, 7); ctx.fill();
+  ctx.fillStyle = rgbCss(phToRGB(rd==null?7:rd));
+  ctx.beginPath(); ctx.arc(pr.x, pr.y+22, 5, 0, 7); ctx.fill();
+}
+
+function drawMode3(){
+  label(T("m3full"), 28, 28, { align:"left", size:16, bold:true });
+  const tit = S.tit;
+  const addingBase = tit.startAs==="acid";
+  /* Stand */
+  ctx.fillStyle = css("--wood");
+  ctx.fillRect(70, 470, 240, 16);
+  ctx.fillStyle = css("--text-2");
+  ctx.fillRect(96, 70, 10, 400);
+  /* Burette */
+  ctx.fillStyle = rgbCss(addingBase ? [180,200,230] : [240,210,160]);
+  const fillH = 210;
+  ctx.fillRect(170, 80, 36, fillH);
+  ctx.strokeStyle = css("--glass"); ctx.lineWidth=2.5;
+  ctx.strokeRect(170, 70, 36, 230);
+  ctx.fillStyle = css("--text-2");
+  ctx.fillRect(178, 300, 20, 18);
+  ctx.fillRect(184, 318, 8, 14);
+  /* Falling fx drops already drawn globally */
+  /* Beaker with LIVE universal-indicator colour — follows pH past 7 */
+  const rgb = phToRGB(tit.phShow);
+  drawGlassBeaker(110, 300, 160, 180, rgb, rgb, [], true, kindLabel(tit.phShow), "pH "+tit.phShow.toFixed(2));
+  /* Thermometer */
+  ctx.fillStyle = css("--panel");
+  roundRect(300, 320, 36, 150, 8); ctx.fill();
+  ctx.strokeStyle = css("--panel-border"); ctx.stroke();
+  const th = clamp((tit.temp-20)/20, 0, 1);
+  ctx.fillStyle = css("--crit");
+  ctx.fillRect(312, 450 - th*110, 12, th*110+10);
+  ctx.beginPath(); ctx.arc(318, 458, 12, 0, 7); ctx.fill();
+  label(tit.temp.toFixed(1)+"°C", 318, 310, { size:12, bold:true });
+  /* On-stage graph: pH vs drops, line at 7, continues PAST 7 */
+  const gx=360, gy=70, gw=510, gh=380;
+  ctx.fillStyle = css("--panel");
+  roundRect(gx, gy, gw, gh, 12); ctx.fill();
+  ctx.strokeStyle = css("--hairline"); ctx.lineWidth=1;
+  roundRect(gx, gy, gw, gh, 12); ctx.stroke();
+  const padL=48, padB=36, padT=28, padR=18;
+  const pw=gw-padL-padR, ph=gh-padT-padB;
+  const maxD = Math.max(20, tit.drops, 60);
+  const xOf = d => gx+padL + (d/maxD)*pw;
+  const yOf = p => gy+padT + (1-p/14)*ph;
+  ctx.strokeStyle = css("--hairline");
+  ctx.beginPath(); ctx.moveTo(gx+padL, gy+padT); ctx.lineTo(gx+padL, gy+padT+ph); ctx.lineTo(gx+padL+pw, gy+padT+ph); ctx.stroke();
+  /* pH 7 reference — a guide, NOT a ceiling */
+  ctx.setLineDash([5,5]);
+  ctx.strokeStyle = css("--indicator");
+  ctx.beginPath(); ctx.moveTo(gx+padL, yOf(7)); ctx.lineTo(gx+padL+pw, yOf(7)); ctx.stroke();
+  ctx.setLineDash([]);
+  label("pH 7", gx+padL+pw-8, yOf(7)-10, { align:"right", size:12, fill:css("--indicator"), bold:true });
+  if(tit.graph.length>1){
+    ctx.lineWidth=2.8; ctx.lineJoin="round";
+    for(let i=1;i<tit.graph.length;i++){
+      const a=tit.graph[i-1], b=tit.graph[i];
+      ctx.strokeStyle = rgbCss(phToRGB(b.ph));
+      ctx.beginPath(); ctx.moveTo(xOf(a.d), yOf(a.ph)); ctx.lineTo(xOf(b.d), yOf(b.ph)); ctx.stroke();
+    }
+    const last = tit.graph[tit.graph.length-1];
+    ctx.fillStyle = rgbCss(phToRGB(last.ph));
+    ctx.beginPath(); ctx.arc(xOf(last.d), yOf(last.ph), 6, 0, 7); ctx.fill();
+  }
+  label("drops →", gx+padL+pw/2, gy+gh-12, { size:12.5, fill:css("--text-3") });
+  label("pH", gx+18, gy+padT+10, { size:12.5, fill:css("--text-3"), align:"left" });
+  label("0", gx+padL-8, yOf(0), { size:11, fill:css("--text-3"), align:"right" });
+  label("14", gx+padL-8, yOf(14), { size:11, fill:css("--text-3"), align:"right" });
+}
+
+function cardRect(i){
+  const cols=3, w=280, h=150, gap=14;
+  const ox=24, oy=64;
+  const c=i%cols, r=Math.floor(i/cols);
+  /* 3 on row 0, 2 centered on row 1 */
+  let x = ox + c*(w+gap);
+  if(i>=3) x = ox + 147 + (i-3)*(w+gap);
+  return { x, y: oy + r*(h+gap), w, h };
+}
+
+function drawMode4(){
+  label(T("m4full"), 28, 28, { align:"left", size:16, bold:true });
+  SCENARIOS.forEach((s,i)=>{
+    const r = cardRect(i);
+    const c = S.cards[s.id];
+    ctx.fillStyle = css("--panel");
+    roundRect(r.x, r.y, r.w, r.h, 12); ctx.fill();
+    ctx.strokeStyle = c.correct ? css("--good") : (S.selected==="sc:"+s.id ? css("--accent") : css("--panel-border"));
+    ctx.lineWidth = c.correct || S.selected==="sc:"+s.id ? 3 : 1.5;
+    roundRect(r.x, r.y, r.w, r.h, 12); ctx.stroke();
+    label(T(s.key), r.x+14, r.y+22, { align:"left", size:15, bold:true });
+    label(kindLabel(c.pH)+"  ·  pH "+c.pH.toFixed(1), r.x+14, r.y+44, { align:"left", size:13, fill:css("--text-2") });
+    const bx=r.x+14, by=r.y+70, bw=r.w-28, bh=22;
+    ctx.fillStyle = phGrad(bx,0,bx+bw,0);
+    roundRect(bx, by, bw, bh, 8); ctx.fill();
+    ctx.strokeStyle = css("--panel-border"); ctx.lineWidth=1;
+    roundRect(bx, by, bw, bh, 8); ctx.stroke();
+    const mx = bx + (c.pH/14)*bw;
+    ctx.fillStyle = css("--text");
+    ctx.fillRect(mx-2, by-4, 4, bh+8);
+    /* Danger: far from 7 */
+    const danger = Math.abs(c.pH-7) > 1.2;
+    label(danger ? (c.pH<7? T("kindAcid"):T("kindBase")) : T("kindNeut"), r.x+14, r.y+114, {
+      align:"left", size:13, bold:true,
+      fill: c.pH<CONFIG.NEUTRAL_LO ? css("--acid") : (c.pH>CONFIG.NEUTRAL_HI ? css("--base") : css("--indicator"))
+    });
+    if(c.correct) label("✓", r.x+r.w-22, r.y+24, { size:20, fill:css("--good"), bold:true });
+  });
+}
+
+function drawFx(){
+  S.fx.forEach(p=>{
+    if(p.kind!=="drop") return;
+    const t = clamp(p.t,0,1);
+    const x = lerp(p.x, p.x2, t);
+    const y = lerp(p.y, p.y2, t*t);
+    ctx.fillStyle = rgbCss(p.rgb);
+    ctx.globalAlpha = 1-Math.max(0, t-0.7)/0.3;
+    ctx.beginPath(); ctx.ellipse(x, y, 5, 7, 0, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+}
+
+function draw(){
+  ctx.setTransform(dpr()*scaleX, 0, 0, dpr()*scaleY, 0, 0);
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = css("--board");
+  ctx.fillRect(0,0,W,H);
+  if(S.mode===1) drawMode1();
+  else if(S.mode===2) drawMode2();
+  else if(S.mode===3) drawMode3();
+  else drawMode4();
+  drawFx();
+}
+
+function drawChart(){
+  const g = el("pChart"), gctx=g.getContext("2d");
+  const d=dpr(), w=g.clientWidth, h=132;
+  if(!w) return;
+  if(g.width!==Math.round(w*d)){ g.width=Math.round(w*d); g.height=Math.round(h*d); }
+  gctx.setTransform(d,0,0,d,0,0); gctx.clearRect(0,0,w,h);
+  const padL=36, padB=22, padT=10, padR=10;
+  const pw=w-padL-padR, ph=h-padT-padB;
+  const stops = CONFIG.UI_STOPS;
+  const grad = gctx.createLinearGradient(padL,0,padL+pw,0);
+  stops.forEach(s => grad.addColorStop(s.pH/14, rgbCss(s.rgb)));
+  if(S.mode===3){
+    const tit=S.tit;
+    gctx.strokeStyle=css("--hairline"); gctx.lineWidth=1;
+    gctx.beginPath(); gctx.moveTo(padL,padT); gctx.lineTo(padL,padT+ph); gctx.lineTo(padL+pw,padT+ph); gctx.stroke();
+    const maxD=Math.max(20, tit.drops, 60);
+    const xOf=dv=>padL+(dv/maxD)*pw, yOf=p=>padT+(1-p/14)*ph;
+    gctx.setLineDash([4,4]); gctx.strokeStyle=css("--indicator");
+    gctx.beginPath(); gctx.moveTo(padL,yOf(7)); gctx.lineTo(padL+pw,yOf(7)); gctx.stroke();
+    gctx.setLineDash([]);
+    if(tit.graph.length>1){
+      gctx.lineWidth=2.2;
+      for(let i=1;i<tit.graph.length;i++){
+        const a=tit.graph[i-1], b=tit.graph[i];
+        gctx.strokeStyle=rgbCss(phToRGB(b.ph));
+        gctx.beginPath(); gctx.moveTo(xOf(a.d), yOf(a.ph)); gctx.lineTo(xOf(b.d), yOf(b.ph)); gctx.stroke();
+      }
+    }
+    gctx.fillStyle=css("--text-3"); gctx.font="12px "+css("--font"); gctx.textAlign="center";
+    gctx.fillText("drops →", padL+pw/2, padT+ph+16);
+  } else {
+    gctx.fillStyle = grad;
+    gctx.fillRect(padL, padT+ph*0.35, pw, 18);
+    gctx.strokeStyle=css("--panel-border"); gctx.strokeRect(padL, padT+ph*0.35, pw, 18);
+    const mark = (pH, name, yOff)=>{
+      if(pH==null) return;
+      const x = padL + (clamp(pH,0,14)/14)*pw;
+      gctx.fillStyle = css("--text");
+      gctx.fillRect(x-1, padT+ph*0.35-6, 2, 30);
+      gctx.fillStyle = css("--text"); gctx.font="11px "+css("--font"); gctx.textAlign="center";
+      gctx.fillText(name, x, padT+ph*0.35+40+yOff);
+    };
+    if(S.mode===1){
+      CONFIG.LIQUIDS.forEach((L,i)=>{
+        if(S.beakers[L.id].tests.ui) mark(L.pH, S.labelled?T(L.id):String.fromCharCode(65+i), (i%2)*10);
+      });
+      if(S.beakers.mix.tests.ui) mark(S.mixPH, T("mix"), 0);
+    } else if(S.mode===2){
+      Object.keys(S.placed).forEach((id,i)=> mark(S.placed[id].pH, T(id), (i%2)*10));
+      if(S.probe.reading!=null) mark(S.probe.reading, "pH", -18);
+    } else {
+      SCENARIOS.forEach((s,i)=> mark(S.cards[s.id].pH, T(s.key), (i%2)*10));
+    }
+    gctx.fillStyle=css("--text-3"); gctx.font="12px "+css("--mono"); gctx.textAlign="left";
+    gctx.fillText("0", padL, padT+12);
+    gctx.textAlign="center"; gctx.fillText("7", padL+pw/2, padT+12);
+    gctx.textAlign="right"; gctx.fillText("14", padL+pw, padT+12);
+  }
+}
+
+function livePH(){
+  if(S.mode===3) return S.tit.phShow;
+  if(S.mode===2 && S.probe.reading!=null) return S.probe.reading;
+  if(S.mode===4 && S.selected && S.selected.startsWith("sc:")) return S.cards[S.selected.slice(3)].pH;
+  if(S.mode===1){
+    const b = S.beakers[S.selected];
+    if(b && b.tests.ui) return samplePH(S.selected);
+    return samplePH(S.selected);
+  }
+  if(S.mode===2) return samplePH(S.selected);
+  if(S.mode===4) return S.cards.stomach.pH;
+  return 7;
+}
+
+function sync(){
+  const pH = livePH();
+  const rgb = phToRGB(pH);
+  el("rSwatch").style.background = rgbCss(rgb);
+  /* Mix-your-own shows the slider value; litmus-only household beakers hide the number so UI can teach HOW much. */
+  const showNum = !(S.mode===1 && S.selected!=="mix" && S.beakers[S.selected] && !S.beakers[S.selected].tests.ui);
+  el("rPH").textContent = showNum ? pH.toFixed(2) : "—";
+  const kind = el("rKind");
+  const k = phKind(pH);
+  kind.textContent = showNum ? kindLabel(pH) : (S.beakers[S.selected] && (S.beakers[S.selected].tests.red||S.beakers[S.selected].tests.blue) ? kindLabel(pH) : "—");
+  kind.className = "phread__kind "+(k==="base"?"base": k==="acid"?"acid":"neut");
+  let sample = "—";
+  if(S.mode===3){
+    el("tSample").textContent = T("dropsLab");
+    el("rSample").textContent = String(S.tit.drops);
+    el("tExtraK").textContent = T("tempLab");
+    el("rExtra").textContent = S.tit.temp.toFixed(1)+"°C";
+  } else if(S.mode===4 && S.selected && S.selected.startsWith("sc:")){
+    el("tSample").textContent = T("sample");
+    el("rSample").textContent = T(SCENARIOS.find(s=>s.id===S.selected.slice(3)).key);
+    el("tExtraK").textContent = T("tempLab");
+    el("rExtra").textContent = "—";
+  } else {
+    el("tSample").textContent = T("sample");
+    if(S.selected) sample = S.labelled || S.selected==="mix" ? T(S.selected) : liquidCaption(S.selected);
+    el("rSample").textContent = sample;
+    el("tExtraK").textContent = T("tempLab");
+    el("rExtra").textContent = "—";
+  }
+  el("phLegBar").style.background = "linear-gradient(90deg, "+phGradientCSS()+")";
+  el("phLegMark").style.left = (clamp(pH,0,14)/14*100)+"%";
+  const eq = el("eqStrip");
+  eq.textContent = S.tit.crossed7 ? T("eqOn") : T("eq");
+  eq.className = "eq"+(S.tit.eqOn>0 || (S.mode===3 && S.tit.crossed7) ? " on" : "");
+  eq.style.display = S.mode===3 ? "block" : "none";
+  el("narr").textContent = T(S.narr);
+  el("tGraphNote").textContent = T("graph"+S.mode);
+  drawChart();
+}
+/* ======================================================================
+   6. CONTROLS
+   ====================================================================== */
+function setMode(m){
+  S.mode = m;
+  if(m===1) S.selected = S.selected && S.beakers[S.selected] ? S.selected : "lemon";
+  if(m===3) S.selected = "tit";
+  buildModeTray(); buildModeOpts(); buildToolTray(); buildExtra();
+  sync(); checkGuide();
+}
+
+function buildModeTray(){
+  const host=el("modeTray"); host.innerHTML="";
+  const lab=document.createElement("div"); lab.className="tray__label"; lab.textContent=T("readings")? "":"";
+  [1,2,3,4].forEach(m=>{
+    const b=document.createElement("button");
+    b.type="button"; b.className="part part--mode";
+    b.setAttribute("role","tab");
+    b.setAttribute("aria-pressed", String(S.mode===m));
+    b.innerHTML = `<span>${T("m"+m)}</span>`;
+    b.addEventListener("click", ()=>setMode(m));
+    host.appendChild(b);
+  });
+}
+function buildModeOpts(){
+  const host=el("modeOpts"); host.innerHTML="";
+  if(S.mode===1){
+    [["labelled", true],["unlabelled", false]].forEach(([k,v])=>{
+      const b=document.createElement("button");
+      b.type="button"; b.textContent=T(k);
+      b.setAttribute("aria-pressed", String(S.labelled===v));
+      b.addEventListener("click", ()=>{ S.labelled=v; sync(); checkGuide(); });
+      host.appendChild(b);
+    });
+  } else if(S.mode===3){
+    [["startAcid","acid"],["startBase","base"]].forEach(([k,v])=>{
+      const b=document.createElement("button");
+      b.type="button"; b.textContent=T(k);
+      b.setAttribute("aria-pressed", String(S.tit.startAs===v));
+      b.addEventListener("click", ()=>{ S.tit = seedTitration(v); S.narr="nar0"; sync(); checkGuide(); });
+      host.appendChild(b);
+    });
+  }
+}
+
+function icoInd(id){
+  if(id==="red") return `<svg width="28" height="18" viewBox="0 0 28 18"><rect x="8" y="1" width="12" height="16" rx="1" fill="#C42832" stroke="#14202A" stroke-width=".8"/></svg>`;
+  if(id==="blue") return `<svg width="28" height="18" viewBox="0 0 28 18"><rect x="8" y="1" width="12" height="16" rx="1" fill="#2850B4" stroke="#14202A" stroke-width=".8"/></svg>`;
+  if(id==="tur") return `<svg width="28" height="18" viewBox="0 0 28 18"><rect x="8" y="1" width="12" height="16" rx="1" fill="#E6C828" stroke="#14202A" stroke-width=".8"/></svg>`;
+  if(id==="phe") return `<svg width="28" height="18" viewBox="0 0 28 18"><rect x="12" y="1" width="5" height="10" fill="#9AA4AA"/><path d="M10 11 h9 l-1 6 h-7 z" fill="#C9D0D4" stroke="#14202A" stroke-width=".7"/></svg>`;
+  return `<svg width="28" height="18" viewBox="0 0 28 18"><defs><linearGradient id="uig" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#C41020"/><stop offset=".5" stop-color="#28A848"/><stop offset="1" stop-color="#8C28A0"/></linearGradient></defs><rect x="10" y="1" width="8" height="16" rx="2" fill="url(#uig)" stroke="#14202A" stroke-width=".8"/></svg>`;
+}
+
+function buildToolTray(){
+  const host=el("toolTray"); host.innerHTML="";
+  const cap=document.createElement("div"); cap.className="tray__label";
+  if(S.mode===1){
+    cap.textContent=T("trayInd"); host.appendChild(cap);
+    INDICATORS.forEach(I=>{
+      const b=document.createElement("button");
+      b.type="button"; b.className="part";
+      b.setAttribute("aria-pressed", String(S.selInd===I.id));
+      b.innerHTML = icoInd(I.id)+`<span>${T(I.key)}</span>`;
+      b.addEventListener("pointerdown", e=>{ S.selInd=I.id; startDrag("ind", I.id, e); buildToolTray(); });
+      b.addEventListener("click", ()=>{ S.selInd=I.id; buildToolTray(); });
+      host.appendChild(b);
+    });
+  } else if(S.mode===2){
+    cap.textContent=T("trayLiq"); host.appendChild(cap);
+    CONFIG.LIQUIDS.forEach(L=>{
+      const b=document.createElement("button");
+      b.type="button"; b.className="part";
+      b.style.background = rgbCss(L.appear);
+      b.innerHTML = `<span>${T(L.id)}</span>`;
+      b.addEventListener("pointerdown", e=>{ S.selected=L.id; startDrag("token", L.id, e); });
+      host.appendChild(b);
+    });
+  } else if(S.mode===4){
+    cap.textContent=T("trayRem"); host.appendChild(cap);
+    REMEDIES.forEach(R=>{
+      const b=document.createElement("button");
+      b.type="button"; b.className="part";
+      b.setAttribute("aria-pressed", String(S.selRem===R.id));
+      b.innerHTML = `<span>${T(R.key)}</span>`;
+      b.addEventListener("pointerdown", e=>{ S.selRem=R.id; startDrag("rem", R.id, e); buildToolTray(); });
+      b.addEventListener("click", ()=>{ S.selRem=R.id; buildToolTray(); });
+      host.appendChild(b);
+    });
+  }
+}
+
+function buildExtra(){
+  const host=el("extraCtrls"); host.innerHTML="";
+  if(S.mode===1){
+    host.innerHTML =
+      `<div class="row"><button class="btn btn--sm" id="btnApply" type="button">${T("applySel")}</button></div>
+       <div class="row"><span style="font-size:13.5px;font-weight:700">${T("mixOwn")}</span>
+         <input type="range" id="mixR" min="0" max="14" step="0.1" value="${S.mixPH}" aria-label="${T("mixOwn")}"/>
+         <span class="val" id="mixV">${S.mixPH.toFixed(1)}</span></div>`;
+    el("btnApply").addEventListener("click", ()=>{ applyIndicator(S.selected, S.selInd); sync(); checkGuide(); });
+    el("mixR").addEventListener("input", e=>{
+      S.mixPH = +e.target.value; S.selected="mix";
+      S.beakers.mix = emptyBeaker();
+      el("mixV").textContent = S.mixPH.toFixed(1);
+      sync();
+    });
+  } else if(S.mode===3){
+    host.innerHTML =
+      `<div class="row"><button class="btn" id="btnDrop" type="button">${T("addDrop")}</button></div>
+       <div class="row"><span style="font-size:13.5px;font-weight:700">${T("dripRate")}</span>
+         <input type="range" id="dripR" min="0" max="${CONFIG.DRIP_MAX}" step="0.5" value="${S.tit.drip}" aria-label="${T("dripRate")}"/>
+         <span class="val" id="dripV">${S.tit.drip.toFixed(1)}</span></div>
+       <p class="extra">${T("eqHouse")}</p>`;
+    el("btnDrop").addEventListener("click", ()=>{ addDrop(); sync(); checkGuide(); });
+    el("dripR").addEventListener("input", e=>{
+      S.tit.drip = +e.target.value; el("dripV").textContent = S.tit.drip.toFixed(1);
+    });
+  }
+}
+
+function startDrag(kind, id, e){
+  drag.kind=kind; drag.id=id; drag.moved=false;
+  drag.x=e.clientX; drag.y=e.clientY;
+  const g=el("ghost");
+  g.classList.add("on");
+  g.textContent = kind==="ind" ? T(INDICATORS.find(I=>I.id===id).key)
+    : kind==="token" ? T(id)
+    : T(REMEDIES.find(R=>R.id===id).key);
+  g.style.left=(e.clientX+10)+"px"; g.style.top=(e.clientY+10)+"px";
+  try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+}
+
+function hitBeaker(p){
+  if(S.mode===1){
+    for(const L of CONFIG.LIQUIDS){
+      const r=beakerRect(L.id);
+      if(p.x>r.x && p.x<r.x+r.w && p.y>r.y && p.y<r.y+r.h) return L.id;
+    }
+    const m=mixRect();
+    if(p.x>m.x && p.x<m.x+m.w && p.y>m.y && p.y<m.y+320) return "mix";
+  }
+  if(S.mode===2){
+    for(const L of CONFIG.LIQUIDS){
+      const r=probeBeakerRect(L.id);
+      if(p.x>r.x && p.x<r.x+r.w && p.y>r.y && p.y<r.y+r.h) return L.id;
+    }
+  }
+  return null;
+}
+function hitCard(p){
+  for(let i=0;i<SCENARIOS.length;i++){
+    const r=cardRect(i);
+    if(p.x>r.x && p.x<r.x+r.w && p.y>r.y && p.y<r.y+r.h) return SCENARIOS[i].id;
+  }
+  return null;
+}
+function onScale(p){
+  const g=scaleGeom();
+  return p.x>g.x-10 && p.x<g.x+g.w+10 && p.y>g.y-50 && p.y<g.y+g.h+40;
+}
+function pHFromX(x){
+  const g=scaleGeom();
+  return clamp(((x-g.x)/g.w)*14, 0, 14);
+}
+
+addEventListener("pointermove", e=>{
+  if(!drag.kind) return;
+  if(Math.hypot(e.clientX-drag.x, e.clientY-drag.y)>6) drag.moved=true;
+  const g=el("ghost");
+  g.style.left=(e.clientX+10)+"px"; g.style.top=(e.clientY+10)+"px";
+  if(drag.kind==="probe"){
+    const p=worldPtr(e);
+    S.probe.x=clamp(p.x, 20, 880); S.probe.y=clamp(p.y, 40, 500);
+    const hid=hitBeaker(p);
+    S.probe.reading = hid ? samplePH(hid) : null;
+    if(hid){ S.selected=hid; S.narr="narProbe"; }
+  }
+  if(drag.kind==="mix"){
+    const p=worldPtr(e);
+    const m=mixRect();
+    const sx=m.x+24, sw=m.w-48;
+    S.mixPH = clamp(((p.x-sx)/sw)*14, 0, 14);
+    S.selected="mix";
+    S.beakers.mix = emptyBeaker();
+  }
+});
+addEventListener("pointerup", e=>{
+  if(!drag.kind) return;
+  const g=el("ghost"); g.classList.remove("on");
+  const over = document.elementFromPoint(e.clientX, e.clientY);
+  const onCanvas = over===canvas || (over && canvas.contains(over));
+  if(onCanvas || drag.kind==="probe" || drag.kind==="mix"){
+    const p = worldPtr(e);
+    if(drag.kind==="ind"){
+      const id=hitBeaker(p);
+      if(id) applyIndicator(id, drag.id);
+    } else if(drag.kind==="token"){
+      if(onScale(p)) placeToken(drag.id, pHFromX(p.x));
+    } else if(drag.kind==="rem"){
+      const sc=hitCard(p);
+      if(sc) applyRemedy(sc, drag.id);
+    }
+  }
+  drag.kind=null; drag.id=null;
+  sync(); checkGuide();
+});
+
+canvas.addEventListener("pointerdown", e=>{
+  const p=worldPtr(e);
+  if(S.mode===1){
+    const m=mixRect();
+    const sx=m.x+24, sy=m.y+310, sw=m.w-48;
+    if(p.x>sx-8 && p.x<sx+sw+8 && p.y>sy && p.y<sy+40){
+      drag.kind="mix"; S.mixPH=clamp(((p.x-sx)/sw)*14,0,14); S.selected="mix"; S.beakers.mix=emptyBeaker();
+      try{ canvas.setPointerCapture(e.pointerId); }catch(_){}
+      return;
+    }
+    const id=hitBeaker(p);
+    if(id){
+      S.selected=id;
+      if(S.selInd) applyIndicator(id, S.selInd);
+      sync(); checkGuide();
+    }
+  }
+  if(S.mode===2){
+    if(Math.hypot(p.x-S.probe.x, p.y-S.probe.y)<36){
+      drag.kind="probe";
+      try{ canvas.setPointerCapture(e.pointerId); }catch(_){}
+      return;
+    }
+    const id=hitBeaker(p);
+    if(id){ S.selected=id; S.probe.x=p.x; S.probe.y=p.y; S.probe.reading=samplePH(id); S.narr="narProbe"; sync(); checkGuide(); return; }
+    if(onScale(p) && S.selected && liq(S.selected)){ placeToken(S.selected, pHFromX(p.x)); sync(); checkGuide(); }
+  }
+  if(S.mode===4){
+    const sc=hitCard(p);
+    if(sc){
+      S.selected="sc:"+sc;
+      if(S.selRem) applyRemedy(sc, S.selRem);
+      sync(); checkGuide();
+    }
+  }
+});
+
+canvas.addEventListener("keydown", e=>{
+  const ids = CONFIG.LIQUIDS.map(L=>L.id).concat(["mix"]);
+  if(S.mode===1){
+    const i = Math.max(0, ids.indexOf(S.selected));
+    if(e.key==="ArrowRight"){ S.selected=ids[Math.min(ids.length-1,i+1)]; e.preventDefault(); }
+    if(e.key==="ArrowLeft"){ S.selected=ids[Math.max(0,i-1)]; e.preventDefault(); }
+    if(e.key==="Enter" || e.key===" "){ applyIndicator(S.selected, S.selInd); e.preventDefault(); }
+    if(e.key>="1" && e.key<="5"){ S.selInd=INDICATORS[+e.key-1].id; buildToolTray(); }
+  }
+  if(S.mode===2){
+    const stepN = e.shiftKey?20:8;
+    if(e.key==="ArrowLeft"){ S.probe.x-=stepN; e.preventDefault(); }
+    if(e.key==="ArrowRight"){ S.probe.x+=stepN; e.preventDefault(); }
+    if(e.key==="ArrowUp"){ S.probe.y-=stepN; e.preventDefault(); }
+    if(e.key==="ArrowDown"){ S.probe.y+=stepN; e.preventDefault(); }
+    const hid=hitBeaker({x:S.probe.x,y:S.probe.y});
+    S.probe.reading = hid ? samplePH(hid) : null;
+  }
+  if(S.mode===3){
+    if(e.key==="Enter" || e.key===" "){ addDrop(); e.preventDefault(); }
+  }
+  if(S.mode===4){
+    const i = SCENARIOS.findIndex(s=>("sc:"+s.id)===S.selected);
+    if(e.key==="ArrowRight"){ const n=SCENARIOS[Math.min(SCENARIOS.length-1,(i<0?0:i)+1)]; S.selected="sc:"+n.id; e.preventDefault(); }
+    if(e.key==="ArrowLeft"){ const n=SCENARIOS[Math.max(0,(i<0?0:i)-1)]; S.selected="sc:"+n.id; e.preventDefault(); }
+    if((e.key==="Enter"||e.key===" ") && S.selected.startsWith("sc:")){ applyRemedy(S.selected.slice(3), S.selRem); e.preventDefault(); }
+  }
+  sync(); checkGuide();
+});
+
+/* ======================================================================
+   7. GUIDE
+   ====================================================================== */
+const TASKS = [
+  { keys:["t1","t1h","t1p"],
+    fix:()=>{
+      setMode(1); S.labelled=false;
+      CONFIG.TASK_SET.forEach(id=> applyIndicator(id, "blue", true));
+      applyIndicator("lemon","red", true);
+    },
+    done:()=>{
+      const n = CONFIG.TASK_SET.filter(id=>S.litmusIds[id]).length;
+      return n>=3;
+    }
+  },
+  { keys:["t2","t2h","t2p"],
+    fix:()=>{
+      setMode(1);
+      CONFIG.TASK_SET.forEach(id=> applyIndicator(id, "ui", true));
+    },
+    done:()=> CONFIG.TASK_SET.filter(id=>S.uiIds[id]).length>=3
+  },
+  { keys:["t3","t3h","t3p"],
+    fix:()=>{
+      setMode(2);
+      ["lemon","vinegar","water","soap"].forEach(id=> placeToken(id, liq(id).pH));
+      Object.keys(S.placed).forEach(id=> S.placed[id].snap=1);
+    },
+    done:()=>{
+      /* Count the student's GIVEN guess, not the snapped true pH — otherwise
+         every drop onto the scale would auto-complete after the slide. */
+      const good = Object.keys(S.placed).filter(id=>{
+        const p=S.placed[id];
+        return Math.abs(p.guess - p.pH) <= CONFIG.PLACE_TOL;
+      });
+      return good.length >= CONFIG.PLACE_N;
+    }
+  },
+  { keys:["t4","t4h","t4p"],
+    fix:()=>{
+      setMode(3); S.tit = seedTitration("acid");
+      const need = Math.ceil((CONFIG.START_VOL_ML * CONFIG.REAGENT_N) / (CONFIG.DROP_ML * CONFIG.REAGENT_N));
+      for(let i=0;i<need+8;i++) addDrop();
+      S.tit.phShow = S.tit.ph;
+    },
+    done:()=> S.tit.hitNeutral && S.tit.overshot
+  },
+  { keys:["t5","t5h","t5p"],
+    fix:()=>{
+      setMode(4);
+      applyRemedy("stomach","antacid");
+      applyRemedy("soil","lime");
+      applyRemedy("bee","soda");
+      Object.keys(S.cards).forEach(id=>{ const c=S.cards[id]; if(c.correct) c.pH=c.pHT; });
+    },
+    done:()=> SCENARIOS.filter(s=>S.cards[s.id].correct).length >= 3
+  }
+];
+
+function renderGuide(){
+  const t = TASKS[S.guide.i];
+  el("gNum").textContent = (S.guide.i+1)+"/"+TASKS.length;
+  el("tStep").textContent = T("step");
+  el("gDots").innerHTML = TASKS.map((_,i)=>
+    `<span class="guide__dot ${i<S.guide.i?"on":""} ${i===S.guide.i?"now":""}"></span>`).join("");
+  const box = el("guide");
+  if(S.guide.done){
+    box.classList.add("done");
+    el("gTask").innerHTML = `<span class="tick" aria-hidden="true">✓</span> ${T(t.keys[2])}`;
+    el("gHint").textContent = "";
+    el("gShow").hidden = true; el("gNext").hidden = false;
+    el("gNext").textContent = S.guide.i===TASKS.length-1 ? T("finish") : T("next");
+  } else {
+    box.classList.remove("done");
+    el("gTask").textContent = T(t.keys[0]);
+    el("gHint").textContent = T(t.keys[1]);
+    el("gShow").hidden = false; el("gNext").hidden = true;
+    el("gShow").textContent = T("showMe");
+  }
+}
+function checkGuide(){
+  if(S.guide.done) return;
+  if(TASKS[S.guide.i].done()){ S.guide.done = true; renderGuide(); }
+}
+el("gShow").addEventListener("click", ()=>{ const f=TASKS[S.guide.i].fix; if(f) f(); sync(); checkGuide(); });
+el("gNext").addEventListener("click", ()=>{
+  if(S.guide.i===TASKS.length-1){ showScreen("quiz"); return; }
+  S.guide.i++; S.guide.done=false;
+  if(S.guide.i<=1) setMode(1);
+  if(S.guide.i===2) setMode(2);
+  if(S.guide.i===3) setMode(3);
+  if(S.guide.i===4) setMode(4);
+  renderGuide(); sync();
+});
+
+/* ======================================================================
+   8. QUIZ
+   ====================================================================== */
+const QUESTIONS = [
+  { q:"q1", opts:["q1a","q1b","q1c","q1d"], a:1, why:"q1w" },
+  { q:"q2", opts:["q2a","q2b","q2c","q2d"], a:1, why:"q2w" },
+  { q:"q3", opts:["q3a","q3b","q3c","q3d"], a:1, why:"q3w" },
+  { q:"q4", opts:["q4a","q4b","q4c","q4d"], a:1, why:"q4w" },
+  { q:"q5", opts:["q5a","q5b","q5c","q5d"], a:1, why:"q5w" }
+];
+function buildQuiz(){
+  const host=el("quiz"); host.innerHTML=""; const KEYS=["A","B","C","D"];
+  let answered=0, score=0;
+  QUESTIONS.forEach((Q,qi)=>{
+    const w=document.createElement("div"); w.className="q panel";
+    w.innerHTML = `<div class="q__n">${qi+1} / ${QUESTIONS.length}</div>
+      <p class="q__t">${T(Q.q)}</p><div class="opts"></div><p class="fb" id="fb${qi}"></p>`;
+    const box=w.querySelector(".opts");
+    Q.opts.forEach((ok,oi)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="opt";
+      b.innerHTML = `<span class="opt__k">${KEYS[oi]}</span><span>${T(ok)}</span>`;
+      b.addEventListener("click", ()=>{
+        if(w.dataset.done) return; w.dataset.done="1";
+        const right=oi===Q.a; answered++; if(right) score++;
+        box.querySelectorAll(".opt").forEach((btn,bi)=>{
+          btn.disabled=true;
+          if(bi===Q.a) btn.classList.add("correct");
+          if(bi===oi && !right) btn.classList.add("wrong");
+        });
+        const fb=el("fb"+qi);
+        fb.className="fb show "+(right?"ok":"no");
+        fb.innerHTML = `<b>${right?"✓":"✗"}</b> ${T(Q.why)}`;
+        upd();
+      });
+      box.appendChild(b);
+    });
+    host.appendChild(w);
+  });
+  const bar=document.createElement("div"); bar.className="panel score";
+  bar.innerHTML = `<span class="score__v" id="sv">0 / ${QUESTIONS.length}</span>
+    <span id="sm" style="color:var(--text-2);font-size:14.5px"></span>
+    <button class="btn btn--ghost" id="sRetry" style="margin-inline-start:auto">${T("tryAgain")}</button>`;
+  host.appendChild(bar);
+  function upd(){
+    el("sv").textContent = score+" / "+QUESTIONS.length;
+    const left=QUESTIONS.length-answered;
+    el("sm").textContent = left? left+" "+T("left") : (score===5?T("scoreAll"): score>=3?T("scoreMid"):T("scoreLow"));
+  }
+  el("sRetry").addEventListener("click", ()=>buildQuiz());
+  upd();
+}
+
+/* ======================================================================
+   9. LOOP
+   ====================================================================== */
+const mqReduce = matchMedia("(prefers-reduced-motion: reduce)");
+let REDUCED = mqReduce.matches;
+mqReduce.addEventListener("change", ()=>{ REDUCED = mqReduce.matches; });
+let prev = performance.now(), acc=0, syncT=0;
+function frame(now){
+  const dt=Math.min(0.1,(now-prev)/1000); prev=now;
+  if(S.running){
+    if(REDUCED){
+      acc+=dt; if(acc>0.5){ acc=0; step(0.5*S.speed); syncT=1; }
+    } else {
+      step(dt*S.speed);
+      syncT+=dt;
+    }
+    if(syncT>0.12){ syncT=0; sync(); checkGuide(); }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+
+function setRunning(on){
+  S.running=on;
+  el("icPlay").innerHTML = on
+    ? '<rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/>'
+    : '<path d="M7 4 L19 12 L7 20 Z" fill="#fff"/>';
+  el("btnPlay").setAttribute("aria-pressed", String(on));
+  el("btnPlay").setAttribute("aria-label", on? T("pause"):T("play"));
+}
+
+function applyLang(){
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = LANG==="ur" ? "rtl" : "ltr";
+  el("tTitle").textContent=T("title"); el("tSub").textContent=T("sub");
+  el("tNavTitle").textContent=T("navTitle");
+  el("navBench").textContent=T("bench"); el("navQuiz").textContent=T("quiz");
+  el("btnLang").textContent=T("lang");
+  el("btnProfile").textContent = dim? T("bright"):T("dim");
+  el("tReadings").textContent=T("readings");
+  el("tPH").textContent=T("phLab"); el("tSample").textContent=T("sample");
+  el("tSpeed").textContent=T("speed");
+  el("btnStep").textContent=T("stepBtn");
+  el("btnReset").setAttribute("aria-label", T("reset"));
+  el("tGraph").textContent=T("graph");
+  el("tQuizTitle").textContent=T("quizTitle"); el("tQuizSub").textContent=T("quizSub");
+  el("boardDesc").textContent=T("boardDesc");
+  el("speed").setAttribute("aria-label", T("speed"));
+  el("legA").textContent=T("kindAcid"); el("legN").textContent=T("kindNeut"); el("legB").textContent=T("kindBase");
+  setRunning(S.running);
+  buildModeTray(); buildModeOpts(); buildToolTray(); buildExtra(); renderGuide(); buildQuiz();
+  sync();
+}
+
+el("btnLang").addEventListener("click", ()=>{ LANG = LANG==="en"?"ur":"en"; applyLang(); });
+el("btnProfile").addEventListener("click", ()=>{
+  dim=!dim;
+  if(dim) document.documentElement.setAttribute("data-profile","dim");
+  else document.documentElement.removeAttribute("data-profile");
+  el("btnProfile").textContent = dim? T("bright"):T("dim");
+});
+el("btnPlay").addEventListener("click", ()=> setRunning(!S.running));
+el("btnStep").addEventListener("click", ()=>{ step(0.25); if(S.mode===3) addDrop(); sync(); checkGuide(); });
+el("speed").addEventListener("input", e=>{ S.speed=+e.target.value; });
+el("btnReset").addEventListener("click", ()=>{
+  const fresh=seed();
+  Object.keys(S).forEach(k=>{ delete S[k]; });
+  Object.assign(S, fresh);
+  S.speed=1; el("speed").value=1;
+  setRunning(true);
+  applyLang();
+});
+
+function showScreen(which){
+  el("scBench").classList.toggle("on", which==="bench");
+  el("scQuiz").classList.toggle("on", which==="quiz");
+  el("navBench").setAttribute("aria-current", which==="bench"?"page":"false");
+  el("navQuiz").setAttribute("aria-current", which==="quiz"?"page":"false");
+  scrollTo({top:0});
+  if(which==="bench"){ fitBoard(); sync(); }
+}
+el("navBench").addEventListener("click", ()=>showScreen("bench"));
+el("navQuiz").addEventListener("click", ()=>showScreen("quiz"));
+addEventListener("resize", ()=>{ fitBoard(); drawChart(); });
+
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+    this.moveTo(x+r,y); this.arcTo(x+w,y,x+w,y+h,r); this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r); this.arcTo(x,y,x+w,y,r);
+  };
+}
+
+el("phLegBar").style.background = "linear-gradient(90deg, "+phGradientCSS()+")";
+fitBoard();
+applyLang();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

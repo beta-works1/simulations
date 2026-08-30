@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<title>Sound: Vibration, Pitch &amp; Loudness — PCTB Class 8 Science</title>
+<!--
+==========================================================================
+ SOUND: VIBRATION, PITCH & LOUDNESS  ·  Sim 8 of 10
+ PCTB / SNC Class 8 General Science — Sound
+
+ LEARNING OBJECTIVES
+   1. Sound is produced by a vibrating object. No vibration, no sound.
+   2. Sound is a longitudinal pressure wave: particles bunch (compression)
+      and spread (rarefaction) along the SAME direction the sound travels.
+   3. Sound needs a medium. Vacuum = no particles = no travelling sound.
+   4. Pitch = frequency (how many vibrations per second).
+   5. Loudness = amplitude (how large the swing is).
+   6. Pitch and loudness are independent — any combination is possible.
+   7. Sound is generally fastest in solids, slower in liquids, slowest in gases.
+
+ MISCONCEPTIONS (quiz)
+   - The textbook sine curve is a picture of air wiggling up and down.
+   - Louder always means higher-pitched.
+   - Sound can travel through empty space, just more quietly.
+   - Sound is fastest in air because air is "light".
+   - If something vibrates, you will always hear it.
+
+ SIMPLIFICATIONS
+   - No dB formulas, no interference, echo, Doppler, or ear anatomy.
+   - Hz labels are flavour, not for calculation.
+   - Web Audio tone is optional and muted by default.
+
+ TEACHER: CONFIG. FMIN/FMAX set visual pulse rate. AMIN/AMAX set how far
+   particles swing. V_SOLID/V_LIQUID/V_AIR set the medium race. Frequency
+   must never change oscilloscope height; amplitude must never change
+   wave spacing — those two sliders are the point of Mode 2.
+
+ No error dialogs. Strike into a vacuum: the drum still shakes, nothing
+ travels. That is the lesson.
+==========================================================================
+-->
+<style>
+:root{
+  --accent:#1F6FD0; --good:#237A46; --warn:#8C5A05; --crit:#A0173F;
+  --panel:#FFFFFF; --panel-2:#F2F4F5; --panel-border:#8A8A8A;
+  --text:#14202A; --text-2:#46565F; --text-3:#71828C;
+  --comp:#C45C12; --rare:#2B6CB0; --pulse:#1F6FD0;
+  --board:#EEF2F4; --grid:#D3DBDF; --hairline:#DCE1E4;
+  --shadow:0 2px 8px rgba(20,32,42,.14); --focus:#14202A; --on-accent:#FFFFFF;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --radius:12px;
+}
+:root[data-profile="dim"]{
+  --accent:#4E9BF0; --good:#4FB27A; --warn:#D0A03A; --crit:#E0648F;
+  --panel:#1A2126; --panel-2:#242D33; --panel-border:#5F6C74;
+  --text:#F1F5F7; --text-2:#C3CFD5; --text-3:#95A4AD;
+  --comp:#F0A040; --rare:#6BA3E8; --pulse:#4E9BF0;
+  --board:#131A1F; --grid:#26313A; --hairline:#3B464D;
+  --shadow:0 2px 10px rgba(0,0,0,.5); --focus:#FFFFFF; --on-accent:#0B1220;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{ font-family:var(--font); background:var(--panel-2); color:var(--text); font-size:16px; line-height:1.45; overflow-x:hidden; }
+:focus-visible{ outline:3px solid var(--focus); outline-offset:2px; border-radius:4px; }
+.sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.wrap{ max-width:1400px; margin:0 auto; padding:10px 10px 80px; }
+:root[dir="rtl"] body{ font-family:system-ui,"Noto Nastaliq Urdu","Segoe UI",Tahoma,sans-serif; }
+:root[dir="rtl"] .stage__inner{ direction:ltr; }
+.head{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; padding:2px 2px 10px; }
+.head__title{ font-size:clamp(19px,2.3vw,25px); font-weight:700; margin:0; letter-spacing:-.02em; }
+.head__sub{ margin:0; font-size:14.5px; color:var(--text-2); }
+.head__spacer{ margin-inline-start:auto; display:flex; gap:8px; flex-wrap:wrap; }
+.panel{ background:var(--panel); border:1px solid var(--panel-border); border-radius:var(--radius); box-shadow:var(--shadow); padding:12px 14px; }
+.panel__title{ font-size:15px; font-weight:700; margin:0 0 10px; }
+.guide{
+  background:var(--panel); border:2px solid var(--accent); border-radius:var(--radius);
+  padding:10px 13px; margin-bottom:10px;
+  display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center;
+}
+@media (max-width:760px){ .guide{ grid-template-columns:1fr; } }
+.guide.done{ border-color:var(--good); }
+.guide__badge{ min-width:72px; padding:6px 10px; border-radius:9px; text-align:center; background:var(--panel-2); border:1px solid var(--panel-border); }
+.guide__badgeTop{ font-size:12.5px; font-weight:700; letter-spacing:.06em; color:var(--text-3); }
+.guide__badgeNum{ font-size:20px; font-weight:700; font-family:var(--mono); font-variant-numeric:tabular-nums; }
+.guide__task{ font-size:17px; font-weight:700; margin:0; }
+.guide__hint{ font-size:14px; margin:4px 0 0; color:var(--text-2); }
+.guide__dots{ display:flex; gap:6px; margin-top:8px; }
+.guide__dot{ width:9px; height:9px; border-radius:50%; background:var(--hairline); }
+.guide__dot.on{ background:var(--good); }
+.guide__dot.now{ background:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent); }
+.guide__acts{ display:flex; gap:8px; flex-wrap:wrap; }
+.btn{
+  font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 16px; border-radius:9px; white-space:nowrap;
+  background:var(--accent); color:var(--on-accent); border:1px solid rgba(0,0,0,.28);
+}
+.btn:hover{ filter:brightness(1.08); }
+.btn--ghost{ background:var(--panel); color:var(--text); border-color:var(--panel-border); }
+.btn--go{ background:var(--good); color:#fff; }
+.btn--sm{ font-size:13.5px; padding:0 12px; }
+.round{
+  width:48px; height:48px; border-radius:50%; cursor:pointer; padding:0;
+  border:1px solid rgba(0,0,0,.35); display:grid; place-items:center; background:var(--btn,#E2E6E9);
+}
+.round--play{ --btn:var(--good); }
+.round--reset{ --btn:var(--warn); }
+.main{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,330px); gap:10px; align-items:start; }
+@media (max-width:1080px){ .main{ grid-template-columns:1fr; } }
+.tray{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+.seg{ display:inline-flex; border:1px solid var(--panel-border); border-radius:9px; overflow:hidden; flex-wrap:wrap; }
+.seg button{
+  font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 12px; border:0; background:var(--panel); color:var(--text-2);
+  border-inline-end:1px solid var(--panel-border);
+}
+.seg button:last-child{ border-inline-end:0; }
+.seg button[aria-pressed="true"]{ background:var(--accent); color:var(--on-accent); }
+.stage{ border:1px solid var(--panel-border); border-radius:var(--radius); overflow:hidden; background:var(--board); }
+.stage__inner{ position:relative; }
+#board{ display:block; width:100%; height:auto; touch-action:none; }
+.stage__bar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 10px; background:var(--panel); border-top:1px solid var(--hairline); }
+.reads{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.read{ background:var(--panel-2); border:1px solid var(--hairline); border-radius:9px; padding:8px 10px; }
+.read__k{ font-size:12.5px; color:var(--text-3); font-weight:700; }
+.read__v{ font-family:var(--mono); font-size:18px; font-variant-numeric:tabular-nums; font-weight:700; }
+.narr{ font-size:15px; line-height:1.5; margin:10px 0 0; }
+.row{ display:flex; align-items:center; gap:8px; margin:8px 0; flex-wrap:wrap; }
+.row label{ font-size:13.5px; font-weight:700; color:var(--text-2); min-width:88px; }
+.val{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:14px; min-width:52px; }
+#tGraphCvs{ display:block; width:100%; height:168px; }
+.graph-note{ font-size:13px; color:var(--text-3); margin:6px 0 0; }
+.legend{ display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:12.5px; color:var(--text-2); }
+.sw{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-inline-end:5px; vertical-align:middle; }
+.screen{ display:none; } .screen.on{ display:block; }
+.q{ margin-bottom:10px; }
+.q__n{ font-size:12.5px; color:var(--text-3); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.q__t{ font-size:17px; font-weight:700; margin:6px 0 12px; }
+.opts{ display:grid; gap:8px; }
+.opt{
+  display:flex; align-items:flex-start; gap:10px; text-align:start; width:100%;
+  min-height:52px; padding:12px 14px; cursor:pointer; border-radius:9px;
+  font-family:inherit; font-size:15.5px; background:var(--panel-2); color:var(--text);
+  border:2px solid var(--panel-border);
+}
+.opt.correct{ border-color:var(--good); background:color-mix(in srgb,var(--good) 14%,var(--panel)); }
+.opt.wrong{ border-color:var(--crit); background:color-mix(in srgb,var(--crit) 12%,var(--panel)); }
+.opt__k{ font-family:var(--mono); font-size:14px; color:var(--text-3); min-width:1.2em; }
+.fb{ display:none; margin:10px 0 0; padding:11px 13px; font-size:14.5px; border-radius:8px; background:var(--panel-2); border-inline-start:5px solid var(--panel-border); }
+.fb.show{ display:block; } .fb.ok{ border-inline-start-color:var(--good); } .fb.no{ border-inline-start-color:var(--crit); }
+.score{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.score__v{ font-family:var(--mono); font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; }
+.nav{
+  position:sticky; bottom:6px; z-index:40; margin-top:10px; border-radius:10px;
+  background:#101418; color:#fff; display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:6px 13px;
+}
+.nav__t{ font-size:14.5px; font-weight:700; margin-inline-end:auto; }
+.navbtn{ cursor:pointer; background:transparent; border:2px solid transparent; border-radius:8px; color:#B9C0C5; font-family:inherit; font-size:14px; font-weight:700; padding:5px 11px; min-height:44px; }
+.navbtn[aria-current="page"]{ color:#fff; border-color:#fff; }
+input[type=range]{ -webkit-appearance:none; appearance:none; height:44px; background:transparent; cursor:pointer; flex:1; min-width:80px; }
+input[type=range]::-webkit-slider-runnable-track{ height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border); }
+input[type=range]::-moz-range-track{ height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border); }
+input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:26px; height:30px; margin-top:-12px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45); }
+input[type=range]::-moz-range-thumb{ width:26px; height:30px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45); }
+
+.stage__inner.is-sort #board{ display:none; }
+.sort{ display:flex; flex-direction:column; gap:10px; padding:10px; min-width:0; min-height:380px; }
+.sort[hidden]{ display:none !important; }
+:root[dir="rtl"] .sort{ direction:rtl; }
+.sort__deck{
+  display:grid; gap:8px; min-width:0;
+  grid-template-columns:repeat(auto-fit, minmax(min(100%, 7.5rem), 1fr));
+}
+.scard{
+  appearance:none; -webkit-appearance:none;
+  display:flex; align-items:center; justify-content:center;
+  box-sizing:border-box; min-width:0; width:100%;
+  min-height:56px; margin:0; padding:10px 8px;
+  border:2px solid var(--panel-border); border-radius:10px;
+  background:var(--panel); color:var(--text);
+  font-family:inherit; cursor:grab; touch-action:none;
+  text-align:center; user-select:none; -webkit-user-select:none;
+  box-shadow:var(--shadow);
+}
+.scard:hover{ border-color:var(--accent); }
+.scard.is-ok{ border-color:var(--good); background:color-mix(in srgb,var(--good) 12%,var(--panel)); }
+.scard.is-sel{ box-shadow:0 0 0 3px var(--focus); }
+.scard.is-drag{ opacity:.42; cursor:grabbing; pointer-events:none; }
+.scard__label{ font-size:12.5px; font-weight:700; line-height:1.3; overflow-wrap:anywhere; pointer-events:none; }
+.sort__msg{ margin:0; min-height:2.6em; padding:0 4px; font-size:13.5px; line-height:1.4; text-align:center; }
+.sort__map{
+  display:grid; gap:8px; min-width:0;
+  grid-template-columns:40px 1fr 1fr;
+  grid-template-rows:minmax(92px,1fr) minmax(92px,1fr) auto;
+  grid-template-areas:
+    "ylab ll hl"
+    "ylab lq hq"
+    ". xlab xlab";
+}
+.sort__ylab{ writing-mode:vertical-rl; transform:rotate(180deg); font-size:12.5px; font-weight:700; color:var(--text-2); text-align:center; grid-area:ylab; }
+.sort__bin[data-bin="LL"]{ grid-area:ll; }
+.sort__bin[data-bin="HL"]{ grid-area:hl; }
+.sort__bin[data-bin="LQ"]{ grid-area:lq; }
+.sort__bin[data-bin="HQ"]{ grid-area:hq; }
+.sort__x{ grid-area:xlab; display:flex; justify-content:space-between; font-size:12.5px; font-weight:700; color:var(--text-2); }
+.sort__bin{
+  min-height:92px; min-width:0; padding:8px; border-radius:12px; border:2px dashed var(--panel-border);
+  background:color-mix(in srgb,var(--accent) 6%,var(--board));
+  display:flex; flex-direction:column; gap:6px;
+}
+.sort__binTitle{ font-size:12.5px; font-weight:700; color:var(--text-3); text-align:center; }
+.sort__binDeck{ display:grid; gap:6px; grid-template-columns:repeat(auto-fit, minmax(min(100%, 6.5rem), 1fr)); min-height:44px; }
+#ghost{
+  position:fixed; z-index:80; pointer-events:none;
+  max-width:160px; padding:8px 10px; border:2px solid var(--accent); border-radius:10px;
+  background:var(--panel); color:var(--text); font-weight:700; font-size:12.5px;
+  display:none; box-shadow:var(--shadow);
+}
+#ghost.on{ display:block; }
+@media (prefers-reduced-motion:reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="screen on" id="scBench">
+  <header class="head">
+    <h1 class="head__title" id="tTitle">Sound</h1>
+    <p class="head__sub" id="tSub">A vibration passed particle to particle. No medium, no sound.</p>
+    <span class="head__spacer">
+      <button class="btn btn--ghost btn--sm" id="btnLang" type="button">اردو</button>
+      <button class="btn btn--ghost btn--sm" id="btnProfile" type="button">Dim room</button>
+    </span>
+  </header>
+  <section class="guide" id="guide" aria-live="polite">
+    <div class="guide__badge">
+      <div class="guide__badgeTop" id="tStep">TASK</div>
+      <div class="guide__badgeNum" id="gNum">1/5</div>
+    </div>
+    <div>
+      <p class="guide__task" id="gTask">—</p>
+      <p class="guide__hint" id="gHint">—</p>
+      <div class="guide__dots" id="gDots" aria-hidden="true"></div>
+    </div>
+    <div class="guide__acts">
+      <button class="btn btn--ghost" id="gShow" type="button">Show me</button>
+      <button class="btn btn--go" id="gNext" type="button" hidden>Next</button>
+    </div>
+  </section>
+  <div class="main">
+    <div>
+      <div class="tray" id="modeTray"></div>
+      <div class="stage">
+        <div class="stage__inner" id="stageInner">
+          <canvas id="board" role="img" aria-label="Sound particles compressing and spreading" aria-describedby="boardDesc" tabindex="0"></canvas>
+          <p class="sr" id="boardDesc">Particles bunch and spread along the direction sound travels. The squiggle on the right is a graph of pressure, not a picture of the air.</p>
+          <div class="sort" id="sortUI" hidden tabindex="0" role="application" aria-label="Sort everyday sounds by pitch and loudness">
+            <div class="sort__deck" id="sortDeck"></div>
+            <p class="sort__msg" id="sortMsg" aria-live="polite"></p>
+            <div class="sort__map">
+              <div class="sort__ylab" id="yLoud">Loud ↑ Quiet</div>
+              <div class="sort__bin" data-bin="LL">
+                <div class="sort__binTitle" id="binLL">Loud · low</div>
+                <div class="sort__binDeck" id="deckLL"></div>
+              </div>
+              <div class="sort__bin" data-bin="HL">
+                <div class="sort__binTitle" id="binHL">Loud · high</div>
+                <div class="sort__binDeck" id="deckHL"></div>
+              </div>
+              <div class="sort__bin" data-bin="LQ">
+                <div class="sort__binTitle" id="binLQ">Quiet · low</div>
+                <div class="sort__binDeck" id="deckLQ"></div>
+              </div>
+              <div class="sort__bin" data-bin="HQ">
+                <div class="sort__binTitle" id="binHQ">Quiet · high</div>
+                <div class="sort__binDeck" id="deckHQ"></div>
+              </div>
+              <div class="sort__x"><span id="xLow">Low pitch</span><span id="xHigh">High pitch</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="stage__bar">
+          <button class="round round--play" id="btnPlay" type="button" aria-pressed="true" aria-label="Pause">
+            <svg width="20" height="20" viewBox="0 0 24 24" id="icPlay" aria-hidden="true"><rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/></svg>
+          </button>
+          <button class="btn btn--ghost btn--sm" id="btnStep" type="button">Step</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px">
+            <span id="tSpeed">Speed</span>
+            <input type="range" id="speed" min="0.25" max="2" step="0.25" value="1" style="width:96px" aria-label="Speed" />
+          </label>
+          <button class="round round--reset" id="btnReset" type="button" aria-label="Reset">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 1 0 6.5 4.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M12 1.5V8.5L6.5 5z" fill="#fff"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:10px" id="modeOpts"></div>
+    </div>
+    <div>
+      <div class="panel">
+        <h2 class="panel__title" id="tReadings">Live readings</h2>
+        <div class="reads" aria-live="polite">
+          <div class="read"><div class="read__k" id="kA">Pitch</div><div class="read__v" id="rA">—</div></div>
+          <div class="read"><div class="read__k" id="kB">Loudness</div><div class="read__v" id="rB">—</div></div>
+          <div class="read"><div class="read__k" id="kC">Medium</div><div class="read__v" id="rC">—</div></div>
+          <div class="read"><div class="read__k" id="kD">Race</div><div class="read__v" id="rD">—</div></div>
+        </div>
+        <p class="narr" id="narr" aria-live="polite">—</p>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--comp)"></i><span id="legC">compression</span></span>
+          <span><i class="sw" style="background:var(--rare)"></i><span id="legR">rarefaction</span></span>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:10px">
+        <h2 class="panel__title" id="tGraph">Pressure graph</h2>
+        <canvas id="tGraphCvs" role="img" aria-label="Oscilloscope: frequency is spacing of peaks, amplitude is height of peaks"></canvas>
+        <p class="graph-note" id="tGraphNote">This line is a graph of pressure. The air itself does not wiggle up and down.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="screen" id="scQuiz">
+  <header class="head">
+    <h1 class="head__title" id="tQuizTitle">Check what you have learned</h1>
+    <p class="head__sub" id="tQuizSub">Five questions, with the answer explained straight away.</p>
+  </header>
+  <div id="quiz" style="max-width:840px;margin:0 auto"></div>
+</div>
+<nav class="nav" aria-label="Screens">
+  <span class="nav__t" id="tNavTitle">Sound</span>
+  <button class="navbtn" id="navBench" type="button" aria-current="page">Bench</button>
+  <button class="navbtn" id="navQuiz" type="button">Quiz</button>
+</nav>
+</div>
+<div id="ghost"></div>
+
+<script>
+"use strict";
+/* ======================================================================
+   1. CONFIG
+   Frequency sets HOW OFTEN pulses arrive (spacing). Amplitude sets HOW
+   FAR each particle swings (height / bunching). They must not bleed.
+   ====================================================================== */
+const CONFIG = {
+  FMIN: 1.8,          // visual cycles / s at low pitch
+  FMAX: 6.2,          // visual cycles / s at high pitch
+  AMIN: 3,            // px particle / cone excursion at quiet
+  AMAX: 16,           // px excursion at loud — oscilloscope y-range is always ±AMAX
+  LMIN: 72,           // px wavelength at high pitch
+  LMAX: 210,          // px wavelength at low pitch (from freq only)
+  SRC_F: 4.2,         // Mode 1 strike frequency
+  DECAY: 1.35,        // Mode 1 ring-down time (s)
+  V_SOLID: 320,       // race speed px/s
+  V_LIQUID: 175,
+  V_AIR: 95,
+  RACE_LEN: 620,
+  AUDIO_LO: 220,      // flavour Hz at freq=0
+  AUDIO_HI: 880,      // flavour Hz at freq=1
+  SAMPLE_DT: 0.12
+};
+
+const CARDS = [
+  { id:"mosquito", pitch:"high", loud:"quiet" },
+  { id:"thunder",  pitch:"low",  loud:"loud"  },
+  { id:"whisper",  pitch:"low",  loud:"quiet" },
+  { id:"siren",    pitch:"high", loud:"loud"  },
+  { id:"bass",     pitch:"low",  loud:"loud"  },
+  { id:"bird",     pitch:"high", loud:"quiet" },
+  { id:"jet",      pitch:"high", loud:"loud"  },
+  { id:"drip",     pitch:"low",  loud:"quiet" }
+];
+
+/* ======================================================================
+   2. STRINGS
+   ====================================================================== */
+const STRINGS = {
+  en: {
+    title:"Sound: Vibration, Pitch & Loudness",
+    sub:"Sound is a vibration passed particle to particle. No medium, no sound — and pitch is not loudness.",
+    navTitle:"Sound", bench:"Bench", quiz:"Quiz", lang:"اردو", dim:"Dim room", bright:"Bright room",
+    play:"Play", pause:"Pause", stepBtn:"Step", speed:"Speed", reset:"Reset",
+    readings:"Live readings", graph:"Pressure graph (not a picture of the air)",
+    graphNote:"Peak spacing = pitch. Peak height = loudness. The squiggle is a graph — particles move left and right, not up and down.",
+    boardDesc:"Particles bunch (compression) and spread (rarefaction) along the direction sound travels. Vacuum has no particles, so nothing travels.",
+    quizTitle:"Check what you have learned", quizSub:"Five questions, with the answer explained straight away.",
+    tryAgain:"Try again", score:"Score", next:"Next", show:"Show me", task:"TASK",
+    m1:"Vibrating source", m2:"Pitch & loudness", m3:"Medium race", m4:"Everyday sort",
+    strike:"Strike", mediumOn:"Medium on", mediumOff:"No medium (vacuum)",
+    hear:"Hear the tone", mute:"Mute tone",
+    freq:"Frequency (pitch)", amp:"Amplitude (loudness)",
+    pitch:"Pitch", loudness:"Loudness", medium:"Medium", race:"Who arrived",
+    low:"low", mid:"medium", high:"high", quiet:"quiet", mediumL:"medium", loud:"loud",
+    hz:"Hz (flavour)",
+    solid:"Solid", liquid:"Liquid", air:"Air",
+    sendPulse:"Send the same pulse", racing:"Racing…", finished:"Finished",
+    waiting:"—", none:"no medium", airMed:"air / particles",
+    still:"still", ringing:"vibrating",
+    scopeIdle:"Strike the drum, or open Pitch & loudness, to see the pressure graph.",
+    legC:"compression (bunched)", legR:"rarefaction (spread)",
+    yLoud:"Loud ↑ Quiet", xLow:"Low pitch", xHigh:"High pitch",
+    binLL:"Loud · low pitch", binHL:"Loud · high pitch", binLQ:"Quiet · low pitch", binHQ:"Quiet · high pitch",
+    nStrike:"The skin shakes. Nearby particles bunch, then spread, then bunch again — a longitudinal wave leaving the drum.",
+    nVac:"The drum still shakes. There are no particles to pass that shake along. No medium, no travelling sound.",
+    nPitch:"Frequency up — compressions arrive closer together. That is a higher pitch, not a louder one. Wave height did not change.",
+    nLoud:"A bigger swing. Particles bunch more tightly. That is louder, not a higher pitch. The spacing of the pulses stayed the same.",
+    nRace:"Solid first, then liquid, then air. Tight packing hands the vibration on faster — air is slowest, not fastest.",
+    nSort:"Pitch is high↔low. Loudness is quiet↔loud. Thunder can be loud and low. A mosquito can be high and quiet.",
+    nPlay:"Tap the drum — or Strike. Watch the cause (vibration) and the effect (particle pulses) at the same time.",
+    nPlay2:"Two sliders, two properties. Change frequency and only the spacing should change. Change amplitude and only the height / bunching should change.",
+    t1:"Strike the drum with a medium present and watch the wave ripple out.",
+    h1:"Leave Medium on. You do not press “I’m done” — one strike is enough.",
+    p1:"Vibration is the cause. The bunched-and-spread particles are the sound leaving.",
+    t2:"Toggle to no medium and strike again. Nothing should travel outward.",
+    h2:"Empty the space, then strike. The drum still moves. The wave does not.",
+    p2:"No particles means nothing to pass the vibration along. Vacuum is silent, not quieter.",
+    t3:"In Pitch & loudness, raise pitch without changing loudness, then raise loudness without changing pitch.",
+    h3:"Use one slider at a time. Watch spacing change, then height change — not both from one dial.",
+    p3:"Pitch and loudness are independent. High can be quiet. Low can be loud.",
+    t4:"Run the medium race and note the finishing order.",
+    h4:"Send the same pulse down solid, liquid, and air at once.",
+    p4:"Solid wins, air last. Tight particles pass a vibration faster than spread-out air.",
+    t5:"Sort at least 6 everyday sounds onto the pitch × loudness grid.",
+    h5:"Drag a card onto the square that matches both axes. A miss tells you which axis was wrong.",
+    p5:"A sound can sit anywhere on that grid. Loud is not the same property as high.",
+    mosquito:"Mosquito buzz", thunder:"Thunder", whisper:"Whisper", siren:"Ambulance siren",
+    bass:"Bass drum", bird:"Bird chirp", jet:"Jet engine", drip:"Dripping tap",
+    whyMosquito:"Mosquito: high pitch, quiet — tiny wings, tiny swing.",
+    whyThunder:"Thunder: low pitch, loud — a huge, slow vibration.",
+    whyWhisper:"Whisper: low-ish pitch, quiet — small amplitude, not a scream.",
+    whySiren:"Siren: high pitch, loud — fast and strong.",
+    whyBass:"Bass drum: low pitch, loud — big skin, big swing.",
+    whyBird:"Bird chirp: high pitch, quiet-to-medium — fast and not huge.",
+    whyJet:"Jet engine: high roar, very loud — fast and enormous amplitude.",
+    whyDrip:"Drip: low-ish pitch, quiet — small splashes, not a storm.",
+    noPitch:"Pitch was the miss: {name} is {want}, not {got}. Loudness was right.",
+    noLoud:"Loudness was the miss: {name} is {want}, not {got}. Pitch was right.",
+    noBoth:"Both axes: {name} is {p} pitch and {l}. Try the opposite square.",
+    q1:"The textbook often draws sound as an up-and-down squiggle. What is that squiggle actually showing?",
+    q1a:"Air particles flying up and down like a wave on water.",
+    q1b:"A graph of pressure (or displacement) — the air particles themselves move back and forth along the travel direction.",
+    q1c:"The shape the sound makes in empty space.",
+    q1w:"The sine curve is a graph. In the air, particles bunch and spread along the direction the sound is going — a longitudinal wave, not a jump-rope.",
+    q2:"A louder sound is always a higher-pitched sound. True or false?",
+    q2a:"True — more energy always means a higher note.",
+    q2b:"False — loudness is amplitude (size of the swing); pitch is frequency (how often). Thunder is loud and low.",
+    q2c:"True for drums, false for strings.",
+    q2w:"You can have any mix: high and quiet (mosquito), low and loud (thunder). The two sliders in this sim are separate on purpose.",
+    q3:"Can sound travel through empty space, just more quietly?",
+    q3a:"Yes — it gets weaker with distance, even in a vacuum.",
+    q3b:"No. With no particles there is no medium to carry the vibration. It does not travel at all.",
+    q3c:"Only if the vibration is very large.",
+    q3w:"Vacuum is not a quieter path. It is no path. Strike the drum with Medium off: the skin moves, nothing leaves.",
+    q4:"Why does sound generally travel fastest through solids, not through air?",
+    q4a:"Air is lighter, so sound should zip through it fastest.",
+    q4b:"Solid particles are packed tightly and pass the vibration along quickly. Gases are spread out, so they are slowest.",
+    q4c:"Solids are louder, so the sound arrives sooner.",
+    q4w:"The race is about packing, not 'lightness'. Solid finishes first; air last.",
+    q5:"If something is vibrating, will you always hear it?",
+    q5a:"Yes — vibration is sound, so you must hear it.",
+    q5b:"No. You need a medium, and the vibration has to be in the range ears can detect. A vacuum, or an extremely slow/fast shake, can be silent.",
+    q5c:"Only if it is a musical instrument.",
+    q5w:"Vibration can exist without audible sound. This sim’s vacuum strike is the clean example: motion, no travelling sound."
+  },
+  ur: {
+    title:"آواز: کمپن، زیر و بم اور بلندی",
+    sub:"آواز ایک کمپن ہے جو ذرہ بہ ذرہ آگے جاتی ہے۔ واسطہ نہ ہو تو آواز نہیں — اور زیر و بم بلندی نہیں۔",
+    navTitle:"آواز", bench:"بینچ", quiz:"سوالات", lang:"English", dim:"مدھم کمرہ", bright:"روشن کمرہ",
+    play:"چلائیں", pause:"روکیں", stepBtn:"قدم", speed:"رفتار", reset:"ری سیٹ",
+    readings:"لائیو ریڈنگز", graph:"دباؤ کا گراف (ہوا کی تصویر نہیں)",
+    graphNote:"چوٹیوں کا فاصلہ = زیر و بم۔ اونچائی = بلندی۔ یہ لہر گراف ہے — ذرات بائیں دائیں ہلتے ہیں، اوپر نیچے نہیں۔",
+    boardDesc:"ذرات سفر کی سمت میں جم جاتے ہیں اور پھیل جاتے ہیں۔ خلا میں ذرات نہیں، اس لیے کچھ سفر نہیں کرتا۔",
+    quizTitle:"جو سیکھا ہے جانچیں", quizSub:"پانچ سوال، جواب فوراً سمجھایا جاتا ہے۔",
+    tryAgain:"دوبارہ کوشش", score:"اسکور", next:"آگے", show:"دکھاؤ", task:"کام",
+    m1:"کانپتا منبع", m2:"زیر و بم اور بلندی", m3:"واسطوں کی دوڑ", m4:"روزمرہ ترتیب",
+    strike:"ضرب", mediumOn:"واسطہ موجود", mediumOff:"واسطہ نہیں (خلا)",
+    hear:"سر سنیں", mute:"خاموش",
+    freq:"تعدد (زیر و بم)", amp:"وسعت (بلندی)",
+    pitch:"زیر و بم", loudness:"بلندی", medium:"واسطہ", race:"کون پہنچا",
+    low:"بم", mid:"درمیانہ", high:"زیر", quiet:"ہلکی", mediumL:"درمیانہ", loud:"اونچی",
+    hz:"Hz (ذوق)",
+    solid:"ٹھوس", liquid:"مائع", air:"ہوا",
+    sendPulse:"ایک ہی نبض بھیجیں", racing:"دوڑ…", finished:"ختم",
+    waiting:"—", none:"کوئی واسطہ نہیں", airMed:"ہوا / ذرات",
+    still:"ساکن", ringing:"کانپ رہا",
+    scopeIdle:"ڈھول پر ضرب لگائیں، یا زیر و بم کھولیں، تب دباؤ کا گراف نظر آئے گا۔",
+    legC:"دباؤ (جمے ہوئے)", legR:"پھیلاؤ (کھلے)",
+    yLoud:"اونچی ↑ ہلکی", xLow:"بم", xHigh:"زیر",
+    binLL:"اونچی · بم", binHL:"اونچی · زیر", binLQ:"ہلکی · بم", binHQ:"ہلکی · زیر",
+    nStrike:"پوست کانپتی ہے۔ قریبی ذرات جمتے، پھیلتے، پھر جمتے ہیں — طولی لہر ڈھول سے نکل رہی ہے۔",
+    nVac:"ڈھول پھر بھی کانپتا ہے۔ کوئی ذرہ نہیں جو وہ کانپنا آگے دےے۔ واسطہ نہیں، سفر کرتی آواز نہیں۔",
+    nPitch:"تعدد بڑھائی — دباؤ قریب قریب آ رہے ہیں۔ یہ اونچی پچ ہے، اونچی آواز نہیں۔ لہر کی اونچائی نہیں بدلی۔",
+    nLoud:"بڑا جھولا۔ ذرات زیادہ جم رہے ہیں۔ یہ اونچی آواز ہے، اونچی پچ نہیں۔ نبضوں کا فاصلہ ویسا ہی رہا۔",
+    nRace:"پہلے ٹھوس، پھر مائع، پھر ہوا۔ گھنے ذرات کمپن تیزی سے دیتے ہیں — ہوا سب سے سست، تیز نہیں۔",
+    nSort:"پچ زیر↔بم ہے۔ بلندی ہلکی↔اونچی ہے۔ گرج اونچی اور بم ہو سکتی ہے۔ مچھر زیر اور ہلکا۔",
+    nPlay:"ڈھول پر تھپکی — یا ضرب۔ سبب (کمپن) اور اثر (ذرے کی نبض) ایک ساتھ دیکھیں۔",
+    nPlay2:"دو سلائیڈر، دو خاصیتیں۔ تعدد بدلیں تو صرف فاصلہ بدلے۔ وسعت بدلیں تو صرف اونچائی / جم جانا بدلے۔",
+    t1:"واسطہ موجود ہو تو ڈھول پر ضرب لگائیں اور لہر باہر نکلتے دیکھیں۔",
+    h1:"واسطہ آن رہے۔ 'میں ہو گیا' دبانے کی ضرورت نہیں — ایک ضرب کافی ہے۔",
+    p1:"کمپن سبب ہے۔ جمے اور پھیلے ذرات وہ آواز ہے جو نکل رہی ہے۔",
+    t2:"واسطہ بند کریں اور پھر ضرب لگائیں۔ باہر کچھ نہیں جانا چاہیے۔",
+    h2:"جگہ خالی کریں، پھر ضرب۔ ڈھول ہلتا ہے۔ لہر نہیں۔",
+    p2:"ذرات نہ ہوں تو کمپن آگے نہیں جاتی۔ خلا خاموش ہے، ہلکی آواز نہیں۔",
+    t3:"زیر و بم میں پچ بڑھائیں بغیر بلندی بدلے، پھر بلندی بڑھائیں بغیر پچ بدلے۔",
+    h3:"ایک وقت میں ایک سلائیڈر۔ پہلے فاصلہ بدلے، پھر اونچائی — ایک ڈائل سے دونوں نہیں۔",
+    p3:"پچ اور بلندی الگ ہیں۔ زیر ہلکی ہو سکتی ہے۔ بم اونچی ہو سکتی ہے۔",
+    t4:"واسطوں کی دوڑ چلائیں اور ترتیب نوٹ کریں۔",
+    h4:"ایک ہی نبض ٹھوس، مائع اور ہوا میں ایک ساتھ بھیجیں۔",
+    p4:"ٹھوس جیتتا ہے، ہوا آخر میں۔ گھنے ذرات پھیلی ہوا سے تیز کمپن دیتے ہیں۔",
+    t5:"کم از کم 6 روزمرہ آوازیں پچ × بلندی کی جالی پر رکھیں۔",
+    h5:"کارڈ اس خانے پر کھینچیں جو دونوں محوروں سے ملے۔ غلطی بتائے گی کون سا محور غلط تھا۔",
+    p5:"آواز اس جالی کے کسی بھی خانے میں ہو سکتی ہے۔ اونچی ہونا زیر ہونے کے برابر نہیں۔",
+    mosquito:"مچھر کی بھنبھناہٹ", thunder:"گرج", whisper:"سرگوشی", siren:"ایمبولینس سائرن",
+    bass:"بم ڈھول", bird:"پرندے کی چہچہاہٹ", jet:"جہاز کا انجن", drip:"ٹپکتی نل",
+    whyMosquito:"مچھر: زیر پچ، ہلکی — چھوٹے پر، چھوٹا جھولا۔",
+    whyThunder:"گرج: بم پچ، اونچی — بڑی، سست کمپن۔",
+    whyWhisper:"سرگوشی: بم پچ، ہلکی — چھوٹی وسعت، چیخ نہیں۔",
+    whySiren:"سائرن: زیر پچ، اونچی — تیز اور مضبوط۔",
+    whyBass:"بم ڈھول: بم پچ، اونچی — بڑی پوست، بڑا جھولا۔",
+    whyBird:"چہچہاہٹ: زیر پچ، ہلکی — تیز مگر چھوٹی۔",
+    whyJet:"جہاز: زیر گرج، بہت اونچی — تیز اور بہت بڑی وسعت۔",
+    whyDrip:"ٹپک: بم پچ، ہلکی — چھوٹے چھینٹے، طوفان نہیں۔",
+    noPitch:"پچ غلط تھی: {name} {want} ہے، {got} نہیں۔ بلندی ٹھیک تھی۔",
+    noLoud:"بلندی غلط تھی: {name} {want} ہے، {got} نہیں۔ پچ ٹھیک تھی۔",
+    noBoth:"دونوں محور: {name} {p} پچ اور {l} ہے۔ الٹا خانہ آزمائیں۔",
+    q1:"کتاب میں آواز اکثر اوپر نیچے کی لہر کی طرح کھینچی جاتی ہے۔ وہ لہر اصل میں کیا دکھاتی ہے؟",
+    q1a:"ہوا کے ذرات پانی کی لہر کی طرح اوپر نیچے اڑ رہے ہیں۔",
+    q1b:"دباؤ (یا ہلنے) کا گراف — خود ذرات سفر کی سمت میں آگے پیچھے ہلتے ہیں۔",
+    q1c:"خالی جگہ میں آواز کی شکل۔",
+    q1w:"سائن وکر گراف ہے۔ ہوا میں ذرات آواز کی سمت میں جمتے اور پھیلتے ہیں — طولی لہر، رسی کی لہر نہیں۔",
+    q2:"اونچی آواز ہمیشہ زیر پچ ہوتی ہے۔ درست یا غلط؟",
+    q2a:"درست — زیادہ توانائی ہمیشہ اونچا سر ہے۔",
+    q2b:"غلط — بلندی وسعت ہے (جھولے کا سائز)؛ پچ تعدد ہے۔ گرج اونچی اور بم ہے۔",
+    q2c:"ڈھول کے لیے درست، تار کے لیے غلط۔",
+    q2w:"کوئی بھی میل ہو سکتا ہے: زیر اور ہلکی (مچھر)، بم اور اونچی (گرج)۔ اس سیم کے دو سلائیڈر الگ ہیں۔",
+    q3:"کیا آواز خالی جگہ میں صرف ہلکی ہو کر سفر کر سکتی ہے؟",
+    q3a:"ہاں — فاصلے سے کمزور ہو جاتی ہے، خلا میں بھی۔",
+    q3b:"نہیں۔ ذرات نہ ہوں تو کمپن اٹھانے والا واسطہ نہیں۔ سفر بالکل نہیں ہوتا۔",
+    q3c:"صرف اگر کمپن بہت بڑی ہو۔",
+    q3w:"خلا ہلکا راستہ نہیں، کوئی راستہ نہیں۔ واسطہ بند کر کے ضرب لگائیں: پوست ہلتی ہے، کچھ نہیں نکلتا۔",
+    q4:"آواز عموماً ہوا میں نہیں، ٹھوس میں تیز کیوں سفر کرتی ہے؟",
+    q4a:"ہوا ہلکی ہے اس لیے آواز اس میں سب سے تیز ہونی چاہیے۔",
+    q4b:"ٹھوس کے ذرات گھرے ہوتے ہیں اور کمپن جلدی دے دیتے ہیں۔ گیسیں پھیلی ہوتی ہیں اس لیے سب سے سست۔",
+    q4c:"ٹھوس اونچی آواز دیتے ہیں اس لیے جلد پہنچتی ہے۔",
+    q4w:"دوڑ ہلکے پن کی نہیں، گھرے پن کی ہے۔ ٹھوس پہلے؛ ہوا آخر میں۔",
+    q5:"اگر کوئی چیز کانپ رہی ہو تو کیا آپ ہمیشہ سنیں گے؟",
+    q5a:"ہاں — کمپن ہی آواز ہے، سننا ضروری ہے۔",
+    q5b:"نہیں۔ واسطہ چاہیے، اور کمپن کان کی حد میں ہونی چاہیے۔ خلا، یا بہت سست/تیز ہلنا، خاموش ہو سکتا ہے۔",
+    q5c:"صرف اگر یہ ساز ہو۔",
+    q5w:"کمپن سمعی آواز کے بغیر ہو سکتی ہے۔ اس سیم کی خلا میں ضرب صاف مثال ہے: حرکت، سفر کرتی آواز نہیں۔"
+  }
+};
+let LANG = "en";
+function T(k){ return (STRINGS[LANG]&&STRINGS[LANG][k]) || STRINGS.en[k] || k; }
+function el(id){ return document.getElementById(id); }
+function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+function fillTpl(s, map){ return s.replace(/\{(\w+)\}/g, (_,k)=> map[k] ?? ""); }
+
+/* Pitch/loudness: frequency → λ and f only. Amplitude → A only. */
+function visF(){ return lerp(CONFIG.FMIN, CONFIG.FMAX, S.freq); }
+function visA(){ return lerp(CONFIG.AMIN, CONFIG.AMAX, S.amp); }
+function visL(){ return lerp(CONFIG.LMAX, CONFIG.LMIN, S.freq); }
+function flavourHz(){ return Math.round(lerp(CONFIG.AUDIO_LO, CONFIG.AUDIO_HI, S.freq)); }
+function pitchWord(u){ return u<0.34?T("low"): u<0.67?T("mid"):T("high"); }
+function loudWord(u){ return u<0.34?T("quiet"): u<0.67?T("mediumL"):T("loud"); }
+function env1(){ return Math.exp(-S.src.t / CONFIG.DECAY) * S.src.A0; }
+
+/* ======================================================================
+   3. STATE
+   ====================================================================== */
+function freshPlaced(){
+  const o={};
+  CARDS.forEach(c=>{ o[c.id]={ bin:null, ok:false }; });
+  return o;
+}
+function initial(){
+  return {
+    mode: 1,
+    running: true,
+    speed: 1,
+    medium: true,
+    freq: 0.35,
+    amp: 0.45,
+    src: { t: 8, A0: 0 },
+    race: { on:false, t:0, order:[], done:false },
+    placed: freshPlaced(),
+    sortSel: null,
+    sortMsg: "",
+    heard: false,
+    tSim: 0,
+    lastCtrl: "idle",
+    seen: { strikeMed:false, strikeVac:false, pitchSolo:false, ampSolo:false, raceDone:false },
+    guide: { i:0, done:false }
+  };
+}
+let S = initial();
+let dim = false;
+const drag = { kind:null, id:null, x:0, y:0 };
+
+const W = 900, H = 500;
+const canvas = el("board");
+const ctx = canvas.getContext("2d");
+const gcv = el("tGraphCvs");
+const gctx = gcv.getContext("2d");
+let cssW=900, cssH=500;
+function dpr(){ return Math.min(2, window.devicePixelRatio||1); }
+function fitBoard(){
+  const wrap = el("stageInner");
+  const w = Math.max(280, wrap.clientWidth);
+  const h = Math.max(300, Math.min(540, Math.round(w * H/W)));
+  cssW=w; cssH=h;
+  const d=dpr();
+  canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+}
+
+/* ======================================================================
+   4. PHYSICS / MODEL
+   ====================================================================== */
+function strike(){
+  S.src.t = 0;
+  S.src.A0 = S.mode===1 ? 1 : S.amp;
+  if(S.mode===1){
+    if(S.medium) S.seen.strikeMed = true;
+    else S.seen.strikeVac = true;
+    S.lastCtrl = S.medium ? "strike" : "vac";
+  }
+}
+function startRace(){
+  S.race = { on:true, t:0, order:[], done:false };
+  S.lastCtrl = "race";
+}
+function stepRace(dt){
+  if(!S.race.on || S.race.done) return;
+  S.race.t += dt;
+  const lanes = [
+    { id:"solid", v:CONFIG.V_SOLID },
+    { id:"liquid", v:CONFIG.V_LIQUID },
+    { id:"air", v:CONFIG.V_AIR }
+  ];
+  lanes.forEach(L=>{
+    if(S.race.order.indexOf(L.id)>=0) return;
+    if(S.race.t * L.v >= CONFIG.RACE_LEN){
+      S.race.order.push(L.id);
+    }
+  });
+  if(S.race.order.length===3){
+    S.race.done = true;
+    S.seen.raceDone = true;
+  }
+}
+function step(dt){
+  S.tSim += dt;
+  S.src.t += dt;
+  if(S.mode===3) stepRace(dt);
+  syncAudio();
+}
+
+/* Optional Web Audio — visual sim is complete without it. */
+const audio = { ctx:null, osc:null, gain:null };
+function canAudio(){
+  return !!(window.AudioContext || window.webkitAudioContext);
+}
+function ensureAudio(){
+  if(!canAudio() || audio.ctx) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  audio.ctx = new AC();
+  audio.osc = audio.ctx.createOscillator();
+  audio.gain = audio.ctx.createGain();
+  audio.osc.type = "sine";
+  audio.gain.gain.value = 0;
+  audio.osc.connect(audio.gain);
+  audio.gain.connect(audio.ctx.destination);
+  audio.osc.start();
+}
+function syncAudio(){
+  if(!audio.ctx || !S.heard) return;
+  if(audio.ctx.state==="suspended") audio.ctx.resume();
+  const f = flavourHz();
+  const g = (S.mode===2 && S.running) ? S.amp * 0.12 : 0;
+  try{
+    audio.osc.frequency.setTargetAtTime(f, audio.ctx.currentTime, 0.03);
+    audio.gain.gain.setTargetAtTime(g, audio.ctx.currentTime, 0.03);
+  }catch(_){}
+}
+function setHeard(on){
+  S.heard = on && canAudio();
+  if(S.heard){ ensureAudio(); syncAudio(); }
+  else if(audio.gain){ audio.gain.gain.setTargetAtTime(0, audio.ctx.currentTime, 0.02); }
+}
+
+/* ======================================================================
+   5. RENDER  (read-only)
+   ====================================================================== */
+function label(text, x, y, opt){
+  opt = opt || {};
+  ctx.font = (opt.bold?"700 ":"600 ")+(opt.size||14)+"px "+css("--font");
+  ctx.fillStyle = opt.fill || css("--text");
+  ctx.textAlign = opt.align || "center";
+  ctx.textBaseline = opt.base || "middle";
+  ctx.fillText(text, x, y);
+}
+function drumXY(){ return { x:108, y:H/2 }; }
+
+function drawDrum(x, y, disp){
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = css("--text-2");
+  ctx.fillRect(-8, 78, 16, 36);
+  ctx.beginPath();
+  ctx.ellipse(disp*0.35, 0, 52, 70, 0, 0, Math.PI*2);
+  ctx.fillStyle = "#C4A574";
+  ctx.fill();
+  ctx.strokeStyle = css("--text");
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(disp, 0, 38, 54, 0, 0, Math.PI*2);
+  ctx.fillStyle = colorMix(css("--comp"), css("--panel"), 0.35 + 0.25*Math.max(0, disp)/16);
+  ctx.fill();
+  ctx.restore();
+}
+function colorMix(a,b,t){
+  /* tiny helper using canvas — fall back to a */
+  return t>0.55?a:b;
+}
+function drawVacuumHatch(){
+  ctx.fillStyle = css("--board");
+  ctx.fillRect(0,0,W,H);
+  ctx.save();
+  ctx.strokeStyle = css("--hairline");
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = 0.7;
+  for(let i=-H;i<W+H;i+=18){
+    ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i+H,H); ctx.stroke();
+  }
+  ctx.restore();
+  label(T("mediumOff"), W*0.58, 40, { size:16, bold:true, fill:css("--text-3") });
+}
+function drawMode1(){
+  const d = drumXY();
+  const env = env1();
+  const phase = 2*Math.PI*CONFIG.SRC_F*S.src.t;
+  const disp = env * 10 * Math.sin(phase);
+  if(!S.medium){
+    drawVacuumHatch();
+    drawDrum(d.x, d.y, disp);
+    label(T("nVac"), W*0.58, H-28, { size:13, fill:css("--text-2") });
+    return;
+  }
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+  /* compression rings — spacing from source frequency only */
+  const k = 0.045;
+  if(env>0.04){
+    for(let r=40;r<520;r+=28){
+      const wave = Math.sin(k*r - phase);
+      const a = env * 0.22 * (0.55 + 0.45*wave) * Math.exp(-r*0.0022);
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, r, -0.95, 0.95);
+      ctx.strokeStyle = wave>0 ? css("--comp") : css("--rare");
+      ctx.globalAlpha = a;
+      ctx.lineWidth = 6;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+  /* particles: displace ALONG the radius (longitudinal) */
+  const cols=15, rows=11;
+  for(let j=0;j<rows;j++){
+    for(let i=0;i<cols;i++){
+      const x0 = 175 + i*46;
+      const y0 = 48 + j*38;
+      const dx = x0-d.x, dy = y0-d.y;
+      const r = Math.hypot(dx,dy) || 1;
+      const wave = Math.sin(k*r - phase);
+      const ur = env * 11 * wave * Math.exp(-r*0.0018);
+      const x = x0 + ur * dx/r;
+      const y = y0 + ur * dy/r;
+      const bunch = 0.5 + 0.5 * env * wave;
+      ctx.beginPath();
+      ctx.arc(x, y, 4.2, 0, Math.PI*2);
+      ctx.fillStyle = bunch>0.55 ? css("--comp") : css("--rare");
+      ctx.globalAlpha = 0.55 + 0.45*env;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+  drawDrum(d.x, d.y, disp);
+  label(T("m1"), 20, 24, { size:14, align:"left", bold:true, fill:css("--text-2") });
+}
+function drawSpeaker(x, y, disp){
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = css("--text");
+  ctx.fillRect(-36, -28, 22, 56);
+  ctx.beginPath();
+  ctx.moveTo(-14, -22);
+  ctx.lineTo(18+disp, -48);
+  ctx.lineTo(18+disp, 48);
+  ctx.lineTo(-14, 22);
+  ctx.closePath();
+  ctx.fillStyle = css("--accent");
+  ctx.fill();
+  ctx.restore();
+}
+function drawMode2(){
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+  const f = visF(), A = visA(), L = visL();
+  const omega = 2*Math.PI*f;
+  const cone = A * Math.sin(omega * S.tSim);
+  drawSpeaker(70, H/2, cone);
+  /* faint compression bands: spacing from L (freq) only; opacity from amp only */
+  const origin = 120;
+  for(let bx=origin; bx<W; bx+=L){
+    const phase = 2*Math.PI*((bx-origin)/L) - omega*S.tSim;
+    const band = 0.5 + 0.5*Math.cos(phase);
+    ctx.fillStyle = css("--comp");
+    ctx.globalAlpha = 0.08 + 0.22 * S.amp * band;
+    ctx.fillRect(bx - 10, 40, 20, H-80);
+    ctx.globalAlpha = 1;
+  }
+  const rows = 5, n = 32, x0 = 150, span = 700, y0 = 90, dy = 64;
+  for(let r=0;r<rows;r++){
+    for(let i=0;i<n;i++){
+      const rest = x0 + (i/(n-1))*span;
+      const phase = 2*Math.PI*((rest-x0)/L) - omega*S.tSim;
+      /* excursion uses A only; phase uses L (freq) only */
+      const x = rest + A * Math.sin(phase);
+      const y = y0 + r*dy;
+      const bunch = 0.5 + 0.5 * S.amp * Math.cos(phase);
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI*2);
+      ctx.fillStyle = bunch>0.55 ? css("--comp") : css("--rare");
+      ctx.fill();
+    }
+  }
+  label(T("freq")+" → "+pitchWord(S.freq), 20, 24, { size:13, align:"left", fill:css("--text-2") });
+  label(T("amp")+" → "+loudWord(S.amp), 20, 44, { size:13, align:"left", fill:css("--text-2") });
+}
+function drawMode3(){
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+  const lanes = [
+    { id:"solid", y:95, v:CONFIG.V_SOLID, gap:14, r:5, label:T("solid") },
+    { id:"liquid", y:230, v:CONFIG.V_LIQUID, gap:24, r:5, label:T("liquid") },
+    { id:"air", y:365, v:CONFIG.V_AIR, gap:38, r:4.2, label:T("air") }
+  ];
+  const x0 = 70, finish = x0 + CONFIG.RACE_LEN;
+  ctx.strokeStyle = css("--good");
+  ctx.setLineDash([6,6]);
+  ctx.beginPath(); ctx.moveTo(finish, 50); ctx.lineTo(finish, 450); ctx.stroke();
+  ctx.setLineDash([]);
+  label("finish", finish, 36, { size:12, fill:css("--good") });
+  lanes.forEach(L=>{
+    ctx.fillStyle = css("--panel");
+    roundRect(40, L.y-48, 820, 96, 12); ctx.fill();
+    ctx.strokeStyle = css("--hairline"); ctx.lineWidth=1; ctx.stroke();
+    label(L.label, 52, L.y-30, { size:13, align:"left", bold:true });
+    const pulseX = S.race.on ? x0 + S.race.t * L.v : x0;
+    const px = Math.min(finish, pulseX);
+    const place = S.race.order.indexOf(L.id);
+    for(let x=x0; x<finish; x+=L.gap){
+      const u = S.race.on ? 10 * Math.exp(-Math.pow((x-px)/28, 2)) : 0;
+      ctx.beginPath();
+      ctx.arc(x + u, L.y+8, L.r, 0, Math.PI*2);
+      ctx.fillStyle = u>2 ? css("--comp") : css("--rare");
+      ctx.fill();
+    }
+    if(place>=0){
+      label((place+1)+"", finish+28, L.y+8, { size:20, bold:true, fill:css("--good") });
+    }
+  });
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function drawMode4(){
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+}
+function draw(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const d=dpr();
+  ctx.setTransform(d*cssW/W, 0, 0, d*cssH/H, 0, 0);
+  if(S.mode===1) drawMode1();
+  else if(S.mode===2) drawMode2();
+  else if(S.mode===3) drawMode3();
+  else drawMode4();
+}
+
+function drawGraph(){
+  const d=dpr(), w=gcv.clientWidth||300, h=168;
+  if(gcv.width!==Math.round(w*d)){ gcv.width=Math.round(w*d); gcv.height=Math.round(h*d); }
+  gctx.setTransform(d,0,0,d,0,0);
+  gctx.clearRect(0,0,w,h);
+  gctx.fillStyle = css("--panel-2");
+  gctx.fillRect(0,0,w,h);
+  const padL=36, padB=22, padT=10, padR=10;
+  const pw=w-padL-padR, ph=h-padT-padB;
+  gctx.strokeStyle=css("--hairline"); gctx.lineWidth=1;
+  gctx.beginPath(); gctx.moveTo(padL,padT); gctx.lineTo(padL,padT+ph); gctx.lineTo(padL+pw,padT+ph); gctx.stroke();
+  /* dashed ± amplitude guides at current A AND at AMAX so height can't fake-scale with frequency */
+  const Y = v => padT + ph/2 - (v / CONFIG.AMAX) * (ph/2 - 4);
+  gctx.strokeStyle = css("--hairline");
+  gctx.setLineDash([3,4]);
+  gctx.beginPath(); gctx.moveTo(padL, Y(visA())); gctx.lineTo(padL+pw, Y(visA())); gctx.stroke();
+  gctx.beginPath(); gctx.moveTo(padL, Y(-visA())); gctx.lineTo(padL+pw, Y(-visA())); gctx.stroke();
+  gctx.setLineDash([]);
+  gctx.fillStyle = css("--text-3");
+  gctx.font = "11px "+css("--font");
+  gctx.textAlign = "right";
+  gctx.fillText("+A", padL-6, Y(CONFIG.AMAX)+3);
+  gctx.fillText("0", padL-6, Y(0)+3);
+
+  if(S.mode===3){
+    const names = ["solid","liquid","air"];
+    const cols = [css("--comp"), css("--accent"), css("--rare")];
+    names.forEach((id,i)=>{
+      const y = padT + 28 + i*36;
+      const v = id==="solid"?CONFIG.V_SOLID:id==="liquid"?CONFIG.V_LIQUID:CONFIG.V_AIR;
+      const p = S.race.on ? clamp((S.race.t * v)/CONFIG.RACE_LEN, 0, 1) : 0;
+      gctx.fillStyle = css("--hairline");
+      gctx.fillRect(padL, y, pw, 14);
+      gctx.fillStyle = cols[i];
+      gctx.fillRect(padL, y, pw*p, 14);
+      gctx.fillStyle = css("--text");
+      gctx.font = "12px "+css("--font");
+      gctx.textAlign = "left";
+      const place = S.race.order.indexOf(id);
+      gctx.fillText(T(id)+(place>=0?"  #"+(place+1):""), padL, y-4);
+    });
+    return;
+  }
+  if(S.mode===4){
+    gctx.fillStyle = css("--text-2");
+    gctx.font = "13px "+css("--font");
+    gctx.textAlign = "left";
+    const n = CARDS.filter(c=>S.placed[c.id].ok).length;
+    gctx.fillText(n+" / "+CARDS.length, padL, padT+ph/2);
+    return;
+  }
+
+  /* Oscilloscope: y = A sin(2π f t). Y-axis fixed to ±AMAX so frequency
+     cannot change height and amplitude cannot change spacing. */
+  const win = 1.15; /* seconds of graph, constant */
+  const f = S.mode===1 ? CONFIG.SRC_F : visF();
+  const A = S.mode===1 ? env1()*CONFIG.AMAX : visA();
+  const t0 = S.mode===1 ? S.src.t : S.tSim;
+  gctx.beginPath();
+  gctx.strokeStyle = css("--pulse");
+  gctx.lineWidth = 2.2;
+  const N = 220;
+  for(let i=0;i<=N;i++){
+    const u = i/N;
+    const tt = t0 - win + u*win;
+    const yv = (tt<0 && S.mode===1) ? 0 : A * Math.sin(2*Math.PI*f*tt);
+    const x = padL + u*pw;
+    const y = Y(yv);
+    if(i===0) gctx.moveTo(x,y); else gctx.lineTo(x,y);
+  }
+  gctx.stroke();
+}
+
+function sortOkCount(){ return CARDS.filter(c=>S.placed[c.id].ok).length; }
+
+function sync(){
+  let narr = T("nPlay");
+  if(S.mode===1){
+    el("kA").textContent = T("medium");
+    el("kB").textContent = T("m1");
+    el("kC").textContent = T("pitch");
+    el("kD").textContent = T("loudness");
+    el("rA").textContent = S.medium ? T("airMed") : T("none");
+    el("rB").textContent = env1()>0.08 ? T("ringing") : T("still");
+    el("rC").textContent = "—";
+    el("rD").textContent = "—";
+    narr = S.medium ? (env1()>0.08 ? T("nStrike") : T("nPlay")) : T("nVac");
+  } else if(S.mode===2){
+    el("kA").textContent = T("pitch");
+    el("kB").textContent = T("loudness");
+    el("kC").textContent = T("hz");
+    el("kD").textContent = T("medium");
+    el("rA").textContent = pitchWord(S.freq);
+    el("rB").textContent = loudWord(S.amp);
+    el("rC").textContent = flavourHz()+" Hz";
+    el("rD").textContent = T("airMed");
+    narr = S.lastCtrl==="amp" ? T("nLoud") : S.lastCtrl==="freq" ? T("nPitch") : T("nPlay2");
+  } else if(S.mode===3){
+    el("kA").textContent = T("solid");
+    el("kB").textContent = T("liquid");
+    el("kC").textContent = T("air");
+    el("kD").textContent = T("race");
+    const ord = S.race.order;
+    const tag = id => { const i=ord.indexOf(id); return i<0 ? T("waiting") : "#"+(i+1); };
+    el("rA").textContent = tag("solid");
+    el("rB").textContent = tag("liquid");
+    el("rC").textContent = tag("air");
+    el("rD").textContent = S.race.done ? T("finished") : (S.race.on ? T("racing") : T("waiting"));
+    narr = S.race.done ? T("nRace") : T("nRace");
+  } else {
+    el("kA").textContent = T("pitch");
+    el("kB").textContent = T("loudness");
+    el("kC").textContent = T("m4");
+    el("kD").textContent = T("score");
+    el("rA").textContent = T("low")+" ↔ "+T("high");
+    el("rB").textContent = T("quiet")+" ↔ "+T("loud");
+    el("rC").textContent = sortOkCount()+" / "+CARDS.length;
+    el("rD").textContent = sortOkCount()>=6 ? T("finished") : T("waiting");
+    narr = S.sortMsg || T("nSort");
+  }
+  el("narr").textContent = narr;
+  drawGraph();
+  checkGuide();
+}
+
+/* ======================================================================
+   6. CONTROLS
+   ====================================================================== */
+function setMode(m){
+  S.mode = m;
+  if(m!==2) setHeard(false);
+  el("stageInner").classList.toggle("is-sort", m===4);
+  buildModeTray(); buildOpts(); syncSortUI(); sync(); fitBoard();
+}
+function buildModeTray(){
+  const host=el("modeTray"); host.innerHTML="";
+  const seg=document.createElement("div"); seg.className="seg";
+  [[1,"m1"],[2,"m2"],[3,"m3"],[4,"m4"]].forEach(([m,k])=>{
+    const b=document.createElement("button"); b.type="button";
+    b.textContent=T(k); b.setAttribute("aria-pressed", String(S.mode===m));
+    b.addEventListener("click", ()=>setMode(m));
+    seg.appendChild(b);
+  });
+  host.appendChild(seg);
+}
+function togBtn(label, pressed, fn){
+  const b=document.createElement("button"); b.type="button"; b.className="btn btn--ghost btn--sm";
+  b.textContent=label; b.setAttribute("aria-pressed", String(pressed));
+  b.addEventListener("click", fn); return b;
+}
+function sliderRow(key, val, onInput){
+  const r=document.createElement("div"); r.className="row";
+  const lab=document.createElement("label"); lab.textContent=T(key);
+  const sl=document.createElement("input"); sl.type="range"; sl.min="0"; sl.max="1"; sl.step="0.01"; sl.value=String(val);
+  sl.setAttribute("aria-label", T(key));
+  const v=document.createElement("span"); v.className="val";
+  const paint = ()=>{ v.textContent = key==="freq" ? pitchWord(+sl.value) : loudWord(+sl.value); };
+  paint();
+  /* Compare with the value at the start of this gesture, not the previous tick
+     (range input steps by 0.01, which would never trip a 0.12 threshold). */
+  let origin = val;
+  sl.addEventListener("pointerdown", ()=>{ origin = +sl.value; });
+  sl.addEventListener("focus", ()=>{ origin = +sl.value; });
+  sl.addEventListener("input", ()=>{ onInput(+sl.value, origin); paint(); sync(); });
+  r.appendChild(lab); r.appendChild(sl); r.appendChild(v);
+  return r;
+}
+function buildOpts(){
+  const host=el("modeOpts"); host.innerHTML="";
+  if(S.mode===1){
+    const row=document.createElement("div"); row.className="row";
+    const st=document.createElement("button"); st.type="button"; st.className="btn"; st.textContent=T("strike");
+    st.addEventListener("click", ()=>{ strike(); sync(); });
+    row.appendChild(st);
+    row.appendChild(togBtn(S.medium?T("mediumOn"):T("mediumOff"), S.medium, ()=>{
+      S.medium=!S.medium; S.lastCtrl = S.medium?"strike":"vac"; buildOpts(); sync();
+    }));
+    host.appendChild(row);
+  } else if(S.mode===2){
+    host.appendChild(sliderRow("freq", S.freq, (v, origin)=>{
+      if(Math.abs(v-origin)>0.08) S.seen.pitchSolo = true;
+      S.freq=v; S.lastCtrl="freq"; syncAudio();
+    }));
+    host.appendChild(sliderRow("amp", S.amp, (v, origin)=>{
+      if(Math.abs(v-origin)>0.08) S.seen.ampSolo = true;
+      S.amp=v; S.lastCtrl="amp"; syncAudio();
+    }));
+    if(canAudio()){
+      const row=document.createElement("div"); row.className="row";
+      row.appendChild(togBtn(S.heard?T("mute"):T("hear"), S.heard, ()=>{
+        setHeard(!S.heard); buildOpts(); sync();
+      }));
+      host.appendChild(row);
+    }
+  } else if(S.mode===3){
+    const row=document.createElement("div"); row.className="row";
+    const b=document.createElement("button"); b.type="button"; b.className="btn"; b.textContent=T("sendPulse");
+    b.addEventListener("click", ()=>{ startRace(); sync(); });
+    row.appendChild(b);
+    host.appendChild(row);
+  } else {
+    host.innerHTML = '<p class="graph-note">'+T("nSort")+"</p>";
+  }
+}
+
+function worldPtr(e){
+  const r=canvas.getBoundingClientRect();
+  return { x:(e.clientX-r.left)*W/r.width, y:(e.clientY-r.top)*H/r.height };
+}
+canvas.addEventListener("pointerdown", e=>{
+  if(S.mode!==1) return;
+  const p=worldPtr(e), d=drumXY();
+  if(Math.hypot(p.x-d.x, p.y-d.y)<90){ strike(); sync(); }
+});
+canvas.addEventListener("keydown", e=>{
+  if(e.key===" " && S.mode===1){ e.preventDefault(); strike(); sync(); }
+});
+
+/* Mode 4 sort */
+function binOf(pitch, loud){
+  return (pitch==="high"?"H":"L") + (loud==="loud"?"L":"Q");
+}
+function buildSortUI(){
+  const deck = el("sortDeck");
+  if(!deck.dataset.ready){
+    CARDS.forEach(sc=>{
+      const b=document.createElement("button");
+      b.type="button"; b.className="scard"; b.dataset.id=sc.id;
+      b.innerHTML='<span class="scard__label"></span>';
+      b.addEventListener("pointerdown", e=>{
+        if(e.button && e.button!==0) return;
+        e.preventDefault();
+        S.sortSel = sc.id;
+        drag.kind="card"; drag.id=sc.id; drag.x=e.clientX; drag.y=e.clientY;
+        const g=el("ghost"); g.classList.add("on"); g.textContent=T(sc.id);
+        g.style.left=(e.clientX+10)+"px"; g.style.top=(e.clientY+10)+"px";
+        try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+        syncSortUI();
+      });
+      deck.appendChild(b);
+    });
+    deck.dataset.ready="1";
+  }
+  CARDS.forEach(sc=>{
+    const b=document.querySelector('.scard[data-id="'+sc.id+'"]');
+    if(b) b.querySelector(".scard__label").textContent = T(sc.id);
+  });
+  el("binLL").textContent=T("binLL"); el("binHL").textContent=T("binHL");
+  el("binLQ").textContent=T("binLQ"); el("binHQ").textContent=T("binHQ");
+  el("yLoud").textContent=T("yLoud"); el("xLow").textContent=T("xLow"); el("xHigh").textContent=T("xHigh");
+  syncSortUI();
+}
+function syncSortUI(){
+  const root=el("sortUI");
+  const on=S.mode===4;
+  root.hidden=!on;
+  el("stageInner").classList.toggle("is-sort", on);
+  if(!on) return;
+  const homes = { LL:el("deckLL"), HL:el("deckHL"), LQ:el("deckLQ"), HQ:el("deckHQ") };
+  const deck=el("sortDeck");
+  CARDS.forEach(sc=>{
+    const b=document.querySelector('.scard[data-id="'+sc.id+'"]');
+    if(!b) return;
+    const p=S.placed[sc.id];
+    b.classList.toggle("is-ok", p.ok===true);
+    b.classList.toggle("is-sel", S.sortSel===sc.id);
+    b.classList.toggle("is-drag", drag.kind==="card" && drag.id===sc.id);
+    const home = (p.ok && p.bin) ? homes[p.bin] : deck;
+    if(b.parentNode!==home) home.appendChild(b);
+  });
+  el("sortMsg").textContent = S.sortMsg || "";
+}
+function hitBin(e){
+  const node=document.elementFromPoint(e.clientX, e.clientY);
+  const binEl=node && node.closest("[data-bin]");
+  const bin=binEl && binEl.getAttribute("data-bin");
+  return (bin==="LL"||bin==="HL"||bin==="LQ"||bin==="HQ") ? bin : null;
+}
+function dropCard(id, bin){
+  const sc=CARDS.find(c=>c.id===id);
+  const p=S.placed[id];
+  if(!bin){ p.bin=null; return; }
+  const want = binOf(sc.pitch, sc.loud);
+  const gotP = bin[0]==="H"?"high":"low";
+  const gotL = bin[1]==="L"?"loud":"quiet";
+  if(bin===want){
+    p.bin=bin; p.ok=true;
+    S.sortMsg = T("why"+id.charAt(0).toUpperCase()+id.slice(1));
+  } else {
+    p.bin=null; p.ok=false;
+    if(gotP===sc.pitch && gotL!==sc.loud){
+      S.sortMsg = fillTpl(T("noLoud"), { name:T(id), want:T(sc.loud), got:T(gotL) });
+    } else if(gotL===sc.loud && gotP!==sc.pitch){
+      S.sortMsg = fillTpl(T("noPitch"), { name:T(id), want:T(sc.pitch), got:T(gotP) });
+    } else {
+      S.sortMsg = fillTpl(T("noBoth"), { name:T(id), p:T(sc.pitch), l:T(sc.loud) });
+    }
+  }
+}
+addEventListener("pointermove", e=>{
+  if(drag.kind!=="card") return;
+  const g=el("ghost");
+  g.style.left=(e.clientX+10)+"px"; g.style.top=(e.clientY+10)+"px";
+});
+addEventListener("pointerup", e=>{
+  if(drag.kind!=="card") return;
+  el("ghost").classList.remove("on");
+  dropCard(drag.id, hitBin(e));
+  drag.kind=null; drag.id=null;
+  syncSortUI(); sync();
+});
+el("sortUI").addEventListener("keydown", e=>{
+  if(S.mode!==4) return;
+  const ids=CARDS.map(c=>c.id);
+  const i=Math.max(0, ids.indexOf(S.sortSel));
+  if(e.key==="ArrowRight"){ S.sortSel=ids[Math.min(ids.length-1,i+1)]; e.preventDefault(); }
+  if(e.key==="ArrowLeft"){ S.sortSel=ids[Math.max(0,i-1)]; e.preventDefault(); }
+  const map={ "1":"LQ", "2":"HQ", "3":"LL", "4":"HL" };
+  if(map[e.key] && S.sortSel){ dropCard(S.sortSel, map[e.key]); e.preventDefault(); syncSortUI(); sync(); }
+  else syncSortUI();
+});
+
+/* ======================================================================
+   7. GUIDE
+   ====================================================================== */
+const TASKS = [
+  {
+    t:"t1", h:"h1", p:"p1",
+    done:()=> S.seen.strikeMed,
+    show:()=>{ S.mode=1; S.medium=true; strike(); }
+  },
+  {
+    t:"t2", h:"h2", p:"p2",
+    done:()=> S.seen.strikeVac,
+    show:()=>{ S.mode=1; S.medium=false; strike(); }
+  },
+  {
+    t:"t3", h:"h3", p:"p3",
+    done:()=> S.seen.pitchSolo && S.seen.ampSolo,
+    show:()=>{
+      S.mode=2; S.amp=0.4; S.freq=0.85; S.seen.pitchSolo=true;
+      S.amp=0.85; S.seen.ampSolo=true; S.lastCtrl="amp";
+    }
+  },
+  {
+    t:"t4", h:"h4", p:"p4",
+    done:()=> S.seen.raceDone,
+    show:()=>{
+      S.mode=3; S.race={ on:true, t:CONFIG.RACE_LEN/CONFIG.V_AIR, order:["solid","liquid","air"], done:true };
+      S.seen.raceDone=true;
+    }
+  },
+  {
+    t:"t5", h:"h5", p:"p5",
+    done:()=> sortOkCount()>=6,
+    show:()=>{
+      S.mode=4;
+      CARDS.slice(0,6).forEach(c=>{
+        S.placed[c.id]={ bin:binOf(c.pitch,c.loud), ok:true };
+      });
+      S.sortMsg = T("nSort");
+    }
+  }
+];
+function renderGuide(){
+  const i=S.guide.i, task=TASKS[i];
+  el("gNum").textContent=(i+1)+"/5";
+  el("gTask").textContent=T(task.t);
+  el("gHint").textContent = S.guide.done ? T(task.p) : T(task.h);
+  el("gShow").textContent=T("show");
+  el("gNext").textContent=T("next");
+  el("tStep").textContent=T("task");
+  el("gNext").hidden = !S.guide.done || i>=4;
+  el("guide").classList.toggle("done", S.guide.done);
+  const dots=el("gDots"); dots.innerHTML="";
+  TASKS.forEach((_,k)=>{
+    const d=document.createElement("span"); d.className="guide__dot";
+    if(k<i) d.classList.add("on"); if(k===i) d.classList.add("now");
+    dots.appendChild(d);
+  });
+}
+function checkGuide(){
+  const task=TASKS[S.guide.i];
+  if(!S.guide.done && task.done()){ S.guide.done=true; renderGuide(); }
+}
+el("gShow").addEventListener("click", ()=>{
+  TASKS[S.guide.i].show();
+  buildModeTray(); buildOpts(); buildSortUI(); renderGuide(); sync(); fitBoard();
+});
+el("gNext").addEventListener("click", ()=>{
+  if(S.guide.i<4){ S.guide.i++; S.guide.done=false; renderGuide(); }
+});
+
+/* ======================================================================
+   8. QUIZ
+   ====================================================================== */
+const QUESTIONS = [
+  { q:"q1", opts:["q1a","q1b","q1c"], ans:1, why:"q1w" },
+  { q:"q2", opts:["q2a","q2b","q2c"], ans:1, why:"q2w" },
+  { q:"q3", opts:["q3a","q3b","q3c"], ans:1, why:"q3w" },
+  { q:"q4", opts:["q4a","q4b","q4c"], ans:1, why:"q4w" },
+  { q:"q5", opts:["q5a","q5b","q5c"], ans:1, why:"q5w" }
+];
+function buildQuiz(){
+  const host=el("quiz"); host.innerHTML="";
+  let score=0, answered=0;
+  QUESTIONS.forEach((Q, qi)=>{
+    const box=document.createElement("div"); box.className="panel q"; box.style.marginBottom="12px";
+    box.innerHTML = '<div class="q__n">Q '+(qi+1)+'</div><p class="q__t">'+T(Q.q)+'</p><div class="opts"></div><div class="fb"></div>';
+    const opts=box.querySelector(".opts"), fb=box.querySelector(".fb");
+    Q.opts.forEach((ok, oi)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="opt";
+      b.innerHTML='<span class="opt__k">'+"ABC"[oi]+'</span><span>'+T(ok)+'</span>';
+      b.addEventListener("click", ()=>{
+        if(b.disabled) return;
+        opts.querySelectorAll(".opt").forEach(o=>o.disabled=true);
+        const good = oi===Q.ans;
+        b.classList.add(good?"correct":"wrong");
+        opts.children[Q.ans].classList.add("correct");
+        fb.className="fb show "+(good?"ok":"no");
+        fb.textContent=T(Q.why);
+        answered++; if(good) score++;
+        if(answered===QUESTIONS.length){
+          const s=document.createElement("div"); s.className="panel score"; s.style.marginTop="12px";
+          s.innerHTML='<span>'+T("score")+'</span><span class="score__v">'+score+' / '+QUESTIONS.length+'</span>';
+          const again=document.createElement("button"); again.className="btn"; again.textContent=T("tryAgain");
+          again.addEventListener("click", buildQuiz); s.appendChild(again);
+          host.appendChild(s);
+        }
+      });
+      opts.appendChild(b);
+    });
+    host.appendChild(box);
+  });
+}
+
+/* ======================================================================
+   9. LOOP
+   ====================================================================== */
+const mqReduce = matchMedia("(prefers-reduced-motion: reduce)");
+let REDUCED = mqReduce.matches;
+mqReduce.addEventListener("change", ()=>{ REDUCED = mqReduce.matches; });
+let prev = performance.now(), acc=0, syncT=0;
+function frame(now){
+  const dt=Math.min(0.1,(now-prev)/1000); prev=now;
+  if(S.running){
+    if(REDUCED){ acc+=dt; if(acc>0.5){ acc=0; step(0.5*S.speed); syncT=1; } }
+    else { step(dt*S.speed); syncT+=dt; }
+    if(syncT>CONFIG.SAMPLE_DT){ syncT=0; sync(); }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+function setRunning(on){
+  S.running=on;
+  el("icPlay").innerHTML = on
+    ? '<rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/>'
+    : '<path d="M7 4 L19 12 L7 20 Z" fill="#fff"/>';
+  el("btnPlay").setAttribute("aria-pressed", String(on));
+  el("btnPlay").setAttribute("aria-label", on ? T("pause") : T("play"));
+  syncAudio();
+}
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.documentElement.dir=LANG==="ur"?"rtl":"ltr";
+  el("tTitle").textContent=T("title"); el("tSub").textContent=T("sub");
+  el("tNavTitle").textContent=T("navTitle");
+  el("navBench").textContent=T("bench"); el("navQuiz").textContent=T("quiz");
+  el("btnLang").textContent=T("lang");
+  el("btnProfile").textContent=dim?T("bright"):T("dim");
+  el("tReadings").textContent=T("readings");
+  el("tSpeed").textContent=T("speed"); el("btnStep").textContent=T("stepBtn");
+  el("btnReset").setAttribute("aria-label", T("reset"));
+  el("tGraph").textContent=T("graph"); el("tGraphNote").textContent=T("graphNote");
+  el("tQuizTitle").textContent=T("quizTitle"); el("tQuizSub").textContent=T("quizSub");
+  el("boardDesc").textContent=T("boardDesc");
+  el("legC").textContent=T("legC"); el("legR").textContent=T("legR");
+  el("gShow").textContent=T("show"); el("gNext").textContent=T("next");
+  setRunning(S.running);
+  buildModeTray(); buildOpts(); buildSortUI(); renderGuide(); buildQuiz(); sync();
+}
+el("btnLang").addEventListener("click", ()=>{ LANG = LANG==="en"?"ur":"en"; applyLang(); });
+el("btnProfile").addEventListener("click", ()=>{
+  dim=!dim;
+  if(dim) document.documentElement.setAttribute("data-profile","dim");
+  else document.documentElement.removeAttribute("data-profile");
+  el("btnProfile").textContent=dim?T("bright"):T("dim");
+});
+el("btnPlay").addEventListener("click", ()=> setRunning(!S.running));
+el("btnStep").addEventListener("click", ()=>{ step(0.25); sync(); });
+el("speed").addEventListener("input", e=>{ S.speed=+e.target.value; });
+el("btnReset").addEventListener("click", ()=>{
+  const mode=S.mode;
+  setHeard(false);
+  S=initial(); S.mode=mode;
+  el("speed").value=1;
+  setRunning(true);
+  buildModeTray(); buildOpts(); buildSortUI(); renderGuide(); sync();
+});
+function showScreen(which){
+  el("scBench").classList.toggle("on", which==="bench");
+  el("scQuiz").classList.toggle("on", which==="quiz");
+  el("navBench").setAttribute("aria-current", which==="bench"?"page":"false");
+  el("navQuiz").setAttribute("aria-current", which==="quiz"?"page":"false");
+  scrollTo({top:0});
+  if(which==="bench") fitBoard();
+  if(which!=="bench") setHeard(false);
+}
+el("navBench").addEventListener("click", ()=>showScreen("bench"));
+el("navQuiz").addEventListener("click", ()=>showScreen("quiz"));
+addEventListener("resize", ()=>{ fitBoard(); drawGraph(); });
+
+fitBoard();
+applyLang();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

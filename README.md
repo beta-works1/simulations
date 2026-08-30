@@ -56,6 +56,13 @@ npm run build && npm run preview
 
 Open the preview URL → DevTools → Network → **Offline** → reload. `/gs8` and the reference demo should still load. Mark the demo “understood,” reload — completion should persist (IndexedDB).
 
+## Final PCTB Labs (standalone HTML)
+
+Twelve Class 8 science labs ship as single-file HTML under [`public/final-sims/`](public/final-sims/):
+
+- Hub: [`/final-sims/`](https://simulations-ivory.vercel.app/final-sims/)
+- Also in the app catalog: **Simulations → Grade 8 → Final PCTB Labs**
+
 ## Offline download (PhET-style)
 
 **pH Laboratory** also has a SceneryStack build you can download as a single HTML file:

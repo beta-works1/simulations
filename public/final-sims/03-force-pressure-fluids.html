@@ -1,0 +1,2020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<title>Force, Pressure &amp; Fluids — PCTB Class 8 Science</title>
+<!--
+==========================================================================
+ FORCE, PRESSURE & FLUIDS  ·  Sim 3 of 5
+ PCTB / SNC Class 8 General Science — Force, pressure, liquids, atmosphere
+
+ LEARNING OBJECTIVES (all reachable by dragging on the stage)
+   1. Force is a push or pull that can change speed, direction, or shape.
+   2. Thrust is force perpendicular to a surface; P = F/A, SI unit Pascal (Pa).
+   3. SAME force, SMALLER area → MUCH HIGHER pressure (knives, nails, needles;
+      wide feet / snowshoes / camel pads REDUCE pressure).
+   4. Liquids exert pressure in ALL directions, not just downward.
+   5. Liquid pressure increases with DEPTH ONLY — not container shape, width,
+      or total volume.
+   6. Pascal's Law: pressure on an enclosed fluid is transmitted equally —
+      hydraulic lifts and brakes.
+   7. Air has weight and exerts atmospheric pressure; that is why a straw
+      works and what a barometer measures.
+
+ MISCONCEPTIONS TARGETED BY THE QUIZ
+   - "More force always means more pressure" (only if area is the same)
+   - "Sharp objects apply more force" (they concentrate the SAME force)
+   - "Liquid pressure only pushes downward"
+   - "A wider / bigger container means higher pressure at the same depth"
+   - "A straw works because the mouth pulls / sucks the liquid up"
+
+ THE ONE RULE THIS FILE MUST NEVER BREAK
+   Pressure, not force, drives every visible outcome: sand sink, jet distance,
+   hydraulic lift, straw rise. Same force + smaller area = deeper sink.
+   Jet reach tracks hole DEPTH (hence P = ρgh), not tank volume.
+   Hydraulic probes at different points all read the SAME P (Pascal).
+   Straw liquid is PUSHED up by outside air, not sucked by the mouth.
+
+ SIMPLIFICATIONS FOR CLASS 8
+   - Live P = F/A numericals are shown; students are not forced to type solutions.
+   - Water density is fixed (no ρ slider). No Boyle's Law. No mmHg conversion drill.
+   - Hydraulics: force multiplication + distance trade-off. F1/A1 = F2/A2 is
+     computed internally so the physics is right, but students are not required
+     to solve it to use the sim.
+   - NO buoyancy / Archimedes as a topic. The cork is only a probe target.
+   - NO friction-track mode (skipped so the four core modes stay solid).
+   - Jets: range is drawn from efflux speed √(2gh) onto a nearby tray, so the
+     deepest hole always goes farthest. We do not model the university-lab
+     case where range = 2√(h(H−h)) and the middle hole can win.
+
+ TEACHER: every tunable lives in CONFIG. Safe to adjust: G, RHO, PATM,
+ FORCE_MIN/MAX, P_SINK, NAIL_DRIVE, HOLE_FRACS, JET_SCALE, A1/A2 bounds,
+ LOAD_MAX, SIP_MAX, ALT_MAX. One file, double-click to run.
+
+ Productive failure is the lesson. Crush the sand, flood the tray with jets,
+ fail to lift a too-heavy load. There is no error dialog.
+==========================================================================
+-->
+<style>
+:root{
+  --accent:#1F6FD0;
+  --good:#237A46;
+  --warn:#8C5A05;
+  --crit:#A0173F;
+  --panel:#FFFFFF;
+  --panel-2:#F2F4F5;
+  --panel-border:#8A8A8A;
+  --text:#14202A;
+  --text-2:#46565F;
+  --text-3:#71828C;
+
+  --sand:#C4A06A;
+  --sand-dk:#8C7048;
+  --water:#1F7A9A;
+  --water-hi:#4AA3C2;
+  --pressure:#C44512;
+  --foam:#E7D3A8;
+  --metal:#6B7B84;
+  --glass:#9BB7C4;
+
+  --board:#EEF2F4;
+  --grid:#D3DBDF;
+  --hairline:#DCE1E4;
+  --shadow:0 2px 8px rgba(20,32,42,.14);
+  --focus:#14202A;
+  --on-accent:#FFFFFF;
+
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --radius:12px;
+  --space:8px;
+}
+:root[data-profile="dim"]{
+  --accent:#4E9BF0;
+  --good:#4FB27A;
+  --warn:#D0A03A;
+  --crit:#E0648F;
+  --panel:#1A2126;
+  --panel-2:#242D33;
+  --panel-border:#5F6C74;
+  --text:#F1F5F7;
+  --text-2:#C3CFD5;
+  --text-3:#95A4AD;
+  --sand:#A8844E;
+  --sand-dk:#6E5634;
+  --water:#3EB4D4;
+  --water-hi:#7AD0E6;
+  --pressure:#F07540;
+  --foam:#C9B07A;
+  --metal:#93A4AD;
+  --glass:#6A8A98;
+  --board:#131A1F;
+  --grid:#26313A;
+  --hairline:#3B464D;
+  --shadow:0 2px 10px rgba(0,0,0,.5);
+  --focus:#FFFFFF;
+  --on-accent:#0B1220;
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  font-family:var(--font);
+  background:var(--panel-2);
+  color:var(--text);
+  font-size:16px;
+  line-height:1.45;
+  overflow-x:hidden;
+}
+:focus-visible{
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+  border-radius:4px;
+}
+.sr{
+  position:absolute; width:1px; height:1px; overflow:hidden;
+  clip:rect(0 0 0 0); white-space:nowrap;
+}
+.wrap{ max-width:1400px; margin:0 auto; padding:10px 10px 80px; }
+
+:root[dir="rtl"] body{
+  font-family:system-ui,"Noto Nastaliq Urdu","Segoe UI",Tahoma,sans-serif;
+}
+:root[dir="rtl"] .stage__inner{ direction:ltr; }
+
+.head{
+  display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+  padding:2px 2px 10px;
+}
+.head__title{ font-size:clamp(19px,2.3vw,25px); font-weight:700; margin:0; letter-spacing:-.02em; }
+.head__sub{ margin:0; font-size:14.5px; color:var(--text-2); }
+.head__spacer{ margin-inline-start:auto; display:flex; gap:8px; flex-wrap:wrap; }
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--panel-border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:12px 14px;
+}
+.panel__title{ font-size:15px; font-weight:700; margin:0 0 10px; }
+
+.guide{
+  background:var(--panel);
+  border:2px solid var(--accent);
+  border-radius:var(--radius);
+  padding:10px 13px;
+  margin-bottom:10px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:12px;
+  align-items:center;
+}
+@media (max-width:760px){ .guide{ grid-template-columns:1fr; } }
+.guide.done{ border-color:var(--good); }
+.guide__badge{
+  min-width:72px; padding:6px 10px; border-radius:9px; text-align:center;
+  background:var(--panel-2); border:1px solid var(--panel-border);
+}
+.guide__badgeTop{ font-size:12.5px; font-weight:700; letter-spacing:.06em; color:var(--text-3); }
+.guide__badgeNum{
+  font-size:20px; font-weight:700; font-family:var(--mono);
+  font-variant-numeric:tabular-nums;
+}
+.guide__task{ font-size:17px; font-weight:700; margin:0; }
+.guide__hint{ font-size:14px; margin:4px 0 0; color:var(--text-2); }
+.guide__dots{ display:flex; gap:6px; margin-top:8px; }
+.guide__dot{ width:9px; height:9px; border-radius:50%; background:var(--hairline); }
+.guide__dot.on{ background:var(--good); }
+.guide__dot.now{ background:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent); }
+.guide__acts{ display:flex; gap:8px; flex-wrap:wrap; }
+.tick{ color:var(--good); font-weight:700; }
+
+.btn{
+  font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 16px; border-radius:9px; white-space:nowrap;
+  background:var(--accent); color:var(--on-accent); border:1px solid rgba(0,0,0,.28);
+  box-shadow:0 1px 2px rgba(0,0,0,.18);
+  transition:filter .15s ease, transform .12s ease;
+}
+.btn:hover{ filter:brightness(1.08); }
+.btn:active{ transform:translateY(1px); }
+.btn--ghost{ background:var(--panel); color:var(--text); border-color:var(--panel-border); }
+.btn--go{ background:var(--good); color:#fff; }
+.btn--sm{ min-height:44px; font-size:13.5px; padding:0 12px; }
+.round{
+  width:48px; height:48px; border-radius:50%; cursor:pointer; padding:0;
+  border:1px solid rgba(0,0,0,.35); display:grid; place-items:center;
+  box-shadow:var(--shadow); background:var(--btn,#E2E6E9);
+}
+.round--play{ --btn:var(--good); }
+.round--reset{ --btn:var(--warn); }
+
+.main{ display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:10px; align-items:start; }
+@media (max-width:1080px){ .main{ grid-template-columns:1fr; } }
+
+.tray{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+.tray__label{
+  width:100%; font-size:12.5px; font-weight:700; color:var(--text-3);
+  margin:4px 0 2px; letter-spacing:.04em; text-transform:uppercase;
+}
+
+.stage{
+  border:1px solid var(--panel-border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  background:var(--board);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
+}
+.stage__inner{ position:relative; }
+#board{ display:block; width:100%; height:auto; touch-action:none; cursor:crosshair; }
+.stage__bar{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  padding:8px 10px; background:var(--panel); border-top:1px solid var(--hairline);
+}
+.seg{ display:inline-flex; border:1px solid var(--panel-border); border-radius:9px; overflow:hidden; }
+.seg button{
+  font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 13px; border:0; background:var(--panel); color:var(--text-2);
+  border-inline-end:1px solid var(--panel-border);
+}
+.seg button:last-child{ border-inline-end:0; }
+.seg button[aria-pressed="true"]{ background:var(--accent); color:var(--on-accent); }
+
+.reads{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.read{
+  background:var(--panel-2); border:1px solid var(--hairline);
+  border-radius:9px; padding:8px 10px;
+}
+.read__k{ font-size:12.5px; color:var(--text-3); font-weight:700; }
+.read__v{
+  font-family:var(--mono); font-size:17px; font-variant-numeric:tabular-nums; font-weight:700;
+}
+.formula{
+  margin:10px 0 0; padding:10px 12px; border-radius:9px;
+  background:var(--panel-2); border:1px solid var(--hairline);
+  font-family:var(--mono); font-size:14.5px; font-variant-numeric:tabular-nums;
+  line-height:1.45;
+}
+.formula b{ color:var(--accent); font-weight:800; }
+.formula .eq{ color:var(--good); font-weight:800; }
+.narr{ font-size:15px; line-height:1.5; margin:10px 0 0; }
+.extra{ font-size:13.5px; color:var(--text-2); margin:8px 0 0; }
+.extra b{ color:var(--text); font-family:var(--mono); font-variant-numeric:tabular-nums; }
+
+#pChart{ display:block; width:100%; height:132px; }
+.graph-note{ font-size:13px; color:var(--text-3); margin:6px 0 0; }
+
+.world{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:6px;
+}
+@media (max-width:1080px){ .world{ grid-template-columns:repeat(4,minmax(56px,1fr)); } }
+.wbtn{
+  font-family:inherit; cursor:pointer; min-height:72px; padding:6px 4px;
+  border:2px solid var(--panel-border); border-radius:10px; background:var(--panel);
+  color:var(--text); display:flex; flex-direction:column; align-items:center; gap:4px;
+  font-size:12px; font-weight:700; line-height:1.15; text-align:center;
+}
+.wbtn:hover{ border-color:var(--accent); }
+.wbtn[aria-pressed="true"]{
+  border-color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 14%,var(--panel));
+}
+.wbtn svg{ display:block; pointer-events:none; }
+
+.row{ display:flex; align-items:center; gap:8px; margin:8px 0; flex-wrap:wrap; }
+.chk{
+  display:flex; align-items:center; gap:8px; min-height:44px;
+  font-size:14px; font-weight:600; cursor:pointer;
+}
+.chk input{ width:20px; height:20px; accent-color:var(--accent); }
+.pred{ display:grid; gap:6px; margin:8px 0; }
+.pred button{
+  font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 10px; border-radius:9px;
+  border:2px solid var(--panel-border); background:var(--panel-2); color:var(--text);
+  text-align:start;
+}
+.pred button[aria-pressed="true"]{ border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--panel)); }
+.pred button.ok{ border-color:var(--good); }
+.pred button.no{ border-color:var(--warn); }
+
+.screen{ display:none; }
+.screen.on{ display:block; }
+.q{ margin-bottom:10px; }
+.q__n{ font-size:12.5px; color:var(--text-3); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.q__t{ font-size:17px; font-weight:700; margin:6px 0 12px; }
+.opts{ display:grid; gap:8px; }
+.opt{
+  display:flex; align-items:flex-start; gap:10px; text-align:start; width:100%;
+  min-height:52px; padding:12px 14px; cursor:pointer; border-radius:9px;
+  font-family:inherit; font-size:15.5px; background:var(--panel-2); color:var(--text);
+  border:2px solid var(--panel-border);
+}
+.opt:hover:not(:disabled){ border-color:var(--accent); background:var(--panel); }
+.opt.correct{ border-color:var(--good); background:color-mix(in srgb,var(--good) 14%,var(--panel)); }
+.opt.wrong{ border-color:var(--crit); background:color-mix(in srgb,var(--crit) 12%,var(--panel)); }
+.opt__k{ font-family:var(--mono); font-size:14px; color:var(--text-3); min-width:1.2em; }
+.fb{
+  display:none; margin:10px 0 0; padding:11px 13px; font-size:14.5px; border-radius:8px;
+  background:var(--panel-2); border-inline-start:5px solid var(--panel-border);
+}
+.fb.show{ display:block; }
+.fb.ok{ border-inline-start-color:var(--good); }
+.fb.no{ border-inline-start-color:var(--crit); }
+.score{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.score__v{ font-family:var(--mono); font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; }
+
+.nav{
+  position:sticky; bottom:6px; z-index:40; margin-top:10px; border-radius:10px;
+  background:#101418; color:#fff; display:flex; align-items:center; gap:9px;
+  flex-wrap:wrap; padding:6px 13px;
+}
+.nav__t{ font-size:14.5px; font-weight:700; margin-inline-end:auto; }
+.navbtn{
+  cursor:pointer; background:transparent; border:2px solid transparent; border-radius:8px;
+  color:#B9C0C5; font-family:inherit; font-size:14px; font-weight:700;
+  padding:5px 11px; min-height:44px;
+}
+.navbtn[aria-current="page"]{ color:#fff; border-color:#fff; }
+
+input[type=range]{
+  -webkit-appearance:none; appearance:none; height:44px; background:transparent; cursor:pointer;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border);
+}
+input[type=range]::-moz-range-track{
+  height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border);
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:26px; height:30px; margin-top:-12px;
+  border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45);
+}
+input[type=range]::-moz-range-thumb{
+  width:26px; height:30px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45);
+}
+.val{
+  font-family:var(--mono); font-size:14px; font-variant-numeric:tabular-nums;
+  min-width:64px; text-align:end;
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="screen on" id="scBench">
+  <header class="head">
+    <h1 class="head__title" id="tTitle">Force, Pressure &amp; Fluids</h1>
+    <p class="head__sub" id="tSub">Same push, smaller patch — much more pressure.</p>
+    <span class="head__spacer">
+      <button class="btn btn--ghost btn--sm" id="btnLang" type="button">اردو</button>
+      <button class="btn btn--ghost btn--sm" id="btnProfile" type="button">Dim room</button>
+    </span>
+  </header>
+
+  <section class="guide" id="guide" aria-live="polite">
+    <div class="guide__badge">
+      <div class="guide__badgeTop" id="tStep">TASK</div>
+      <div class="guide__badgeNum" id="gNum">1/5</div>
+    </div>
+    <div>
+      <p class="guide__task" id="gTask">—</p>
+      <p class="guide__hint" id="gHint">—</p>
+      <div class="guide__dots" id="gDots" aria-hidden="true"></div>
+    </div>
+    <div class="guide__acts">
+      <button class="btn btn--ghost" id="gShow" type="button">Show me</button>
+      <button class="btn btn--go" id="gNext" type="button" hidden>Next</button>
+    </div>
+  </section>
+
+  <div class="main">
+    <div>
+      <div class="tray" id="modeTray" role="tablist" aria-label="Modes"></div>
+
+      <div class="stage">
+        <div class="stage__inner" id="stageInner">
+          <canvas id="board" role="img" aria-label="Force and pressure stage" aria-describedby="boardDesc" tabindex="0"></canvas>
+          <p class="sr" id="boardDesc">A sandbox, water tank, hydraulic lift, and straw. Pressure, not force, drives sink depth, jet distance, lift, and straw rise.</p>
+        </div>
+        <div class="stage__bar">
+          <div class="seg" id="modeOpts" role="group"></div>
+          <button class="round round--play" id="btnPlay" type="button" aria-pressed="true" aria-label="Pause">
+            <svg width="20" height="20" viewBox="0 0 24 24" id="icPlay" aria-hidden="true"><rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/></svg>
+          </button>
+          <button class="btn btn--ghost btn--sm" id="btnStep" type="button">Step</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px">
+            <span id="tSpeed">Speed</span>
+            <input type="range" id="speed" min="0.25" max="2" step="0.25" value="1" style="width:96px" aria-label="Speed" />
+          </label>
+          <button class="round round--reset" id="btnReset" type="button" aria-label="Reset">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 1 0 6.5 4.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M12 1.5V8.5L6.5 5z" fill="#fff"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2 class="panel__title" id="tReadings">Live instruments</h2>
+        <div class="reads" aria-live="polite">
+          <div class="read"><div class="read__k" id="tF">Force F</div><div class="read__v" id="rF">—</div></div>
+          <div class="read"><div class="read__k" id="tA">Area A</div><div class="read__v" id="rA">—</div></div>
+          <div class="read"><div class="read__k" id="tP">Pressure P</div><div class="read__v" id="rP">—</div></div>
+        </div>
+        <p class="formula" id="formula" aria-live="polite">P = F ÷ A</p>
+        <p class="extra" id="extraRead">—</p>
+        <p class="narr" id="narr" aria-live="polite">—</p>
+        <div id="extraCtrls"></div>
+      </div>
+
+      <div class="panel" style="margin-top:10px">
+        <h2 class="panel__title" id="tGraph">Pressure, live</h2>
+        <canvas id="pChart" role="img" aria-label="Live pressure chart"></canvas>
+        <p class="graph-note" id="tGraphNote">Pressure is force spread over area. Shrink the patch, watch P jump.</p>
+      </div>
+
+      <div class="panel" style="margin-top:10px">
+        <h2 class="panel__title" id="tWorld">Footprints &amp; presets</h2>
+        <div class="world" id="world"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="scQuiz">
+  <header class="head">
+    <h1 class="head__title" id="tQuizTitle">Check what you have learned</h1>
+    <p class="head__sub" id="tQuizSub">Five questions, with the answer explained straight away.</p>
+  </header>
+  <div id="quiz" style="max-width:840px;margin:0 auto"></div>
+</div>
+
+<nav class="nav" aria-label="Screens">
+  <span class="nav__t" id="tNavTitle">Force, Pressure &amp; Fluids</span>
+  <button class="navbtn" id="navBench" type="button" aria-current="page">Bench</button>
+  <button class="navbtn" id="navQuiz"  type="button">Quiz</button>
+</nav>
+</div>
+
+<script>
+"use strict";
+/* ======================================================================
+   1. CONFIG — every tunable number a teacher might want to change.
+   ====================================================================== */
+const CONFIG = {
+  WORLD_W: 900,
+  WORLD_H: 520,
+  G: 9.8,                 // m/s²
+  RHO: 1000,              // kg/m³, water. No density slider — Class 8.
+  PATM: 101325,           // Pa at sea level
+  FORCE_MIN: 5,           // N  — even this + a sharp nail must drive in
+  FORCE_MAX: 200,
+  FORCE0: 40,
+  /* Sand sink is LINEAR in pressure, not force.
+     sink_m = P / P_SINK, capped. Same F, half A → twice the dent. */
+  P_SINK: 25000,          // Pa per metre of dent (soft foam/sand)
+  SINK_MAX: 0.12,         // m  — "crushed through" beyond this
+  NAIL_DRIVE: 0.035,      // m  — task 2: driven in past this depth
+  PX_PER_M: 1400,         // sandbox visual scale (dent pixels)
+  /* Tank: liquid pressure P = ρ g h. Depth ONLY. */
+  TANK_H: 0.55,           // m of water (same for both shapes)
+  HOLE_FRACS: [0.22, 0.52, 0.88], // depth / TANK_H  top, mid, bottom
+  JET_SCALE: 0.14,        // metres of jet per (m/s) of efflux — tray nearby, deepest still farthest
+  /* Hydraulics: Pascal P = F/A equal throughout. */
+  A1_MIN: 0.0004, A1_MAX: 0.008,   // m² input piston
+  A2_MIN: 0.004,  A2_MAX: 0.08,    // m² output piston
+  A1_0: 0.0015, A2_0: 0.018,
+  FIN_MIN: 10, FIN_MAX: 250, FIN0: 50,
+  LOAD_MIN: 20, LOAD_MAX: 2000, LOAD0: 400,
+  STROKE: 0.12,           // m max input travel
+  /* Atmosphere */
+  SIP_MAX: 12000,         // Pa drop inside straw (Class 8 "sip", not vacuum pump)
+  ALT_MAX: 4000,          // m  sea → mountain
+  SCALE_H: 8500,          // m  exponential atmosphere scale height
+  BARO_FULL: 0.76         // relative column height at sea level (not mmHg drill)
+};
+
+/* Footprint contact areas in m². Extremes are the lesson. */
+const FEET = [
+  { id:"board",    A:0.0400,  key:"fpBoard" },
+  { id:"shoe",     A:0.0160,  key:"fpShoe" },
+  { id:"stiletto", A:0.00050, key:"fpStiletto" },
+  { id:"camel",    A:0.0600,  key:"fpCamel" },
+  { id:"bknife",   A:0.00120, key:"fpBknife" },
+  { id:"sknife",   A:0.00008, key:"fpSknife" },
+  { id:"bnail",    A:0.00040, key:"fpBnail" },
+  { id:"snail",    A:0.00002, key:"fpSnail" }
+];
+
+/* ======================================================================
+   2. STRINGS — every user-facing string, in one place.
+   ====================================================================== */
+const STRINGS = {
+en:{
+  title:"Force, Pressure & Fluids",
+  sub:"Same push, smaller patch — much more pressure.",
+  navTitle:"Force, Pressure & Fluids", bench:"Bench", quiz:"Quiz",
+  lang:"اردو", dim:"Dim room", bright:"Bright room",
+  step:"TASK", showMe:"Show me", next:"Next", finish:"Go to the quiz",
+  readings:"Live instruments",
+  fLab:"Force F", aLab:"Area A", pLab:"Pressure P",
+  speed:"Speed", play:"Play", pause:"Pause", reset:"Reset", stepBtn:"Step",
+  graph:"Pressure, live",
+  graph1:"Same force. Tiny area → huge P. That is what sinks the block.",
+  graph2:"P grows with depth only. Wide or narrow, the reading matches at the same depth.",
+  graph3:"Three probes, one pressure. That flat line is Pascal's Law.",
+  graph4:"Outside air still pushes on the drink. The mouth only lowers P inside the straw.",
+  world:"Footprints & presets",
+  quizTitle:"Check what you have learned",
+  quizSub:"Five questions, with the answer explained straight away.",
+  tryAgain:"Try again", left:"questions left.",
+  scoreAll:"Excellent — you can read pressure, not just force.",
+  scoreMid:"Good. Read the feedback, then go back to the bench.",
+  scoreLow:"Go back to the bench and try the tasks again.",
+  m1:"Sandbox", m2:"Tank", m3:"Hydraulic lift", m4:"Atmosphere",
+  unitM:"m²", unitCm:"cm²",
+  force:"Force (weight)",
+  sip:"Sip strength", alt:"Altitude",
+  a1:"Input piston area", a2:"Output piston area", load:"Load on big piston",
+  fin:"Input force",
+  shapeN:"Narrow tall", shapeW:"Wide short",
+  predQ:"Which jet will go farthest?",
+  predT:"Top hole", predM:"Middle hole", predB:"Bottom hole (deepest)",
+  car:"Car lift", brakes:"Brakes", chair:"Barber's chair",
+  fpBoard:"Wide board", fpShoe:"Shoe", fpStiletto:"Stiletto", fpCamel:"Camel pad",
+  fpBknife:"Blunt knife", fpSknife:"Sharp knife", fpBnail:"Blunt nail", fpSnail:"Sharp nail",
+  fpFree:"Free-form",
+  boardDesc:"Pressure, not force, drives what you see. Same push on a tiny patch sinks deeper, shoots farther, and lifts more.",
+  nSame:"Same force, different footprints. The sharp one has a tiny area — huge pressure, deep dent.",
+  nKnife:"Same force, but the sharp knife's edge has a tiny area — huge pressure, easy cut.",
+  nNail:"A sharp nail does not push harder. It concentrates the same force on a pinpoint.",
+  nCamel:"A camel pad is wide. Same weight, big area, low pressure — it does not punch through.",
+  nFree:"Drag the corner. Area changes, pressure recalculates, sink depth follows P not F.",
+  nCrush:"The sand gave way. High pressure crushed it — the force slider did not have to be huge.",
+  nDepth:"Deeper hole, higher P = ρgh, faster jet. Volume of the tank does not decide this.",
+  nShape:"Narrow or wide — at the SAME depth the probe reads the same. Depth only, not shape.",
+  nArrows:"Those arrows are equal. Liquid pushes in every direction at a given depth, not only down.",
+  nUnder:"Under the cork the arrows still point every way — including UP. Pressure is not only downward.",
+  nJet:"Bottom jet goes farthest because that hole is deepest. Pressure tracks depth, not how much water is in the tank.",
+  nPascal:"Every probe reads the same P. Pressure on a trapped liquid is sent equally in all directions.",
+  nLift:"The big piston feels the same P over a bigger area, so it pushes harder. The small piston must travel farther.",
+  nNoLift:"Same pressure everywhere — but P × A_big is still less than the load. Increase the area ratio or the input force.",
+  nTrade:"Watch both pistons. A large area ratio lifts a heavy load, but the input piston moves much farther than the load rises.",
+  nPush:"The liquid is PUSHED up the straw by air pressing on the open drink — the mouth does not suck it up.",
+  nSip:"Sip lowers pressure inside the straw. Outside air on the glass then wins, and the drink rises.",
+  nBaro:"Air has weight. Higher up the mountain, the air column is shorter, so the barometer column drops.",
+  nSea:"Sea level: a tall air column, high atmospheric pressure, tall liquid column.",
+  extra1:"Sink depth follows pressure.",
+  extra2:"Depth {h} m  ·  P = ρgh = {p}",
+  extra3:"A₁ {a1}  ·  A₂ {a2}  ·  ratio {r}×  ·  three probes agree",
+  extra4:"Altitude {z} m  ·  column {c}  ·  air pushes on the open surface",
+  t1:"Keep the force fixed. Swap the widest pad with the sharpest nail. Watch the dent.",
+  t1h:"Do not move the force slider. Tap Camel pad, then Sharp nail (or the other way).",
+  t1p:"Same force. Tiny area → huge pressure → deep dent. Pressure did the sinking, not force.",
+  t2:"Drive the sharp nail in using the least force you can.",
+  t2h:"Pick Sharp nail. Leave the force slider low. It should still punch in — that is the point.",
+  t2p:"A small force on a pinpoint is still high pressure. Sharp does not mean 'more force'.",
+  t3:"Predict which jet goes farthest, then open all three holes.",
+  t3h:"Tap a prediction first. Then pull every plug. Deeper hole, farther jet.",
+  t3p:"The bottom jet won because that water is deepest. Tank width and volume did not matter.",
+  t4:"Park the probe on a side wall AND underneath the floating cork.",
+  t4h:"Drag the probe. Side wall counts as sideways. Slip it under the cork for upward pressure.",
+  t4p:"At one depth, liquid pushes every way — sideways and up, not only down.",
+  t5:"Lift a load that is heavier than your input force, using a large enough area ratio.",
+  t5h:"Make the output piston much wider than the input. Push. The car can rise even if it weighs more than you push.",
+  t5p:"Same P throughout. Big area → big force. The small piston travels farther. That is a hydraulic lift.",
+  q1:"More force always means more pressure.",
+  q1a:"Yes — pressure and force are the same idea",
+  q1b:"Only if the area stays the same. P = F ÷ A",
+  q1c:"No — more force always means less pressure",
+  q1d:"Pressure does not depend on force at all",
+  q1w:"Pressure is force spread over area. Double the force on the same patch and P doubles. Double the force but also double the area and P stays the same.",
+  q2:"A sharp knife or nail applies more force than a blunt one.",
+  q2a:"Yes — that is why it cuts",
+  q2b:"No. It concentrates the SAME force on a much smaller area, so pressure soars",
+  q2c:"Sharp objects have no force",
+  q2d:"Blunt objects always apply more force",
+  q2w:"Your hand can push with the same force on a blunt knife or a sharp one. The sharp edge just has a tiny area, so P = F/A is huge and it cuts.",
+  q3:"Liquid pressure only pushes downward.",
+  q3a:"Yes — water always sits on the bottom",
+  q3b:"It pushes down and sideways, but never up",
+  q3c:"At a given depth it pushes equally in every direction",
+  q3d:"Liquids do not exert pressure",
+  q3w:"Dams must be thick at the bottom because pressure acts on the walls too. A probe under a cork still reads pressure — including upward.",
+  q4:"A wider or bigger container means higher liquid pressure at the same depth.",
+  q4a:"Yes — more water, more pressure",
+  q4b:"No. At the same depth, P = ρgh is the same. Shape and volume do not enter",
+  q4c:"Only if the container is metal",
+  q4d:"Pressure depends on the colour of the liquid",
+  q4w:"Swap the tall-narrow tank for the wide-short one and keep the probe at the same depth. The reading does not change. Depth only.",
+  q5:"A straw works because your mouth pulls the liquid up.",
+  q5a:"Yes — sucking is a pulling force on the drink",
+  q5b:"No. You lower the pressure inside the straw; outside air then PUSHES the liquid up",
+  q5c:"The straw's plastic lifts the water",
+  q5d:"Straws only work in a vacuum",
+  q5w:"There is no 'sucking force' on the liquid. Drop the pressure in the straw and the atmosphere on the open drink wins. That is also why a barometer works."
+},
+ur:{
+  title:"قوت، دباؤ اور سیال",
+  sub:"ایک ہی دھکا، چھوٹا رقبہ — بہت زیادہ دباؤ۔",
+  navTitle:"قوت، دباؤ اور سیال", bench:"میز", quiz:"سوالات",
+  lang:"English", dim:"کم روشنی", bright:"تیز روشنی",
+  step:"کام", showMe:"مجھے دکھائیں", next:"اگلا", finish:"سوالات کی طرف",
+  readings:"براہِ راست آلات",
+  fLab:"قوت F", aLab:"رقبہ A", pLab:"دباؤ P",
+  speed:"رفتار", play:"چلائیں", pause:"روکیں", reset:"ری سیٹ", stepBtn:"قدم",
+  graph:"دباؤ، براہِ راست",
+  graph1:"ایک ہی قوت۔ چھوٹا رقبہ → بڑا P۔ دھنسنے کی وجہ یہی ہے۔",
+  graph2:"P صرف گہرائی سے بڑھتا ہے۔ چوڑا یا تنگ، ایک ہی گہرائی پر پڑھائی ایک جیسی۔",
+  graph3:"تین پروب، ایک دباؤ۔ یہ سیدھی لکیر پاسکل کا قانون ہے۔",
+  graph4:"باہر کی ہوا اب بھی مشروب پر دباتی ہے۔ منہ صرف نلکی کے اندر P کم کرتا ہے۔",
+  world:"نقش قدم اور پیش‌سیٹ",
+  quizTitle:"دیکھیں آپ نے کیا سیکھا",
+  quizSub:"پانچ سوال، جواب فوراً وضاحت کے ساتھ۔",
+  tryAgain:"دوبارہ کوشش", left:"سوال باقی ہیں۔",
+  scoreAll:"بہت خوب — آپ دباؤ پڑھ سکتے ہیں، صرف قوت نہیں۔",
+  scoreMid:"اچھا۔ وضاحت پڑھیں، پھر میز پر واپس جائیں۔",
+  scoreLow:"میز پر واپس جائیں اور کام دوبارہ کریں۔",
+  m1:"ریت کا صندوق", m2:"ٹینک", m3:"ہائیڈرولک لفٹ", m4:"فضائی دباؤ",
+  unitM:"m²", unitCm:"cm²",
+  force:"قوت (وزن)",
+  sip:"چوسنے کی طاقت", alt:"اونچائی",
+  a1:"ان پٹ پسٹن کا رقبہ", a2:"آؤٹ پٹ پسٹن کا رقبہ", load:"بڑے پسٹن پر بوجھ",
+  fin:"ان پٹ قوت",
+  shapeN:"تنگ اونچا", shapeW:"چوڑا نیچا",
+  predQ:"کون سی فوارہ سب سے دور جائے گی؟",
+  predT:"اوپر والا سوراخ", predM:"درمیان والا سوراخ", predB:"نیچے والا سوراخ (سب سے گہرا)",
+  car:"کار لفٹ", brakes:"بریک", chair:"نائی کی کرسی",
+  fpBoard:"چوڑی تختی", fpShoe:"جوتا", fpStiletto:"اونچی ایڑی", fpCamel:"اونٹ کا پاؤں",
+  fpBknife:"کند چھری", fpSknife:"تیز چھری", fpBnail:"کند کیل", fpSnail:"تیز کیل",
+  fpFree:"آزاد شکل",
+  boardDesc:"دباؤ، قوت نہیں، نظر آنے والی بات چلاتا ہے۔ ایک ہی دھکا چھوٹے رقبے پر گہرا دھنستا ہے، دور پھینکتا ہے، اور زیادہ اٹھاتا ہے۔",
+  nSame:"ایک ہی قوت، مختلف نقش۔ تیز والے کا رقبہ چھوٹا ہے — بہت دباؤ، گہرا گڑھا۔",
+  nKnife:"ایک ہی قوت، مگر تیز چھری کی دھار کا رقبہ بہت چھوٹا ہے — بہت دباؤ، آسان کٹ۔",
+  nNail:"تیز کیل زیادہ زور سے نہیں دھکیلتا۔ وہی قوت ایک نوک پر اکٹھی ہو جاتی ہے۔",
+  nCamel:"اونٹ کا پاؤں چوڑا ہے۔ ایک ہی وزن، بڑا رقبہ، کم دباؤ — ریت نہیں پھٹتی۔",
+  nFree:"کونا گھسیٹیں۔ رقبہ بدلے، دباؤ نئے سرے سے نکلے، گہرائی P کی پیروی کرے گی F کی نہیں۔",
+  nCrush:"ریت ہار گئی۔ زیادہ دباؤ نے اسے کچل دیا — فورس سلائیڈر کو بہت بڑا ہونے کی ضرورت نہ تھی۔",
+  nDepth:"گہرا سوراخ، زیادہ P = ρgh، تیز فوارہ۔ ٹینک کا حجم یہ فیصلہ نہیں کرتا۔",
+  nShape:"تنگ یا چوڑا — ایک ہی گہرائی پر پروب ایک جیسا پڑھتا ہے۔ صرف گہرائی، شکل نہیں۔",
+  nArrows:"تیر برابر ہیں۔ دی گئی گہرائی پر مائع ہر سمت دباتا ہے، صرف نیچے نہیں۔",
+  nUnder:"کارک کے نیچے بھی تیر ہر طرف ہیں — اوپر بھی۔ دباؤ صرف نیچے نہیں ہوتا۔",
+  nJet:"نیچے والی فوارہ سب سے دور گئی کیونکہ وہ سوراخ سب سے گہرا ہے۔ دباؤ گہرائی سے بندھا ہے، پانی کی مقدار سے نہیں۔",
+  nPascal:"ہر پروب ایک جیسا P پڑھتا ہے۔ بند مائع میں دباؤ ہر سمت برابر جاتا ہے۔",
+  nLift:"بڑا پسٹن اسی P کو بڑے رقبے پر محسوس کرتا ہے، اس لیے زیادہ دھکیلتا ہے۔ چھوٹا پسٹن زیادہ سفر کرتا ہے۔",
+  nNoLift:"ہر جگہ ایک جیسا دباؤ — مگر P × A_بڑا اب بھی بوجھ سے کم ہے۔ رقبے کا تناسب یا ان پٹ قوت بڑھائیں۔",
+  nTrade:"دونوں پسٹن دیکھیں۔ بڑا تناسب بھاری بوجھ اٹھاتا ہے، مگر ان پٹ پسٹن بوجھ سے کہیں زیادہ چلتا ہے۔",
+  nPush:"مائع کو نلکی میں باہر کی ہوا دھکیلتی ہے جو کھلے مشروب پر دباتی ہے — منہ کھینچتا نہیں۔",
+  nSip:"چوسنے سے نلکی کے اندر دباؤ کم ہوتا ہے۔ گلاس پر باہر کی ہوا جیت جاتی ہے، مشروب چڑھتا ہے۔",
+  nBaro:"ہوا کا وزن ہے۔ پہاڑ پر ہوا کا ستون چھوٹا ہے، اس لیے بیرومیٹر کا ستون گرتا ہے۔",
+  nSea:"سطحِ سمندر: لمبا ہوائی ستون، زیادہ فضائی دباؤ، اونچا مائع ستون۔",
+  extra1:"دھنسنے کی گہرائی دباؤ کی پیروی کرتی ہے۔",
+  extra2:"گہرائی {h} m  ·  P = ρgh = {p}",
+  extra3:"A₁ {a1}  ·  A₂ {a2}  ·  تناسب {r}×  ·  تین پروب متفق",
+  extra4:"اونچائی {z} m  ·  ستون {c}  ·  ہوا کھلی سطح پر دباتی ہے",
+  t1:"قوت کو جوں کا توں رکھیں۔ سب سے چوڑے پاؤں کو سب سے تیز کیل سے بدلیں۔ گڑھا دیکھیں۔",
+  t1h:"فورس سلائیڈر نہ ہلائیں۔ پہلے اونٹ کا پاؤں، پھر تیز کیل (یا الٹ) دبائیں۔",
+  t1p:"ایک ہی قوت۔ چھوٹا رقبہ → بہت دباؤ → گہرا گڑھا۔ دھنسا دباؤ نے، قوت نے نہیں۔",
+  t2:"تیز کیل کو جتنی کم قوت ہو سکے اس سے گاڑیں۔",
+  t2h:"تیز کیل چنیں۔ قوت سلائیڈر نیچا رہنے دیں۔ پھر بھی گھُسے گی — یہی سبق ہے۔",
+  t2p:"نوک پر چھوٹی قوت بھی زیادہ دباؤ ہے۔ تیز کا مطلب 'زیادہ قوت' نہیں۔",
+  t3:"اندازہ لگائیں کون سی فوارہ دور جائے گی، پھر تینوں سوراخ کھولیں۔",
+  t3h:"پہلے اندازہ چنیں۔ پھر ہر ڈاٹ نکالیں۔ گہرا سوراخ، دور فوارہ۔",
+  t3p:"نیچے والی جیت گئی کیونکہ وہ پانی سب سے گہرا ہے۔ چوڑائی اور حجم کا دخل نہ تھا۔",
+  t4:"پروب کو سائیڈ وال پر اور تیرتے کارک کے نیچے دونوں جگہ رکھیں۔",
+  t4h:"پروب گھسیٹیں۔ دیوار پہلو ہے۔ کارک کے نیچے سرکائیں تو دباؤ اوپر کی طرف بھی ہے۔",
+  t4p:"ایک گہرائی پر مائع ہر سمت دباتا ہے — پہلو اور اوپر، صرف نیچے نہیں۔",
+  t5:"اتنا بوجھ اٹھائیں جو آپ کی ان پٹ قوت سے بھاری ہو، کافی بڑے رقبے کے تناسب سے۔",
+  t5h:"آؤٹ پٹ پسٹن کو ان پٹ سے بہت چوڑا کریں۔ دبائیں۔ کار اٹھ سکتی ہے چاہے وزن دھکے سے زیادہ ہو۔",
+  t5p:"ہر جگہ ایک جیسا P۔ بڑا رقبہ → بڑی قوت۔ چھوٹا پسٹن زیادہ چلتا ہے۔ یہی ہائیڈرولک لفٹ ہے۔",
+  q1:"زیادہ قوت کا مطلب ہمیشہ زیادہ دباؤ ہے۔",
+  q1a:"ہاں — دباؤ اور قوت ایک ہی بات ہیں",
+  q1b:"صرف اس صورت جب رقبہ وہی رہے۔ P = F ÷ A",
+  q1c:"نہیں — زیادہ قوت ہمیشہ کم دباؤ ہے",
+  q1d:"دباؤ قوت پر بالکل منحصر نہیں",
+  q1w:"دباؤ رقبے پر پھیلی قوت ہے۔ ایک ہی پیچ پر قوت دوگنی تو P دوگنا۔ قوت اور رقبہ دونوں دوگنے تو P وہی رہتا ہے۔",
+  q2:"تیز چھری یا کیل کند والی سے زیادہ قوت لگاتی ہے۔",
+  q2a:"ہاں — اسی لیے کٹتی ہے",
+  q2b:"نہیں۔ وہی قوت بہت چھوٹے رقبے پر اکٹھی ہوتی ہے، اس لیے دباؤ اچھل پڑتا ہے",
+  q2c:"تیز چیزوں میں قوت نہیں ہوتی",
+  q2d:"کند چیزیں ہمیشہ زیادہ قوت لگاتی ہیں",
+  q2w:"ہاتھ کند یا تیز چھری پر ایک جیسی قوت لگا سکتا ہے۔ تیز دھار کا رقبہ چھوٹا ہے، اس لیے P = F/A بہت بڑا ہے اور کٹتی ہے۔",
+  q3:"مائع کا دباؤ صرف نیچے دباتا ہے۔",
+  q3a:"ہاں — پانی ہمیشہ تہہ پر بیٹھتا ہے",
+  q3b:"نیچے اور پہلو دباتا ہے، اوپر کبھی نہیں",
+  q3c:"دی گئی گہرائی پر ہر سمت برابر دباتا ہے",
+  q3d:"مائعات دباؤ نہیں ڈالتے",
+  q3w:"بند اس لیے نیچے موٹی ہوتی ہے کہ دباؤ دیواروں پر بھی ہے۔ کارک کے نیچے پروب اب بھی دباؤ پڑھتا ہے — اوپر کی طرف بھی۔",
+  q4:"چوڑے یا بڑے برتن کا مطلب ایک ہی گہرائی پر زیادہ مائع دباؤ ہے۔",
+  q4a:"ہاں — زیادہ پانی، زیادہ دباؤ",
+  q4b:"نہیں۔ ایک ہی گہرائی پر P = ρgh ایک جیسا ہے۔ شکل اور حجم شامل نہیں",
+  q4c:"صرف اگر برتن دھات کا ہو",
+  q4d:"دباؤ مائع کے رنگ پر منحصر ہے",
+  q4w:"تنگ اونچے ٹینک کو چوڑے نیچے سے بدلیں اور پروب ایک ہی گہرائی پر رکھیں۔ پڑھائی نہیں بدلتی۔ صرف گہرائی۔",
+  q5:"نلکی اس لیے چلتی ہے کہ منہ مائع کو اوپر کھینچتا ہے۔",
+  q5a:"ہاں — چوسنا مشروب پر کھینچنے والی قوت ہے",
+  q5b:"نہیں۔ آپ نلکی کے اندر دباؤ کم کرتے ہیں؛ باہر کی ہوا پھر مائع کو دھکیلتی ہے",
+  q5c:"نلکی کا پلاسٹک پانی اٹھاتا ہے",
+  q5d:"نلکیاں صرف خلا میں چلتی ہیں",
+  q5w:"مائع پر 'چوسنے والی قوت' نہیں۔ نلکی میں دباؤ گھٹائیں تو کھلے مشروب پر فضا جیت جاتی ہے۔ بیرومیٹر بھی اسی لیے چلتا ہے۔"
+}
+};
+
+let LANG = "en";
+const T = k => STRINGS[LANG][k] ?? STRINGS.en[k] ?? k;
+const el = id => document.getElementById(id);
+let dim = false;
+
+/* ======================================================================
+   3. STATE
+   ====================================================================== */
+function seed(){
+  return {
+    mode: 1,
+    running: true,
+    speed: 1,
+    unitCm: false,
+    force: CONFIG.FORCE0,
+    foot: "shoe",
+    free: false,
+    freeW: 0.12,          // m, free-form rectangle
+    freeH: 0.08,
+    sink: 0,              // animated dent depth, m
+    blockX: 450,
+    /* tank */
+    wide: false,
+    holes: [false, false, false],
+    jet: [0, 0, 0],       // animated length, m
+    probe: { x: 210, y: 260 },
+    corkX: 200,
+    pred: null,
+    drops: [],
+    /* hydraulics */
+    a1: CONFIG.A1_0,
+    a2: CONFIG.A2_0,
+    fin: CONFIG.FIN0,
+    load: CONFIG.LOAD0,
+    inDisp: 0,            // m, input piston travel down
+    outDisp: 0,           // m, output rise
+    pulse: 0,             // 0..1 pressure-wave front along the pipe
+    preset: "none",
+    /* atmosphere */
+    sip: 4000,            // Pa drop
+    alt: 0,               // m
+    strawH: 0,            // animated rise, m
+    baroH: CONFIG.BARO_FULL,
+    /* shared */
+    t: 0,
+    samples: [],
+    visited: { board:false, shoe:false, stiletto:false, camel:false, bknife:false, sknife:false, bnail:false, snail:false },
+    probeHits: { side:false, under:false, up:false },
+    guide: { i:0, done:false, memo:{} },
+    view: null
+  };
+}
+const S = seed();
+const drag = { kind:null, dx:0, dy:0 };
+
+/* ======================================================================
+   4. PHYSICS / MODEL
+   P = F/A is the only driver of sink, jets, lift, and straw rise.
+   ====================================================================== */
+const W = CONFIG.WORLD_W, H = CONFIG.WORLD_H;
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+
+function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+
+function footArea(){
+  if(S.free) return Math.max(4e-6, S.freeW * S.freeH);
+  const f = FEET.find(x=>x.id===S.foot);
+  return f ? f.A : 0.016;
+}
+function widestId(){
+  return FEET.reduce((a,b)=> b.A>a.A ? b : a).id;
+}
+function narrowestId(){
+  return FEET.reduce((a,b)=> b.A<a.A ? b : a).id;
+}
+
+function fmtP(p){
+  if(!isFinite(p)) return "—";
+  if(p >= 1e6) return (p/1e6).toFixed(2)+" MPa";
+  if(p >= 1000) return Math.round(p).toLocaleString(LANG==="ur"?undefined:"en-US")+" Pa";
+  return Math.round(p)+" Pa";
+}
+function fmtA(a){
+  if(S.unitCm){
+    const cm = a * 1e4;
+    return (cm>=10 ? cm.toFixed(1) : cm.toFixed(2))+" cm²";
+  }
+  if(a >= 0.01) return a.toFixed(3)+" m²";
+  if(a >= 0.001) return a.toFixed(4)+" m²";
+  return a.toExponential(2)+" m²";
+}
+function fmtF(f){ return Math.round(f)+" N"; }
+function fmtM(m){ return (m>=0.1? m.toFixed(2): m.toFixed(3))+" m"; }
+
+function atmP(){
+  /* Hydrostatic atmosphere, Class 8 qualitative: higher → less air above. */
+  return CONFIG.PATM * Math.exp(-S.alt / CONFIG.SCALE_H);
+}
+
+function tankGeom(){
+  const top = 70, bot = 430, floor = 500;
+  const tw = S.wide ? 340 : 150;
+  const left = S.wide ? 40 : 80;
+  const waterTop = bot - CONFIG.TANK_H * 560; // px mapping ~560 px / m of depth
+  const pxPerM = (bot - waterTop) / CONFIG.TANK_H;
+  return { top, bot, floor, tw, left, right:left+tw, waterTop, pxPerM };
+}
+function probeDepthM(){
+  const g = tankGeom();
+  const y = clamp(S.probe.y, g.waterTop, g.bot);
+  return (y - g.waterTop) / g.pxPerM;
+}
+function liquidP(h){ return CONFIG.RHO * CONFIG.G * Math.max(0,h); }
+
+function hydP(){
+  /* Pascal: P = F_in / A_in throughout the enclosed liquid. */
+  return S.fin / S.a1;
+}
+function hydOutForce(){ return hydP() * S.a2; }
+function canLift(){ return hydOutForce() + 1e-9 >= S.load; }
+
+function compute(){
+  const v = { note:"nSame", extra:{}, F:0, A:0, P:0, sinkT:0, jets:[0,0,0], strawT:0, baroT:CONFIG.BARO_FULL, lift:false };
+  if(S.mode===1){
+    v.F = S.force;
+    v.A = footArea();
+    /* WHY P=F/A: thrust is the perpendicular force; spreading it over more
+       square metres dilutes it. Knives work because A is tiny, not because
+       the hand suddenly pushes harder. */
+    v.P = v.F / v.A;
+    v.sinkT = Math.min(CONFIG.SINK_MAX, v.P / CONFIG.P_SINK);
+    if(S.free) v.note = "nFree";
+    else if(S.foot==="sknife" || S.foot==="bknife") v.note = "nKnife";
+    else if(S.foot==="snail" || S.foot==="bnail") v.note = "nNail";
+    else if(S.foot==="camel" || S.foot==="board") v.note = "nCamel";
+    else v.note = "nSame";
+    if(v.sinkT >= CONFIG.SINK_MAX*0.98) v.note = "nCrush";
+    v.extra.sink = v.sinkT;
+  } else if(S.mode===2){
+    const h = probeDepthM();
+    v.P = liquidP(h);
+    /* Show P=F/A on a 1 cm² patch of wall at the probe — same P, any direction. */
+    v.A = 0.0001;
+    v.F = v.P * v.A;
+    v.extra.h = h;
+    v.extra.shape = S.wide ? "W" : "N";
+    const g = tankGeom();
+    CONFIG.HOLE_FRACS.forEach((f,i)=>{
+      const depth = f * CONFIG.TANK_H;
+      /* WHY depth not volume: P = ρgh. The tank's width never appears.
+         Torricelli speed √(2gh) therefore grows only with hole depth.
+         A nearby tray means flight time is similar, so deeper → farther. */
+      const speed = Math.sqrt(2 * CONFIG.G * depth);
+      v.jets[i] = S.holes[i] ? speed * CONFIG.JET_SCALE : 0;
+    });
+    const under = probeUnderCork();
+    const side = probeOnSide();
+    if(under) v.note = "nUnder";
+    else if(side) v.note = "nArrows";
+    else if(S.holes.every(Boolean)) v.note = "nJet";
+    else if(S.wide) v.note = "nShape";
+    else v.note = "nDepth";
+    v.extra.under = under;
+    v.extra.side = side;
+  } else if(S.mode===3){
+    v.A = S.a1;
+    v.F = S.fin;
+    v.P = hydP();
+    v.extra.a1 = S.a1;
+    v.extra.a2 = S.a2;
+    v.extra.ratio = S.a2 / S.a1;
+    v.extra.fout = hydOutForce();
+    v.extra.p1 = v.P; v.extra.p2 = v.P; v.extra.p3 = v.P; // Pascal equality
+    v.lift = canLift();
+    /* WHY Pascal: an enclosed liquid cannot make a pressure gradient
+       (we ignore gravity in the thin connecting pipe for Class 8). So
+       F1/A1 = F2/A2. Bigger A2 → bigger F2. Volume conservation then
+       forces the small piston to travel farther: A1 Δx1 = A2 Δx2. */
+    if(!v.lift) v.note = "nNoLift";
+    else if(v.extra.ratio >= 4) v.note = "nTrade";
+    else v.note = "nPascal";
+  } else {
+    const pAtm = atmP();
+    const aOpen = 0.004; // m², free surface of the drink
+    v.A = aOpen;
+    v.P = pAtm;
+    v.F = pAtm * aOpen;
+    const dP = clamp(S.sip, 0, CONFIG.SIP_MAX);
+    /* WHY push not suck: lowering P_inside the straw does not pull the
+       liquid. The open surface still feels ~P_atm, so net force on the
+       drink is (P_atm − P_straw)×A, upward in the straw. h = ΔP/(ρg). */
+    v.strawT = dP / (CONFIG.RHO * CONFIG.G);
+    v.baroT = CONFIG.BARO_FULL * (pAtm / CONFIG.PATM);
+    v.extra.alt = S.alt;
+    v.extra.sip = dP;
+    v.extra.pAtm = pAtm;
+    v.extra.straw = v.strawT;
+    if(S.alt > 800) v.note = "nBaro";
+    else if(dP > 1500) v.note = "nPush";
+    else if(S.alt < 50) v.note = "nSea";
+    else v.note = "nSip";
+  }
+  S.view = v;
+  S.samples.push({ t:S.t, P:v.P, A:v.A, F:v.F, h:v.extra.h||0 });
+  if(S.samples.length>64) S.samples.shift();
+  return v;
+}
+
+function probeOnSide(){
+  const g = tankGeom();
+  const p = S.probe;
+  const inY = p.y > g.waterTop+8 && p.y < g.bot-8;
+  return inY && (Math.abs(p.x - g.left) < 22 || Math.abs(p.x - g.right) < 22);
+}
+function probeUnderCork(){
+  const g = tankGeom();
+  const p = S.probe;
+  const cork = corkRect(g);
+  return p.y > cork.y + cork.h - 2 && p.y < cork.y + cork.h + 55
+      && p.x > cork.x - 6 && p.x < cork.x + cork.w + 6
+      && p.y < g.bot;
+}
+function corkRect(g){
+  const w = 54, h = 18;
+  return { x: S.corkX - w/2, y: g.waterTop - h + 6, w, h };
+}
+
+function step(dt){
+  S.t += dt;
+  const v = compute();
+  const k = 1 - Math.exp(-dt * 5.5);
+  if(S.mode===1){
+    S.sink += (v.sinkT - S.sink) * k;
+  }
+  if(S.mode===2){
+    for(let i=0;i<3;i++){
+      S.jet[i] += (v.jets[i] - S.jet[i]) * k;
+      if(S.holes[i] && S.jet[i] > 0.02 && Math.random() < dt*18){
+        const g = tankGeom();
+        const depth = CONFIG.HOLE_FRACS[i] * CONFIG.TANK_H;
+        const y = g.waterTop + depth * g.pxPerM;
+        S.drops.push({ x:g.right+4, y, vx: 80+S.jet[i]*420, vy: -10, life:1 });
+      }
+    }
+    S.drops.forEach(d=>{
+      d.x += d.vx*dt; d.y += d.vy*dt; d.vy += 420*dt; d.life -= dt*0.9;
+    });
+    S.drops = S.drops.filter(d=>d.life>0 && d.y < 510);
+    S.corkX += Math.sin(S.t*1.4)*2*dt*8;
+    S.corkX = clamp(S.corkX, tankGeom().left+40, tankGeom().right-40);
+    if(probeOnSide()) S.probeHits.side = true;
+    if(probeUnderCork()){ S.probeHits.under = true; S.probeHits.up = true; }
+  }
+  if(S.mode===3){
+    /* Pressure pulse travels through the fluid, then pistons move. */
+    S.pulse = Math.min(1, S.pulse + dt*1.6);
+    const wantIn = v.lift ? CONFIG.STROKE : 0;
+    /* Volume conservation: A1 Δx1 = A2 Δx2  →  Δx2 = Δx1 × A1/A2 */
+    const wantOut = v.lift ? CONFIG.STROKE * (S.a1 / S.a2) : 0;
+    S.inDisp += (wantIn - S.inDisp) * k;
+    S.outDisp += (wantOut - S.outDisp) * k;
+    if(!v.lift){
+      /* Productive failure: input piston barely budges, load stays down. */
+      S.inDisp += (0.006*Math.sin(S.t*10) - S.inDisp) * k;
+    }
+  }
+  if(S.mode===4){
+    S.strawH += (v.strawT - S.strawH) * k;
+    S.baroH += (v.baroT - S.baroH) * k;
+  }
+}
+
+/* ======================================================================
+   5. RENDER
+   ====================================================================== */
+const canvas = el("board");
+const ctx = canvas.getContext("2d");
+let cssW=900, cssH=520, scaleX=1, scaleY=1;
+function dpr(){ return Math.min(2, devicePixelRatio||1); }
+
+function fitBoard(){
+  const wrap = el("stageInner");
+  const w = Math.max(280, wrap.clientWidth);
+  const h = Math.max(300, Math.min(560, Math.round(w * H/W)));
+  cssW=w; cssH=h;
+  const d=dpr();
+  canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+  scaleX=w/W; scaleY=h/H;
+}
+function worldPtr(e){
+  const r = canvas.getBoundingClientRect();
+  return { x:(e.clientX-r.left)*(W/r.width), y:(e.clientY-r.top)*(H/r.height) };
+}
+
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(x,y,w,h,r);
+  else {
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
+  }
+}
+
+function label(text, x, y, opt){
+  opt = opt||{};
+  ctx.save();
+  ctx.font = (opt.size||13)+"px "+css("--font");
+  ctx.fillStyle = opt.color || css("--text");
+  ctx.textAlign = opt.align || "center";
+  ctx.textBaseline = opt.base || "middle";
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+function drawArrow(x,y,dx,dy,len,color){
+  const L = len || 16;
+  const ang = Math.atan2(dy,dx);
+  const x2 = x + Math.cos(ang)*L, y2 = y + Math.sin(ang)*L;
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-Math.cos(ang-0.4)*7, y2-Math.sin(ang-0.4)*7);
+  ctx.lineTo(x2-Math.cos(ang+0.4)*7, y2-Math.sin(ang+0.4)*7);
+  ctx.closePath(); ctx.fill();
+}
+
+function visWidth(A){
+  /* Visual contact width tracks area so the tiny patch is obviously tiny.
+     Physics still uses the true A — never the pixel width. */
+  return clamp(Math.sqrt(A)*900, 6, 220);
+}
+
+function drawFootShape(id, cx, cy, A, yBase){
+  const col = css("--text");
+  const w = visWidth(A);
+  ctx.save();
+  ctx.fillStyle = css("--metal");
+  ctx.strokeStyle = col; ctx.lineWidth = 2;
+  if(id==="board" || id==="free"){
+    roundRect(cx-w/2, cy-18, w, 22, 3); ctx.fill(); ctx.stroke();
+  } else if(id==="shoe"){
+    roundRect(cx-w/2, cy-14, w, 18, 8); ctx.fill(); ctx.stroke();
+  } else if(id==="stiletto"){
+    roundRect(cx-w*0.7, cy-16, w*1.1, 10, 3); ctx.fill();
+    ctx.fillRect(cx-3, cy-8, 6, 20);
+    ctx.strokeRect(cx-3, cy-8, 6, 20);
+  } else if(id==="camel"){
+    ctx.beginPath();
+    ctx.ellipse(cx-w*0.28, cy, w*0.32, 14, 0, 0, 7);
+    ctx.ellipse(cx+w*0.28, cy, w*0.32, 14, 0, 0, 7);
+    ctx.fill(); ctx.stroke();
+  } else if(id==="bknife" || id==="sknife"){
+    const th = id==="sknife" ? 4 : 10;
+    ctx.beginPath();
+    ctx.moveTo(cx-w/2, cy+th/2);
+    ctx.lineTo(cx+w/2, cy);
+    ctx.lineTo(cx-w/2, cy-th/2);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else {
+    const th = id==="snail" ? 3 : 8;
+    ctx.fillRect(cx-th/2, cy-22, th, 28);
+    ctx.beginPath();
+    ctx.moveTo(cx, yBase!=null? yBase : cy+14);
+    ctx.lineTo(cx-th, cy+6);
+    ctx.lineTo(cx+th, cy+6);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawMode1(){
+  const sandTop = 310, sandBot = 500;
+  const maxPx = CONFIG.SINK_MAX * CONFIG.PX_PER_M;
+  const dent = S.sink * CONFIG.PX_PER_M;
+  const A = footArea();
+  const vw = visWidth(A);
+  const cx = S.blockX;
+  const ySurf = sandTop + dent;
+
+  /* bench */
+  ctx.fillStyle = css("--board");
+  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = css("--sand");
+  ctx.fillRect(40, sandTop, 820, sandBot-sandTop);
+  /* grain */
+  ctx.fillStyle = css("--sand-dk");
+  ctx.globalAlpha = 0.22;
+  for(let i=0;i<70;i++){
+    const gx = 50 + (i*97)%800, gy = sandTop+12 + (i*53)%170;
+    ctx.fillRect(gx, gy, 3, 2);
+  }
+  ctx.globalAlpha = 1;
+
+  /* dent — width follows contact, DEPTH follows pressure */
+  ctx.fillStyle = css("--sand-dk");
+  ctx.beginPath();
+  ctx.moveTo(40, sandTop);
+  ctx.lineTo(cx-vw/2-18, sandTop);
+  ctx.quadraticCurveTo(cx-vw/2, sandTop, cx-vw/2+4, ySurf);
+  ctx.lineTo(cx+vw/2-4, ySurf);
+  ctx.quadraticCurveTo(cx+vw/2, sandTop, cx+vw/2+18, sandTop);
+  ctx.lineTo(860, sandTop);
+  ctx.lineTo(860, sandBot);
+  ctx.lineTo(40, sandBot);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = css("--foam");
+  ctx.globalAlpha = 0.35;
+  ctx.fillRect(cx-vw/2, ySurf-2, vw, 8);
+  ctx.globalAlpha = 1;
+
+  if(S.sink > CONFIG.SINK_MAX*0.92){
+    ctx.strokeStyle = css("--crit"); ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx-40, ySurf+10); ctx.lineTo(cx-10, ySurf+40);
+    ctx.moveTo(cx+8, ySurf+8); ctx.lineTo(cx+36, ySurf+44);
+    ctx.stroke();
+  }
+
+  const id = S.free ? "free" : S.foot;
+  const by = ySurf - 20;
+  drawFootShape(id, cx, by, A, ySurf);
+  /* weight arrow — same force, always. Length does NOT change with footprint. */
+  const Fy = by - 70;
+  drawArrow(cx, Fy, 0, 1, 44, css("--pressure"));
+  label(fmtF(S.force), cx+36, Fy+8, { align:"left", size:14 });
+  label("F", cx-18, Fy+8, { size:14, color:css("--pressure") });
+
+  if(S.free){
+    const rw = S.freeW * 700, rh = 18;
+    ctx.strokeStyle = css("--accent"); ctx.lineWidth = 2; ctx.setLineDash([5,4]);
+    ctx.strokeRect(cx-rw/2, ySurf-rh, rw, rh);
+    ctx.setLineDash([]);
+    ctx.fillStyle = css("--accent");
+    ctx.fillRect(cx+rw/2-7, ySurf-10, 14, 14);
+    label(T("fpFree"), cx, ySurf-28, { size:12, color:css("--accent") });
+  }
+
+  label(T("extra1")+"  "+fmtM(S.sink), 450, 36, { size:14, color:css("--text-2") });
+  label("P = F ÷ A", 450, 58, { size:16 });
+}
+
+function drawMode2(){
+  const g = tankGeom();
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+  /* tray */
+  ctx.fillStyle = css("--panel");
+  ctx.fillRect(g.right+20, g.bot-8, 520, 18);
+  ctx.strokeStyle = css("--panel-border"); ctx.lineWidth=1;
+  ctx.strokeRect(g.right+20, g.bot-8, 520, 18);
+  label("jet tray  ·  farther = deeper", g.right+260, g.bot+18, { size:12, color:css("--text-3") });
+
+  /* tank walls */
+  ctx.strokeStyle = css("--text"); ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(g.left, g.top); ctx.lineTo(g.left, g.bot);
+  ctx.lineTo(g.right, g.bot); ctx.lineTo(g.right, g.top);
+  ctx.stroke();
+  /* water */
+  ctx.fillStyle = css("--water");
+  ctx.globalAlpha = 0.38;
+  ctx.fillRect(g.left+3, g.waterTop, g.tw-6, g.bot-g.waterTop-2);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = css("--water-hi");
+  ctx.fillRect(g.left+3, g.waterTop, g.tw-6, 4);
+
+  /* cork / float — probe target only, not a buoyancy lesson */
+  const ck = corkRect(g);
+  ctx.fillStyle = "#C47A3A";
+  roundRect(ck.x, ck.y, ck.w, ck.h, 4); ctx.fill();
+  ctx.strokeStyle = css("--text"); ctx.lineWidth=1.5; ctx.stroke();
+  label("cork", ck.x+ck.w/2, ck.y-10, { size:12 });
+
+  /* depth ticks */
+  ctx.strokeStyle = css("--text-3"); ctx.lineWidth=1;
+  for(let d=0; d<=CONFIG.TANK_H+0.01; d+=0.1){
+    const y = g.waterTop + d*g.pxPerM;
+    ctx.beginPath(); ctx.moveTo(g.left-8,y); ctx.lineTo(g.left,y); ctx.stroke();
+    label(d.toFixed(1)+" m", g.left-14, y, { align:"right", size:11, color:css("--text-3") });
+  }
+
+  /* holes + jets */
+  CONFIG.HOLE_FRACS.forEach((f,i)=>{
+    const depth = f * CONFIG.TANK_H;
+    const y = g.waterTop + depth * g.pxPerM;
+    const open = S.holes[i];
+    ctx.fillStyle = open ? css("--water") : css("--crit");
+    ctx.beginPath(); ctx.arc(g.right, y, 9, 0, 7); ctx.fill();
+    ctx.strokeStyle = css("--text"); ctx.lineWidth=2; ctx.stroke();
+    label(["top","mid","bot"][i], g.right+16, y-14, { align:"left", size:12 });
+    if(S.jet[i] > 0.01){
+      const len = Math.min(380, S.jet[i] * 720);
+      ctx.strokeStyle = css("--water"); ctx.lineWidth = 7; ctx.lineCap="round";
+      ctx.beginPath();
+      ctx.moveTo(g.right+8, y);
+      const steps = 12;
+      for(let s=1;s<=steps;s++){
+        const t = s/steps;
+        const x = g.right+8 + len*t;
+        const yy = y + 18*t*t;
+        ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
+      label(fmtM(S.jet[i]), g.right+8+len, y-12, { align:"left", size:12, color:css("--water") });
+    }
+  });
+  S.drops.forEach(d=>{
+    ctx.globalAlpha = Math.max(0,d.life);
+    ctx.fillStyle = css("--water");
+    ctx.beginPath(); ctx.arc(d.x,d.y,3.2,0,7); ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
+  /* probe + equal-length arrows in ALL directions */
+  const p = S.probe;
+  ctx.fillStyle = css("--panel");
+  ctx.beginPath(); ctx.arc(p.x, p.y, 11, 0, 7); ctx.fill();
+  ctx.strokeStyle = css("--pressure"); ctx.lineWidth=2.4; ctx.stroke();
+  const n = 8, L = 18;
+  for(let i=0;i<n;i++){
+    const a = i*Math.PI*2/n;
+    drawArrow(p.x+Math.cos(a)*12, p.y+Math.sin(a)*12, Math.cos(a), Math.sin(a), L, css("--pressure"));
+  }
+  const h = probeDepthM();
+  label(fmtP(liquidP(h)), p.x+28, p.y-22, { align:"left", size:13, color:css("--pressure") });
+  label(S.wide? T("shapeW"): T("shapeN"), 760, 40, { size:14 });
+}
+
+function drawMode3(){
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+  const floor = 430;
+  const inX = 160, outX = 620;
+  const inW = 36 + S.a1*4200;
+  const outW = 50 + S.a2*900;
+  const inH = 210, outH = 210;
+  const inTop = 160, outTop = 160;
+  /* Honest Δx is A1 Δx1 = A2 Δx2 (tiny on the big piston). Scale the
+     drawing so BOTH pistons still visibly move; the readout keeps the real ratio. */
+  const inTravelPx = (S.inDisp / CONFIG.STROKE) * 100;
+  const ratio = Math.max(1.2, S.a2 / S.a1);
+  const outTravelPx = S.outDisp > 0.0003 ? inTravelPx / Math.sqrt(ratio) : 0;
+  const inY = inTop + inTravelPx;
+  const outY = outTop - outTravelPx;
+
+  /* pipe */
+  ctx.fillStyle = css("--water");
+  ctx.globalAlpha = 0.45;
+  ctx.fillRect(inX-8, floor-28, (outX-inX)+16, 28);
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = css("--metal"); ctx.lineWidth=3;
+  ctx.strokeRect(inX-8, floor-28, (outX-inX)+16, 28);
+
+  function cyl(x, top, w, h, pistonY, isIn){
+    ctx.strokeStyle = css("--text"); ctx.lineWidth=3;
+    ctx.strokeRect(x-w/2, top, w, h);
+    ctx.fillStyle = css("--water"); ctx.globalAlpha=0.4;
+    ctx.fillRect(x-w/2+2, pistonY+14, w-4, floor-28-(pistonY+14));
+    ctx.globalAlpha=1;
+    ctx.fillStyle = css("--metal");
+    roundRect(x-w/2-4, pistonY, w+8, 16, 3); ctx.fill();
+    ctx.strokeStyle = css("--text"); ctx.lineWidth=2; ctx.stroke();
+    if(isIn){
+      ctx.fillStyle = css("--pressure");
+      roundRect(x-10, pistonY-48, 20, 48, 4); ctx.fill();
+      drawArrow(x, pistonY-70, 0, 1, 22, css("--pressure"));
+      label(fmtF(S.fin), x, pistonY-86, { size:13 });
+    } else {
+      /* toy car load */
+      const cy = pistonY-28;
+      ctx.fillStyle = css("--accent");
+      roundRect(x-28, cy-16, 56, 22, 4); ctx.fill();
+      ctx.fillStyle = css("--text");
+      ctx.beginPath(); ctx.arc(x-16, cy+8, 6, 0, 7); ctx.arc(x+16, cy+8, 6, 0, 7); ctx.fill();
+      label(fmtF(S.load), x, cy-28, { size:13 });
+    }
+  }
+  cyl(inX, inTop, inW, inH, inY, true);
+  cyl(outX, outTop, outW, outH, outY, false);
+
+  /* three probes — ALL THE SAME VALUE. That equality IS Pascal. */
+  const P = hydP();
+  const probes = [
+    { x:inX, y:floor-50, k:"1" },
+    { x:(inX+outX)/2, y:floor-14, k:"2" },
+    { x:outX, y:floor-50, k:"3" }
+  ];
+  probes.forEach(pr=>{
+    ctx.fillStyle = css("--panel");
+    ctx.beginPath(); ctx.arc(pr.x, pr.y, 8, 0, 7); ctx.fill();
+    ctx.strokeStyle = css("--good"); ctx.lineWidth=2; ctx.stroke();
+    label("P"+pr.k+" = "+fmtP(P), pr.x, pr.y-16, { size:12, color:css("--good") });
+  });
+
+  /* pressure pulse travelling through the fluid */
+  if(S.pulse < 1){
+    const pxp = lerp(inX, outX, S.pulse);
+    ctx.fillStyle = css("--pressure");
+    ctx.globalAlpha = 0.55;
+    ctx.beginPath(); ctx.arc(pxp, floor-14, 10, 0, 7); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  const ok = canLift();
+  label(ok ? "F₂ = P × A₂ = "+fmtF(hydOutForce())+"  ≥  load" :
+             "F₂ = "+fmtF(hydOutForce())+"  <  load  —  no lift",
+        450, 40, { size:15, color: ok? css("--good"): css("--warn") });
+  label("Δx₁ / Δx₂ = A₂ / A₁  =  "+(S.a2/S.a1).toFixed(1), 450, 62, { size:13, color:css("--text-2") });
+  /* both pistons must be seen to move */
+  ctx.strokeStyle = css("--accent"); ctx.lineWidth=2; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(inX+inW/2+8, inTop); ctx.lineTo(inX+inW/2+8, inY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(outX-outW/2-8, outTop); ctx.lineTo(outX-outW/2-8, outY); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawMode4(){
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+  /* table */
+  ctx.fillStyle = css("--sand-dk");
+  ctx.fillRect(40, 400, 400, 16);
+  /* glass */
+  const gx=140, gy=220, gw=120, gh=180;
+  ctx.strokeStyle = css("--glass"); ctx.lineWidth=5;
+  ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, gy+gh); ctx.lineTo(gx+gw, gy+gh); ctx.lineTo(gx+gw, gy); ctx.stroke();
+  const drinkTop = gy+70;
+  ctx.fillStyle = css("--water"); ctx.globalAlpha=0.4;
+  ctx.fillRect(gx+4, drinkTop, gw-8, gy+gh-drinkTop-4);
+  ctx.globalAlpha=1;
+  /* air-pressure arrows on the OPEN surface — the push, not the suck */
+  const nArr = 5;
+  for(let i=0;i<nArr;i++){
+    const ax = gx+18 + i*(gw-36)/(nArr-1);
+    drawArrow(ax, drinkTop-38, 0, 1, 28, css("--pressure"));
+  }
+  label("P_atm  PUSHES", gx+gw/2, drinkTop-52, { size:13, color:css("--pressure") });
+
+  /* straw */
+  const sx = gx+gw/2+10, sw=16;
+  ctx.strokeStyle = css("--text-2"); ctx.lineWidth=3;
+  ctx.strokeRect(sx, gy-90, sw, gh+90);
+  const risePx = clamp(S.strawH * 900, 0, 250);
+  const strawLiquidTop = gy+gh-4 - 40 - risePx;
+  ctx.fillStyle = css("--water"); ctx.globalAlpha=0.7;
+  ctx.fillRect(sx+2, strawLiquidTop, sw-4, (gy+gh-8) - strawLiquidTop);
+  ctx.globalAlpha=1;
+  ctx.fillStyle = css("--panel-2");
+  ctx.beginPath(); ctx.ellipse(sx+sw/2, gy-96, 14, 8, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle = css("--text"); ctx.lineWidth=1.5; ctx.stroke();
+  label("sip  −"+Math.round(S.sip)+" Pa", sx+sw/2, gy-118, { size:12 });
+  label(T("nPush").slice(0, 42)+"…", 200, 36, { size:13, color:css("--text-2") });
+
+  /* barometer */
+  const bx=620, by=80, bw=28, bh=340;
+  ctx.fillStyle = css("--water"); ctx.globalAlpha=0.25;
+  ctx.fillRect(bx-70, 400, 180, 28);
+  ctx.globalAlpha=1;
+  ctx.strokeStyle = css("--text"); ctx.lineWidth=3;
+  ctx.strokeRect(bx, by, bw, bh);
+  const colH = S.baroH * (bh-24);
+  ctx.fillStyle = css("--water"); ctx.globalAlpha=0.7;
+  ctx.fillRect(bx+3, by+bh-6-colH, bw-6, colH);
+  ctx.globalAlpha=1;
+  label("barometer", bx+bw/2, by-16, { size:13 });
+  label("h ∝ P_atm", bx+bw/2+70, by+bh-colH, { align:"left", size:12, color:css("--water") });
+  /* mountain vs sea */
+  ctx.fillStyle = css("--sand");
+  ctx.beginPath();
+  const mountain = S.alt / CONFIG.ALT_MAX;
+  ctx.moveTo(760, 410);
+  ctx.lineTo(800, 410 - 40 - mountain*160);
+  ctx.lineTo(860, 410);
+  ctx.closePath(); ctx.fill();
+  label(S.alt<200? "sea level" : Math.round(S.alt)+" m", 820, 428, { size:12 });
+}
+
+function draw(){
+  if(!S.view) compute();
+  ctx.setTransform(dpr()*scaleX, 0, 0, dpr()*scaleY, 0, 0);
+  ctx.clearRect(0,0,W,H);
+  if(S.mode===1) drawMode1();
+  else if(S.mode===2) drawMode2();
+  else if(S.mode===3) drawMode3();
+  else drawMode4();
+}
+
+function drawChart(){
+  const g = el("pChart"), gctx=g.getContext("2d");
+  const d=dpr(), w=g.clientWidth, h=132;
+  if(!w) return;
+  if(g.width!==Math.round(w*d)){ g.width=Math.round(w*d); g.height=Math.round(h*d); }
+  gctx.setTransform(d,0,0,d,0,0); gctx.clearRect(0,0,w,h);
+  const padL=46, padB=22, padT=10, padR=10;
+  const pw=w-padL-padR, ph=h-padT-padB;
+  gctx.strokeStyle=css("--hairline"); gctx.lineWidth=1;
+  gctx.beginPath(); gctx.moveTo(padL,padT); gctx.lineTo(padL,padT+ph); gctx.lineTo(padL+pw,padT+ph); gctx.stroke();
+  gctx.fillStyle=css("--text-3"); gctx.font="12.5px "+css("--mono");
+  const v = S.view; if(!v) return;
+  if(S.mode===1){
+    /* P for each footprint at the CURRENT force — area, not force, spreads the bars. */
+    const maxP = Math.max(v.P, ...FEET.map(f=>S.force/f.A), 1);
+    const items = FEET;
+    const bw = Math.max(6, pw/items.length - 4);
+    items.forEach((f,i)=>{
+      const p = S.force / f.A;
+      const bh = (p/maxP)*ph;
+      const x = padL + i*(pw/items.length) + 2;
+      gctx.fillStyle = f.id===S.foot && !S.free ? css("--pressure") : css("--accent");
+      gctx.globalAlpha = f.id===S.foot && !S.free ? 1 : 0.35;
+      gctx.fillRect(x, padT+ph-bh, bw, bh);
+      gctx.globalAlpha = 1;
+    });
+    gctx.fillStyle=css("--text"); gctx.textAlign="center";
+    gctx.font="11px "+css("--font");
+    gctx.fillText("P at this F, each footprint", padL+pw/2, padT+ph+16);
+    gctx.textAlign="right"; gctx.fillStyle=css("--text-3"); gctx.font="12px "+css("--mono");
+    gctx.fillText(fmtP(maxP), padL-4, padT+10);
+  } else if(S.mode===2){
+    const maxH = CONFIG.TANK_H, maxP = liquidP(maxH);
+    gctx.strokeStyle=css("--water"); gctx.lineWidth=2.4;
+    gctx.beginPath();
+    for(let i=0;i<=20;i++){
+      const hh = maxH*i/20, p = liquidP(hh);
+      const x = padL + (hh/maxH)*pw, y = padT+ph - (p/maxP)*ph;
+      if(i===0) gctx.moveTo(x,y); else gctx.lineTo(x,y);
+    }
+    gctx.stroke();
+    const hNow = v.extra.h||0;
+    const x = padL + (hNow/maxH)*pw, y = padT+ph - (v.P/maxP)*ph;
+    gctx.fillStyle=css("--pressure");
+    gctx.beginPath(); gctx.arc(x,y,5,0,7); gctx.fill();
+    gctx.fillStyle=css("--text-3"); gctx.textAlign="center";
+    gctx.fillText("depth →", padL+pw/2, padT+ph+16);
+    gctx.textAlign="right"; gctx.fillText("P", padL-6, padT+10);
+  } else if(S.mode===3){
+    const p = v.P, max = Math.max(p, 1);
+    const labs = ["P1 in","P2 pipe","P3 out"];
+    labs.forEach((lb,i)=>{
+      const bh = (p/max)*ph*0.92;
+      const x = padL + pw*(0.12+i*0.3);
+      gctx.fillStyle = css("--good");
+      gctx.fillRect(x, padT+ph-bh, 36, bh);
+      gctx.fillStyle=css("--text"); gctx.textAlign="center"; gctx.font="11px "+css("--font");
+      gctx.fillText(lb, x+18, padT+ph+16);
+    });
+    gctx.textAlign="right"; gctx.fillStyle=css("--text-3"); gctx.font="12px "+css("--mono");
+    gctx.fillText(fmtP(p), padL-4, padT+10);
+  } else {
+    const maxA = CONFIG.ALT_MAX;
+    gctx.strokeStyle=css("--pressure"); gctx.lineWidth=2.4;
+    gctx.beginPath();
+    for(let i=0;i<=20;i++){
+      const z = maxA*i/20;
+      const p = CONFIG.PATM * Math.exp(-z/CONFIG.SCALE_H);
+      const x = padL + (z/maxA)*pw;
+      const y = padT+ph - (p/CONFIG.PATM)*ph;
+      if(i===0) gctx.moveTo(x,y); else gctx.lineTo(x,y);
+    }
+    gctx.stroke();
+    const x = padL + (S.alt/maxA)*pw;
+    const y = padT+ph - (atmP()/CONFIG.PATM)*ph;
+    gctx.fillStyle=css("--accent");
+    gctx.beginPath(); gctx.arc(x,y,5,0,7); gctx.fill();
+    gctx.fillStyle=css("--text-3"); gctx.textAlign="center";
+    gctx.fillText("altitude →", padL+pw/2, padT+ph+16);
+  }
+}
+
+/* ======================================================================
+   6. CONTROLS
+   ====================================================================== */
+function formulaHTML(F,A,P){
+  const aStr = fmtA(A);
+  const aSI = A>=0.01? A.toFixed(3)+" m²" : A>=0.001? A.toFixed(4)+" m²" : A.toExponential(2)+" m²";
+  const shown = S.unitCm ? aStr+"  (= "+aSI+")" : aStr;
+  return "P = <b>"+fmtF(F)+"</b> ÷ <b>"+shown+"</b> = <span class='eq'>"+fmtP(P)+"</span>";
+}
+
+function sync(){
+  if(!S.view) compute();
+  const v = S.view;
+  el("rF").textContent = fmtF(v.F);
+  el("rA").textContent = fmtA(v.A);
+  el("rP").textContent = fmtP(v.P);
+  el("rP").style.color = v.P > 2e5 ? "var(--crit)" : "";
+  el("formula").innerHTML = formulaHTML(v.F, v.A, v.P);
+  el("narr").textContent = T(v.note);
+  let extra = "";
+  if(S.mode===1) extra = T("extra1")+"  "+fmtM(S.sink);
+  if(S.mode===2) extra = T("extra2").replace("{h}", (v.extra.h||0).toFixed(2)).replace("{p}", fmtP(v.P));
+  if(S.mode===3) extra = T("extra3").replace("{a1}", fmtA(S.a1)).replace("{a2}", fmtA(S.a2)).replace("{r}", (S.a2/S.a1).toFixed(1));
+  if(S.mode===4) extra = T("extra4").replace("{z}", Math.round(S.alt)).replace("{c}", (S.baroH*100).toFixed(0)+"%");
+  el("extraRead").innerHTML = extra;
+  const notes = ["graph1","graph2","graph3","graph4"];
+  el("tGraphNote").textContent = T(notes[S.mode-1]);
+  drawChart();
+  const fv=el("vForce"); if(fv) fv.textContent = fmtF(S.force);
+  const sip=el("vSip"); if(sip) sip.textContent = Math.round(S.sip)+" Pa";
+  const alt=el("vAlt"); if(alt) alt.textContent = Math.round(S.alt)+" m";
+  const a1=el("vA1"); if(a1) a1.textContent = fmtA(S.a1);
+  const a2=el("vA2"); if(a2) a2.textContent = fmtA(S.a2);
+  const ld=el("vLoad"); if(ld) ld.textContent = fmtF(S.load);
+  const fi=el("vFin"); if(fi) fi.textContent = fmtF(S.fin);
+}
+
+function setMode(m){
+  S.mode=m;
+  S.samples=[];
+  S.pulse=0;
+  buildModeOpts(); buildExtra(); buildWorld(); compute(); sync(); renderGuide();
+  document.querySelectorAll("#modeTray .btn").forEach((b,i)=> b.setAttribute("aria-pressed", String(i+1===m)));
+}
+
+function buildModeTray(){
+  const host=el("modeTray"); host.innerHTML="";
+  [["m1",1],["m2",2],["m3",3],["m4",4]].forEach(([k,m])=>{
+    const b=document.createElement("button");
+    b.className="btn btn--ghost btn--sm"; b.type="button";
+    b.textContent=T(k); b.setAttribute("aria-pressed", String(S.mode===m));
+    b.setAttribute("role","tab");
+    b.addEventListener("click", ()=>setMode(m));
+    host.appendChild(b);
+  });
+}
+
+function buildModeOpts(){
+  const host=el("modeOpts"); host.innerHTML="";
+  const add = (label, pressed, fn)=>{
+    const b=document.createElement("button");
+    b.type="button"; b.textContent=label; b.setAttribute("aria-pressed", String(pressed));
+    b.addEventListener("click", fn); host.appendChild(b);
+  };
+  add(T("unitM"), !S.unitCm, ()=>{ S.unitCm=false; buildModeOpts(); sync(); });
+  add(T("unitCm"), S.unitCm, ()=>{ S.unitCm=true; buildModeOpts(); sync(); });
+  if(S.mode===1){
+    add(T("fpFree"), S.free, ()=>{ S.free=!S.free; buildWorld(); compute(); sync(); checkGuide(); });
+  }
+  if(S.mode===2){
+    add(T("shapeN"), !S.wide, ()=>{ S.wide=false; compute(); sync(); checkGuide(); });
+    add(T("shapeW"), S.wide, ()=>{ S.wide=true; compute(); sync(); checkGuide(); });
+  }
+}
+
+function buildExtra(){
+  const host=el("extraCtrls"); host.innerHTML="";
+  if(S.mode===1){
+    host.innerHTML = `<div class="row"><span>${T("force")}</span>
+      <input type="range" id="rngF" min="${CONFIG.FORCE_MIN}" max="${CONFIG.FORCE_MAX}" step="1" value="${S.force}" style="flex:1" aria-label="${T("force")}">
+      <span class="val" id="vForce">${fmtF(S.force)}</span></div>`;
+    el("rngF").addEventListener("input", e=>{
+      S.force=+e.target.value; compute(); sync(); checkGuide();
+    });
+  }
+  if(S.mode===2){
+    host.innerHTML = `<p class="pred-q" style="font-weight:700;margin:8px 0 4px">${T("predQ")}</p>
+      <div class="pred" id="predBox">
+        <button type="button" data-p="t">${T("predT")}</button>
+        <button type="button" data-p="m">${T("predM")}</button>
+        <button type="button" data-p="b">${T("predB")}</button>
+      </div>
+      <p class="graph-note">${LANG==="en"?"Click a plug on the tank wall to pull it.":"ٹینک کی دیوار پر ڈاٹ دبا کر سوراخ کھولیں۔"}</p>`;
+    host.querySelectorAll("#predBox button").forEach(b=>{
+      if(S.pred===b.dataset.p) b.setAttribute("aria-pressed","true");
+      if(S.pred){ b.classList.toggle("ok", b.dataset.p==="b"); b.classList.toggle("no", S.pred && b.dataset.p===S.pred && S.pred!=="b"); }
+      b.addEventListener("click", ()=>{
+        S.pred=b.dataset.p; buildExtra(); compute(); sync(); checkGuide();
+      });
+    });
+  }
+  if(S.mode===3){
+    host.innerHTML = `
+      <div class="row"><span>${T("fin")}</span>
+        <input type="range" id="rngFin" min="${CONFIG.FIN_MIN}" max="${CONFIG.FIN_MAX}" value="${S.fin}" style="flex:1">
+        <span class="val" id="vFin">${fmtF(S.fin)}</span></div>
+      <div class="row"><span>${T("a1")}</span>
+        <input type="range" id="rngA1" min="4" max="80" value="${Math.round(S.a1*10000)}" style="flex:1">
+        <span class="val" id="vA1">${fmtA(S.a1)}</span></div>
+      <div class="row"><span>${T("a2")}</span>
+        <input type="range" id="rngA2" min="40" max="800" value="${Math.round(S.a2*10000)}" style="flex:1">
+        <span class="val" id="vA2">${fmtA(S.a2)}</span></div>
+      <div class="row"><span>${T("load")}</span>
+        <input type="range" id="rngLoad" min="${CONFIG.LOAD_MIN}" max="${CONFIG.LOAD_MAX}" value="${S.load}" style="flex:1">
+        <span class="val" id="vLoad">${fmtF(S.load)}</span></div>`;
+    el("rngFin").addEventListener("input", e=>{ S.fin=+e.target.value; S.pulse=0; compute(); sync(); checkGuide(); });
+    el("rngA1").addEventListener("input", e=>{ S.a1=clamp(+e.target.value/10000, CONFIG.A1_MIN, CONFIG.A1_MAX); S.pulse=0; compute(); sync(); checkGuide(); });
+    el("rngA2").addEventListener("input", e=>{ S.a2=clamp(+e.target.value/10000, CONFIG.A2_MIN, CONFIG.A2_MAX); S.pulse=0; compute(); sync(); checkGuide(); });
+    el("rngLoad").addEventListener("input", e=>{ S.load=+e.target.value; compute(); sync(); checkGuide(); });
+  }
+  if(S.mode===4){
+    host.innerHTML = `
+      <div class="row"><span>${T("sip")}</span>
+        <input type="range" id="rngSip" min="0" max="${CONFIG.SIP_MAX}" value="${S.sip}" style="flex:1">
+        <span class="val" id="vSip">${Math.round(S.sip)} Pa</span></div>
+      <div class="row"><span>${T("alt")}</span>
+        <input type="range" id="rngAlt" min="0" max="${CONFIG.ALT_MAX}" value="${S.alt}" style="flex:1">
+        <span class="val" id="vAlt">${Math.round(S.alt)} m</span></div>`;
+    el("rngSip").addEventListener("input", e=>{ S.sip=+e.target.value; compute(); sync(); checkGuide(); });
+    el("rngAlt").addEventListener("input", e=>{ S.alt=+e.target.value; compute(); sync(); checkGuide(); });
+  }
+}
+
+const ICONS = {
+  board:'<svg width="28" height="28" viewBox="0 0 28 28"><rect x="3" y="11" width="22" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  shoe:'<svg width="28" height="28" viewBox="0 0 28 28"><path d="M4 16h12c4 0 8 2 8 4H4z" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  stiletto:'<svg width="28" height="28" viewBox="0 0 28 28"><path d="M6 14h10l2 8M16 14l6 2" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  camel:'<svg width="28" height="28" viewBox="0 0 28 28"><ellipse cx="9" cy="16" rx="6" ry="4" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="19" cy="16" rx="6" ry="4" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  bknife:'<svg width="28" height="28" viewBox="0 0 28 28"><path d="M4 16h14l6-4v8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  sknife:'<svg width="28" height="28" viewBox="0 0 28 28"><path d="M4 15h12L26 8v4L16 18H4z" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  bnail:'<svg width="28" height="28" viewBox="0 0 28 28"><path d="M12 4h4v14l-2 6-2-6z" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  snail:'<svg width="28" height="28" viewBox="0 0 28 28"><path d="M13 4h2v16l-1 6-1-6z" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  car:'<svg width="28" height="28" viewBox="0 0 28 28"><path d="M4 16h20l-2-6H8z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="18" r="2" fill="currentColor"/><circle cx="19" cy="18" r="2" fill="currentColor"/></svg>',
+  brakes:'<svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 8v6l4 2" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  chair:'<svg width="28" height="28" viewBox="0 0 28 28"><path d="M8 6h10v8H8zM10 14v8M16 14v8M7 18h12" fill="none" stroke="currentColor" stroke-width="2"/></svg>'
+};
+
+function setFoot(id){
+  S.foot=id; S.free=false; S.visited[id]=true;
+  const memo=S.guide.memo;
+  memo.fLock = memo.fLock==null ? S.force : memo.fLock;
+  if(Math.abs(S.force - memo.fLock) < 1.5){
+    if(id===widestId()) memo.wide=true;
+    if(id===narrowestId()) memo.narrow=true;
+  }
+  buildWorld(); buildModeOpts(); compute(); sync(); checkGuide();
+}
+
+function loadPreset(id){
+  S.preset=id; S.pulse=0; S.inDisp=0; S.outDisp=0;
+  if(id==="car"){ S.a1=0.0008; S.a2=0.04; S.fin=80; S.load=1200; }
+  else if(id==="brakes"){ S.a1=0.0005; S.a2=0.012; S.fin=60; S.load=900; }
+  else if(id==="chair"){ S.a1=0.002; S.a2=0.016; S.fin=70; S.load=350; }
+  setMode(3);
+}
+
+function buildWorld(){
+  const host=el("world"); host.innerHTML="";
+  if(S.mode===1){
+    FEET.forEach(f=>{
+      const b=document.createElement("button");
+      b.className="wbtn"; b.type="button";
+      b.setAttribute("aria-pressed", String(!S.free && S.foot===f.id));
+      b.innerHTML = (ICONS[f.id]||"") + `<span>${T(f.key)}</span>`;
+      b.addEventListener("click", ()=>setFoot(f.id));
+      host.appendChild(b);
+    });
+  } else if(S.mode===3){
+    [["car","car"],["brakes","brakes"],["chair","chair"]].forEach(([id,k])=>{
+      const b=document.createElement("button");
+      b.className="wbtn"; b.type="button";
+      b.setAttribute("aria-pressed", String(S.preset===id));
+      b.innerHTML = ICONS[id] + `<span>${T(k)}</span>`;
+      b.addEventListener("click", ()=>loadPreset(id));
+      host.appendChild(b);
+    });
+  } else {
+    host.innerHTML = `<p class="graph-note" style="grid-column:1/-1">${S.mode===2? (LANG==="en"?"Pull the three plugs. Drag the probe to any wall, including under the cork.":"تینوں ڈاٹ کھولیں۔ پروب کو کسی بھی دیوار پر گھسیٹیں، کارک کے نیچے بھی۔") : (LANG==="en"?"Sip lowers P inside the straw. Altitude lowers the barometer column.":"چوسنے سے نلکی کے اندر P کم۔ اونچائی سے بیرومیٹر کا ستون گرتا ہے۔")}</p>`;
+  }
+}
+
+/* pointer */
+canvas.addEventListener("pointerdown", e=>{
+  const p = worldPtr(e);
+  canvas.setPointerCapture(e.pointerId);
+  if(S.mode===1){
+    if(S.free){
+      const rw = S.freeW*700, cx=S.blockX, ySurf=310+S.sink*CONFIG.PX_PER_M;
+      if(Math.hypot(p.x-(cx+rw/2), p.y-(ySurf-3))<22){ drag.kind="corner"; return; }
+    }
+    if(Math.abs(p.x-S.blockX)<80 && p.y>200 && p.y<360){ drag.kind="block"; drag.dx=p.x-S.blockX; return; }
+  }
+  if(S.mode===2){
+    const g=tankGeom();
+    CONFIG.HOLE_FRACS.forEach((f,i)=>{
+      const y=g.waterTop+f*CONFIG.TANK_H*g.pxPerM;
+      if(Math.hypot(p.x-g.right, p.y-y)<16){ S.holes[i]=!S.holes[i]; compute(); sync(); checkGuide(); }
+    });
+    if(Math.hypot(p.x-S.probe.x, p.y-S.probe.y)<28){ drag.kind="probe"; return; }
+    const ck=corkRect(g);
+    if(p.x>ck.x && p.x<ck.x+ck.w && p.y>ck.y-8 && p.y<ck.y+ck.h+8){ drag.kind="cork"; drag.dx=p.x-S.corkX; return; }
+    if(p.x>g.left && p.x<g.right && p.y>g.waterTop && p.y<g.bot){ drag.kind="probe"; S.probe={x:p.x,y:p.y}; }
+  }
+  if(S.mode===3){
+    drag.kind="fin";
+  }
+});
+canvas.addEventListener("pointermove", e=>{
+  if(!drag.kind) return;
+  const p = worldPtr(e);
+  if(drag.kind==="block"){ S.blockX = clamp(p.x-drag.dx, 120, 780); }
+  if(drag.kind==="corner"){
+    S.freeW = clamp((p.x - S.blockX)*2/700, 0.01, 0.22);
+    S.freeH = clamp(S.freeW*0.65, 0.008, 0.16);
+  }
+  if(drag.kind==="probe"){
+    const g=tankGeom();
+    S.probe.x = clamp(p.x, g.left+6, g.right+10);
+    S.probe.y = clamp(p.y, g.waterTop-10, g.bot-6);
+  }
+  if(drag.kind==="cork"){ S.corkX = clamp(p.x-drag.dx, tankGeom().left+40, tankGeom().right-40); }
+  if(drag.kind==="fin"){
+    S.fin = clamp(CONFIG.FIN_MAX - (p.y-80)*0.7, CONFIG.FIN_MIN, CONFIG.FIN_MAX);
+    S.pulse=0;
+  }
+  compute(); sync(); checkGuide();
+});
+canvas.addEventListener("pointerup", ()=>{ drag.kind=null; });
+canvas.addEventListener("pointercancel", ()=>{ drag.kind=null; });
+
+canvas.addEventListener("keydown", e=>{
+  const stepN = e.shiftKey ? 12 : 4;
+  if(S.mode===1){
+    if(e.key==="ArrowLeft"){ S.blockX=clamp(S.blockX-stepN,120,780); e.preventDefault(); }
+    if(e.key==="ArrowRight"){ S.blockX=clamp(S.blockX+stepN,120,780); e.preventDefault(); }
+    if(S.free && (e.key==="ArrowUp"||e.key==="ArrowDown")){
+      S.freeW = clamp(S.freeW + (e.key==="ArrowUp"?0.008:-0.008), 0.01, 0.22);
+      e.preventDefault();
+    }
+  }
+  if(S.mode===2){
+    if(e.key==="ArrowLeft"){ S.probe.x-=stepN; e.preventDefault(); }
+    if(e.key==="ArrowRight"){ S.probe.x+=stepN; e.preventDefault(); }
+    if(e.key==="ArrowUp"){ S.probe.y-=stepN; e.preventDefault(); }
+    if(e.key==="ArrowDown"){ S.probe.y+=stepN; e.preventDefault(); }
+    if(e.key==="1") S.holes[0]=!S.holes[0];
+    if(e.key==="2") S.holes[1]=!S.holes[1];
+    if(e.key==="3") S.holes[2]=!S.holes[2];
+  }
+  if(S.mode===3){
+    if(e.key==="ArrowUp"){ S.fin=clamp(S.fin+5, CONFIG.FIN_MIN, CONFIG.FIN_MAX); S.pulse=0; e.preventDefault(); }
+    if(e.key==="ArrowDown"){ S.fin=clamp(S.fin-5, CONFIG.FIN_MIN, CONFIG.FIN_MAX); S.pulse=0; e.preventDefault(); }
+  }
+  if(S.mode===4){
+    if(e.key==="ArrowUp"){ S.sip=clamp(S.sip+400,0,CONFIG.SIP_MAX); e.preventDefault(); }
+    if(e.key==="ArrowDown"){ S.sip=clamp(S.sip-400,0,CONFIG.SIP_MAX); e.preventDefault(); }
+    if(e.key==="ArrowRight"){ S.alt=clamp(S.alt+100,0,CONFIG.ALT_MAX); e.preventDefault(); }
+    if(e.key==="ArrowLeft"){ S.alt=clamp(S.alt-100,0,CONFIG.ALT_MAX); e.preventDefault(); }
+  }
+  compute(); sync(); checkGuide();
+});
+
+/* ======================================================================
+   7. GUIDE
+   ====================================================================== */
+const TASKS = [
+  { keys:["t1","t1h","t1p"],
+    fix:()=>{
+      setMode(1); S.force=40; S.free=false; S.foot=widestId();
+      S.guide.memo.fLock=40; S.guide.memo.wide=true; S.guide.memo.narrow=false;
+      setFoot(narrowestId());
+      S.guide.memo.wide=true; S.guide.memo.narrow=true; S.guide.memo.fLock=40;
+    },
+    done:()=>{
+      if(S.mode!==1) return false;
+      const m=S.guide.memo;
+      m.fLock = m.fLock==null ? S.force : m.fLock;
+      if(Math.abs(S.force-m.fLock)>1.5){ m.fLock=S.force; m.wide=false; m.narrow=false; }
+      if(!S.free && S.foot===widestId()) m.wide=true;
+      if(!S.free && S.foot===narrowestId()) m.narrow=true;
+      return !!(m.wide && m.narrow);
+    } },
+  { keys:["t2","t2h","t2p"],
+    fix:()=>{
+      setMode(1); S.free=false; S.foot="snail"; S.force=CONFIG.FORCE_MIN; S.visited.snail=true;
+      compute(); S.sink = S.view.sinkT;
+    },
+    done:()=> S.mode===1 && S.foot==="snail" && !S.free && S.sink >= CONFIG.NAIL_DRIVE
+  },
+  { keys:["t3","t3h","t3p"],
+    fix:()=>{
+      setMode(2); S.pred="b"; S.holes=[true,true,true];
+      compute(); S.jet = S.view.jets.slice();
+    },
+    done:()=> S.mode===2 && S.holes[0] && S.holes[1] && S.holes[2]
+  },
+  { keys:["t4","t4h","t4p"],
+    fix:()=>{
+      setMode(2); S.holes=[false,false,false];
+      const g=tankGeom();
+      S.probe={ x:g.right-6, y:g.waterTop+90 };
+      S.probeHits.side=true;
+      const ck=corkRect(g);
+      S.probe={ x:ck.x+ck.w/2, y:ck.y+ck.h+20 };
+      S.probeHits.under=true; S.probeHits.up=true;
+    },
+    done:()=>{
+      if(S.mode!==2) return false;
+      if(probeOnSide()) S.probeHits.side=true;
+      if(probeUnderCork()){ S.probeHits.under=true; S.probeHits.up=true; }
+      const n = (S.probeHits.side?1:0) + (S.probeHits.under||S.probeHits.up?1:0);
+      return n>=2;
+    } },
+  { keys:["t5","t5h","t5p"],
+    fix:()=>{
+      loadPreset("car"); S.fin=80; S.load=1200;
+      compute();
+      S.inDisp = CONFIG.STROKE;
+      S.outDisp = CONFIG.STROKE * (S.a1 / S.a2);
+      S.pulse = 1;
+    },
+    done:()=> S.mode===3 && canLift() && S.load > S.fin && S.outDisp > 0.0008
+  }
+];
+
+function renderGuide(){
+  const t = TASKS[S.guide.i];
+  el("gNum").textContent = (S.guide.i+1)+"/"+TASKS.length;
+  el("tStep").textContent = T("step");
+  el("gDots").innerHTML = TASKS.map((_,i)=>
+    `<span class="guide__dot ${i<S.guide.i?"on":""} ${i===S.guide.i?"now":""}"></span>`).join("");
+  const box = el("guide");
+  if(S.guide.done){
+    box.classList.add("done");
+    el("gTask").innerHTML = `<span class="tick" aria-hidden="true">✓</span> ${T(t.keys[2])}`;
+    el("gHint").textContent = "";
+    el("gShow").hidden = true; el("gNext").hidden = false;
+    el("gNext").textContent = S.guide.i===TASKS.length-1 ? T("finish") : T("next");
+  } else {
+    box.classList.remove("done");
+    el("gTask").textContent = T(t.keys[0]);
+    el("gHint").textContent = T(t.keys[1]);
+    el("gShow").hidden = false; el("gNext").hidden = true;
+    el("gShow").textContent = T("showMe");
+  }
+}
+function checkGuide(){
+  if(S.guide.done) return;
+  if(TASKS[S.guide.i].done()){ S.guide.done = true; renderGuide(); }
+}
+el("gShow").addEventListener("click", ()=>{ const f=TASKS[S.guide.i].fix; if(f) f(); compute(); sync(); checkGuide(); });
+el("gNext").addEventListener("click", ()=>{
+  if(S.guide.i===TASKS.length-1){ showScreen("quiz"); return; }
+  S.guide.i++; S.guide.done=false;
+  if(S.guide.i===0) setMode(1);
+  if(S.guide.i===2 || S.guide.i===3) setMode(2);
+  if(S.guide.i===4) setMode(3);
+  renderGuide(); compute(); sync();
+});
+
+/* ======================================================================
+   8. QUIZ
+   ====================================================================== */
+const QUESTIONS = [
+  { q:"q1", opts:["q1a","q1b","q1c","q1d"], a:1, why:"q1w" },
+  { q:"q2", opts:["q2a","q2b","q2c","q2d"], a:1, why:"q2w" },
+  { q:"q3", opts:["q3a","q3b","q3c","q3d"], a:2, why:"q3w" },
+  { q:"q4", opts:["q4a","q4b","q4c","q4d"], a:1, why:"q4w" },
+  { q:"q5", opts:["q5a","q5b","q5c","q5d"], a:1, why:"q5w" }
+];
+function buildQuiz(){
+  const host=el("quiz"); host.innerHTML=""; const KEYS=["A","B","C","D"];
+  let answered=0, score=0;
+  QUESTIONS.forEach((Q,qi)=>{
+    const w=document.createElement("div"); w.className="q panel";
+    w.innerHTML = `<div class="q__n">${qi+1} / ${QUESTIONS.length}</div>
+      <p class="q__t">${T(Q.q)}</p><div class="opts"></div><p class="fb" id="fb${qi}"></p>`;
+    const box=w.querySelector(".opts");
+    Q.opts.forEach((ok,oi)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="opt";
+      b.innerHTML = `<span class="opt__k">${KEYS[oi]}</span><span>${T(ok)}</span>`;
+      b.addEventListener("click", ()=>{
+        if(w.dataset.done) return; w.dataset.done="1";
+        const right=oi===Q.a; answered++; if(right) score++;
+        box.querySelectorAll(".opt").forEach((btn,bi)=>{
+          btn.disabled=true;
+          if(bi===Q.a) btn.classList.add("correct");
+          if(bi===oi && !right) btn.classList.add("wrong");
+        });
+        const fb=el("fb"+qi);
+        fb.className="fb show "+(right?"ok":"no");
+        fb.innerHTML = `<b>${right?"✓":"✗"}</b> ${T(Q.why)}`;
+        upd();
+      });
+      box.appendChild(b);
+    });
+    host.appendChild(w);
+  });
+  const bar=document.createElement("div"); bar.className="panel score";
+  bar.innerHTML = `<span class="score__v" id="sv">0 / ${QUESTIONS.length}</span>
+    <span id="sm" style="color:var(--text-2);font-size:14.5px"></span>
+    <button class="btn btn--ghost" id="sRetry" style="margin-inline-start:auto">${T("tryAgain")}</button>`;
+  host.appendChild(bar);
+  function upd(){
+    el("sv").textContent = score+" / "+QUESTIONS.length;
+    const left=QUESTIONS.length-answered;
+    el("sm").textContent = left? left+" "+T("left") : (score===5?T("scoreAll"): score>=3?T("scoreMid"):T("scoreLow"));
+  }
+  el("sRetry").addEventListener("click", ()=>buildQuiz());
+  upd();
+}
+
+/* ======================================================================
+   9. LOOP
+   ====================================================================== */
+const mqReduce = matchMedia("(prefers-reduced-motion: reduce)");
+let REDUCED = mqReduce.matches;
+mqReduce.addEventListener("change", ()=>{ REDUCED = mqReduce.matches; });
+let prev = performance.now(), acc=0, syncT=0;
+function frame(now){
+  const dt=Math.min(0.1,(now-prev)/1000); prev=now;
+  if(S.running){
+    if(REDUCED){
+      acc+=dt; if(acc>0.5){ acc=0; step(0.5*S.speed); syncT=1; }
+    } else {
+      step(dt*S.speed);
+      syncT+=dt;
+    }
+    if(syncT>0.12){ syncT=0; sync(); checkGuide(); }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+
+function setRunning(on){
+  S.running=on;
+  el("icPlay").innerHTML = on
+    ? '<rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/>'
+    : '<path d="M7 4 L19 12 L7 20 Z" fill="#fff"/>';
+  el("btnPlay").setAttribute("aria-pressed", String(on));
+  el("btnPlay").setAttribute("aria-label", on? T("pause"):T("play"));
+}
+
+function applyLang(){
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = LANG==="ur" ? "rtl" : "ltr";
+  el("tTitle").textContent=T("title"); el("tSub").textContent=T("sub");
+  el("tNavTitle").textContent=T("navTitle");
+  el("navBench").textContent=T("bench"); el("navQuiz").textContent=T("quiz");
+  el("btnLang").textContent=T("lang");
+  el("btnProfile").textContent = dim? T("bright"):T("dim");
+  el("tReadings").textContent=T("readings");
+  el("tF").textContent=T("fLab"); el("tA").textContent=T("aLab"); el("tP").textContent=T("pLab");
+  el("tSpeed").textContent=T("speed");
+  el("btnStep").textContent=T("stepBtn");
+  el("btnReset").setAttribute("aria-label", T("reset"));
+  el("tGraph").textContent=T("graph");
+  el("tWorld").textContent=T("world");
+  el("tQuizTitle").textContent=T("quizTitle"); el("tQuizSub").textContent=T("quizSub");
+  el("boardDesc").textContent=T("boardDesc");
+  el("speed").setAttribute("aria-label", T("speed"));
+  setRunning(S.running);
+  buildModeTray(); buildModeOpts(); buildExtra(); buildWorld(); renderGuide(); buildQuiz();
+  compute(); sync();
+}
+
+el("btnLang").addEventListener("click", ()=>{ LANG = LANG==="en"?"ur":"en"; applyLang(); });
+el("btnProfile").addEventListener("click", ()=>{
+  dim=!dim;
+  if(dim) document.documentElement.setAttribute("data-profile","dim");
+  else document.documentElement.removeAttribute("data-profile");
+  el("btnProfile").textContent = dim? T("bright"):T("dim");
+});
+el("btnPlay").addEventListener("click", ()=> setRunning(!S.running));
+el("btnStep").addEventListener("click", ()=>{ step(0.25); sync(); checkGuide(); });
+el("speed").addEventListener("input", e=>{ S.speed=+e.target.value; });
+el("btnReset").addEventListener("click", ()=>{
+  const fresh=seed();
+  Object.keys(S).forEach(k=>{ S[k]=fresh[k]; });
+  Object.assign(S, fresh);
+  S.speed=1; el("speed").value=1;
+  setRunning(true);
+  applyLang();
+});
+
+function showScreen(which){
+  el("scBench").classList.toggle("on", which==="bench");
+  el("scQuiz").classList.toggle("on", which==="quiz");
+  el("navBench").setAttribute("aria-current", which==="bench"?"page":"false");
+  el("navQuiz").setAttribute("aria-current", which==="quiz"?"page":"false");
+  scrollTo({top:0});
+  if(which==="bench"){ fitBoard(); compute(); sync(); }
+}
+el("navBench").addEventListener("click", ()=>showScreen("bench"));
+el("navQuiz").addEventListener("click", ()=>showScreen("quiz"));
+addEventListener("resize", ()=>{ fitBoard(); drawChart(); });
+
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+    this.moveTo(x+r,y); this.arcTo(x+w,y,x+w,y+h,r); this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r); this.arcTo(x,y,x+w,y,r);
+  };
+}
+
+fitBoard();
+applyLang();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

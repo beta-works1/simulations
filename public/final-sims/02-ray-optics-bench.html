@@ -1,0 +1,2186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<title>Ray Optics Bench — PCTB Class 8 Science</title>
+<!--
+==========================================================================
+ RAY OPTICS BENCH  ·  Sim 2 of 5
+ PCTB / SNC Class 8 General Science — Light: reflection and refraction
+
+ LEARNING OBJECTIVES (all reachable by dragging on the bench)
+   1. i = r, both measured FROM THE NORMAL — not the mirror surface.
+   2. Plane-mirror image: virtual, erect, laterally inverted, same size,
+      same distance behind the mirror.
+   3. Refraction: denser → toward the normal; rarer → away from the normal.
+   4. Parallel-sided glass block: exit ray parallel to the original,
+      but laterally displaced.
+   5. Concave mirrors and convex lenses: real inverted OR virtual magnified,
+      depending on where the object sits versus F.
+   6. Convex mirrors and concave lenses: always virtual, erect, diminished.
+   7. A real image can be caught on a screen; a virtual image cannot.
+   8. Everyday devices: periscope, magnifying glass, torch/headlight,
+      dentist's mirror, car side mirror.
+
+ MISCONCEPTIONS TARGETED BY THE QUIZ
+   - Measuring i and r from the mirror surface instead of the normal
+   - "The plane-mirror image is smaller"
+   - "A virtual image can be caught on a screen"
+   - "A convex lens always magnifies"
+   - "Light always bends the same way in every medium"
+   - "A concave mirror always magnifies"
+
+ SIMPLIFICATIONS FOR CLASS 8
+   - No 1/v + 1/u = 1/f on screen (used silently to place images).
+   - No Snell's-law arithmetic shown. Fixed n: air 1.00, water 1.33, glass 1.50.
+   - No +/- sign conventions.
+   - TIR is shown if a steep ray causes it; there is no dedicated TIR task.
+   - Prism / VIBGYOR spectrum is omitted so the four core modes stay solid.
+
+ TEACHER: every tunable lives in CONFIG. Safe to adjust: N_AIR, N_WATER,
+ N_GLASS, MIRROR_F, LENS_F, FAN_SPREAD, TARGET_R, SHARP_PX, PHOTON_SPEED.
+ One file, double-click to run. No server, no build, no internet.
+
+ A "wrong" ray is never an error dialog. Light does what light does.
+==========================================================================
+-->
+<style>
+:root{
+  --accent:#1F6FD0;
+  --good:#237A46;
+  --warn:#8C5A05;
+  --crit:#A0173F;
+  --panel:#FFFFFF;
+  --panel-2:#F2F4F5;
+  --panel-border:#8A8A8A;
+  --text:#14202A;
+  --text-2:#46565F;
+  --text-3:#71828C;
+
+  --ray:#C44512;
+  --ghost:#6B4C9A;
+  --glass:#1F7A78;
+  --rayF:#1A6B4A;
+  --rayC:#1F6FD0;
+
+  --board:#EEF2F4;
+  --grid:#D3DBDF;
+  --hairline:#DCE1E4;
+  --shadow:0 2px 8px rgba(20,32,42,.14);
+  --focus:#14202A;
+  --on-accent:#FFFFFF;
+
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --radius:12px;
+  --space:8px;
+}
+:root[data-profile="dim"]{
+  --accent:#4E9BF0;
+  --good:#4FB27A;
+  --warn:#D0A03A;
+  --crit:#E0648F;
+  --panel:#1A2126;
+  --panel-2:#242D33;
+  --panel-border:#5F6C74;
+  --text:#F1F5F7;
+  --text-2:#C3CFD5;
+  --text-3:#95A4AD;
+  --ray:#F07540;
+  --ghost:#C4A5F5;
+  --glass:#4ECDC4;
+  --rayF:#5ED09A;
+  --rayC:#7EB6F5;
+  --board:#131A1F;
+  --grid:#26313A;
+  --hairline:#3B464D;
+  --shadow:0 2px 10px rgba(0,0,0,.5);
+  --focus:#FFFFFF;
+  --on-accent:#0B1220;
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  font-family:var(--font);
+  background:var(--panel-2);
+  color:var(--text);
+  font-size:16px;
+  line-height:1.45;
+  overflow-x:hidden;
+}
+:focus-visible{
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+  border-radius:4px;
+}
+.sr{
+  position:absolute; width:1px; height:1px; overflow:hidden;
+  clip:rect(0 0 0 0); white-space:nowrap;
+}
+.wrap{ max-width:1400px; margin:0 auto; padding:10px 10px 80px; }
+
+:root[dir="rtl"] body{
+  font-family:system-ui,"Noto Nastaliq Urdu","Segoe UI",Tahoma,sans-serif;
+}
+:root[dir="rtl"] .stage__inner{ direction:ltr; }
+
+.head{
+  display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+  padding:2px 2px 10px;
+}
+.head__title{ font-size:clamp(19px,2.3vw,25px); font-weight:700; margin:0; letter-spacing:-.02em; }
+.head__sub{ margin:0; font-size:14.5px; color:var(--text-2); }
+.head__spacer{ margin-inline-start:auto; display:flex; gap:8px; flex-wrap:wrap; }
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--panel-border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:12px 14px;
+}
+.panel__title{ font-size:15px; font-weight:700; margin:0 0 10px; }
+
+.guide{
+  background:var(--panel);
+  border:2px solid var(--accent);
+  border-radius:var(--radius);
+  padding:10px 13px;
+  margin-bottom:10px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:12px;
+  align-items:center;
+}
+@media (max-width:760px){ .guide{ grid-template-columns:1fr; } }
+.guide.done{ border-color:var(--good); }
+.guide__badge{
+  min-width:72px; padding:6px 10px; border-radius:9px; text-align:center;
+  background:var(--panel-2); border:1px solid var(--panel-border);
+}
+.guide__badgeTop{ font-size:12.5px; font-weight:700; letter-spacing:.06em; color:var(--text-3); }
+.guide__badgeNum{
+  font-size:20px; font-weight:700; font-family:var(--mono);
+  font-variant-numeric:tabular-nums;
+}
+.guide__task{ font-size:17px; font-weight:700; margin:0; }
+.guide__hint{ font-size:14px; margin:4px 0 0; color:var(--text-2); }
+.guide__dots{ display:flex; gap:6px; margin-top:8px; }
+.guide__dot{ width:9px; height:9px; border-radius:50%; background:var(--hairline); }
+.guide__dot.on{ background:var(--good); }
+.guide__dot.now{ background:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent); }
+.guide__acts{ display:flex; gap:8px; flex-wrap:wrap; }
+.tick{ color:var(--good); font-weight:700; }
+
+.btn{
+  font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 16px; border-radius:9px; white-space:nowrap;
+  background:var(--accent); color:var(--on-accent); border:1px solid rgba(0,0,0,.28);
+  box-shadow:0 1px 2px rgba(0,0,0,.18);
+  transition:filter .15s ease, transform .12s ease;
+}
+.btn:hover{ filter:brightness(1.08); }
+.btn:active{ transform:translateY(1px); }
+.btn--ghost{ background:var(--panel); color:var(--text); border-color:var(--panel-border); }
+.btn--go{ background:var(--good); color:#fff; }
+.btn--sm{ min-height:44px; font-size:13.5px; padding:0 12px; }
+.round{
+  width:48px; height:48px; border-radius:50%; cursor:pointer; padding:0;
+  border:1px solid rgba(0,0,0,.35); display:grid; place-items:center;
+  box-shadow:var(--shadow); background:var(--btn,#E2E6E9);
+}
+.round--play{ --btn:var(--good); }
+.round--reset{ --btn:var(--warn); }
+
+.main{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,330px); gap:10px; align-items:start; }
+.main > div{ min-width:0; }
+@media (max-width:1080px){ .main{ grid-template-columns:minmax(0,1fr); } }
+
+.tray{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+.tray__label{
+  width:100%; font-size:12.5px; font-weight:700; color:var(--text-3);
+  margin:4px 0 2px; letter-spacing:.04em; text-transform:uppercase;
+}
+
+.stage{
+  border:1px solid var(--panel-border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  background:var(--board);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
+}
+.stage__inner{ position:relative; }
+#board{ display:block; width:100%; height:auto; touch-action:none; cursor:crosshair; }
+.stage__bar{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  padding:8px 10px; background:var(--panel); border-top:1px solid var(--hairline);
+}
+.seg{ display:inline-flex; border:1px solid var(--panel-border); border-radius:9px; overflow:hidden; }
+.seg button{
+  font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 13px; border:0; background:var(--panel); color:var(--text-2);
+  border-inline-end:1px solid var(--panel-border);
+}
+.seg button:last-child{ border-inline-end:0; }
+.seg button[aria-pressed="true"]{ background:var(--accent); color:var(--on-accent); }
+
+.reads{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.read{
+  background:var(--panel-2); border:1px solid var(--hairline);
+  border-radius:9px; padding:8px 10px;
+}
+.read__k{ font-size:12.5px; color:var(--text-3); font-weight:700; }
+.read__v{
+  font-family:var(--mono); font-size:18px; font-variant-numeric:tabular-nums; font-weight:700;
+}
+.chars{
+  display:grid; grid-template-columns:1fr; gap:6px; margin-bottom:10px;
+}
+.char{
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
+  background:var(--panel-2); border:1px solid var(--hairline);
+  border-radius:9px; padding:8px 10px;
+}
+.char__k{ font-size:12.5px; color:var(--text-3); font-weight:700; }
+.char__v{ font-size:15px; font-weight:700; }
+.narr{ font-size:15px; line-height:1.5; margin:10px 0 0; }
+.badge{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:13.5px; font-weight:700; padding:3px 9px; border-radius:20px;
+}
+.badge--good{ color:var(--good); background:color-mix(in srgb,var(--good) 14%,transparent); }
+.badge--warn{ color:var(--warn); background:color-mix(in srgb,var(--warn) 16%,transparent); }
+.badge--ghost{ color:var(--ghost); background:color-mix(in srgb,var(--ghost) 16%,transparent); }
+
+#angChart{ display:block; width:100%; height:132px; }
+.graph-note{ font-size:13px; color:var(--text-3); margin:6px 0 0; }
+
+.world{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(min(100%, 7.5rem), 1fr));
+  gap:8px;
+  width:100%;
+  min-width:0;
+  align-items:stretch;
+}
+.wbtn{
+  font-family:inherit; cursor:pointer; box-sizing:border-box;
+  min-width:0; width:100%; min-height:76px; padding:8px 6px;
+  border:2px solid var(--panel-border); border-radius:10px; background:var(--panel);
+  color:var(--text); display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:6px;
+  font-size:12.5px; font-weight:700; line-height:1.25; text-align:center;
+}
+.wbtn:hover{ border-color:var(--accent); }
+.wbtn[aria-pressed="true"]{
+  border-color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 14%,var(--panel));
+}
+.wbtn__ico{
+  width:28px; height:28px; flex:0 0 28px;
+  display:grid; place-items:center; pointer-events:none;
+}
+.wbtn__ico svg{ display:block; width:28px; height:28px; }
+.wbtn__lab{
+  min-width:0; max-width:100%;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2;
+  overflow:hidden; text-wrap:balance; overflow-wrap:break-word; hyphens:auto;
+}
+
+.row{ display:flex; align-items:center; gap:8px; margin:8px 0; flex-wrap:wrap; }
+.chk{
+  display:flex; align-items:center; gap:8px; min-height:44px;
+  font-size:14px; font-weight:600; cursor:pointer;
+}
+.chk input{ width:20px; height:20px; accent-color:var(--accent); }
+.pred{ display:grid; gap:6px; margin:8px 0; }
+.pred button{
+  font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 10px; border-radius:9px;
+  border:2px solid var(--panel-border); background:var(--panel-2); color:var(--text);
+  text-align:start;
+}
+.pred button[aria-pressed="true"]{ border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--panel)); }
+.pred button.ok{ border-color:var(--good); }
+.pred button.no{ border-color:var(--warn); }
+.legend{
+  display:flex; flex-direction:column; gap:4px; font-size:12.5px; margin-top:8px; color:var(--text-2);
+}
+.legend span{ display:flex; align-items:center; gap:8px; }
+.sw{ width:16px; height:4px; border-radius:2px; }
+
+.screen{ display:none; }
+.screen.on{ display:block; }
+.q{ margin-bottom:10px; }
+.q__n{ font-size:12.5px; color:var(--text-3); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.q__t{ font-size:17px; font-weight:700; margin:6px 0 12px; }
+.opts{ display:grid; gap:8px; }
+.opt{
+  display:flex; align-items:flex-start; gap:10px; text-align:start; width:100%;
+  min-height:52px; padding:12px 14px; cursor:pointer; border-radius:9px;
+  font-family:inherit; font-size:15.5px; background:var(--panel-2); color:var(--text);
+  border:2px solid var(--panel-border);
+}
+.opt:hover:not(:disabled){ border-color:var(--accent); background:var(--panel); }
+.opt.correct{ border-color:var(--good); background:color-mix(in srgb,var(--good) 14%,var(--panel)); }
+.opt.wrong{ border-color:var(--crit); background:color-mix(in srgb,var(--crit) 12%,var(--panel)); }
+.opt__k{ font-family:var(--mono); font-size:14px; color:var(--text-3); min-width:1.2em; }
+.fb{
+  display:none; margin:10px 0 0; padding:11px 13px; font-size:14.5px; border-radius:8px;
+  background:var(--panel-2); border-inline-start:5px solid var(--panel-border);
+}
+.fb.show{ display:block; }
+.fb.ok{ border-inline-start-color:var(--good); }
+.fb.no{ border-inline-start-color:var(--crit); }
+.score{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.score__v{ font-family:var(--mono); font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; }
+
+.nav{
+  position:sticky; bottom:6px; z-index:40; margin-top:10px; border-radius:10px;
+  background:#101418; color:#fff; display:flex; align-items:center; gap:9px;
+  flex-wrap:wrap; padding:6px 13px;
+}
+.nav__t{ font-size:14.5px; font-weight:700; margin-inline-end:auto; }
+.navbtn{
+  cursor:pointer; background:transparent; border:2px solid transparent; border-radius:8px;
+  color:#B9C0C5; font-family:inherit; font-size:14px; font-weight:700;
+  padding:5px 11px; min-height:44px;
+}
+.navbtn[aria-current="page"]{ color:#fff; border-color:#fff; }
+
+input[type=range]{
+  -webkit-appearance:none; appearance:none; height:44px; background:transparent; cursor:pointer;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border);
+}
+input[type=range]::-moz-range-track{
+  height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border);
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:26px; height:30px; margin-top:-12px;
+  border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45);
+}
+input[type=range]::-moz-range-thumb{
+  width:26px; height:30px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45);
+}
+.val{
+  font-family:var(--mono); font-size:14px; font-variant-numeric:tabular-nums;
+  min-width:52px; text-align:end;
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="screen on" id="scBench">
+  <header class="head">
+    <h1 class="head__title" id="tTitle">Ray Optics Bench</h1>
+    <p class="head__sub" id="tSub">Bounce, bend, and catch images of light.</p>
+    <span class="head__spacer">
+      <button class="btn btn--ghost btn--sm" id="btnLang" type="button">اردو</button>
+      <button class="btn btn--ghost btn--sm" id="btnProfile" type="button">Dim room</button>
+    </span>
+  </header>
+
+  <section class="guide" id="guide" aria-live="polite">
+    <div class="guide__badge">
+      <div class="guide__badgeTop" id="tStep">TASK</div>
+      <div class="guide__badgeNum" id="gNum">1/5</div>
+    </div>
+    <div>
+      <p class="guide__task" id="gTask">—</p>
+      <p class="guide__hint" id="gHint">—</p>
+      <div class="guide__dots" id="gDots" aria-hidden="true"></div>
+    </div>
+    <div class="guide__acts">
+      <button class="btn btn--ghost" id="gShow" type="button">Show me</button>
+      <button class="btn btn--go" id="gNext" type="button" hidden>Next</button>
+    </div>
+  </section>
+
+  <div class="main">
+    <div>
+      <div class="tray" id="modeTray" role="tablist" aria-label="Modes"></div>
+
+      <div class="stage">
+        <div class="stage__inner" id="stageInner">
+          <canvas id="board" role="img" aria-label="Optical bench" aria-describedby="boardDesc" tabindex="0"></canvas>
+          <p class="sr" id="boardDesc">An optical bench. Drag the lamp. The dashed line at the mirror is the NORMAL. Both angles are measured from that line, not from the mirror surface.</p>
+        </div>
+        <div class="stage__bar">
+          <div class="seg" id="modeOpts" role="group"></div>
+          <button class="round round--play" id="btnPlay" type="button" aria-pressed="true" aria-label="Pause">
+            <svg width="20" height="20" viewBox="0 0 24 24" id="icPlay" aria-hidden="true"><rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/></svg>
+          </button>
+          <button class="btn btn--ghost btn--sm" id="btnStep" type="button">Step</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px">
+            <span id="tSpeed">Speed</span>
+            <input type="range" id="speed" min="0.25" max="2" step="0.25" value="1" style="width:96px" aria-label="Speed" />
+          </label>
+          <button class="round round--reset" id="btnReset" type="button" aria-label="Reset">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 1 0 6.5 4.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M12 1.5V8.5L6.5 5z" fill="#fff"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2 class="panel__title" id="tChars">Image characteristics</h2>
+        <div class="chars" aria-live="polite">
+          <div class="char"><span class="char__k" id="tType">Type</span><span class="char__v" id="rType">—</span></div>
+          <div class="char"><span class="char__k" id="tOri">Orientation</span><span class="char__v" id="rOri">—</span></div>
+          <div class="char"><span class="char__k" id="tSize">Size</span><span class="char__v" id="rSize">—</span></div>
+        </div>
+        <h2 class="panel__title" id="tReadings">Live angles</h2>
+        <div class="reads" aria-live="polite">
+          <div class="read"><div class="read__k" id="tI">i  (from normal)</div><div class="read__v" id="rI">—</div></div>
+          <div class="read"><div class="read__k" id="tR">r  (from normal)</div><div class="read__v" id="rR">—</div></div>
+        </div>
+        <p class="narr" id="narr" aria-live="polite">—</p>
+        <div id="extraCtrls"></div>
+      </div>
+
+      <div class="panel" style="margin-top:10px">
+        <h2 class="panel__title" id="tGraph">i and r, live</h2>
+        <canvas id="angChart" role="img" aria-label="Chart of incidence and reflection"></canvas>
+        <p class="graph-note" id="tGraphNote">Both bars are measured from the dashed normal. If they match, i = r.</p>
+      </div>
+
+      <div class="panel" style="margin-top:10px">
+        <h2 class="panel__title" id="tWorld">Real-World Match</h2>
+        <div class="world" id="world"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="scQuiz">
+  <header class="head">
+    <h1 class="head__title" id="tQuizTitle">Check what you have learned</h1>
+    <p class="head__sub" id="tQuizSub">Five questions, with the answer explained straight away.</p>
+  </header>
+  <div id="quiz" style="max-width:840px;margin:0 auto"></div>
+</div>
+
+<nav class="nav" aria-label="Screens">
+  <span class="nav__t" id="tNavTitle">Ray Optics Bench</span>
+  <button class="navbtn" id="navBench" type="button" aria-current="page">Bench</button>
+  <button class="navbtn" id="navQuiz"  type="button">Quiz</button>
+</nav>
+</div>
+
+<script>
+"use strict";
+/* ======================================================================
+   1. CONFIG — every tunable number a teacher might want to change.
+   ====================================================================== */
+const CONFIG = {
+  N_AIR: 1.00,
+  N_WATER: 1.33,
+  N_GLASS: 1.50,
+  WORLD_W: 900,
+  WORLD_H: 520,
+  MIRROR_F: 110,       // pixels; C is at 2F. Concave / convex.
+  LENS_F: 110,
+  FAN_SPREAD: 0.10,    // radians either side of the main ray
+  TARGET_R: 28,        // periscope target hit radius
+  SHARP_PX: 22,        // screen "caught" if |screen − image| < this
+  PHOTON_SPEED: 220,   // px per second along the path
+  MAX_BOUNCE: 8,
+  ANGLE_BUCKET: 12,    // degrees; task 1 needs 3 buckets this far apart
+  OBJ_H: 56
+};
+
+/* ======================================================================
+   2. STRINGS — every user-facing string, in one place.
+   ====================================================================== */
+const STRINGS = {
+en:{
+  title:"Ray Optics Bench", sub:"Bounce, bend, and catch images of light.",
+  navTitle:"Ray Optics Bench", bench:"Bench", quiz:"Quiz",
+  lang:"اردو", dim:"Dim room", bright:"Bright room",
+  step:"TASK", showMe:"Show me", next:"Next", finish:"Go to the quiz",
+  readings:"Live angles", chars:"Image characteristics",
+  type:"Type", ori:"Orientation", size:"Size",
+  iLab:"i  (from normal)", rLab:"r  (from normal)",
+  speed:"Speed", play:"Play", pause:"Pause", reset:"Reset", stepBtn:"Step",
+  graph:"i and r, live",
+  graphNote:"Both bars are measured from the dashed normal. If they match, i = r.",
+  graphNote2:"Object distance and image distance. The screen catches a real image when it sits where the rays meet.",
+  world:"Real-World Match",
+  quizTitle:"Check what you have learned",
+  quizSub:"Five questions, with the answer explained straight away.",
+  tryAgain:"Try again", left:"questions left.",
+  scoreAll:"Excellent — you can read what light is doing.",
+  scoreMid:"Good. Read the feedback, then go back to the bench.",
+  scoreLow:"Go back to the bench and try the tasks again.",
+  m1:"Plane mirror", m2:"Glass block", m3:"Curved mirror", m4:"Lens",
+  oneRay:"1 ray", fiveRay:"5-ray fan",
+  addM2:"Second mirror", remM2:"Hide second",
+  glass:"Glass  n = 1.50", water:"Water  n = 1.33",
+  pathAG:"Air → glass", pathGA:"Glass → air",
+  concave:"Concave", convex:"Convex",
+  convL:"Convex lens", concL:"Concave lens",
+  showP:"Parallel → F", showF:"Through F → parallel", showC:"Through C → back",
+  showO:"Through centre",
+  objU:"Object distance", scr:"Screen",
+  toward:"Toward the normal", away:"Away from the normal",
+  predIn:"At the first face the ray will bend…",
+  predOut:"At the second face the ray will bend…",
+  real:"Real", virt:"Virtual", erect:"Erect", inv:"Inverted",
+  mag:"Magnified", dimn:"Diminished", same:"Same size", none:"—",
+  lat:"Laterally inverted",
+  car:"Car side", dentist:"Dentist", torch:"Torch", magG:"Magnifier", peri:"Periscope",
+  boardDesc:"An optical bench. Drag the lamp. The dashed line at the mirror is the NORMAL. Both angles are measured from that line, not from the mirror surface.",
+  nEqual:"i = r. Both are measured from the dashed NORMAL, not from the mirror.",
+  nFan:"Five rays leave the lamp. Extend the reflected rays backward — they meet at the ghost image.",
+  nGhost:"The ghost is virtual, erect, same size, the same distance behind, and left–right reversed.",
+  nPeri:"Two reflections turn the view around a corner. That is a periscope.",
+  nTir:"Too steep to leave the glass — total internal reflection. Light bounced inside instead of leaving.",
+  nIn:"Entering a denser medium: the ray bends TOWARD the normal.",
+  nOut:"Leaving into a rarer medium: the ray bends AWAY from the normal.",
+  nFlip:"You flipped which side is denser. The bend reversed.",
+  nDisp:"The exit ray is parallel to the original, just shifted sideways. A parallel-sided block always does this.",
+  nCatch:"The screen is at the real image — it sharpens. You can catch a real image.",
+  nBlur:"Slide the screen onto the meeting point of the rays. Off that point the picture blurs.",
+  nVirtScr:"Nothing on the screen. Virtual rays only look as if they meet — they do not, so a screen stays blank.",
+  nConcaveC:"Object beyond C: real, inverted, diminished. Between C and F: real, inverted, magnified. Inside F: virtual, erect, magnified.",
+  nConvexM:"A convex mirror always makes a virtual, erect, diminished image. That is why a car side-mirror shows a wide view.",
+  nLensR:"Object beyond 2F: real, inverted, diminished (camera). Inside F: virtual, erect, magnified (magnifying glass).",
+  nLensC:"A concave lens always makes a virtual, erect, diminished image.",
+  nMag:"Object well inside F. No screen — you look through the lens at a large virtual image.",
+  nTorch:"Object at F of a concave mirror. Reflected rays leave as a parallel beam — torch or car headlight.",
+  nDent:"Object inside F of a concave mirror: a large virtual image. A dentist holds the mirror close.",
+  wCar:"Car side mirror", wDent:"Dentist's mirror", wTorch:"Torch reflector",
+  wMag:"Magnifying glass", wPeri:"Periscope",
+  t1:"Move the lamp to three clearly different angles. Watch i and r.",
+  t1h:"Drag the lamp or its direction handle. Both numbers are from the dashed normal.",
+  t1p:"i stayed equal to r every time. That is the law of reflection — and both angles are from the NORMAL.",
+  t2:"Build a periscope: two plane mirrors, so a ray from the top window hits the side target.",
+  t2h:"Place two mirrors. The path must bounce exactly twice and then reach the orange target.",
+  t2p:"Two reflections fold the path around a corner. Submarines and trenches use the same trick.",
+  t3:"Send a ray through the block. Predict toward / away at entry and at exit.",
+  t3h:"Watch the dashed normals. Denser → toward; rarer → away. Then pick each prediction.",
+  t3p:"Into glass (denser) the ray bent toward the normal. Out into air (rarer) it bent away. The exit ray stayed parallel, just displaced.",
+  t4:"On a concave mirror, visit beyond C, between C and F, and inside F — and catch a real image on the screen once.",
+  t4h:"Drag the candle along the axis. Slide the screen onto the meeting point when the image is real.",
+  t4p:"Beyond C the real image is smaller. Between C and F it is larger. Inside F it is virtual — the screen goes blank.",
+  t5:"Open the car side-mirror and the dentist-mirror presets.",
+  t5h:"Use the Real-World Match strip. One is convex (wide, small). One is concave held close (large, virtual).",
+  t5p:"Convex for a wide diminished view (cars). Concave close-up for a magnified virtual view (dentist).",
+  q1:"The angles of incidence and reflection are measured from…",
+  q1a:"the shiny surface of the mirror",
+  q1b:"the NORMAL — the dashed line at 90° to the mirror",
+  q1c:"the floor of the room",
+  q1d:"only the incoming ray, never the reflected one",
+  q1w:"Both i and r are measured from the NORMAL, not from the mirror surface. Measuring from the surface is the most common exam mistake.",
+  q2:"The image in a plane mirror is…",
+  q2a:"real, inverted and smaller than the object",
+  q2b:"virtual, erect and the same size as the object",
+  q2c:"real, erect and magnified",
+  q2d:"virtual, inverted and diminished",
+  q2w:"A plane mirror always makes a virtual, erect, same-size image, as far behind as the object is in front. It looks smaller only because it is farther from your eye — the image itself is not reduced.",
+  q3:"Can you catch a virtual image on a screen?",
+  q3a:"Yes — put the screen behind the mirror or lens",
+  q3b:"Yes, virtual images are the bright ones",
+  q3c:"No. Only a real image can be caught on a screen",
+  q3d:"Only if the object is very close",
+  q3w:"Real rays actually meet, so a screen at that point lights up. Virtual rays only look as if they meet if you look into the device — they never arrive at a screen.",
+  q4:"A convex lens always magnifies. A concave mirror always magnifies too. True?",
+  q4a:"Yes — that is why they are used as magnifying glasses and by dentists",
+  q4b:"No. Magnified only when the object is inside F (lens) or inside C (mirror). Beyond 2F / beyond C the real image is diminished",
+  q4c:"They always make a diminished image",
+  q4d:"They never form a real image",
+  q4w:"A magnifying glass works only with the object inside F (virtual, magnified). Object beyond 2F: real, inverted, diminished — a camera. A concave mirror beyond C also gives a diminished real image. Dentists hold the mirror close (inside F).",
+  q5:"When light goes from one medium into another it always bends the same way.",
+  q5a:"Yes — it always bends toward the normal",
+  q5b:"It depends: denser → toward the normal; rarer → away from the normal",
+  q5c:"It always bends away from the normal",
+  q5d:"Light never changes direction",
+  q5w:"Entering glass (denser) bends toward the normal. Leaving glass into air (rarer) bends away. Same rule, opposite look — that is why a glass block displaces the ray but keeps it parallel."
+},
+ur:{
+  title:"شعاعی بصریات کی میز", sub:"روشنی کو ٹکرائیں، موڑیں، اور تصویر پکڑیں۔",
+  navTitle:"شعاعی بصریات کی میز", bench:"میز", quiz:"سوالات",
+  lang:"English", dim:"کم روشنی", bright:"تیز روشنی",
+  step:"کام", showMe:"مجھے دکھائیں", next:"اگلا", finish:"سوالات کی طرف",
+  readings:"براہِ راست زاویے", chars:"تصویر کی خصوصیات",
+  type:"قسم", ori:"رُخ", size:"سائز",
+  iLab:"i  (عمود سے)", rLab:"r  (عمود سے)",
+  speed:"رفتار", play:"چلائیں", pause:"روکیں", reset:"ری سیٹ", stepBtn:"قدم",
+  graph:"i اور r، براہِ راست",
+  graphNote:"دونوں ستون اُس خطِ چین سے ناپے گئے ہیں جو عمود ہے۔ اگر برابر ہوں تو i = r۔",
+  graphNote2:"جسم کا فاصلہ اور تصویر کا فاصلہ۔ حقیقی تصویر وہاں پکڑی جاتی ہے جہاں شعاعیں ملتی ہیں۔",
+  world:"حقیقی دنیا کا جوڑ",
+  quizTitle:"دیکھیں آپ نے کیا سیکھا",
+  quizSub:"پانچ سوال، جواب فوراً وضاحت کے ساتھ۔",
+  tryAgain:"دوبارہ کوشش", left:"سوال باقی ہیں۔",
+  scoreAll:"بہت خوب — آپ روشنی کی حرکت پڑھ سکتے ہیں۔",
+  scoreMid:"اچھا۔ وضاحت پڑھیں، پھر میز پر واپس جائیں۔",
+  scoreLow:"میز پر واپس جائیں اور کام دوبارہ کریں۔",
+  m1:"مستوی آئینہ", m2:"شیشے کی اینٹ", m3:"خمیدہ آئینہ", m4:"عدسہ",
+  oneRay:"۱ شعاع", fiveRay:"۵ شعاعیں",
+  addM2:"دوسرا آئینہ", remM2:"چھپائیں",
+  glass:"شیشہ  n = 1.50", water:"پانی  n = 1.33",
+  pathAG:"ہوا → شیشہ", pathGA:"شیشہ → ہوا",
+  concave:"مقعر", convex:"محدب",
+  convL:"محدب عدسہ", concL:"مقعر عدسہ",
+  showP:"متوازی → بؤرہ", showF:"بؤرہ سے → متوازی", showC:"مرکز سے → واپس",
+  showO:"مرکز سے سیدھی",
+  objU:"جسم کا فاصلہ", scr:"پردہ",
+  toward:"عمود کی طرف", away:"عمود سے دُور",
+  predIn:"پہلی سطح پر شعاع مڑے گی…",
+  predOut:"دوسری سطح پر شعاع مڑے گی…",
+  real:"حقیقی", virt:"مجازی", erect:"سیدھی", inv:"الٹی",
+  mag:"بڑی", dimn:"چھوٹی", same:"برابر", none:"—",
+  lat:"بائیں دائیں الٹی",
+  car:"گاڑی کا", dentist:"دانتوں کا", torch:"ٹارچ", magG:"عدسہ", peri:"پیرسکوپ",
+  boardDesc:"بصری میز۔ لیمپ گھسیٹیں۔ آئینے پر خطِ چین عمود ہے۔ دونوں زاویے اُسی سے ناپے جاتے ہیں، آئینے کی سطح سے نہیں۔",
+  nEqual:"i = r۔ دونوں خطِ چین والے عمود سے ناپے گئے، آئینے کی سطح سے نہیں۔",
+  nFan:"پانچ شعاعیں لیمپ سے نکلتی ہیں۔ منعکس شعاعوں کو پیچھے بڑھائیں — وہ مجازی تصویر پر ملتی ہیں۔",
+  nGhost:"مجازی تصویر سیدھی، برابر سائز، اتنی ہی دُور پیچھے، اور بائیں دائیں الٹی ہے۔",
+  nPeri:"دو انعکاس راستے کو کونے سے موڑ دیتے ہیں۔ یہی پیرسکوپ ہے۔",
+  nTir:"اتنی تیز کہ شیشہ چھوڑ نہ سکے — کلی اندرونی انعکاس۔ روشنی اندر ہی پلٹ گئی۔",
+  nIn:"کثیف ذریعے میں داخل: شعاع عمود کی طرف مڑتی ہے۔",
+  nOut:"رقیق ذریعے میں نکلتے ہوئے: شعاع عمود سے دُور مڑتی ہے۔",
+  nFlip:"آپ نے کثیف پہلو بدل دیا۔ موڑ الٹ گیا۔",
+  nDisp:"نکلتی شعاع اصل کے متوازی ہے، صرف پہلو میں کھسکی ہوئی۔ متوازی سطحوں والی اینٹ ہمیشہ یہ کرتی ہے۔",
+  nCatch:"پردہ حقیقی تصویر پر ہے — تصویر تیز ہو گئی۔ حقیقی تصویر پکڑی جا سکتی ہے۔",
+  nBlur:"پردے کو وہاں سلائیڈ کریں جہاں شعاعیں ملتی ہیں۔ اُس سے ہٹ کر تصویر دھندلی ہے۔",
+  nVirtScr:"پردے پر کچھ نہیں۔ مجازی شعاعیں صرف دکھتی ہیں کہ مل رہی ہیں — ملتی نہیں، اس لیے پردہ خالی رہتا ہے۔",
+  nConcaveC:"C سے آگے: حقیقی، الٹی، چھوٹی۔ C اور F کے درمیان: حقیقی، الٹی، بڑی۔ F کے اندر: مجازی، سیدھی، بڑی۔",
+  nConvexM:"محدب آئینہ ہمیشہ مجازی، سیدھی، چھوٹی تصویر بناتا ہے۔ گاڑی کے سائیڈ آئینے میں وسیع منظر اسی لیے ہے۔",
+  nLensR:"2F سے آگے: حقیقی، الٹی، چھوٹی (کیمرہ)۔ F کے اندر: مجازی، سیدھی، بڑی (Magnifying glass)۔",
+  nLensC:"مقعر عدسہ ہمیشہ مجازی، سیدھی، چھوٹی تصویر بناتا ہے۔",
+  nMag:"جسم F کے اندر ہے۔ پردہ نہیں — عدسے میں سے بڑی مجازی تصویر دیکھی جاتی ہے۔",
+  nTorch:"مقعر آئینے کے F پر جسم۔ منعکس شعاعیں متوازی بیم بناتی ہیں — ٹارچ یا ہیڈ لائٹ۔",
+  nDent:"مقعر آئینے کے F کے اندر جسم: بڑی مجازی تصویر۔ دندان ساز آئینہ قریب رکھتا ہے۔",
+  wCar:"گاڑی کا سائیڈ آئینہ", wDent:"دندان ساز کا آئینہ", wTorch:"ٹارچ کا منعکس",
+  wMag:"بڑا کرنے والا عدسہ", wPeri:"پیرسکوپ",
+  t1:"لیمپ کو تین واضح مختلف زاویوں پر لے جائیں۔ i اور r دیکھیں۔",
+  t1h:"لیمپ یا اُس کی سمت گھسیٹیں۔ دونوں عدد خطِ چین والے عمود سے ہیں۔",
+  t1p:"ہر بار i برابر r رہا۔ یہی قانونِ انعکاس ہے — اور دونوں زاویے عمود سے ہیں۔",
+  t2:"پیرسکوپ بنائیں: دو مستوی آئینے، تاکہ اوپر والی کھڑکی کی شعاع پہلو کے ہدف تک پہنچے۔",
+  t2h:"دو آئینے رکھیں۔ راستہ ٹھیک دو بار ٹکرائے، پھر نارنجی ہدف تک جائے۔",
+  t2p:"دو انعکاس راستے کو کونے سے موڑ دیتے ہیں۔ آبدوزیں یہی ترکیب استعمال کرتی ہیں۔",
+  t3:"اینٹ میں شعاع بھیجیں۔ داخل اور خارج پر عمود کی طرف / دُور کی پیش گوئی کریں۔",
+  t3h:"خطِ چین والے عمود دیکھیں۔ کثیف → طرف؛ رقیق → دُور۔ پھر ہر پیش گوئی چنیں۔",
+  t3p:"شیشے میں (کثیف) شعاع عمود کی طرف مڑی۔ ہوا میں نکلتے (رقیق) دُور مڑی۔ نکلتی شعاع متوازی رہی، صرف کھسکی۔",
+  t4:"مقعر آئینے پر C سے آگے، C اور F کے درمیان، اور F کے اندر جائیں — اور ایک بار پردے پر حقیقی تصویر پکڑیں۔",
+  t4h:"موم بتی محور پر گھسیٹیں۔ جب تصویر حقیقی ہو تو پردہ ملاقات کے نقطے پر لائیں۔",
+  t4p:"C سے آگے حقیقی تصویر چھوٹی۔ C اور F کے درمیان بڑی۔ F کے اندر مجازی — پردہ خالی۔",
+  t5:"گاڑی کے سائیڈ آئینے اور دندان ساز کے آئینے کے نمونے کھولیں۔",
+  t5h:"Real-World Match کی پٹی استعمال کریں۔ ایک محدب (وسیع، چھوٹا)۔ ایک مقعر قریب (بڑا، مجازی)۔",
+  t5p:"محدب وسیع چھوٹی نظر کے لیے (گاڑیاں)۔ مقعر قریب سے بڑی مجازی نظر کے لیے (دندان ساز)۔",
+  q1:"زاویۂ وقوع اور زاویۂ انعکاس کس سے ناپے جاتے ہیں؟",
+  q1a:"آئینے کی چمکتی سطح سے",
+  q1b:"عمود سے — آئینے پر ۹۰° کا خطِ چین",
+  q1c:"کمرے کے فرش سے",
+  q1d:"صرف آنے والی شعاع سے، منعکس والی سے نہیں",
+  q1w:"i اور r دونوں عمود سے ناپے جاتے ہیں، آئینے کی سطح سے نہیں۔ سطح سے ناپنا سب سے عام امتحانی غلطی ہے۔",
+  q2:"مستوی آئینے میں تصویر…",
+  q2a:"حقیقی، الٹی اور جسم سے چھوٹی ہوتی ہے",
+  q2b:"مجازی، سیدھی اور جسم کے برابر ہوتی ہے",
+  q2c:"حقیقی، سیدھی اور بڑی ہوتی ہے",
+  q2d:"مجازی، الٹی اور چھوٹی ہوتی ہے",
+  q2w:"مستوی آئینہ ہمیشہ مجازی، سیدھی، برابر سائز کی تصویر بناتا ہے، اتنی ہی پیچھے جتنا جسم آگے۔ چھوٹی اس لیے لگتی ہے کہ آنکھ سے دُور ہے — تصویر خود سکڑتی نہیں۔",
+  q3:"کیا مجازی تصویر پردے پر پکڑی جا سکتی ہے؟",
+  q3a:"ہاں — پردہ آئینے یا عدسے کے پیچھے رکھیں",
+  q3b:"ہاں، مجازی تصویریں روشن ہوتی ہیں",
+  q3c:"نہیں۔ صرف حقیقی تصویر پردے پر پکڑی جاتی ہے",
+  q3d:"صرف جب جسم بہت قریب ہو",
+  q3w:"حقیقی شعاعیں واقعتاً ملتی ہیں، اس لیے اُس نقطے پر پردہ روشن ہوتا ہے۔ مجازی شعاعیں صرف دکھتی ہیں کہ مل رہی ہیں — پردے تک کبھی نہیں پہنچتیں۔",
+  q4:"محدب عدسہ ہمیشہ بڑی تصویر بناتا ہے۔ مقعر آئینہ بھی ہمیشہ بڑی بناتا ہے۔ درست؟",
+  q4a:"ہاں — اسی لیے Magnifying glass اور دندان ساز انہیں استعمال کرتے ہیں",
+  q4b:"نہیں۔ بڑی صرف جب جسم F کے اندر (عدسہ) یا C کے اندر (آئینہ) ہو۔ 2F / C سے آگے حقیقی تصویر چھوٹی ہوتی ہے",
+  q4c:"وہ ہمیشہ چھوٹی تصویر بناتے ہیں",
+  q4d:"وہ کبھی حقیقی تصویر نہیں بناتے",
+  q4w:"Magnifying glass صرف F کے اندر جسم سے کام کرتا ہے (مجازی، بڑی)۔ 2F سے آگے: حقیقی، الٹی، چھوٹی — کیمرہ۔ مقعر آئینہ C سے آگے بھی چھوٹی حقیقی تصویر دیتا ہے۔ دندان ساز آئینہ قریب رکھتا ہے (F کے اندر)۔",
+  q5:"جب روشنی ایک ذریعے سے دوسرے میں جاتی ہے تو ہمیشہ ایک ہی طرح مڑتی ہے۔",
+  q5a:"ہاں — ہمیشہ عمود کی طرف مڑتی ہے",
+  q5b:"بات کثافت کی ہے: کثیف → عمود کی طرف؛ رقیق → عمود سے دُور",
+  q5c:"ہمیشہ عمود سے دُور مڑتی ہے",
+  q5d:"روشنی کبھی رخ نہیں بدلتی",
+  q5w:"شیشے میں (کثیف) داخل ہوتے عمود کی طرف۔ شیشے سے ہوا میں (رقیق) نکلتے دُور۔ وہی قاعدہ، الٹی شکل — اسی لیے اینٹ شعاع کو متوازی رکھتی ہے، صرف کھسکاتی ہے۔"
+}};
+let LANG = "en";
+const T = k => STRINGS[LANG][k] ?? STRINGS.en[k] ?? k;
+const el = id => document.getElementById(id);
+let dim = false;
+
+/* ======================================================================
+   3. STATE
+   ====================================================================== */
+function seed(){
+  return {
+    mode: 1,
+    running: true,
+    speed: 1,
+    fan: false,
+    source: { x: 200, y: 210, ang: 0.42 },
+    mirrors: [
+      { x: 640, y: 260, ang: 0, len: 300 }
+    ],
+    showM2: false,
+    arrow: { x: 310, y: 260 },
+    target: { x: 790, y: 400, on: false },
+    windowY: 140,
+    block: { x: 340, y: 150, w: 240, h: 220 },
+    material: "glass",
+    denserIn: true,
+    ray2: { x: 90, y: 210, ang: 0.32 },
+    predIn: null,
+    predOut: null,
+    curved: "concave",
+    objU: 280,
+    screenU: 170,
+    showRP: true, showRF: true, showRC: true,
+    lens: "convex",
+    lensU: 250,
+    lensScr: 200,
+    hideScr: false,
+    photon: 0,
+    pulse: 0,
+    samples: [],
+    visited: { car:false, dentist:false, torch:false, mag:false, peri:false },
+    guide: { i:0, done:false, memo:{} },
+    view: null
+  };
+}
+const S = seed();
+const drag = { kind:null, dx:0, dy:0, i:0 };
+
+/* ======================================================================
+   4. PHYSICS
+   ====================================================================== */
+const W = CONFIG.WORLD_W, H = CONFIG.WORLD_H;
+const add=(a,b)=>({x:a.x+b.x,y:a.y+b.y});
+const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y});
+const sc=(a,s)=>({x:a.x*s,y:a.y*s});
+const dot=(a,b)=>a.x*b.x+a.y*b.y;
+const hyp=a=>Math.hypot(a.x,a.y)||1;
+const nor=a=>{const l=hyp(a); return {x:a.x/l,y:a.y/l};};
+const ang=a=>Math.atan2(a.y,a.x);
+const fromA=t=>({x:Math.cos(t),y:Math.sin(t)});
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const deg=r=>r*180/Math.PI;
+const rad=d=>d*Math.PI/180;
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+
+function mirrorGeom(m){
+  const t = { x:-Math.sin(m.ang), y:Math.cos(m.ang) };
+  const n = { x:-Math.cos(m.ang), y:-Math.sin(m.ang) };
+  const h = m.len/2;
+  return {
+    p1:{x:m.x-t.x*h, y:m.y-t.y*h},
+    p2:{x:m.x+t.x*h, y:m.y+t.y*h},
+    t, n
+  };
+}
+function reflect(I, N){
+  /* i and r are taken from the NORMAL N, not from the glass. Measuring
+     from the surface is the #1 Class 8 error — those angles are 90°−i
+     and are not the equal pair the law talks about. */
+  const n = nor(N);
+  return sub(I, sc(n, 2*dot(I,n)));
+}
+function raySeg(p, d, a, b){
+  const v = sub(b,a);
+  const den = d.x*v.y - d.y*v.x;
+  if(Math.abs(den)<1e-9) return null;
+  const apx=a.x-p.x, apy=a.y-p.y;
+  const t = (apx*v.y - apy*v.x)/den;
+  const s = (apx*d.y - apy*d.x)/den;
+  if(t>0.6 && s>=-0.02 && s<=1.02) return { t, p:{x:p.x+d.x*t, y:p.y+d.y*t} };
+  return null;
+}
+function rayCircle(p, d, c, r){
+  const f = sub(p,c);
+  const A = dot(d,d), B = 2*dot(f,d), C = dot(f,f)-r*r;
+  const disc = B*B-4*A*C;
+  if(disc<0) return null;
+  const s = Math.sqrt(disc);
+  const t1 = (-B-s)/(2*A), t2 = (-B+s)/(2*A);
+  const t = t1>0.6 ? t1 : (t2>0.6?t2:-1);
+  if(t<0) return null;
+  return { t, p:{x:p.x+d.x*t, y:p.y+d.y*t} };
+}
+function clipEdge(p, d){
+  let t = 1e4;
+  if(d.x>0.002) t=Math.min(t,(W-8-p.x)/d.x);
+  if(d.x<-0.002) t=Math.min(t,(8-p.x)/d.x);
+  if(d.y>0.002) t=Math.min(t,(H-8-p.y)/d.y);
+  if(d.y<-0.002) t=Math.min(t,(8-p.y)/d.y);
+  t = Math.max(4, t);
+  return {x:p.x+d.x*t, y:p.y+d.y*t};
+}
+function activeMirrors(){
+  const list = [S.mirrors[0]];
+  if(S.showM2){
+    if(!S.mirrors[1]) S.mirrors[1] = { x: 430, y: 400, ang: -Math.PI/4, len: 160 };
+    list.push(S.mirrors[1]);
+  }
+  return list;
+}
+function mirrorPoint(p, m){
+  /* A plane mirror flips only the depth coordinate through the glass.
+     Every reflected ray (i = r) has a backward extension that meets
+     as far behind as the object is in front — same size, erect, left–right flipped. */
+  const g = mirrorGeom(m);
+  const n = nor(g.n);
+  const d = dot(sub(p,g.p1), n);
+  return sub(p, sc(n, 2*d));
+}
+
+function traceRay(origin, dir, mirrors, target){
+  const segs = [];
+  const hits = [];
+  let p = {x:origin.x, y:origin.y};
+  let d = nor(dir);
+  let bounces = 0, hitTarget=false;
+  for(let k=0;k<CONFIG.MAX_BOUNCE+1;k++){
+    let best=null, bestM=null;
+    for(const m of mirrors){
+      const g = mirrorGeom(m);
+      const h = raySeg(p, d, g.p1, g.p2);
+      if(h && (!best || h.t<best.t)){ best=h; bestM=m; }
+    }
+    let tHit=null;
+    if(target && target.on){
+      tHit = rayCircle(p, d, target, CONFIG.TARGET_R);
+    }
+    if(tHit && (!best || tHit.t<best.t)){
+      segs.push({a:{...p}, b:{...tHit.p}, kind:"hit"});
+      hitTarget = true;
+      break;
+    }
+    if(!best){
+      segs.push({a:{...p}, b:clipEdge(p,d), kind:"fly"});
+      break;
+    }
+    const g = mirrorGeom(bestM);
+    let N = nor(g.n);
+    if(dot(d,N)>0) N = sc(N,-1);
+    const Iinc = d;
+    const iAng = Math.acos(clamp(-dot(Iinc,N), -1, 1));
+    segs.push({a:{...p}, b:{...best.p}, kind:"to"});
+    const R = nor(reflect(Iinc, N));
+    hits.push({ p:{...best.p}, n:{...N}, i:iAng, r:iAng, inc:nor(sc(Iinc,-1)), ref:R, m:bestM });
+    p = add(best.p, sc(R, 1.2));
+    d = R;
+    bounces++;
+  }
+  return { segs, hits, bounces, hitTarget };
+}
+
+function nBlock(){ return S.material==="water" ? CONFIG.N_WATER : CONFIG.N_GLASS; }
+function nSurr(){ return S.denserIn ? CONFIG.N_AIR : nBlock(); }
+function nIn(){ return S.denserIn ? nBlock() : CONFIG.N_AIR; }
+
+function refract(I, N, n1, n2){
+  /* Light is slower in a denser medium. The part of the wavefront still
+     in air keeps going faster, so the wavefront pivots TOWARD the normal
+     on the way in and AWAY on the way out. Snell's numbers stay internal. */
+  let n = nor(N);
+  let c = -dot(I,n);
+  if(c<0){ n=sc(n,-1); c=-dot(I,n); }
+  const eta = n1/n2;
+  const sin2 = eta*eta*(1-c*c);
+  const i = Math.acos(clamp(c,-1,1));
+  if(sin2>1){
+    return { dir:nor(reflect(I,n)), tir:true, i, r:i, n };
+  }
+  const cr = Math.sqrt(1-sin2);
+  const R = add(sc(I,eta), sc(n, eta*c - cr));
+  return { dir:nor(R), tir:false, i, r:Math.acos(clamp(cr,-1,1)), n };
+}
+function rayAABB(p, d, r){
+  const invx = d.x!==0 ? 1/d.x : 1e12, invy = d.y!==0 ? 1/d.y : 1e12;
+  const t1=(r.x-p.x)*invx, t2=(r.x+r.w-p.x)*invx;
+  const t3=(r.y-p.y)*invy, t4=(r.y+r.h-p.y)*invy;
+  const tmin=Math.max(Math.min(t1,t2), Math.min(t3,t4));
+  const tmax=Math.min(Math.max(t1,t2), Math.max(t3,t4));
+  if(tmax<0.5 || tmin>tmax) return null;
+  return { tEnter:tmin, tExit:tmax };
+}
+function faceNormal(pt, r){
+  const e=3;
+  if(Math.abs(pt.x-r.x)<e) return {x:-1,y:0};
+  if(Math.abs(pt.x-(r.x+r.w))<e) return {x:1,y:0};
+  if(Math.abs(pt.y-r.y)<e) return {x:0,y:-1};
+  return {x:0,y:1};
+}
+function traceBlock(origin, dir, rect){
+  const segs=[], faces=[];
+  let p={x:origin.x,y:origin.y}, d=nor(dir);
+  let nCur = nSurr(), inside=false, tir=false, parallel=false;
+  const ns=nSurr(), nb=nIn();
+  for(let k=0;k<6;k++){
+    const hit = rayAABB(p, d, rect);
+    if(!hit){
+      segs.push({a:{...p}, b:clipEdge(p,d), kind: inside?"in":"air"});
+      break;
+    }
+    const t = inside ? hit.tExit : (hit.tEnter>0.4 ? hit.tEnter : hit.tExit);
+    if(t<0.4){
+      segs.push({a:{...p}, b:clipEdge(p,d), kind:"air"});
+      break;
+    }
+    const q = {x:p.x+d.x*t, y:p.y+d.y*t};
+    segs.push({a:{...p}, b:{...q}, kind: inside?"in":"air"});
+    let Nout = faceNormal(q, rect);
+    const Ninc = inside ? sc(Nout,-1) : Nout;
+    const n1 = inside ? nb : ns;
+    const n2 = inside ? ns : nb;
+    const rf = refract(d, Ninc, n1, n2);
+    const toward = rf.r < rf.i - 1e-3;
+    const away = rf.r > rf.i + 1e-3;
+    faces.push({ p:{...q}, n:rf.n, i:rf.i, r:rf.r, tir:rf.tir, toward, away, inside });
+    if(rf.tir){ tir=true; d=rf.dir; p=add(q, sc(d,1.2)); continue; }
+    d = rf.dir;
+    inside = !inside;
+    p = add(q, sc(d, 1.2));
+    if(!inside && faces.length>=2){
+      const first = nor(dir);
+      parallel = Math.abs(dot(first,d)) > 0.97;
+      segs.push({a:{...p}, b:clipEdge(p,d), kind:"air"});
+      break;
+    }
+  }
+  return { segs, faces, tir, parallel, both: faces.filter(f=>!f.tir).length>=2 || (faces.length>=2 && !faces[0].tir) };
+}
+
+function imageUV(u, fSigned){
+  /* Any two of the three textbook rays (parallel→F, through F→parallel,
+     through C→back) locate the image; the formula is used silently so
+     the drawn rays meet at the right place. Never shown on screen. */
+  const den = u - fSigned;
+  if(Math.abs(den)<1.2) return { v: 1e6, inf:true, m:0, real:true };
+  const v = (fSigned*u)/den;
+  return { v, inf:false, m: -v/u, real: v>0 };
+}
+
+function compute(){
+  const v = {
+    mode:S.mode, paths:[], hits:[], chars:{type:"—",ori:"—",size:"—",lat:false},
+    i:null, r:null, note:"nEqual", extra:{},
+    img:null, rays:[], axisY: H*0.5
+  };
+
+  if(S.mode===1){
+    const mirrors = activeMirrors();
+    const dirs = S.fan
+      ? [-2,-1,0,1,2].map(k => S.source.ang + k*CONFIG.FAN_SPREAD)
+      : [S.source.ang];
+    const tgt = S.target.on ? S.target : null;
+    v.paths = dirs.map((a,i)=>({
+      ...traceRay(S.source, fromA(a), mirrors, tgt),
+      main: a===S.source.ang || (!S.fan && i===0)
+    }));
+    const main = v.paths.find(p=>p.main) || v.paths[0];
+    if(main.hits[0]){
+      v.i = deg(main.hits[0].i);
+      v.r = deg(main.hits[0].r);
+      v.hits = main.hits;
+    }
+    const img = mirrorPoint(S.arrow, mirrors[0]);
+    const srcImg = mirrorPoint(S.source, mirrors[0]);
+    v.img = { obj:S.arrow, img, srcImg, m:mirrors[0] };
+    v.chars = { type:T("virt"), ori:T("erect"), size:T("same"), lat:true };
+    v.extra.bounces = main.bounces;
+    v.extra.hitTarget = main.hitTarget;
+    v.extra.two = main.bounces===2 && main.hitTarget;
+    if(S.fan) v.note = "nFan";
+    else if(v.extra.two) v.note = "nPeri";
+    else v.note = "nEqual";
+    if(v.i!=null){
+      const last = S.samples[S.samples.length-1];
+      if(!last || Math.abs(last.i-v.i)>0.4){
+        S.samples.push({i:v.i, r:v.r});
+        if(S.samples.length>48) S.samples.shift();
+      }
+    }
+  }
+
+  if(S.mode===2){
+    const tr = traceBlock(S.ray2, fromA(S.ray2.ang), S.block);
+    v.paths = [tr];
+    v.extra = tr;
+    if(tr.faces[0]){ v.i = deg(tr.faces[0].i); v.r = deg(tr.faces[0].r); }
+    v.chars = { type:T("none"), ori:T("none"), size:T("none"), lat:false };
+    if(tr.tir) v.note = "nTir";
+    else if(!S.denserIn) v.note = "nFlip";
+    else if(tr.parallel) v.note = "nDisp";
+    else if(tr.faces[0] && tr.faces[0].toward) v.note = "nIn";
+    else if(tr.faces[0] && tr.faces[0].away) v.note = "nOut";
+    else v.note = "nIn";
+    if(v.i!=null){
+      const last = S.samples[S.samples.length-1];
+      if(!last || Math.abs(last.i-v.i)>0.4){
+        S.samples.push({i:v.i, r:v.r});
+        if(S.samples.length>48) S.samples.shift();
+      }
+    }
+  }
+
+  if(S.mode===3){
+    const Vtx = 620, cy = 270, f = CONFIG.MIRROR_F;
+    const concave = S.curved==="concave";
+    const F = concave ? f : -f;
+    const u = clamp(S.objU, 36, 420);
+    const h = CONFIG.OBJ_H;
+    const ox = Vtx - u, oy = cy - h;
+    const im = imageUV(u, F);
+    const vx = im.real ? Vtx - im.v : Vtx - im.v;
+    const iy = cy - h*im.m;
+    const inf = im.inf;
+    const size = inf ? T("none") : (Math.abs(im.m)>1.06 ? T("mag") : Math.abs(im.m)<0.94 ? T("dimn") : T("same"));
+    v.chars = inf
+      ? { type:T("none"), ori:T("none"), size:T("none"), lat:false }
+      : { type: im.real?T("real"):T("virt"), ori: im.m<0?T("inv"):T("erect"), size, lat:false };
+    const scrX = Vtx - S.screenU;
+    const sharp = (!im.real || inf) ? 0 : Math.exp(-(((S.screenU - im.v)/CONFIG.SHARP_PX)**2));
+    v.img = { Vtx, cy, f, concave, ox, oy, u, h, im, vx, iy, inf, scrX, sharp, caught: sharp>0.55 };
+    const rays = [];
+    const Fpt = { x: Vtx - F, y: cy };
+    const Cpt = { x: Vtx - 2*F, y: cy };
+    if(S.showRP){
+      const hit = {x:Vtx, y:oy};
+      rays.push({ id:"P", label:T("showP"), a:{x:ox,y:oy}, b:hit, c: Fpt, virt:!im.real, throughF:true });
+    }
+    if(S.showRF && Math.abs(u-Math.abs(F))>8){
+      const t = (Vtx - Fpt.x)!==0 ? (Vtx - Fpt.x) / ((ox - Fpt.x)||1e-6) : 1;
+      const hitY = Fpt.y + t*(oy - Fpt.y);
+      const hit = {x:Vtx, y: hitY};
+      rays.push({ id:"F", label:T("showF"), a:{x:ox,y:oy}, b:hit, c:{x:hit.x-200, y:hit.y}, virt:!im.real, par:true });
+    }
+    if(S.showRC){
+      rays.push({ id:"C", label:T("showC"), a:{x:ox,y:oy}, b:{x:Vtx,y: cy + (oy-cy)*(Vtx-ox)/((Cpt.x-ox)||1)}, c:Cpt, virt:!im.real, back:true });
+    }
+    v.rays = rays;
+    v.extra = { zone: u>2*f-8 ? "beyondC" : u>f+8 ? "CF" : "inF" };
+    if(!concave) v.note = "nConvexM";
+    else if(!im.real) v.note = "nVirtScr";
+    else if(v.img.caught) v.note = "nCatch";
+    else v.note = "nConcaveC";
+    S.samples.push({i:u, r: im.inf?0:Math.abs(im.v)});
+    if(S.samples.length>48) S.samples.shift();
+  }
+
+  if(S.mode===4){
+    const Lx = 420, cy = 270, f = CONFIG.LENS_F;
+    const convex = S.lens==="convex";
+    const F = convex ? f : -f;
+    const u = clamp(S.lensU, 28, 390);
+    const h = CONFIG.OBJ_H;
+    const ox = Lx - u, oy = cy - h;
+    const im = imageUV(u, F);
+    const vx = Lx + im.v;
+    const iy = cy - h*im.m;
+    const size = im.inf ? T("none") : (Math.abs(im.m)>1.06 ? T("mag") : Math.abs(im.m)<0.94 ? T("dimn") : T("same"));
+    v.chars = im.inf
+      ? { type:T("none"), ori:T("none"), size:T("none"), lat:false }
+      : { type: im.real?T("real"):T("virt"), ori: im.m<0?T("inv"):T("erect"), size, lat:false };
+    const scrX = Lx + S.lensScr;
+    const sharp = (!im.real || im.inf || S.hideScr) ? 0 : Math.exp(-(((S.lensScr - im.v)/CONFIG.SHARP_PX)**2));
+    v.img = { Lx, cy, f, convex, ox, oy, u, h, im, vx, iy, inf:im.inf, scrX, sharp, caught:sharp>0.55, hide:S.hideScr };
+    v.rays = [];
+    if(S.showRP){
+      v.rays.push({ id:"P", label:T("showP"), a:{x:ox,y:oy}, b:{x:Lx,y:oy}, c:{x:Lx+F, y:cy} });
+    }
+    if(S.showRF){
+      v.rays.push({ id:"O", label:T("showO"), a:{x:ox,y:oy}, b:{x:Lx,y:cy}, c:{x:Lx+200, y: cy+(oy-cy)*200/(Lx-ox||1)} });
+    }
+    if(S.showRC){
+      const Fl = {x:Lx-F,y:cy};
+      const t = (Lx-Fl.x)/((ox-Fl.x)||1e-6);
+      const hitY = Fl.y + t*(oy-Fl.y);
+      v.rays.push({ id:"F", label:T("showF"), a:{x:ox,y:oy}, b:{x:Lx,y:hitY}, c:{x:Lx+180,y:hitY} });
+    }
+    if(!convex) v.note = "nLensC";
+    else if(S.hideScr) v.note = "nMag";
+    else if(!im.real) v.note = "nVirtScr";
+    else if(v.img.caught) v.note = "nCatch";
+    else v.note = "nLensR";
+    S.samples.push({i:u, r: im.inf?0:Math.abs(im.v)});
+    if(S.samples.length>48) S.samples.shift();
+  }
+
+  S.view = v;
+  return v;
+}
+
+function step(dt){
+  S.pulse += dt;
+  const pathLen = pathLength();
+  S.photon += dt * CONFIG.PHOTON_SPEED;
+  if(pathLen>8) S.photon = S.photon % pathLen;
+  compute();
+}
+
+function pathLength(){
+  const v = S.view; if(!v) return 1;
+  let L=0;
+  const paths = v.paths||[];
+  const segs = paths[0] && (paths[0].segs || paths);
+  if(S.mode<=2){
+    const p = paths.find(x=>x.main) || paths[0];
+    const ss = p && p.segs ? p.segs : (p && p.a ? paths : null);
+    if(p && p.segs) p.segs.forEach(s=> L += dist(s.a,s.b));
+    else if(S.mode===2 && paths[0] && paths[0].segs) paths[0].segs.forEach(s=> L += dist(s.a,s.b));
+  } else if(v.img){
+    L = Math.hypot((v.img.ox||0) - (v.img.Vtx||v.img.Lx||0), 40) + 220;
+  }
+  return Math.max(L, 40);
+}
+function pointOnPath(s){
+  const v=S.view; if(!v) return {x:0,y:0};
+  let segs=[];
+  if(S.mode===1){
+    const p = v.paths.find(x=>x.main) || v.paths[0];
+    segs = p? p.segs : [];
+  } else if(S.mode===2){
+    segs = v.paths[0]? v.paths[0].segs : [];
+  } else if(v.img){
+    const A = {x:v.img.ox, y:v.img.oy};
+    const B = S.mode===3 ? {x:v.img.Vtx, y:v.img.oy} : {x:v.img.Lx, y:v.img.oy};
+    const C = S.mode===3
+      ? (v.img.im.real ? {x:v.img.vx, y:v.img.iy} : {x:v.img.Vtx-40, y:v.img.oy})
+      : (v.img.im.real ? {x:v.img.vx, y:v.img.iy} : {x:v.img.Lx+80, y:v.img.oy});
+    segs = [{a:A,b:B},{a:B,b:C}];
+  }
+  let L=0; const lens=segs.map(sg=>{const d=dist(sg.a,sg.b); L+=d; return d;});
+  if(L<1) return segs[0]? segs[0].a : {x:100,y:100};
+  let t = ((s%L)+L)%L;
+  for(let i=0;i<segs.length;i++){
+    if(t<=lens[i]) {
+      const k = lens[i]? t/lens[i] : 0;
+      return {x: segs[i].a.x + (segs[i].b.x-segs[i].a.x)*k, y: segs[i].a.y + (segs[i].b.y-segs[i].a.y)*k};
+    }
+    t -= lens[i];
+  }
+  return segs.length? segs[segs.length-1].b : {x:0,y:0};
+}
+
+/* ======================================================================
+   5. RENDER
+   ====================================================================== */
+const canvas = el("board"), ctx = canvas.getContext("2d");
+function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function dpr(){ return Math.min(2, devicePixelRatio||1); }
+let scaleX=1, scaleY=1, cssW=W, cssH=H;
+
+function fitBoard(){
+  const wrap = el("stageInner");
+  const w = Math.max(280, wrap.clientWidth);
+  const h = Math.max(300, Math.min(560, Math.round(w * H/W)));
+  cssW=w; cssH=h;
+  const d=dpr();
+  canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+  scaleX=w/W; scaleY=h/H;
+}
+
+function worldPtr(e){
+  const r = canvas.getBoundingClientRect();
+  const x = (e.clientX - r.left) * (W / r.width);
+  const y = (e.clientY - r.top) * (H / r.height);
+  return {x,y};
+}
+
+function strokeLine(a,b,color,w,dash,glow){
+  if(glow){
+    ctx.save(); ctx.strokeStyle=color; ctx.globalAlpha=0.22; ctx.lineWidth=w+10; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); ctx.restore();
+  }
+  ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=w; ctx.lineCap="round"; ctx.lineJoin="round";
+  if(dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); ctx.restore();
+}
+function arrowHead(p, dir, color, s){
+  const d=nor(dir), L=s||10;
+  const l={x:d.x*L - d.y*L*0.45, y:d.y*L + d.x*L*0.45};
+  const r={x:d.x*L + d.y*L*0.45, y:d.y*L - d.x*L*0.45};
+  ctx.fillStyle=color;
+  ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x-l.x,p.y-l.y); ctx.lineTo(p.x-r.x,p.y-r.y); ctx.closePath(); ctx.fill();
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(x,y,w,h,r);
+  else {
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
+  }
+}
+function chip(text, x, y, color, align){
+  ctx.save();
+  ctx.font = `bold 12.5px ${css("--mono")}`;
+  ctx.textAlign = align||"center";
+  ctx.textBaseline = "middle";
+  const w = ctx.measureText(text).width;
+  const h = 20;
+  const bx = (align==="right") ? x-w : (align==="left") ? x : x-w/2;
+  const dim = document.documentElement.getAttribute("data-profile")==="dim";
+  ctx.fillStyle = dim ? "rgba(16,20,24,0.92)" : "rgba(255,255,255,0.94)";
+  roundRect(bx-6, y-h/2, w+12, h, 5); ctx.fill();
+  ctx.strokeStyle = dim ? "rgba(255,255,255,0.12)" : "rgba(20,32,42,0.1)";
+  ctx.lineWidth=1; ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+function drawLamp(p, on){
+  ctx.save();
+  ctx.fillStyle = on? css("--ray") : css("--text-3");
+  ctx.beginPath(); ctx.arc(p.x, p.y, 13, 0, 7); ctx.fill();
+  ctx.fillStyle = "#F8E07A";
+  ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, 7); ctx.fill();
+  ctx.strokeStyle = css("--text"); ctx.lineWidth=2;
+  ctx.strokeRect(p.x-6, p.y+16, 12, 7);
+  ctx.restore();
+}
+function drawArrowObj(p, h, ghost, flipX, inv){
+  const col = ghost? css("--ghost") : css("--text");
+  ctx.save(); ctx.globalAlpha = ghost? 0.45 : 1;
+  const dir = inv? 1 : -1;
+  const tip = {x:p.x, y:p.y + dir*h};
+  strokeLine(p, tip, col, ghost?2:3, ghost?[6,5]:null, false);
+  arrowHead(tip, {x:0,y:dir}, col, 12);
+  const flag = flipX? 16 : -16;
+  ctx.strokeStyle=col; ctx.lineWidth=2.4;
+  ctx.beginPath(); ctx.moveTo(p.x, p.y+dir*h*0.35); ctx.lineTo(p.x+flag, p.y+dir*h*0.35); ctx.stroke();
+  ctx.restore();
+}
+function drawMirror(m, hi){
+  const g=mirrorGeom(m);
+  ctx.save();
+  ctx.strokeStyle = hi? css("--accent") : css("--text");
+  ctx.lineWidth = 5; ctx.lineCap="round";
+  ctx.beginPath(); ctx.moveTo(g.p1.x,g.p1.y); ctx.lineTo(g.p2.x,g.p2.y); ctx.stroke();
+  const hatch = nor(g.n);
+  for(let s=0;s<=8;s++){
+    const t=s/8;
+    const q={x:g.p1.x+(g.p2.x-g.p1.x)*t, y:g.p1.y+(g.p2.y-g.p1.y)*t};
+    const b=add(q, sc(hatch,-10));
+    ctx.strokeStyle=css("--text-3"); ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(q.x,q.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  }
+  ctx.fillStyle=css("--panel"); ctx.strokeStyle=css("--accent"); ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(m.x,m.y,8,0,7); ctx.fill(); ctx.stroke();
+  const rh=g.p2;
+  ctx.beginPath(); ctx.arc(rh.x,rh.y,7,0,7); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+function drawProtractor(hit){
+  if(!hit) return;
+  const Hpt=hit.p, N=nor(hit.n), inc=nor(hit.inc), ref=nor(hit.ref);
+  const pulse = REDUCED ? 1 : 1+0.08*Math.sin(S.pulse*8);
+  const eq = Math.abs(hit.i-hit.r)<1e-4;
+  const col = eq? css("--good") : css("--warn");
+  strokeLine(sub(Hpt,sc(N,70)), add(Hpt,sc(N,70)), css("--text-2"), 1.6, [5,5], false);
+  const nLab = add(Hpt, sc(N, 96));
+  chip("N", nLab.x, nLab.y, css("--text-2"));
+  const R=46;
+  function arcFrom(from, to){
+    const a0=Math.atan2(from.y, from.x), a1=Math.atan2(to.y,to.x);
+    let d=a1-a0; while(d>Math.PI) d-=2*Math.PI; while(d<-Math.PI) d+=2*Math.PI;
+    ctx.beginPath(); ctx.arc(Hpt.x,Hpt.y,R, a0, a0+d, d<0); ctx.stroke();
+    return a0+d/2;
+  }
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=2.4*pulse; ctx.globalAlpha=0.95;
+  const midI = arcFrom(N, inc);
+  const midR = arcFrom(N, ref);
+  ctx.restore();
+  let ri=78, rr=78;
+  let li={x:Hpt.x+Math.cos(midI)*ri, y:Hpt.y+Math.sin(midI)*ri};
+  let lr={x:Hpt.x+Math.cos(midR)*rr, y:Hpt.y+Math.sin(midR)*rr};
+  const dx=li.x-lr.x, dy=li.y-lr.y;
+  if(dx*dx+dy*dy < 48*48){
+    rr = 102;
+    lr={x:Hpt.x+Math.cos(midR)*rr, y:Hpt.y+Math.sin(midR)*rr};
+  }
+  chip("i  "+deg(hit.i).toFixed(1)+"°", li.x, li.y, col);
+  chip("r  "+deg(hit.r).toFixed(1)+"°", lr.x, lr.y, col);
+}
+function drawCandle(x, yBase, h, ghost, inv, mag){
+  const m = mag==null?1:Math.abs(mag);
+  const hh = h*m;
+  const dir = inv?1:-1;
+  const col = ghost? css("--ghost") : "#C44512";
+  ctx.save(); ctx.globalAlpha = ghost?0.4:1;
+  ctx.fillStyle = ghost? col : "#F4D7A0";
+  ctx.fillRect(x-6, yBase, 12, dir>0? hh*0.15 : -hh*0.15);
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.moveTo(x, yBase + (dir>0? 4 : -4));
+  ctx.quadraticCurveTo(x-10, yBase+dir*hh*0.55, x, yBase+dir*hh);
+  ctx.quadraticCurveTo(x+10, yBase+dir*hh*0.55, x, yBase+(dir>0?4:-4));
+  ctx.fill();
+  if(!ghost){
+    ctx.fillStyle="#F8E07A";
+    ctx.beginPath(); ctx.ellipse(x, yBase+dir*hh*0.7, 4, 8, 0, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawMode1(){
+  const v=S.view;
+  ctx.fillStyle=css("--board"); ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle=css("--grid"); ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for(let y=0;y<H;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  if(S.target.on){
+    ctx.save();
+    ctx.fillStyle=css("--ray"); ctx.globalAlpha=0.2;
+    ctx.beginPath(); ctx.arc(S.target.x,S.target.y, CONFIG.TARGET_R,0,7); ctx.fill();
+    ctx.globalAlpha=1; ctx.strokeStyle=css("--ray"); ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(S.target.x,S.target.y, CONFIG.TARGET_R,0,7); ctx.stroke();
+    ctx.fillStyle=css("--ray"); ctx.font=`bold 13px ${css("--font")}`;
+    ctx.fillText(LANG==="ur"?"ہدف":"TARGET", S.target.x-26, S.target.y-CONFIG.TARGET_R-8);
+    ctx.fillRect(40, S.windowY-22, 16, 44);
+    ctx.fillStyle=css("--text"); ctx.fillText(LANG==="ur"?"کھڑکی":"WINDOW", 62, S.windowY+4);
+    ctx.restore();
+  }
+
+  activeMirrors().forEach((m,i)=> drawMirror(m, drag.kind==="mirror" && drag.i===i));
+
+  if(v.img){
+    strokeLine(v.img.obj, v.img.img, css("--ghost"), 1.4, [4,6], false);
+    drawArrowObj(v.img.obj, 70, false, false, false);
+    drawArrowObj(v.img.img, 70, true, true, false);
+    ctx.fillStyle=css("--ghost"); ctx.font=`12.5px ${css("--font")}`;
+    ctx.fillText(T("virt")+" · "+T("lat"), v.img.img.x-36, v.img.img.y-80);
+  }
+
+  const rayCol = css("--ray");
+  (v.paths||[]).forEach(path=>{
+    const w = path.main? 3.4 : 1.6;
+    const a = path.main? 1 : 0.45;
+    ctx.globalAlpha=a;
+    (path.segs||[]).forEach((s,si)=>{
+      strokeLine(s.a,s.b, rayCol, w, null, path.main && si===0);
+      if(si===path.segs.length-1 || s.kind==="hit") arrowHead(s.b, sub(s.b,s.a), rayCol, 9);
+    });
+    ctx.globalAlpha=1;
+    if(path.main && S.fan && v.img){
+      path.segs.forEach(s=>{
+        const ext = add(s.a, sc(nor(sub(s.a,s.b)), 1));
+      });
+      if(path.hits[0] && v.img.srcImg){
+        const Hpt = path.hits[0].p;
+        strokeLine(Hpt, v.img.srcImg, css("--ghost"), 1.3, [5,5], false);
+      }
+    }
+  });
+  if(S.fan && v.img && v.img.srcImg){
+    (v.paths||[]).forEach(path=>{
+      if(path.hits[0]) strokeLine(path.hits[0].p, v.img.srcImg, css("--ghost"), 1.2, [4,5], false);
+    });
+    ctx.fillStyle=css("--ghost"); ctx.globalAlpha=0.5;
+    ctx.beginPath(); ctx.arc(v.img.srcImg.x, v.img.srcImg.y, 8, 0, 7); ctx.fill();
+    ctx.globalAlpha=1;
+  }
+
+  const main = (v.paths||[]).find(p=>p.main);
+  if(main) (main.hits||[]).slice(0,2).forEach(drawProtractor);
+
+  drawLamp(S.source, true);
+  const d = fromA(S.source.ang);
+  const kn = add(S.source, sc(d, 48));
+  ctx.fillStyle=css("--accent"); ctx.beginPath(); ctx.arc(kn.x,kn.y,8,0,7); ctx.fill();
+  ctx.strokeStyle=css("--on-accent"); ctx.lineWidth=2; ctx.stroke();
+}
+
+function drawMode2(){
+  const v=S.view, b=S.block;
+  const surrGlass = !S.denserIn;
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+  if(surrGlass){
+    ctx.save(); ctx.fillStyle=css("--glass"); ctx.globalAlpha=0.18; ctx.fillRect(0,0,W,H); ctx.restore();
+  }
+  ctx.save();
+  if(surrGlass){ ctx.fillStyle=css("--board"); ctx.fillRect(b.x,b.y,b.w,b.h); }
+  else { ctx.fillStyle=css("--glass"); ctx.globalAlpha=0.28; ctx.fillRect(b.x,b.y,b.w,b.h); ctx.globalAlpha=1; }
+  ctx.strokeStyle=css("--glass"); ctx.lineWidth=3; ctx.strokeRect(b.x,b.y,b.w,b.h);
+  ctx.restore();
+  ctx.fillStyle=css("--glass"); ctx.font=`bold 13px ${css("--font")}`;
+  const lab = S.denserIn
+    ? (S.material==="water"? (LANG==="ur"?"پانی":"WATER n=1.33") : (LANG==="ur"?"شیشہ":"GLASS n=1.50"))
+    : (LANG==="ur"?"ہوا n=1.00":"AIR n=1.00");
+  ctx.fillText(lab, b.x+12, b.y+22);
+  ctx.fillStyle=css("--text-3");
+  ctx.fillText(surrGlass?(LANG==="ur"?"ارد گرد شیشہ":"surrounding: glass"):(LANG==="ur"?"ارد گرد ہوا":"surrounding: air"), 16, 24);
+
+  const tr = v.paths[0];
+  if(tr){
+    (tr.segs||[]).forEach((s,i)=>{
+      const col = s.kind==="in"? css("--glass") : css("--ray");
+      strokeLine(s.a,s.b, col, s.kind==="in"?3.6:3, null, i===0);
+      arrowHead(s.b, sub(s.b,s.a), col, 9);
+    });
+    (tr.faces||[]).forEach((f,i)=>{
+      strokeLine(sub(f.p,sc(f.n,55)), add(f.p,sc(f.n,55)), css("--text-2"), 1.5, [5,5], false);
+      const nPos = add(f.p, sc(f.n, 72));
+      chip("N", nPos.x, nPos.y, css("--text-2"));
+      const tag = f.tir ? "TIR" : (f.toward? T("toward") : f.away? T("away") : "");
+      if(tag) chip(tag, f.p.x+18, f.p.y-28, f.tir? css("--warn") : css("--good"), "left");
+      if(i===0){
+        chip("i "+deg(f.i).toFixed(1)+"°", f.p.x-8, f.p.y-44, css("--good"), "right");
+        chip("r "+deg(f.r).toFixed(1)+"°", f.p.x-8, f.p.y-22, css("--good"), "right");
+      }
+    });
+  }
+  drawLamp(S.ray2, true);
+  const kn = add(S.ray2, sc(fromA(S.ray2.ang), 48));
+  ctx.fillStyle=css("--accent"); ctx.beginPath(); ctx.arc(kn.x,kn.y,8,0,7); ctx.fill();
+}
+
+function drawAxis(x0,x1,cy){
+  strokeLine({x:x0,y:cy},{x:x1,y:cy}, css("--text-3"), 1.2, [4,4], false);
+}
+function markF(x,y,lab){
+  ctx.fillStyle=css("--crit");
+  ctx.beginPath(); ctx.arc(x,y,5,0,7); ctx.fill();
+  chip(lab, x, y+22, css("--crit"));
+}
+
+function drawMode3(){
+  const v=S.view, im=v.img; if(!im) return;
+  ctx.fillStyle=css("--board"); ctx.fillRect(0,0,W,H);
+  drawAxis(40, 860, im.cy);
+  ctx.save();
+  ctx.strokeStyle=css("--text"); ctx.lineWidth=5; ctx.lineCap="round";
+  ctx.beginPath();
+  if(im.concave){
+    ctx.arc(im.Vtx - 2*im.f, im.cy, 2*im.f, -0.55, 0.55);
+  } else {
+    ctx.arc(im.Vtx + 2*im.f, im.cy, 2*im.f, Math.PI-0.55, Math.PI+0.55);
+  }
+  ctx.stroke();
+  const g = { n: {x:-1,y:0}, p1:{x:im.Vtx,y:im.cy-90}, p2:{x:im.Vtx,y:im.cy+90} };
+  for(let s=0;s<=6;s++){
+    const y=g.p1.y+(g.p2.y-g.p1.y)*s/6;
+    ctx.strokeStyle=css("--text-3"); ctx.lineWidth=1.3;
+    ctx.beginPath(); ctx.moveTo(im.Vtx,y); ctx.lineTo(im.Vtx+10,y+6); ctx.stroke();
+  }
+  ctx.restore();
+  markF(im.Vtx - (im.concave?im.f:-im.f), im.cy, "F");
+  markF(im.Vtx - (im.concave?2*im.f:-2*im.f), im.cy, "C");
+  ctx.fillStyle=css("--text-3"); ctx.font=`12.5px ${css("--font")}`;
+  ctx.fillText("P", im.Vtx-6, im.cy+78);
+
+  const cols = { P:css("--ray"), F:css("--rayF"), C:css("--rayC"), O:css("--rayC") };
+  v.rays.forEach(r=>{
+    const c = cols[r.id]||css("--ray");
+    strokeLine(r.a, r.b, c, 2.4, null, false);
+    if(r.throughF){
+      strokeLine(r.b, {x:im.vx, y:im.iy}, c, 2.4, im.im.real?null:[6,5], false);
+    } else if(r.par){
+      strokeLine(r.b, {x:im.vx, y:im.iy}, c, 2.4, im.im.real?null:[6,5], false);
+    } else if(r.back){
+      strokeLine(r.a, {x:im.vx, y:im.iy}, c, 2.2, im.im.real?null:[6,5], false);
+    }
+  });
+  drawRayLegend(v.rays, cols, 16, 18);
+
+  if(!im.inf){
+    if(im.im.real){
+      drawCandle(im.vx, im.cy, im.h, false, im.im.m<0, Math.abs(im.im.m));
+    } else {
+      strokeLine({x:im.ox,y:im.oy},{x:im.vx,y:im.iy}, css("--ghost"), 1.3, [4,6], false);
+      drawCandle(im.vx, im.cy, im.h, true, false, Math.abs(im.im.m));
+    }
+  }
+  drawCandle(im.ox, im.cy, im.h, false, false, 1);
+
+  const scrOff = im.im.real? 1 : 0.35;
+  ctx.save(); ctx.globalAlpha=scrOff;
+  ctx.fillStyle=css("--panel"); ctx.strokeStyle=css("--text"); ctx.lineWidth=2;
+  ctx.fillRect(im.scrX-5, im.cy-90, 10, 180); ctx.strokeRect(im.scrX-5, im.cy-90, 10, 180);
+  ctx.fillStyle=css("--text-2"); ctx.font=`12px ${css("--font")}`;
+  chip(T("scr"), im.scrX, im.cy+108, css("--text-2"));
+  if(im.im.real && !im.inf){
+    ctx.globalAlpha = 0.25 + 0.75*im.sharp;
+    const blur = (1-im.sharp)*10;
+    ctx.fillStyle=css("--ray");
+    ctx.beginPath(); ctx.ellipse(im.scrX, im.cy - (im.im.m<0? -1:1)*im.h*Math.abs(im.im.m)*0.5, 4+blur, Math.abs(im.h*im.im.m)*0.5+blur, 0,0,7); ctx.fill();
+  }
+  ctx.restore();
+  if(!im.im.real){
+    const vy = im.iy - Math.abs(im.h * (im.im.m||1)) - 18;
+    chip(T("virt"), im.vx, Number.isFinite(vy)? vy : im.cy-70, css("--text-2"));
+  }
+}
+
+function drawMode4(){
+  const v=S.view, im=v.img; if(!im) return;
+  ctx.fillStyle=css("--board"); ctx.fillRect(0,0,W,H);
+  drawAxis(40, 860, im.cy);
+  ctx.save();
+  ctx.strokeStyle=css("--glass"); ctx.lineWidth=3;
+  ctx.fillStyle=css("--glass"); ctx.globalAlpha=0.18;
+  ctx.beginPath();
+  if(im.convex){
+    ctx.moveTo(im.Lx, im.cy-110);
+    ctx.quadraticCurveTo(im.Lx+22, im.cy, im.Lx, im.cy+110);
+    ctx.quadraticCurveTo(im.Lx-22, im.cy, im.Lx, im.cy-110);
+  } else {
+    ctx.moveTo(im.Lx-16, im.cy-110);
+    ctx.quadraticCurveTo(im.Lx+6, im.cy, im.Lx-16, im.cy+110);
+    ctx.lineTo(im.Lx+16, im.cy+110);
+    ctx.quadraticCurveTo(im.Lx-6, im.cy, im.Lx+16, im.cy-110);
+    ctx.closePath();
+  }
+  ctx.fill(); ctx.globalAlpha=1; ctx.stroke();
+  ctx.restore();
+  markF(im.Lx-im.f, im.cy, "F");
+  markF(im.Lx+im.f, im.cy, "F");
+  markF(im.Lx-2*im.f, im.cy, "2F");
+  markF(im.Lx+2*im.f, im.cy, "2F");
+
+  const cols = { P:css("--ray"), F:css("--rayF"), C:css("--rayC"), O:css("--accent") };
+  v.rays.forEach(r=>{
+    const c = cols[r.id]||css("--ray");
+    strokeLine(r.a, r.b, c, 2.4, null, false);
+    strokeLine(r.b, {x:im.vx, y:im.iy}, c, 2.4, im.im.real?null:[6,5], false);
+  });
+  drawRayLegend(v.rays, cols, 16, 18);
+
+  drawCandle(im.ox, im.cy, im.h, false, false, 1);
+  if(!im.inf){
+    if(im.im.real) drawCandle(im.vx, im.cy, im.h, false, im.im.m<0, Math.abs(im.im.m));
+    else drawCandle(im.vx, im.cy, im.h, true, false, Math.abs(im.im.m));
+  }
+
+  if(!im.hide){
+    const scrOff = im.im.real? 1 : 0.35;
+    ctx.save(); ctx.globalAlpha=scrOff;
+    ctx.fillStyle=css("--panel"); ctx.strokeStyle=css("--text"); ctx.lineWidth=2;
+    ctx.fillRect(im.scrX-5, im.cy-90, 10, 180); ctx.strokeRect(im.scrX-5, im.cy-90, 10, 180);
+    if(im.im.real && !im.inf){
+      ctx.globalAlpha = 0.25 + 0.75*im.sharp;
+      const blur=(1-im.sharp)*10;
+      ctx.fillStyle=css("--ray");
+      ctx.beginPath(); ctx.ellipse(im.scrX, im.cy, 4+blur, Math.abs(im.h*im.im.m)*0.5+blur,0,0,7); ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function drawRayLegend(rays, cols, x, y){
+  if(!rays || !rays.length) return;
+  ctx.save();
+  ctx.font = `bold 12px ${css("--font")}`;
+  let maxW = 0;
+  rays.forEach(r => { maxW = Math.max(maxW, ctx.measureText(r.label).width); });
+  const rowH = 20, pad = 8;
+  const boxW = maxW + 28, boxH = rays.length*rowH + pad*2;
+  const dim = document.documentElement.getAttribute("data-profile")==="dim";
+  ctx.fillStyle = dim ? "rgba(16,20,24,0.9)" : "rgba(255,255,255,0.94)";
+  roundRect(x, y, boxW, boxH, 8); ctx.fill();
+  ctx.strokeStyle = dim ? "rgba(255,255,255,0.12)" : "rgba(20,32,42,0.1)";
+  ctx.lineWidth=1; ctx.stroke();
+  rays.forEach((r,i)=>{
+    const c = cols[r.id]||css("--ray");
+    const yy = y+pad+10+i*rowH;
+    ctx.fillStyle=c;
+    ctx.beginPath(); ctx.arc(x+12, yy, 4, 0, 7); ctx.fill();
+    ctx.textAlign="left"; ctx.textBaseline="middle";
+    ctx.fillText(r.label, x+22, yy);
+  });
+  ctx.restore();
+}
+
+function drawPhoton(){
+  if(S.mode>2) return;
+  if(REDUCED && !S.running) return;
+  const p = pointOnPath(S.photon);
+  ctx.save();
+  ctx.fillStyle=css("--ray"); ctx.globalAlpha=0.35;
+  ctx.beginPath(); ctx.arc(p.x,p.y,11,0,7); ctx.fill();
+  ctx.globalAlpha=1; ctx.fillStyle="#fff";
+  ctx.beginPath(); ctx.arc(p.x,p.y,4.5,0,7); ctx.fill();
+  ctx.restore();
+}
+
+function draw(){
+  if(!S.view) compute();
+  ctx.setTransform(dpr()*scaleX, 0, 0, dpr()*scaleY, 0, 0);
+  ctx.clearRect(0,0,W,H);
+  if(S.mode===1) drawMode1();
+  else if(S.mode===2) drawMode2();
+  else if(S.mode===3) drawMode3();
+  else drawMode4();
+  drawPhoton();
+}
+
+function drawChart(){
+  const g = el("angChart"), gctx=g.getContext("2d");
+  const d=dpr(), w=g.clientWidth, h=132;
+  if(g.width!==Math.round(w*d)){ g.width=Math.round(w*d); g.height=Math.round(h*d); }
+  gctx.setTransform(d,0,0,d,0,0); gctx.clearRect(0,0,w,h);
+  const padL=40, padB=22, padT=10, padR=10;
+  const pw=w-padL-padR, ph=h-padT-padB;
+  gctx.strokeStyle=css("--hairline"); gctx.lineWidth=1;
+  gctx.beginPath(); gctx.moveTo(padL,padT); gctx.lineTo(padL,padT+ph); gctx.lineTo(padL+pw,padT+ph); gctx.stroke();
+  gctx.fillStyle=css("--text-3"); gctx.font=`12.5px ${css("--mono")}`;
+  if(S.mode<=2){
+    const i = S.view && S.view.i!=null ? S.view.i : 0;
+    const r = S.view && S.view.r!=null ? S.view.r : 0;
+    const max = Math.max(50, i, r, 1);
+    const ih = i/max*ph, rh = r/max*ph;
+    const bw = Math.min(48, pw/4);
+    gctx.fillStyle=css("--ray");
+    gctx.fillRect(padL+pw*0.22, padT+ph-ih, bw, ih);
+    gctx.fillStyle=css("--good");
+    gctx.fillRect(padL+pw*0.55, padT+ph-rh, bw, rh);
+    gctx.fillStyle=css("--text"); gctx.textAlign="center";
+    gctx.fillText("i", padL+pw*0.22+bw/2, padT+ph+16);
+    gctx.fillText("r", padL+pw*0.55+bw/2, padT+ph+16);
+    gctx.textAlign="right"; gctx.fillStyle=css("--text-3");
+    gctx.fillText(max.toFixed(0)+"°", padL-6, padT+10);
+  } else {
+    const last = S.samples[S.samples.length-1] || {i:0,r:0};
+    const max = Math.max(CONFIG.MIRROR_F*3, last.i, last.r, 1);
+    gctx.fillStyle=css("--accent");
+    gctx.fillRect(padL+pw*0.22, padT+ph-(last.i/max*ph), 44, last.i/max*ph);
+    gctx.fillStyle=css("--ghost");
+    gctx.fillRect(padL+pw*0.55, padT+ph-(last.r/max*ph), 44, last.r/max*ph);
+    gctx.fillStyle=css("--text"); gctx.textAlign="center"; gctx.font=`12px ${css("--font")}`;
+    gctx.fillText("u", padL+pw*0.22+22, padT+ph+16);
+    gctx.fillText("v", padL+pw*0.55+22, padT+ph+16);
+  }
+}
+
+/* ======================================================================
+   6. CONTROLS
+   ====================================================================== */
+function hitTest(p){
+  if(S.mode===1){
+    if(dist(p, S.source)<22) return {kind:"source"};
+    const kn = add(S.source, sc(fromA(S.source.ang), 48));
+    if(dist(p, kn)<16) return {kind:"dir"};
+    if(dist(p, S.arrow)<20) return {kind:"arrow"};
+    const ms = activeMirrors();
+    for(let i=0;i<ms.length;i++){
+      const g=mirrorGeom(ms[i]);
+      if(dist(p, g.p2)<16) return {kind:"mrot", i};
+      if(dist(p, ms[i])<18) return {kind:"mirror", i};
+      const ab=dist(g.p1,g.p2), ap=dist(p,g.p1)+dist(p,g.p2);
+      if(ap-ab<10) return {kind:"mirror", i};
+    }
+    if(S.target.on && dist(p,S.target)<CONFIG.TARGET_R) return {kind:"target"};
+  }
+  if(S.mode===2){
+    if(dist(p, S.ray2)<22) return {kind:"ray2"};
+    const kn = add(S.ray2, sc(fromA(S.ray2.ang), 48));
+    if(dist(p, kn)<16) return {kind:"dir2"};
+  }
+  if(S.mode===3 && S.view && S.view.img){
+    const im=S.view.img;
+    if(Math.abs(p.x-im.ox)<24 && Math.abs(p.y-im.cy)<im.h+10) return {kind:"obj3"};
+    if(Math.abs(p.x-im.scrX)<16 && Math.abs(p.y-im.cy)<100) return {kind:"scr3"};
+  }
+  if(S.mode===4 && S.view && S.view.img){
+    const im=S.view.img;
+    if(Math.abs(p.x-im.ox)<24 && Math.abs(p.y-im.cy)<im.h+10) return {kind:"obj4"};
+    if(!im.hide && Math.abs(p.x-im.scrX)<16 && Math.abs(p.y-im.cy)<100) return {kind:"scr4"};
+  }
+  return null;
+}
+
+canvas.addEventListener("pointerdown", e=>{
+  canvas.setPointerCapture(e.pointerId);
+  const p=worldPtr(e);
+  const h=hitTest(p);
+  if(!h) return;
+  drag.kind=h.kind; drag.i=h.i||0;
+  if(h.kind==="source"){ drag.dx=S.source.x-p.x; drag.dy=S.source.y-p.y; }
+  if(h.kind==="arrow"){ drag.dx=S.arrow.x-p.x; drag.dy=S.arrow.y-p.y; }
+  if(h.kind==="mirror"){ drag.dx=S.mirrors[h.i].x-p.x; drag.dy=S.mirrors[h.i].y-p.y; }
+  if(h.kind==="ray2"){ drag.dx=S.ray2.x-p.x; drag.dy=S.ray2.y-p.y; }
+  if(h.kind==="target"){ drag.dx=S.target.x-p.x; drag.dy=S.target.y-p.y; }
+});
+canvas.addEventListener("pointermove", e=>{
+  if(!drag.kind){
+    canvas.style.cursor = hitTest(worldPtr(e)) ? "grab" : "crosshair";
+    return;
+  }
+  const p=worldPtr(e);
+  if(drag.kind==="source"){
+    S.source.x=clamp(p.x+drag.dx, 30, 520);
+    S.source.y=clamp(p.y+drag.dy, 40, H-40);
+  } else if(drag.kind==="dir"){
+    S.source.ang = ang(sub(p, S.source));
+  } else if(drag.kind==="arrow"){
+    S.arrow.x=clamp(p.x+drag.dx, 40, 600);
+    S.arrow.y=clamp(p.y+drag.dy, 80, H-40);
+  } else if(drag.kind==="mirror"){
+    const m=S.mirrors[drag.i];
+    m.x=clamp(p.x+drag.dx, 80, W-40);
+    m.y=clamp(p.y+drag.dy, 60, H-60);
+  } else if(drag.kind==="mrot"){
+    const m=S.mirrors[drag.i];
+    m.ang = ang(sub(p,{x:m.x,y:m.y})) - Math.PI/2;
+  } else if(drag.kind==="target"){
+    S.target.x=clamp(p.x+drag.dx, 40, W-40);
+    S.target.y=clamp(p.y+drag.dy, 40, H-40);
+  } else if(drag.kind==="ray2"){
+    S.ray2.x=clamp(p.x+drag.dx, 20, 300);
+    S.ray2.y=clamp(p.y+drag.dy, 40, H-40);
+  } else if(drag.kind==="dir2"){
+    S.ray2.ang = ang(sub(p, S.ray2));
+  } else if(drag.kind==="obj3"){
+    S.objU = clamp(620 - p.x, 36, 420);
+  } else if(drag.kind==="scr3"){
+    S.screenU = clamp(620 - p.x, 20, 400);
+  } else if(drag.kind==="obj4"){
+    S.lensU = clamp(420 - p.x, 28, 390);
+  } else if(drag.kind==="scr4"){
+    S.lensScr = clamp(p.x - 420, 20, 400);
+  }
+  compute(); sync(); checkGuide();
+});
+["pointerup","pointercancel"].forEach(ev=> canvas.addEventListener(ev, ()=>{ drag.kind=null; }));
+
+canvas.addEventListener("keydown", e=>{
+  const stepN = e.shiftKey? 14 : 6;
+  if(S.mode===1){
+    if(e.key==="ArrowLeft"){ S.source.x=clamp(S.source.x-stepN,30,520); e.preventDefault(); }
+    if(e.key==="ArrowRight"){ S.source.x=clamp(S.source.x+stepN,30,520); e.preventDefault(); }
+    if(e.key==="ArrowUp"){ S.source.y=clamp(S.source.y-stepN,40,H-40); e.preventDefault(); }
+    if(e.key==="ArrowDown"){ S.source.y=clamp(S.source.y+stepN,40,H-40); e.preventDefault(); }
+    if(e.key==="[" ){ S.source.ang -= 0.06; e.preventDefault(); }
+    if(e.key==="]"){ S.source.ang += 0.06; e.preventDefault(); }
+  }
+  if(S.mode===3){
+    if(e.key==="ArrowLeft"){ S.objU=clamp(S.objU+stepN,36,420); e.preventDefault(); }
+    if(e.key==="ArrowRight"){ S.objU=clamp(S.objU-stepN,36,420); e.preventDefault(); }
+  }
+  if(S.mode===4){
+    if(e.key==="ArrowLeft"){ S.lensU=clamp(S.lensU+stepN,28,390); e.preventDefault(); }
+    if(e.key==="ArrowRight"){ S.lensU=clamp(S.lensU-stepN,28,390); e.preventDefault(); }
+  }
+  if(e.key===" "){ setRunning(!S.running); e.preventDefault(); }
+  compute(); sync(); checkGuide();
+});
+
+function setMode(m, keepGuide){
+  S.mode=m;
+  S.samples=[];
+  if(m===1 && S.guide.i===1){ S.target.on=true; S.showM2=true; }
+  if(m!==1) S.target.on = S.guide.i===1 && m===1;
+  buildModeOpts(); buildExtra(); compute(); sync(); renderGuide();
+  document.querySelectorAll("#modeTray .btn").forEach((b,i)=> b.setAttribute("aria-pressed", String(i+1===m)));
+}
+
+function buildModeTray(){
+  const host=el("modeTray"); host.innerHTML="";
+  [["m1",1],["m2",2],["m3",3],["m4",4]].forEach(([k,m])=>{
+    const b=document.createElement("button");
+    b.className="btn btn--ghost btn--sm"; b.type="button";
+    b.textContent=T(k); b.setAttribute("aria-pressed", String(S.mode===m));
+    b.addEventListener("click", ()=>setMode(m));
+    host.appendChild(b);
+  });
+}
+function buildModeOpts(){
+  const host=el("modeOpts"); host.innerHTML="";
+  const add = (id, label, pressed, fn)=>{
+    const b=document.createElement("button"); b.type="button"; b.id=id;
+    b.textContent=label; b.setAttribute("aria-pressed", String(pressed));
+    b.addEventListener("click", fn); host.appendChild(b); return b;
+  };
+  if(S.mode===1){
+    add("b1", T("oneRay"), !S.fan, ()=>{ S.fan=false; buildModeOpts(); compute(); sync(); });
+    add("b5", T("fiveRay"), S.fan, ()=>{ S.fan=true; buildModeOpts(); compute(); sync(); });
+    add("bM2", S.showM2? T("remM2"):T("addM2"), S.showM2, ()=>{
+      S.showM2=!S.showM2;
+      if(S.showM2 && !S.mirrors[1]) S.mirrors[1]={x:430,y:400,ang:-Math.PI/4,len:160};
+      buildModeOpts(); compute(); sync();
+    });
+  }
+  if(S.mode===2){
+    add("bg", T("glass"), S.material==="glass", ()=>{ S.material="glass"; buildModeOpts(); compute(); sync(); });
+    add("bw", T("water"), S.material==="water", ()=>{ S.material="water"; buildModeOpts(); compute(); sync(); });
+    add("ba", T("pathAG"), S.denserIn, ()=>{ S.denserIn=true; buildModeOpts(); compute(); sync(); });
+    add("bb", T("pathGA"), !S.denserIn, ()=>{ S.denserIn=false; buildModeOpts(); compute(); sync(); });
+  }
+  if(S.mode===3){
+    add("bcc", T("concave"), S.curved==="concave", ()=>{ S.curved="concave"; buildModeOpts(); compute(); sync(); });
+    add("bcx", T("convex"), S.curved==="convex", ()=>{ S.curved="convex"; buildModeOpts(); compute(); sync(); });
+  }
+  if(S.mode===4){
+    add("blx", T("convL"), S.lens==="convex", ()=>{ S.lens="convex"; S.hideScr=false; buildModeOpts(); compute(); sync(); });
+    add("blc", T("concL"), S.lens==="concave", ()=>{ S.lens="concave"; S.hideScr=false; buildModeOpts(); compute(); sync(); });
+  }
+}
+function buildExtra(){
+  const host=el("extraCtrls"); host.innerHTML="";
+  if(S.mode===2){
+    host.innerHTML = `<div class="pred">
+      <div class="read__k">${T("predIn")}</div>
+      <button type="button" id="pinT" aria-pressed="${S.predIn==="t"}">${T("toward")}</button>
+      <button type="button" id="pinA" aria-pressed="${S.predIn==="a"}">${T("away")}</button>
+      <div class="read__k">${T("predOut")}</div>
+      <button type="button" id="poutT" aria-pressed="${S.predOut==="t"}">${T("toward")}</button>
+      <button type="button" id="poutA" aria-pressed="${S.predOut==="a"}">${T("away")}</button>
+    </div>`;
+    const mark=(id, val, which)=>{
+      el(id).addEventListener("click", ()=>{
+        if(which==="in") S.predIn=val; else S.predOut=val;
+        const tr=S.view && S.view.extra;
+        const okIn = tr && tr.faces && tr.faces[0] && ((val==="t")===tr.faces[0].toward);
+        const okOut = tr && tr.faces && tr.faces[1] && ((val==="t")===tr.faces[1].toward);
+        buildExtra(); compute(); sync(); checkGuide();
+      });
+    };
+    mark("pinT","t","in"); mark("pinA","a","in"); mark("poutT","t","out"); mark("poutA","a","out");
+    const tr=S.view && S.view.extra;
+    if(tr && tr.faces){
+      if(S.predIn==="t" || S.predIn==="a"){
+        el("pinT").classList.toggle("ok", S.predIn==="t" && tr.faces[0] && tr.faces[0].toward);
+        el("pinA").classList.toggle("ok", S.predIn==="a" && tr.faces[0] && tr.faces[0].away);
+      }
+      if(tr.faces[1] && (S.predOut==="t"||S.predOut==="a")){
+        el("poutT").classList.toggle("ok", S.predOut==="t" && tr.faces[1].toward);
+        el("poutA").classList.toggle("ok", S.predOut==="a" && tr.faces[1].away);
+      }
+    }
+  }
+  if(S.mode===3 || S.mode===4){
+    const pLab = T("showP"), fLab = S.mode===3? T("showF"):T("showO"), cLab = S.mode===3? T("showC"):T("showF");
+    host.innerHTML = `<label class="chk"><input type="checkbox" id="cP" ${S.showRP?"checked":""}> ${pLab}</label>
+      <label class="chk"><input type="checkbox" id="cF" ${S.showRF?"checked":""}> ${fLab}</label>
+      <label class="chk"><input type="checkbox" id="cC" ${S.showRC?"checked":""}> ${cLab}</label>
+      <div class="row"><span id="tObj">${T("objU")}</span>
+        <input type="range" id="rngU" min="40" max="400" value="${S.mode===3?S.objU:S.lensU}" style="flex:1">
+        <span class="val" id="vU"></span></div>
+      ${S.hideScr?"":`<div class="row"><span>${T("scr")}</span>
+        <input type="range" id="rngS" min="20" max="400" value="${S.mode===3?S.screenU:S.lensScr}" style="flex:1">
+        <span class="val" id="vS"></span></div>`}
+      <div class="legend">
+        <span><i class="sw" style="background:var(--ray)"></i>${pLab}</span>
+        <span><i class="sw" style="background:var(--rayF)"></i>${fLab}</span>
+        <span><i class="sw" style="background:var(--rayC)"></i>${cLab}</span>
+      </div>`;
+    el("cP").addEventListener("change", e=>{ S.showRP=e.target.checked; compute(); });
+    el("cF").addEventListener("change", e=>{ S.showRF=e.target.checked; compute(); });
+    el("cC").addEventListener("change", e=>{ S.showRC=e.target.checked; compute(); });
+    el("rngU").addEventListener("input", e=>{
+      if(S.mode===3) S.objU=+e.target.value; else S.lensU=+e.target.value;
+      compute(); sync(); checkGuide();
+    });
+    const rs=el("rngS");
+    if(rs) rs.addEventListener("input", e=>{
+      if(S.mode===3) S.screenU=+e.target.value; else S.lensScr=+e.target.value;
+      compute(); sync(); checkGuide();
+    });
+  }
+}
+
+const WORLD = [
+  { id:"car", key:"wCar", icon:'<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M4 18h20l-2-6H8z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="20" r="2.2" fill="currentColor"/><circle cx="19" cy="20" r="2.2" fill="currentColor"/><path d="M20 10c3 0 5 3 5 5" fill="none" stroke="currentColor" stroke-width="2"/></svg>' },
+  { id:"dentist", key:"wDent", icon:'<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M8 6c8-2 14 4 12 12" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="9" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 20c2-3 6-3 8 0" fill="none" stroke="currentColor" stroke-width="2"/></svg>' },
+  { id:"torch", key:"wTorch", icon:'<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="4" y="11" width="10" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 9l8-3v16l-8-3z" fill="none" stroke="currentColor" stroke-width="2"/></svg>' },
+  { id:"mag", key:"wMag", icon:'<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M17 17l6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>' },
+  { id:"peri", key:"wPeri", icon:'<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M6 7h10l-8 14h10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>' }
+];
+function loadWorld(id){
+  S.visited[id]=true;
+  if(id==="car"){
+    setMode(3); S.curved="convex"; S.objU=200; S.screenU=80; S.hideScr=false;
+  } else if(id==="dentist"){
+    setMode(3); S.curved="concave"; S.objU=70; S.screenU=80;
+  } else if(id==="torch"){
+    setMode(3); S.curved="concave"; S.objU=CONFIG.MIRROR_F; S.screenU=90;
+  } else if(id==="mag"){
+    setMode(4); S.lens="convex"; S.lensU=48; S.hideScr=true;
+  } else if(id==="peri"){
+    setMode(1); S.showM2=true; S.fan=false; S.target.on=true;
+    S.mirrors[0]={x:400,y:140,ang:-Math.PI/4,len:150};
+    S.mirrors[1]={x:400,y:400,ang:-Math.PI/4,len:150};
+    S.source={x:90,y:140,ang:0}; S.arrow={x:180,y:200};
+    S.target={x:760,y:400,on:true}; S.windowY=140;
+  }
+  buildModeOpts(); buildExtra(); buildWorld(); compute(); sync(); checkGuide();
+}
+function buildWorld(){
+  const host=el("world"); host.innerHTML="";
+  WORLD.forEach(w=>{
+    const b=document.createElement("button");
+    b.className="wbtn"; b.type="button";
+    b.setAttribute("aria-pressed", String(!!S.visited[w.id]));
+    b.innerHTML = `<span class="wbtn__ico">${w.icon}</span><span class="wbtn__lab">${T(w.key)}</span>`;
+    b.addEventListener("click", ()=>loadWorld(w.id));
+    host.appendChild(b);
+  });
+}
+
+function sync(){
+  if(!S.view) compute();
+  const v=S.view;
+  el("rType").textContent = v.chars.type + (v.chars.lat? " · "+T("lat") : "");
+  el("rOri").textContent = v.chars.ori;
+  el("rSize").textContent = v.chars.size;
+  el("rI").textContent = v.i==null? "—" : v.i.toFixed(1)+"°";
+  el("rR").textContent = v.r==null? "—" : v.r.toFixed(1)+"°";
+  const eq = v.i!=null && Math.abs(v.i-v.r)<0.15;
+  el("rI").style.color = eq? "var(--good)" : "";
+  el("rR").style.color = eq? "var(--good)" : "";
+  el("narr").textContent = T(v.note);
+  if(S.mode>=3){
+    const uel=el("vU"), sel=el("vS");
+    if(uel) uel.textContent = Math.round(S.mode===3?S.objU:S.lensU)+" px";
+    if(sel) sel.textContent = Math.round(S.mode===3?S.screenU:S.lensScr)+" px";
+  }
+  el("tGraph").textContent = S.mode<=2 ? T("graph") : T("objU")+" / v";
+  el("tGraphNote").textContent = S.mode<=2 ? T("graphNote") : T("graphNote2");
+  drawChart();
+}
+
+/* ======================================================================
+   7. GUIDE
+   ====================================================================== */
+const TASKS = [
+  { keys:["t1","t1h","t1p"],
+    fix:()=>{
+      setMode(1); S.fan=false; S.showM2=false; S.target.on=false;
+      S.mirrors=[{x:640,y:260,ang:0,len:300}];
+      S.source={x:200,y:180,ang:0.55};
+      S.guide.memo.angs=[18,42,66];
+      buildModeOpts(); compute(); sync();
+    },
+    done:()=>{
+      if(S.mode!==1 || S.view.i==null) return false;
+      const a = S.guide.memo.angs || (S.guide.memo.angs=[]);
+      const i=S.view.i;
+      if(a.every(x=>Math.abs(x-i)>CONFIG.ANGLE_BUCKET)) a.push(i);
+      return a.length>=3;
+    } },
+  { keys:["t2","t2h","t2p"],
+    fix:()=> loadWorld("peri"),
+    done:()=> S.mode===1 && S.view && S.view.extra && S.view.extra.two },
+  { keys:["t3","t3h","t3p"],
+    fix:()=>{
+      setMode(2); S.denserIn=true; S.material="glass";
+      S.ray2={x:90,y:210,ang:0.28}; S.predIn="t"; S.predOut="a";
+      compute(); sync();
+    },
+    done:()=> S.mode===2 && S.view && S.view.extra && S.view.extra.both && S.predIn && S.predOut },
+  { keys:["t4","t4h","t4p"],
+    fix:()=>{
+      setMode(3); S.curved="concave"; S.objU=300; S.screenU=174; S.hideScr=false;
+      S.guide.memo.z={beyondC:true, CF:true, inF:true}; S.guide.memo.caught=true; S.guide.memo.virt=true;
+      compute(); sync();
+    },
+    done:()=>{
+      if(S.mode!==3 || S.curved!=="concave" || !S.view.extra) return false;
+      const m=S.guide.memo;
+      m.z = m.z||{}; m.z[S.view.extra.zone]=true;
+      if(S.view.img && S.view.img.caught) m.caught=true;
+      if(S.view.img && S.view.img.im && !S.view.img.im.real) m.virt=true;
+      return m.caught && m.virt && m.z.beyondC && m.z.CF && m.z.inF;
+    } },
+  { keys:["t5","t5h","t5p"],
+    fix:()=>{ loadWorld("car"); loadWorld("dentist"); },
+    done:()=> S.visited.car && S.visited.dentist }
+];
+
+function renderGuide(){
+  const t = TASKS[S.guide.i];
+  el("gNum").textContent = (S.guide.i+1)+"/"+TASKS.length;
+  el("tStep").textContent = T("step");
+  el("gDots").innerHTML = TASKS.map((_,i)=>
+    `<span class="guide__dot ${i<S.guide.i?"on":""} ${i===S.guide.i?"now":""}"></span>`).join("");
+  const box = el("guide");
+  if(S.guide.done){
+    box.classList.add("done");
+    el("gTask").innerHTML = `<span class="tick" aria-hidden="true">✓</span> ${T(t.keys[2])}`;
+    el("gHint").textContent = "";
+    el("gShow").hidden = true; el("gNext").hidden = false;
+    el("gNext").textContent = S.guide.i===TASKS.length-1 ? T("finish") : T("next");
+  } else {
+    box.classList.remove("done");
+    el("gTask").textContent = T(t.keys[0]);
+    el("gHint").textContent = T(t.keys[1]);
+    el("gShow").hidden = false; el("gNext").hidden = true;
+    el("gShow").textContent = T("showMe");
+  }
+}
+function checkGuide(){
+  if(S.guide.done) return;
+  if(TASKS[S.guide.i].done()){ S.guide.done = true; renderGuide(); }
+}
+el("gShow").addEventListener("click", ()=>{ const f=TASKS[S.guide.i].fix; if(f) f(); checkGuide(); });
+el("gNext").addEventListener("click", ()=>{
+  if(S.guide.i===TASKS.length-1){ showScreen("quiz"); return; }
+  S.guide.i++; S.guide.done=false;
+  if(S.guide.i===1){ S.target.on=true; S.showM2=true; }
+  if(S.guide.i!==1) S.target.on=false;
+  renderGuide(); buildModeOpts(); compute(); sync();
+});
+
+/* ======================================================================
+   8. QUIZ
+   ====================================================================== */
+const QUESTIONS = [
+  { q:"q1", opts:["q1a","q1b","q1c","q1d"], a:1, why:"q1w" },
+  { q:"q2", opts:["q2a","q2b","q2c","q2d"], a:1, why:"q2w" },
+  { q:"q3", opts:["q3a","q3b","q3c","q3d"], a:2, why:"q3w" },
+  { q:"q4", opts:["q4a","q4b","q4c","q4d"], a:1, why:"q4w" },
+  { q:"q5", opts:["q5a","q5b","q5c","q5d"], a:1, why:"q5w" }
+];
+function buildQuiz(){
+  const host=el("quiz"); host.innerHTML=""; const KEYS=["A","B","C","D"];
+  let answered=0, score=0;
+  QUESTIONS.forEach((Q,qi)=>{
+    const w=document.createElement("div"); w.className="q panel";
+    w.innerHTML = `<div class="q__n">${qi+1} / ${QUESTIONS.length}</div>
+      <p class="q__t">${T(Q.q)}</p><div class="opts"></div><p class="fb" id="fb${qi}"></p>`;
+    const box=w.querySelector(".opts");
+    Q.opts.forEach((ok,oi)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="opt";
+      b.innerHTML = `<span class="opt__k">${KEYS[oi]}</span><span>${T(ok)}</span>`;
+      b.addEventListener("click", ()=>{
+        if(w.dataset.done) return; w.dataset.done="1";
+        const right=oi===Q.a; answered++; if(right) score++;
+        box.querySelectorAll(".opt").forEach((btn,bi)=>{
+          btn.disabled=true;
+          if(bi===Q.a) btn.classList.add("correct");
+          if(bi===oi && !right) btn.classList.add("wrong");
+        });
+        const fb=el("fb"+qi);
+        fb.className="fb show "+(right?"ok":"no");
+        fb.innerHTML = `<b>${right?"✓":"✗"}</b> ${T(Q.why)}`;
+        upd();
+      });
+      box.appendChild(b);
+    });
+    host.appendChild(w);
+  });
+  const bar=document.createElement("div"); bar.className="panel score";
+  bar.innerHTML = `<span class="score__v" id="sv">0 / ${QUESTIONS.length}</span>
+    <span id="sm" style="color:var(--text-2);font-size:14.5px"></span>
+    <button class="btn btn--ghost" id="sRetry" style="margin-inline-start:auto">${T("tryAgain")}</button>`;
+  host.appendChild(bar);
+  function upd(){
+    el("sv").textContent = score+" / "+QUESTIONS.length;
+    const left=QUESTIONS.length-answered;
+    el("sm").textContent = left? left+" "+T("left") : (score===5?T("scoreAll"): score>=3?T("scoreMid"):T("scoreLow"));
+  }
+  el("sRetry").addEventListener("click", ()=>buildQuiz());
+  upd();
+}
+
+/* ======================================================================
+   9. LOOP
+   ====================================================================== */
+const mqReduce = matchMedia("(prefers-reduced-motion: reduce)");
+let REDUCED = mqReduce.matches;
+mqReduce.addEventListener("change", ()=>{ REDUCED = mqReduce.matches; });
+let prev = performance.now(), acc=0, syncT=0;
+function frame(now){
+  const dt=Math.min(0.1,(now-prev)/1000); prev=now;
+  if(S.running){
+    if(REDUCED){
+      acc+=dt; if(acc>0.5){ acc=0; step(0.5*S.speed); syncT=1; }
+    } else {
+      step(dt*S.speed);
+      syncT+=dt;
+    }
+    if(syncT>0.12){ syncT=0; sync(); checkGuide(); }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+
+function setRunning(on){
+  S.running=on;
+  el("icPlay").innerHTML = on
+    ? '<rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/>'
+    : '<path d="M7 4 L19 12 L7 20 Z" fill="#fff"/>';
+  el("btnPlay").setAttribute("aria-pressed", String(on));
+  el("btnPlay").setAttribute("aria-label", on? T("pause"):T("play"));
+}
+
+function applyLang(){
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = LANG==="ur" ? "rtl" : "ltr";
+  el("tTitle").textContent=T("title"); el("tSub").textContent=T("sub");
+  el("tNavTitle").textContent=T("navTitle");
+  el("navBench").textContent=T("bench"); el("navQuiz").textContent=T("quiz");
+  el("btnLang").textContent=T("lang");
+  el("btnProfile").textContent = dim? T("bright"):T("dim");
+  el("tChars").textContent=T("chars");
+  el("tType").textContent=T("type"); el("tOri").textContent=T("ori"); el("tSize").textContent=T("size");
+  el("tReadings").textContent=T("readings");
+  el("tI").textContent=T("iLab"); el("tR").textContent=T("rLab");
+  el("tSpeed").textContent=T("speed");
+  el("btnStep").textContent=T("stepBtn");
+  el("btnReset").setAttribute("aria-label", T("reset"));
+  el("tGraph").textContent=T("graph"); el("tGraphNote").textContent=T("graphNote");
+  el("tWorld").textContent=T("world");
+  el("tQuizTitle").textContent=T("quizTitle"); el("tQuizSub").textContent=T("quizSub");
+  el("boardDesc").textContent=T("boardDesc");
+  el("speed").setAttribute("aria-label", T("speed"));
+  setRunning(S.running);
+  buildModeTray(); buildModeOpts(); buildExtra(); buildWorld(); renderGuide(); buildQuiz();
+  compute(); sync();
+}
+
+el("btnLang").addEventListener("click", ()=>{ LANG = LANG==="en"?"ur":"en"; applyLang(); });
+el("btnProfile").addEventListener("click", ()=>{
+  dim=!dim;
+  if(dim) document.documentElement.setAttribute("data-profile","dim");
+  else document.documentElement.removeAttribute("data-profile");
+  el("btnProfile").textContent = dim? T("bright"):T("dim");
+});
+el("btnPlay").addEventListener("click", ()=> setRunning(!S.running));
+el("btnStep").addEventListener("click", ()=>{ step(0.25); sync(); checkGuide(); });
+el("speed").addEventListener("input", e=>{ S.speed=+e.target.value; });
+el("btnReset").addEventListener("click", ()=>{
+  const fresh=seed();
+  Object.keys(S).forEach(k=>{ if(k!=="view") S[k]=fresh[k]; });
+  Object.assign(S, fresh);
+  S.speed=1; el("speed").value=1;
+  setRunning(true);
+  applyLang();
+});
+
+function showScreen(which){
+  el("scBench").classList.toggle("on", which==="bench");
+  el("scQuiz").classList.toggle("on", which==="quiz");
+  el("navBench").setAttribute("aria-current", which==="bench"?"page":"false");
+  el("navQuiz").setAttribute("aria-current", which==="quiz"?"page":"false");
+  scrollTo({top:0});
+  if(which==="bench"){ fitBoard(); compute(); sync(); }
+}
+el("navBench").addEventListener("click", ()=>showScreen("bench"));
+el("navQuiz").addEventListener("click", ()=>showScreen("quiz"));
+addEventListener("resize", ()=>{ fitBoard(); drawChart(); });
+
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+    this.moveTo(x+r,y); this.arcTo(x+w,y,x+w,y+h,r); this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r); this.arcTo(x,y,x+w,y,r);
+  };
+}
+
+fitBoard();
+applyLang();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

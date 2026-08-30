@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<title>Photosynthesis &amp; Gas Exchange in Plants — PCTB Class 8 Science</title>
+<!--
+==========================================================================
+ PHOTOSYNTHESIS & GAS EXCHANGE IN PLANTS  ·  Sim 9 of 10
+ PCTB / SNC Class 8 General Science — Nutrition in Plants
+
+ LEARNING OBJECTIVES
+   1. Photosynthesis makes glucose from CO2 + water + light (chlorophyll
+      captures the light) and releases O2. It needs light.
+   2. Respiration runs day AND night: O2 + glucose → CO2 + energy.
+   3. Stomata are the pores that gate gas exchange; they open and close.
+   4. Bright light: photosynthesis faster than respiration → net CO2 in,
+      O2 out (net oxygen producer).
+   5. Darkness: only respiration’s exchange is visible → net O2 in, CO2 out.
+   6. Compensation point: the two rates match. Net flow through stomata is
+      zero, but BOTH processes are still running.
+   7. Light, CO2, and temperature can each be the limiting factor.
+
+ MISCONCEPTIONS (quiz)
+   - Plants only respire at night.
+   - Plants always take in CO2 and give out O2.
+   - More light always means more photosynthesis.
+   - Food/mass comes mainly from the soil.
+   - Stomata are always open.
+
+ SIMPLIFICATIONS
+   - Word equation only. No Calvin cycle, no spectra, no minerals, no xylem.
+   - Compensation point is a felt balance, not a number to memorise.
+
+ TEACHER: CONFIG. R_RATE is always-on respiration. P_MAX is photosynthesis
+   at full light. COMP is the light slider value where they match.
+   COMP_BAND is the “balanced” meter zone. If both particle streams vanish
+   at the compensation point, that is the send-back bug — they must both
+   stay visible and roughly equal.
+
+ Gas flow is not a single arrow that reverses. Two streams, always.
+==========================================================================
+-->
+<style>
+:root{
+  --accent:#1F6FD0; --good:#237A46; --warn:#8C5A05; --crit:#A0173F;
+  --panel:#FFFFFF; --panel-2:#F2F4F5; --panel-border:#8A8A8A;
+  --text:#14202A; --text-2:#46565F; --text-3:#71828C;
+  --co2:#C45C12; --o2:#1F6FD0; --leaf:#3D8B4A; --chloro:#7CB342;
+  --board:#EEF2F4; --grid:#D3DBDF; --hairline:#DCE1E4;
+  --shadow:0 2px 8px rgba(20,32,42,.14); --focus:#14202A; --on-accent:#FFFFFF;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --radius:12px;
+}
+:root[data-profile="dim"]{
+  --accent:#4E9BF0; --good:#4FB27A; --warn:#D0A03A; --crit:#E0648F;
+  --panel:#1A2126; --panel-2:#242D33; --panel-border:#5F6C74;
+  --text:#F1F5F7; --text-2:#C3CFD5; --text-3:#95A4AD;
+  --co2:#F0A040; --o2:#4E9BF0; --leaf:#4FB27A; --chloro:#A7D36A;
+  --board:#131A1F; --grid:#26313A; --hairline:#3B464D;
+  --shadow:0 2px 10px rgba(0,0,0,.5); --focus:#FFFFFF; --on-accent:#0B1220;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{ font-family:var(--font); background:var(--panel-2); color:var(--text); font-size:16px; line-height:1.45; overflow-x:hidden; }
+:focus-visible{ outline:3px solid var(--focus); outline-offset:2px; border-radius:4px; }
+.sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.wrap{ max-width:1400px; margin:0 auto; padding:10px 10px 80px; }
+:root[dir="rtl"] body{ font-family:system-ui,"Noto Nastaliq Urdu","Segoe UI",Tahoma,sans-serif; }
+:root[dir="rtl"] .stage__inner{ direction:ltr; }
+.head{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; padding:2px 2px 10px; }
+.head__title{ font-size:clamp(19px,2.3vw,25px); font-weight:700; margin:0; letter-spacing:-.02em; }
+.head__sub{ margin:0; font-size:14.5px; color:var(--text-2); }
+.head__spacer{ margin-inline-start:auto; display:flex; gap:8px; flex-wrap:wrap; }
+.panel{ background:var(--panel); border:1px solid var(--panel-border); border-radius:var(--radius); box-shadow:var(--shadow); padding:12px 14px; }
+.panel__title{ font-size:15px; font-weight:700; margin:0 0 10px; }
+.guide{
+  background:var(--panel); border:2px solid var(--accent); border-radius:var(--radius);
+  padding:10px 13px; margin-bottom:10px;
+  display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center;
+}
+@media (max-width:760px){ .guide{ grid-template-columns:1fr; } }
+.guide.done{ border-color:var(--good); }
+.guide__badge{ min-width:72px; padding:6px 10px; border-radius:9px; text-align:center; background:var(--panel-2); border:1px solid var(--panel-border); }
+.guide__badgeTop{ font-size:12.5px; font-weight:700; letter-spacing:.06em; color:var(--text-3); }
+.guide__badgeNum{ font-size:20px; font-weight:700; font-family:var(--mono); font-variant-numeric:tabular-nums; }
+.guide__task{ font-size:17px; font-weight:700; margin:0; }
+.guide__hint{ font-size:14px; margin:4px 0 0; color:var(--text-2); }
+.guide__dots{ display:flex; gap:6px; margin-top:8px; }
+.guide__dot{ width:9px; height:9px; border-radius:50%; background:var(--hairline); }
+.guide__dot.on{ background:var(--good); }
+.guide__dot.now{ background:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent); }
+.guide__acts{ display:flex; gap:8px; flex-wrap:wrap; }
+.btn{
+  font-family:inherit; font-size:14.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 16px; border-radius:9px; white-space:nowrap;
+  background:var(--accent); color:var(--on-accent); border:1px solid rgba(0,0,0,.28);
+}
+.btn:hover{ filter:brightness(1.08); }
+.btn--ghost{ background:var(--panel); color:var(--text); border-color:var(--panel-border); }
+.btn--go{ background:var(--good); color:#fff; }
+.btn--sm{ font-size:13.5px; padding:0 12px; }
+.btn[aria-pressed="true"]{ box-shadow:inset 0 0 0 2px var(--focus); }
+.round{
+  width:48px; height:48px; border-radius:50%; cursor:pointer; padding:0;
+  border:1px solid rgba(0,0,0,.35); display:grid; place-items:center; background:var(--btn,#E2E6E9);
+}
+.round--play{ --btn:var(--good); }
+.round--reset{ --btn:var(--warn); }
+.main{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,340px); gap:10px; align-items:start; }
+@media (max-width:1080px){ .main{ grid-template-columns:1fr; } }
+.tray{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+.seg{ display:inline-flex; border:1px solid var(--panel-border); border-radius:9px; overflow:hidden; flex-wrap:wrap; }
+.seg button{
+  font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  min-height:44px; padding:0 12px; border:0; background:var(--panel); color:var(--text-2);
+  border-inline-end:1px solid var(--panel-border);
+}
+.seg button:last-child{ border-inline-end:0; }
+.seg button[aria-pressed="true"]{ background:var(--accent); color:var(--on-accent); }
+.stage{ border:1px solid var(--panel-border); border-radius:var(--radius); overflow:hidden; background:var(--board); }
+.stage__inner{ position:relative; }
+#board{ display:block; width:100%; height:auto; touch-action:none; }
+.stage__bar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 10px; background:var(--panel); border-top:1px solid var(--hairline); }
+.reads{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.read{ background:var(--panel-2); border:1px solid var(--hairline); border-radius:9px; padding:8px 10px; }
+.read__k{ font-size:12.5px; color:var(--text-3); font-weight:700; }
+.read__v{ font-family:var(--mono); font-size:18px; font-variant-numeric:tabular-nums; font-weight:700; }
+.narr{ font-size:15px; line-height:1.5; margin:10px 0 0; }
+.row{ display:flex; align-items:center; gap:8px; margin:8px 0; flex-wrap:wrap; }
+.row label{ font-size:13.5px; font-weight:700; color:var(--text-2); min-width:108px; }
+.val{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:14px; min-width:56px; }
+#tGraphCvs{ display:block; width:100%; height:176px; }
+.graph-note{ font-size:13px; color:var(--text-3); margin:6px 0 0; }
+.legend{ display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:12.5px; color:var(--text-2); }
+.sw{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-inline-end:5px; vertical-align:middle; }
+.meter{ height:18px; border-radius:9px; border:1px solid var(--panel-border); background:linear-gradient(90deg,var(--co2),var(--hairline),var(--o2)); position:relative; margin-top:6px; }
+.meter__n{ position:absolute; top:-3px; width:10px; height:24px; border-radius:3px; background:var(--text); transform:translateX(-50%); }
+.eq{ font-size:13.5px; font-weight:700; margin:0 0 8px; color:var(--leaf); }
+.screen{ display:none; } .screen.on{ display:block; }
+.q{ margin-bottom:10px; }
+.q__n{ font-size:12.5px; color:var(--text-3); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.q__t{ font-size:17px; font-weight:700; margin:6px 0 12px; }
+.opts{ display:grid; gap:8px; }
+.opt{
+  display:flex; align-items:flex-start; gap:10px; text-align:start; width:100%;
+  min-height:52px; padding:12px 14px; cursor:pointer; border-radius:9px;
+  font-family:inherit; font-size:15.5px; background:var(--panel-2); color:var(--text);
+  border:2px solid var(--panel-border);
+}
+.opt.correct{ border-color:var(--good); background:color-mix(in srgb,var(--good) 14%,var(--panel)); }
+.opt.wrong{ border-color:var(--crit); background:color-mix(in srgb,var(--crit) 12%,var(--panel)); }
+.opt__k{ font-family:var(--mono); font-size:14px; color:var(--text-3); min-width:1.2em; }
+.fb{ display:none; margin:10px 0 0; padding:11px 13px; font-size:14.5px; border-radius:8px; background:var(--panel-2); border-inline-start:5px solid var(--panel-border); }
+.fb.show{ display:block; } .fb.ok{ border-inline-start-color:var(--good); } .fb.no{ border-inline-start-color:var(--crit); }
+.score{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.score__v{ font-family:var(--mono); font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; }
+.nav{
+  position:sticky; bottom:6px; z-index:40; margin-top:10px; border-radius:10px;
+  background:#101418; color:#fff; display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:6px 13px;
+}
+.nav__t{ font-size:14.5px; font-weight:700; margin-inline-end:auto; }
+.navbtn{ cursor:pointer; background:transparent; border:2px solid transparent; border-radius:8px; color:#B9C0C5; font-family:inherit; font-size:14px; font-weight:700; padding:5px 11px; min-height:44px; }
+.navbtn[aria-current="page"]{ color:#fff; border-color:#fff; }
+input[type=range]{ -webkit-appearance:none; appearance:none; height:44px; background:transparent; cursor:pointer; flex:1; min-width:80px; }
+input[type=range]::-webkit-slider-runnable-track{ height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border); }
+input[type=range]::-moz-range-track{ height:7px; border-radius:4px; background:var(--hairline); border:1px solid var(--panel-border); }
+input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:26px; height:30px; margin-top:-12px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45); }
+input[type=range]::-moz-range-thumb{ width:26px; height:30px; border-radius:6px; background:var(--accent); border:1px solid rgba(0,0,0,.45); }
+.callout{
+  position:absolute; left:50%; top:10px; transform:translateX(-50%);
+  background:var(--panel); border:2px solid var(--good); color:var(--good);
+  font-weight:700; font-size:13.5px; padding:6px 12px; border-radius:9px;
+  pointer-events:none; max-width:90%; text-align:center;
+}
+.callout[hidden]{ display:none !important; }
+@media (prefers-reduced-motion:reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="screen on" id="scBench">
+  <header class="head">
+    <h1 class="head__title" id="tTitle">Photosynthesis</h1>
+    <p class="head__sub" id="tSub">Two processes in the same leaf. Light decides which gas wins — and at one point they cancel.</p>
+    <span class="head__spacer">
+      <button class="btn btn--ghost btn--sm" id="btnLang" type="button">اردو</button>
+      <button class="btn btn--ghost btn--sm" id="btnProfile" type="button">Dim room</button>
+    </span>
+  </header>
+  <section class="guide" id="guide" aria-live="polite">
+    <div class="guide__badge">
+      <div class="guide__badgeTop" id="tStep">TASK</div>
+      <div class="guide__badgeNum" id="gNum">1/5</div>
+    </div>
+    <div>
+      <p class="guide__task" id="gTask">—</p>
+      <p class="guide__hint" id="gHint">—</p>
+      <div class="guide__dots" id="gDots" aria-hidden="true"></div>
+    </div>
+    <div class="guide__acts">
+      <button class="btn btn--ghost" id="gShow" type="button">Show me</button>
+      <button class="btn btn--go" id="gNext" type="button" hidden>Next</button>
+    </div>
+  </section>
+  <div class="main">
+    <div>
+      <div class="tray" id="modeTray"></div>
+      <div class="stage">
+        <div class="stage__inner" id="stageInner">
+          <canvas id="board" role="img" aria-label="Leaf cross-section with CO2 and O2 streams" aria-describedby="boardDesc" tabindex="0"></canvas>
+          <p class="sr" id="boardDesc">Orange CO2 and blue O2 particles move through stomata. Photosynthesis and respiration run at the same time. At the compensation point both streams are still there and they cancel.</p>
+          <div class="callout" id="compNote" hidden>Compensation point — both still running, net zero</div>
+        </div>
+        <div class="stage__bar">
+          <button class="round round--play" id="btnPlay" type="button" aria-pressed="true" aria-label="Pause">
+            <svg width="20" height="20" viewBox="0 0 24 24" id="icPlay" aria-hidden="true"><rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/></svg>
+          </button>
+          <button class="btn btn--ghost btn--sm" id="btnStep" type="button">Step</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13.5px">
+            <span id="tSpeed">Speed</span>
+            <input type="range" id="speed" min="0.25" max="2" step="0.25" value="1" style="width:96px" aria-label="Speed" />
+          </label>
+          <button class="round round--reset" id="btnReset" type="button" aria-label="Reset">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a7 7 0 1 0 6.5 4.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M12 1.5V8.5L6.5 5z" fill="#fff"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:10px" id="modeOpts"></div>
+    </div>
+    <div>
+      <div class="panel">
+        <h2 class="panel__title" id="tReadings">Live readings</h2>
+        <p class="eq" id="wordEq">carbon dioxide + water + light → glucose + oxygen</p>
+        <div class="reads" aria-live="polite">
+          <div class="read"><div class="read__k" id="kA">Photosynthesis</div><div class="read__v" id="rA">—</div></div>
+          <div class="read"><div class="read__k" id="kB">Respiration</div><div class="read__v" id="rB">—</div></div>
+          <div class="read"><div class="read__k" id="kC">Net gas</div><div class="read__v" id="rC">—</div></div>
+          <div class="read"><div class="read__k" id="kD">Limiting</div><div class="read__v" id="rD">—</div></div>
+        </div>
+        <div class="meter" id="netMeter" role="meter" aria-label="Net gas exchange" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0"><span class="meter__n" id="netNeedle"></span></div>
+        <p class="narr" id="narr" aria-live="polite">—</p>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--co2)"></i><span id="legC">CO2</span></span>
+          <span><i class="sw" style="background:var(--o2)"></i><span id="legO">O2</span></span>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:10px">
+        <h2 class="panel__title" id="tGraph">Rates</h2>
+        <canvas id="tGraphCvs" role="img" aria-label="Photosynthesis and respiration rates, or bubble rate graph"></canvas>
+        <p class="graph-note" id="tGraphNote">Two lines. They cross where the leaf is balanced.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="screen" id="scQuiz">
+  <header class="head">
+    <h1 class="head__title" id="tQuizTitle">Check what you have learned</h1>
+    <p class="head__sub" id="tQuizSub">Five questions, with the answer explained straight away.</p>
+  </header>
+  <div id="quiz" style="max-width:840px;margin:0 auto"></div>
+</div>
+<nav class="nav" aria-label="Screens">
+  <span class="nav__t" id="tNavTitle">Photosynthesis</span>
+  <button class="navbtn" id="navBench" type="button" aria-current="page">Bench</button>
+  <button class="navbtn" id="navQuiz" type="button">Quiz</button>
+</nav>
+</div>
+
+<script>
+"use strict";
+/* ======================================================================
+   1. CONFIG
+   Respiration never turns off. Photosynthesis scales with light.
+   At light = COMP they are equal. Both particle streams stay alive.
+   ====================================================================== */
+const CONFIG = {
+  R_RATE: 1.0,         // always-on respiration (relative)
+  P_MAX: 3.333,        // photosynthesis at light = 1. P_MAX × COMP = R_RATE
+  COMP: 0.30,          // = R_RATE/P_MAX — slider value of the balance
+  COMP_BAND: 0.045,    // “balanced” zone around COMP
+  STOMA_SHUT: 0.10,    // gas through closed stomata (not zero — a leak)
+  BUBBLE_MAX: 48,      // Mode 2 bubbles / min at full factors
+  SPAWN: 14,           // particles per second at rate = 1
+  MAX_P: 90,
+  DARK_S: 0.7,         // seconds near-zero light to count task 1
+  SAMPLE_DT: 0.12
+};
+
+const CHLORO = [
+  {x:250,y:168},{x:310,y:152},{x:370,y:170},{x:430,y:148},{x:500,y:166},{x:560,y:150},
+  {x:280,y:230},{x:350,y:242},{x:430,y:228},{x:510,y:238},{x:580,y:224},
+  {x:320,y:300},{x:400,y:312},{x:480,y:298},{x:545,y:308}
+];
+const STOMA = [{x:300,y:378},{x:450,y:382},{x:600,y:376}];
+
+const STRINGS = {
+  en: {
+    title:"Photosynthesis & Gas Exchange in Plants",
+    sub:"Two processes in the same leaf, often at the same time. Light decides which gas wins — and at one point they cancel.",
+    navTitle:"Photosynthesis", bench:"Bench", quiz:"Quiz", lang:"اردو", dim:"Dim room", bright:"Bright room",
+    play:"Play", pause:"Pause", stepBtn:"Step", speed:"Speed", reset:"Reset",
+    readings:"Live readings", graph:"Rates over the light slider",
+    graph2:"Bubbles / min vs the slider you last moved",
+    graphNote:"Green line = photosynthesis. Grey line = respiration (flat — it does not wait for night). They cross at the compensation point.",
+    graphNote2:"The curve levels off when another factor is holding the rate back — that is the limiting factor.",
+    boardDesc:"Orange particles are CO2, blue are O2. Photosynthesis sends CO2 in and O2 out. Respiration does the reverse, all the time. At the compensation point both streams are still there.",
+    quizTitle:"Check what you have learned", quizSub:"Five questions, with the answer explained straight away.",
+    tryAgain:"Try again", score:"Score", next:"Next", show:"Show me", task:"TASK",
+    m1:"Inside the leaf", m2:"Bubble-counter lab",
+    photo:"Photosynthesis", resp:"Respiration", net:"Net gas", limit:"Limiting factor",
+    light:"Light", co2:"CO2", temp:"Temperature", stoma:"Stomata",
+    open:"Open", shut:"Closed", day:"Day", night:"Night",
+    producer:"O2 out (producer)", consumer:"O2 in (consumer)", balanced:"balanced",
+    none:"none yet", limL:"light", limC:"CO2", limT:"temperature",
+    alwaysOn:"always on", off:"off", slow:"slow", fast:"fast",
+    compTag:"Compensation point — both still running, net zero",
+    eq:"carbon dioxide + water + light energy → glucose + oxygen",
+    eqResp:"glucose + oxygen → carbon dioxide + water + energy",
+    nDark:"Darkness. Photosynthesis has stopped. Respiration never stopped — O2 trickles in, CO2 trickles out. The plant is a net oxygen consumer.",
+    nLow:"Light is still below the balance point. Respiration’s gas flow is winning. Photosynthesis has started, but it is the smaller stream.",
+    nComp:"Compensation point. Photosynthesis equals respiration. Both streams are still running — they cancel, so net flow through the stomata is zero.",
+    nHigh:"Light is high enough that photosynthesis is outpacing respiration — more oxygen is leaving this leaf than is coming in, even though both processes are still running.",
+    nShut:"Stomata are nearly shut. Both processes can still run inside the cells, but very little gas can pass. Pores are gates, not always-open holes.",
+    nBub:"Each bubble is oxygen from photosynthesis. Raise light, CO2, or warmth — until one of them is the bottleneck.",
+    nLim:"Temperature is holding the rate down. Light and CO2 are already high. Extra sun will not help until the leaf is warmer. That is a limiting factor.",
+    nCap:"You pushed all three up. The bubble rate is as high as this pondweed can go in this lab.",
+    t1:"Set the light to full darkness and read the net gas direction.",
+    h1:"Slide Light to the left, or tap Night. Stay there a moment — you do not press “I’m done”.",
+    p1:"Only respiration’s exchange is visible. Photosynthesis needs light. Respiration did not “start at night” — it was running all along.",
+    t2:"Raise the light to bright and watch the net direction flip.",
+    h2:"From dark (or night) up to bright sun. Watch the meter swing from O2-in to O2-out.",
+    p2:"The same leaf, the same stomata. Net flow flipped because photosynthesis overtook respiration — it did not replace it.",
+    t3:"Find the compensation point where the meter reads balanced.",
+    h3:"Hunt the middle of the slider. Both particle streams should still be visible and roughly equal — not gone.",
+    p3:"Balanced does not mean “nothing is happening.” Both processes cancel. That is the whole lesson.",
+    t4:"In the bubble lab, raise the rate using all three sliders.",
+    h4:"Nudge light, CO2, and temperature. The counter is bubbles per minute, like the school Hydrilla experiment.",
+    p4:"Three separate dials. Any one of them can help — until another one is the limit.",
+    t5:"Keep light and CO2 high, drop temperature, and watch the rate cap.",
+    h5:"Sun and CO2 up, temperature down. Bubbles stall even though two dials are generous.",
+    p5:"More light cannot fix a cold leaf. The slowest factor sets the pace.",
+    q1:"Do plants only respire at night, and only photosynthesise in the day?",
+    q1a:"Yes — they switch from one process to the other at sunset.",
+    q1b:"No. Respiration runs 24 hours a day. Photosynthesis is the one that needs light. At night you only see respiration’s gases because photosynthesis has stopped, not because respiration just began.",
+    q1c:"They respire only when stomata are open.",
+    q1w:"Watch Mode 1 in darkness: the respiration trickle is there. It was also there in bright light, underneath the bigger photosynthesis stream.",
+    q2:"Plants breathe in CO2 and breathe out O2, full stop. What’s wrong with that?",
+    q2a:"Nothing — that is exactly what a leaf does.",
+    q2b:"That is only the NET effect in good light. Both exchanges run at once, and in darkness the net direction fully reverses.",
+    q2c:"Leaves never take in CO2.",
+    q2w:"The meter in Mode 1 flips with light. A slogan that ignores darkness and ignores respiration is only half a leaf.",
+    q3:"If you keep adding light, does photosynthesis always keep rising?",
+    q3a:"Yes — more light always means more food, no matter what.",
+    q3b:"No. Rate is capped by whichever of light, CO2, or temperature is currently limiting, even if light itself is unlimited.",
+    q3c:"Only temperature can ever limit it.",
+    q3w:"Mode 2: high light and high CO2 with a cold slider still give a slow bubble count. The cold factor is the bottleneck.",
+    q4:"Where does a plant’s food (the glucose, the mass) mainly come from?",
+    q4a:"Mostly from the soil — that is why we water and fertilise.",
+    q4b:"The food is built in the leaf from carbon dioxide and water using light energy. Soil supplies water and minerals, not the glucose itself.",
+    q4c:"From oxygen in the air.",
+    q4w:"The word equation is the recipe: CO2 + water + light → glucose + oxygen. Soil is not an ingredient of the food.",
+    q5:"Are stomata always open so gas can flow freely?",
+    q5a:"Yes — pores cannot close.",
+    q5b:"No. Stomata open and close. When they shut, very little gas can pass even if photosynthesis and respiration are still running inside.",
+    q5c:"They open only at night.",
+    q5w:"Close the stomata in Mode 1. The streams thin out. The gates, not the processes, decide how much exchange is possible."
+  },
+  ur: {
+    title:"فوتوسنتھیسس اور پودوں میں گیس کا تبادلہ",
+    sub:"ایک ہی پتے میں دو عمل، اکثر ایک ساتھ۔ روشنی فیصلہ کرتی ہے کون سی گیس جیتے — اور ایک نقطے پر دونوں کٹ جاتی ہیں۔",
+    navTitle:"فوتوسنتھیسس", bench:"بینچ", quiz:"سوالات", lang:"English", dim:"مدھم کمرہ", bright:"روشن کمرہ",
+    play:"چلائیں", pause:"روکیں", stepBtn:"قدم", speed:"رفتار", reset:"ری سیٹ",
+    readings:"لائیو ریڈنگز", graph:"روشنی کے سلائیڈر پر شرحیں",
+    graph2:"بلبلے / منٹ بمقابلہ آخری سلائیڈر",
+    graphNote:"سبز لکییر = فوتوسنتھیسس۔ سرمئی = تنفس (سپاٹ — رات کا انتظار نہیں)۔ توازن کے نقطے پر کٹتی ہیں۔",
+    graphNote2:"جب کوئی اور عامل روکے تو منحنی ہموار ہو جاتی ہے — وہی محدود کنندہ عامل ہے۔",
+    boardDesc:"نارنجی CO2، نیلی O2۔ فوتوسنتھیسس CO2 اندر O2 باہر۔ تنفس الٹ، ہمیشہ۔ توازن پر دونوں دھارے موجود رہتے ہیں۔",
+    quizTitle:"جو سیکھا ہے جانچیں", quizSub:"پانچ سوال، جواب فوراً سمجھایا جاتا ہے۔",
+    tryAgain:"دوبارہ کوشش", score:"اسکور", next:"آگے", show:"دکھاؤ", task:"کام",
+    m1:"پتے کے اندر", m2:"بلبلہ گننے کی لیبارٹری",
+    photo:"فوتوسنتھیسس", resp:"تنفس", net:"خالص گیس", limit:"محدود کنندہ عامل",
+    light:"روشنی", co2:"CO2", temp:"درجہ حرارت", stoma:"مسام",
+    open:"کھلے", shut:"بند", day:"دن", night:"رات",
+    producer:"O2 باہر (پیداوار)", consumer:"O2 اندر (صرف)", balanced:"متوازن",
+    none:"ابھی نہیں", limL:"روشنی", limC:"CO2", limT:"درجہ حرارت",
+    alwaysOn:"ہمیشہ چالو", off:"بند", slow:"سست", fast:"تیز",
+    compTag:"توازنی نقطہ — دونوں چل رہے ہیں، خالص صفر",
+    eq:"کاربن ڈائی آکسائیڈ + پانی + روشنی کی توانائی → گلوکوز + آکسیجن",
+    eqResp:"گلوکوز + آکسیجن → کاربن ڈائی آکسائیڈ + پانی + توانائی",
+    nDark:"اندھیرا۔ فوتوسنتھیسس رک گیا۔ تنفس کبھی نہیں رکا — O2 اندر، CO2 باہر۔ پودا خالص آکسیجن استعمال کر رہا ہے۔",
+    nLow:"روشنی اب بھی توازن سے نیچے۔ تنفس کی دھار جیت رہی ہے۔ فوتوسنتھیسس شروع ہو گیا مگر چھوٹی دھار ہے۔",
+    nComp:"توازنی نقطہ۔ دونوں شرحیں برابر۔ دونوں دھاریں چل رہی ہیں — کٹ جاتی ہیں، مسام سے خالص بہاؤ صفر۔",
+    nHigh:"روشنی اتنی ہے کہ فوتوسنتھیسس تنفس سے آگے ہے — زیادہ آکسیجن نکل رہی ہے، حالانکہ دونوں عمل چل رہے ہیں۔",
+    nShut:"مسام تقریباً بند۔ خلیوں میں عمل چل سکتے ہیں مگر گیس کم گزرتی ہے۔ سوراخ دروازے ہیں، ہمیشہ کھلے سوراخ نہیں۔",
+    nBub:"ہر بلبلہ فوتوسنتھیسس کی آکسیجن ہے۔ روشنی، CO2 یا گرمی بڑھائیں — جب تک ایک رکاوٹ نہ بنے۔",
+    nLim:"درجہ حرارت شرح دبا رہا ہے۔ روشنی اور CO2 پہلے سے زیادہ ہیں۔ مزید دھوپ تب تک کام نہیں جب تک پتا گرم نہ ہو۔ یہ محدود کنندہ عامل ہے۔",
+    nCap:"تینوں اوپر کیے۔ اس لیب میں تالاب کی جڑی جتنی تیز ہو سکتی تھی۔",
+    t1:"روشنی مکمل اندھیرے پر رکھیں اور خالص گیس کی سمت پڑھیں۔",
+    h1:"سلائیڈر بائیں کریں، یا رات دبائیں۔ ایک لمحہ ٹھہریں — 'میں ہو گیا' نہیں دبانا۔",
+    p1:"صرف تنفس کا تبادلہ نظر آتا ہے۔ فوتوسنتھیسس کو روشنی چاہیے۔ تنفس رات کو 'شروع' نہیں ہوا — پہلے سے چل رہا تھا۔",
+    t2:"روشنی تیز کریں اور خالص سمت الٹتے دیکھیں۔",
+    h2:"اندھیرے سے تیز دھوپ تک۔ میٹر O2-اندر سے O2-باہر ہو۔",
+    p2:"وہی پتا، وہی مسام۔ خالص بہاؤ الٹا کیونکہ فوتوسنتھیسس تنفس سے آگے نکل گیا — اس کی جگہ نہیں لی۔",
+    t3:"وہ توازنی نقطہ ڈھونڈیں جہاں میٹر متوازن ہو۔",
+    h3:"سلائیڈر کے بیچ میں ڈھونڈیں۔ دونوں دھاریں نظر آئیں اور تقریباً برابر ہوں — غائب نہ ہوں۔",
+    p3:"متوازن کا مطلب 'کچھ نہیں ہو رہا' نہیں۔ دونوں عمل کٹ رہے ہیں۔ یہی سبق ہے۔",
+    t4:"بلبلہ لیب میں تینوں سلائیڈر سے شرح بڑھائیں۔",
+    h4:"روشنی، CO2 اور درجہ حرارت ہلائیں۔ گنتی اسکول کے ہائیڈریلا تجربے کی طرح بلبلے فی منٹ ہے۔",
+    p4:"تین الگ ڈائل۔ کوئی بھی مدد کر سکتا ہے — جب تک دوسرا حد نہ بنے۔",
+    t5:"روشنی اور CO2 زیادہ رکھیں، درجہ حرارت گرائیں، شرح رکتی دیکھیں۔",
+    h5:"دھوپ اور CO2 اوپر، درجہ حرارت نیچے۔ دو ڈائل فیاض ہوں تب بھی بلبلے رک جائیں۔",
+    p5:"زیادہ روشنی ٹھنڈے پتے کو ٹھیک نہیں کرتی۔ سب سے سست عامل رفتار رکھتا ہے۔",
+    q1:"کیا پودے صرف رات کو تنفس کرتے ہیں اور صرف دن کو فوتوسنتھیسس؟",
+    q1a:"ہاں — غروب پر ایک عمل دوسرے سے بدل جاتا ہے۔",
+    q1b:"نہیں۔ تنفس چوبیس گھنٹے چلتا ہے۔ فوتوسنتھیسس وہ ہے جسے روشنی چاہیے۔ رات کو صرف تنفس کی گیسیں نظر آتی ہیں کیونکہ فوتوسنتھیسس رک گیا، اس لیے نہیں کہ تنفس اب شروع ہوا۔",
+    q1c:"صرف جب مسام کھلے ہوں تب تنفس ہوتا ہے۔",
+    q1w:"موڈ 1 اندھیرے میں دیکھیں: تنفس کی بوند ہے۔ تیز روشنی میں بھی تھی، بڑی فوتوسنتھیسس دھار کے نیچے۔",
+    q2:"پودے CO2 لیتے اور O2 چھوڑتے ہیں، بس۔ اس میں کیا غلط ہے؟",
+    q2a:"کچھ نہیں — پتا یہی کرتا ہے۔",
+    q2b:"یہ صرف اچھی روشنی میں خالص اثر ہے۔ دونوں تبادلے ایک ساتھ چلتے ہیں، اور اندھیرے میں خالص سمت الٹ جاتی ہے۔",
+    q2c:"پتے کبھی CO2 نہیں لیتے۔",
+    q2w:"موڈ 1 کا میٹر روشنی سے الٹتا ہے۔ جو نعرہ اندھیرا اور تنفس نظرانداز کرے وہ آدھا پتا ہے۔",
+    q3:"اگر روشنی بڑھاتے رہیں تو کیا فوتوسنتھیسس ہمیشہ بڑھتی رہے گی؟",
+    q3a:"ہاں — زیادہ روشنی ہمیشہ زیادہ خوراک، کچھ بھی ہو۔",
+    q3b:"نہیں۔ شرح اس عامل سے رکتی ہے جو اس وقت محدود ہے — روشنی، CO2 یا درجہ حرارت — چاہے روشنی لامحدود ہو۔",
+    q3c:"صرف درجہ حرارت کبھی محدود کر سکتا ہے۔",
+    q3w:"موڈ 2: زیادہ روشنی اور CO2 کے ساتھ ٹھنڈا سلائیڈر پھر بھی کم بلبلے۔ ٹھنڈ رکاوٹ ہے۔",
+    q4:"پودے کی خوراک (گلوکوز، کمیت) زیادہ تر کہاں سے آتی ہے؟",
+    q4a:"زیادہ تر مٹی سے — اسی لیے پانی اور کھاد دیتے ہیں۔",
+    q4b:"خوراک پتے میں کاربن ڈائی آکسائیڈ اور پانی سے روشنی کی توانائی سے بنتی ہے۔ مٹی پانی اور معدنیات دیتی ہے، خود گلوکوز نہیں۔",
+    q4c:"ہوا کی آکسیجن سے۔",
+    q4w:"لفظی مساوات ترکیب ہے: CO2 + پانی + روشنی → گلوکوز + آکسیجن۔ مٹی خوراک کا جز نہیں۔",
+    q5:"کیا مسام ہمیشہ کھلے رہتے ہیں تاکہ گیس آزاد بہے؟",
+    q5a:"ہاں — سوراخ بند نہیں ہو سکتے۔",
+    q5b:"نہیں۔ مسام کھلتے اور بند ہوتے ہیں۔ بند ہوں تو اندر عمل چلے تب بھی گیس بہت کم گزرتی ہے۔",
+    q5c:"صرف رات کو کھلتے ہیں۔",
+    q5w:"موڈ 1 میں مسام بند کریں۔ دھاریں پتلی پڑ جائیں۔ دروازے فیصلہ کرتے ہیں کتنا تبادلہ ممکن ہے۔"
+  }
+};
+let LANG = "en";
+function T(k){ return (STRINGS[LANG]&&STRINGS[LANG][k]) || STRINGS.en[k] || k; }
+function el(id){ return document.getElementById(id); }
+function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+function fTemp(t){
+  const C = 8 + t*32; /* 8–40 °C */
+  if(C < 12) return lerp(0.10, 0.35, (C-8)/4);
+  if(C < 26) return lerp(0.35, 1, (C-12)/14);
+  if(C < 34) return 1;
+  return lerp(1, 0.42, (C-34)/6);
+}
+function tempC(){ return Math.round(8 + S.temp*32); }
+
+/* Mode 1: P scales with light; R is constant. P == R at CONFIG.COMP. */
+function rates1(){
+  const gate = S.stoma ? 1 : CONFIG.STOMA_SHUT;
+  const P = CONFIG.P_MAX * S.light * gate;
+  const R = CONFIG.R_RATE * gate;
+  const net = P - R;
+  const comp = Math.abs(S.light - CONFIG.COMP) <= CONFIG.COMP_BAND && S.stoma;
+  return { P, R, net, gate, comp };
+}
+/* Mode 2: photosynthesis rate = min of the three factors (limiting factor). */
+function rates2(){
+  const fL = S.light, fC = S.co2, fT = fTemp(S.temp);
+  const lim = Math.min(fL, fC, fT);
+  const which = (fT<=fL && fT<=fC) ? "T" : (fC<=fL ? "C" : "L");
+  const bpm = CONFIG.BUBBLE_MAX * lim;
+  return { fL, fC, fT, lim, which, bpm };
+}
+
+function initial(){
+  return {
+    mode: 1,
+    running: true,
+    speed: 1,
+    light: 0.55,
+    co2: 0.42,
+    temp: 0.55,
+    stoma: true,
+    particles: [],
+    bubbles: [],
+    bubbleAcc: 0,
+    bpmShow: 0,
+    samples: [],
+    lastVar: "light",
+    darkT: 0,
+    tSim: 0,
+    origin: { light:0.55, co2:0.42, temp:0.55 },
+    seen: { dark:false, low:false, high:false, flip:false, comp:false, sliders:{light:false,co2:false,temp:false}, cap:false },
+    guide: { i:0, done:false }
+  };
+}
+let S = initial();
+let dim = false;
+
+const W = 900, H = 500;
+const canvas = el("board");
+const ctx = canvas.getContext("2d");
+const gcv = el("tGraphCvs");
+const gctx = gcv.getContext("2d");
+let cssW=900, cssH=500;
+function dpr(){ return Math.min(2, window.devicePixelRatio||1); }
+function fitBoard(){
+  const wrap = el("stageInner");
+  const w = Math.max(280, wrap.clientWidth);
+  const h = Math.max(300, Math.min(540, Math.round(w * H/W)));
+  cssW=w; cssH=h;
+  const d=dpr();
+  canvas.width=Math.round(w*d); canvas.height=Math.round(h*d);
+  canvas.style.width=w+"px"; canvas.style.height=h+"px";
+}
+
+function lerp2(a,b,t){ return { x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t }; }
+function bezier(a,b,c,t){
+  const p=lerp2(a,b,t), q=lerp2(b,c,t);
+  return lerp2(p,q,t);
+}
+function spawnGas(kind){
+  const st = STOMA[Math.floor(Math.random()*STOMA.length)];
+  const ch = CHLORO[Math.floor(Math.random()*CHLORO.length)];
+  const air = { x: st.x + (Math.random()-0.5)*36, y: 455 + Math.random()*30 };
+  const cell = { x: ch.x + (Math.random()-0.5)*10, y: ch.y + (Math.random()-0.5)*10 };
+  const inward = (kind==="pCO2" || kind==="rO2");
+  const gas = (kind==="pCO2" || kind==="rCO2") ? "CO2" : "O2";
+  const from = inward ? air : cell;
+  const to = inward ? cell : air;
+  return { kind, gas, t:0, speed: 0.35 + Math.random()*0.2, a:from, b:{x:st.x, y:st.y-8}, c:to };
+}
+
+function step(dt){
+  S.tSim += dt;
+  if(S.mode===1){
+    const r = rates1();
+    if(S.light <= 0.04) S.darkT += dt; else S.darkT = 0;
+    if(S.darkT >= CONFIG.DARK_S) S.seen.dark = true;
+    if(S.light < 0.18) S.seen.low = true;
+    if(S.light > 0.78 && S.seen.low) S.seen.flip = true;
+    if(S.light > 0.78) S.seen.high = true;
+    if(r.comp) S.seen.comp = true;
+
+    /* Spawn BOTH streams independently. At compensation P≈R so both keep appearing. */
+    const wantP = r.P * CONFIG.SPAWN * dt;
+    const wantR = r.R * CONFIG.SPAWN * dt;
+    S._accP = (S._accP||0) + wantP;
+    S._accR = (S._accR||0) + wantR;
+    while(S._accP>=1){ S._accP--; S.particles.push(spawnGas("pCO2")); S.particles.push(spawnGas("pO2")); }
+    while(S._accR>=1){ S._accR--; S.particles.push(spawnGas("rO2")); S.particles.push(spawnGas("rCO2")); }
+    S.particles.forEach(p=>{ p.t += p.speed*dt; });
+    S.particles = S.particles.filter(p=> p.t<1);
+    /* Never let the busier photosynthesis stream erase respiration particles. */
+    if(S.particles.length>CONFIG.MAX_P){
+      const resp = S.particles.filter(p=> p.kind[0]==="r");
+      const photo = S.particles.filter(p=> p.kind[0]==="p");
+      const keepR = resp.slice(-Math.min(resp.length, 36));
+      const keepP = photo.slice(-(CONFIG.MAX_P - keepR.length));
+      S.particles = keepP.concat(keepR);
+    }
+  } else {
+    const r = rates2();
+    S.bpmShow = r.bpm;
+    S.bubbleAcc += (r.bpm/60) * dt;
+    while(S.bubbleAcc>=1){
+      S.bubbleAcc--;
+      S.bubbles.push({ x: 430+Math.random()*40, y: 340, v: 40+Math.random()*30, r: 3+Math.random()*3, t:0 });
+    }
+    S.bubbles.forEach(b=>{ b.y -= b.v*dt; b.t += dt; });
+    S.bubbles = S.bubbles.filter(b=> b.y>70 && b.t<6);
+    if(S.light>0.75 && S.co2>0.75 && S.temp<0.28 && r.which==="T") S.seen.cap = true;
+    S.samples.push({ t:S.tSim, bpm:r.bpm, x: S.lastVar==="light"?S.light: S.lastVar==="co2"?S.co2: S.temp });
+    if(S.samples.length>80) S.samples.shift();
+  }
+}
+
+function label(text,x,y,opt){
+  opt=opt||{};
+  ctx.font=(opt.bold?"700 ":"600 ")+(opt.size||13)+"px "+css("--font");
+  ctx.fillStyle=opt.fill||css("--text");
+  ctx.textAlign=opt.align||"center";
+  ctx.textBaseline=opt.base||"middle";
+  ctx.fillText(text,x,y);
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+
+function drawLeaf(){
+  const night = S.light < 0.08;
+  ctx.fillStyle = night ? "#1a2430" : css("--board");
+  ctx.fillRect(0,0,W,H);
+  /* sun / moon */
+  ctx.beginPath();
+  ctx.arc(80, 64, 28, 0, Math.PI*2);
+  ctx.fillStyle = night ? "#d9e2ea" : lerpCol(S.light);
+  ctx.fill();
+  /* leaf body */
+  ctx.beginPath();
+  ctx.moveTo(160, 90);
+  ctx.bezierCurveTo(200, 70, 720, 70, 760, 110);
+  ctx.lineTo(780, 360);
+  ctx.bezierCurveTo(700, 410, 200, 410, 140, 360);
+  ctx.closePath();
+  ctx.fillStyle = night ? "#24382a" : "#cfe6c6";
+  ctx.fill();
+  ctx.strokeStyle = css("--leaf"); ctx.lineWidth=3; ctx.stroke();
+  /* palisade */
+  ctx.fillStyle = "rgba(61,139,74,0.18)";
+  ctx.fillRect(180, 120, 560, 80);
+  /* spongy */
+  ctx.fillStyle = "rgba(61,139,74,0.10)";
+  ctx.fillRect(180, 200, 560, 140);
+  /* lower epidermis */
+  ctx.fillStyle = "rgba(80,110,70,0.25)";
+  ctx.fillRect(180, 340, 560, 42);
+  CHLORO.forEach(c=>{
+    ctx.beginPath(); ctx.arc(c.x, c.y, 7, 0, Math.PI*2);
+    ctx.fillStyle = css("--chloro");
+    ctx.globalAlpha = 0.45 + 0.55*S.light;
+    ctx.fill(); ctx.globalAlpha=1;
+  });
+  STOMA.forEach(s=>{
+    ctx.beginPath();
+    if(S.stoma) ctx.ellipse(s.x, s.y, 16, 7, 0, 0, Math.PI*2);
+    else ctx.ellipse(s.x, s.y, 4, 8, 0, 0, Math.PI*2);
+    ctx.fillStyle = night ? "#1a2430" : css("--board");
+    ctx.fill();
+    ctx.strokeStyle = css("--text"); ctx.lineWidth=2; ctx.stroke();
+  });
+  label(T("eq"), W/2, 28, { size:13, bold:true, fill:css("--leaf") });
+  S.particles.forEach(p=>{
+    const pos = bezier(p.a, p.b, p.c, clamp(p.t,0,1));
+    ctx.beginPath(); ctx.arc(pos.x, pos.y, 6.5, 0, Math.PI*2);
+    ctx.fillStyle = p.gas==="CO2" ? css("--co2") : css("--o2");
+    ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.font = "700 8px "+css("--font");
+    ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(p.gas==="CO2"?"C":"O", pos.x, pos.y);
+  });
+  label("air", 80, 460, { size:12, fill:css("--text-3") });
+  label(T("stoma"), 80, 378, { size:12, fill:css("--text-3") });
+}
+function lerpCol(u){
+  const a=[255,214,90], b=[255,244,170];
+  const t=clamp(u,0,1);
+  return "rgb("+Math.round(lerp(a[0],b[0],t))+","+Math.round(lerp(a[1],b[1],t))+","+Math.round(lerp(a[2],b[2],t))+")";
+}
+function drawLab(){
+  ctx.fillStyle = css("--board"); ctx.fillRect(0,0,W,H);
+  /* tank */
+  roundRect(220, 80, 460, 360, 18);
+  ctx.fillStyle = "#d7eaf4"; ctx.fill();
+  ctx.strokeStyle = css("--panel-border"); ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle = "rgba(80,160,80,0.85)";
+  ctx.beginPath();
+  ctx.moveTo(390, 340); ctx.lineTo(410, 200); ctx.lineTo(430, 250); ctx.lineTo(455, 170);
+  ctx.lineTo(470, 240); ctx.lineTo(500, 190); ctx.lineTo(515, 340);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = css("--leaf");
+  ctx.fillRect(430, 340, 24, 70);
+  ctx.fillStyle = css("--text-2");
+  ctx.fillRect(200, 430, 500, 18);
+  S.bubbles.forEach(b=>{
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+    ctx.strokeStyle = css("--o2"); ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle = "rgba(31,111,208,0.15)"; ctx.fill();
+  });
+  label(T("m2"), 20, 24, { size:14, align:"left", bold:true, fill:css("--text-2") });
+  label(Math.round(rates2().bpm)+" "+T("bpm"), W/2, 54, { size:18, bold:true, fill:css("--o2") });
+}
+function draw(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const d=dpr();
+  ctx.setTransform(d*cssW/W, 0, 0, d*cssH/H, 0, 0);
+  if(S.mode===1) drawLeaf(); else drawLab();
+}
+
+function drawGraph(){
+  const d=dpr(), w=gcv.clientWidth||300, h=176;
+  if(gcv.width!==Math.round(w*d)){ gcv.width=Math.round(w*d); gcv.height=Math.round(h*d); }
+  gctx.setTransform(d,0,0,d,0,0);
+  gctx.clearRect(0,0,w,h);
+  gctx.fillStyle = css("--panel-2"); gctx.fillRect(0,0,w,h);
+  const padL=36, padB=22, padT=10, padR=10;
+  const pw=w-padL-padR, ph=h-padT-padB;
+  gctx.strokeStyle=css("--hairline"); gctx.lineWidth=1;
+  gctx.beginPath(); gctx.moveTo(padL,padT); gctx.lineTo(padL,padT+ph); gctx.lineTo(padL+pw,padT+ph); gctx.stroke();
+  if(S.mode===1){
+    const gate = S.stoma ? 1 : CONFIG.STOMA_SHUT;
+    gctx.beginPath(); gctx.strokeStyle = css("--leaf"); gctx.lineWidth=2;
+    for(let i=0;i<=40;i++){
+      const L=i/40, P=CONFIG.P_MAX*L*gate;
+      const x=padL+L*pw, y=padT+ph - (P/CONFIG.P_MAX)*ph;
+      if(i===0) gctx.moveTo(x,y); else gctx.lineTo(x,y);
+    }
+    gctx.stroke();
+    const Ry = padT+ph - (CONFIG.R_RATE*gate/CONFIG.P_MAX)*ph;
+    gctx.beginPath(); gctx.strokeStyle = css("--text-3"); gctx.lineWidth=2;
+    gctx.moveTo(padL, Ry); gctx.lineTo(padL+pw, Ry); gctx.stroke();
+    const cx = padL + CONFIG.COMP*pw;
+    gctx.setLineDash([4,4]); gctx.strokeStyle = css("--good");
+    gctx.beginPath(); gctx.moveTo(cx, padT); gctx.lineTo(cx, padT+ph); gctx.stroke();
+    gctx.setLineDash([]);
+    const lx = padL + S.light*pw;
+    gctx.beginPath(); gctx.fillStyle = css("--accent");
+    gctx.arc(lx, padT+ph - (CONFIG.P_MAX*S.light*gate/CONFIG.P_MAX)*ph, 5, 0, Math.PI*2); gctx.fill();
+  } else {
+    const pts=S.samples;
+    if(pts.length<2) return;
+    const xmax=1, ymax=CONFIG.BUBBLE_MAX;
+    gctx.beginPath(); gctx.strokeStyle=css("--o2"); gctx.lineWidth=2;
+    pts.forEach((p,i)=>{
+      const x=padL+p.x/xmax*pw, y=padT+ph-(p.bpm/ymax)*ph;
+      if(i===0) gctx.moveTo(x,y); else gctx.lineTo(x,y);
+    });
+    gctx.stroke();
+  }
+}
+
+function netWord(r){
+  if(r.comp) return T("balanced");
+  if(r.net>0.08) return T("producer");
+  if(r.net<-0.08) return T("consumer");
+  return T("balanced");
+}
+function narrFor(){
+  if(S.mode===2){
+    const r=rates2();
+    if(S.seen.cap && r.which==="T" && S.temp<0.3) return T("nLim");
+    if(r.lim>0.85) return T("nCap");
+    return T("nBub");
+  }
+  const r=rates1();
+  if(!S.stoma) return T("nShut");
+  if(S.light<=0.05) return T("nDark");
+  if(r.comp) return T("nComp");
+  if(r.net<0) return T("nLow");
+  return T("nHigh");
+}
+
+function sync(){
+  if(S.mode===1){
+    const r=rates1();
+    el("kA").textContent=T("photo"); el("kB").textContent=T("resp");
+    el("kC").textContent=T("net"); el("kD").textContent=T("stoma");
+    el("rA").textContent = S.light<=0.02 ? T("off") : (S.light<0.4 ? T("slow") : T("fast"));
+    el("rB").textContent = T("alwaysOn");
+    el("rC").textContent = netWord(r);
+    el("rD").textContent = S.stoma ? T("open") : T("shut");
+    const u = clamp(0.5 + r.net/(CONFIG.P_MAX)*0.48, 0.04, 0.96);
+    el("netNeedle").style.left = (u*100)+"%";
+    el("netMeter").setAttribute("aria-valuenow", String(r.net.toFixed(2)));
+    el("compNote").hidden = !r.comp;
+    el("compNote").textContent = T("compTag");
+    el("tGraph").textContent = T("graph");
+    el("tGraphNote").textContent = T("graphNote");
+  } else {
+    const r=rates2();
+    el("kA").textContent=T("bpm"); el("kB").textContent=T("limit");
+    el("kC").textContent=T("light"); el("kD").textContent=T("temp");
+    el("rA").textContent = Math.round(r.bpm)+"";
+    el("rB").textContent = r.which==="L"?T("limL"): r.which==="C"?T("limC"):T("limT");
+    el("rC").textContent = Math.round(S.light*100)+"%";
+    el("rD").textContent = tempC()+" °C";
+    el("netNeedle").style.left = (0.5 + (r.bpm/CONFIG.BUBBLE_MAX-0.5)*0.8)*100+"%";
+    el("compNote").hidden = true;
+    el("tGraph").textContent = T("graph2");
+    el("tGraphNote").textContent = T("graphNote2");
+  }
+  el("wordEq").textContent = T("eq");
+  el("narr").textContent = narrFor();
+  drawGraph();
+  checkGuide();
+}
+
+function setMode(m){
+  S.mode=m; S.particles=[]; S.bubbles=[]; S.samples=[];
+  el("compNote").hidden = true;
+  buildModeTray(); buildOpts(); sync();
+}
+function buildModeTray(){
+  const host=el("modeTray"); host.innerHTML="";
+  const seg=document.createElement("div"); seg.className="seg";
+  [[1,"m1"],[2,"m2"]].forEach(([m,k])=>{
+    const b=document.createElement("button"); b.type="button";
+    b.textContent=T(k); b.setAttribute("aria-pressed", String(S.mode===m));
+    b.addEventListener("click", ()=>setMode(m));
+    seg.appendChild(b);
+  });
+  host.appendChild(seg);
+}
+function togBtn(label, pressed, fn){
+  const b=document.createElement("button"); b.type="button"; b.className="btn btn--ghost btn--sm";
+  b.textContent=label; b.setAttribute("aria-pressed", String(pressed));
+  b.addEventListener("click", fn); return b;
+}
+function sliderRow(key, val, display, onInput){
+  const r=document.createElement("div"); r.className="row";
+  const lab=document.createElement("label"); lab.textContent=T(key);
+  const sl=document.createElement("input"); sl.type="range"; sl.min="0"; sl.max="1"; sl.step="0.01"; sl.value=String(val);
+  sl.setAttribute("aria-label", T(key));
+  const v=document.createElement("span"); v.className="val"; v.textContent=display(val);
+  sl.addEventListener("input", ()=>{
+    const n=+sl.value;
+    onInput(n);
+    v.textContent=display(n);
+    S.lastVar = key==="light"?"light": key==="co2"?"co2":"temp";
+    if(key==="light" && Math.abs(n-S.origin.light)>0.08) S.seen.sliders.light=true;
+    if(key==="co2" && Math.abs(n-S.origin.co2)>0.08) S.seen.sliders.co2=true;
+    if(key==="temp" && Math.abs(n-S.origin.temp)>0.08) S.seen.sliders.temp=true;
+    sync();
+  });
+  r.appendChild(lab); r.appendChild(sl); r.appendChild(v);
+  return r;
+}
+function buildOpts(){
+  const host=el("modeOpts"); host.innerHTML="";
+  if(S.mode===1){
+    host.appendChild(sliderRow("light", S.light, n=> n<0.06?T("night"): Math.round(n*100)+"%", n=>{ S.light=n; }));
+    const row=document.createElement("div"); row.className="row";
+    row.appendChild(togBtn(T("day"), S.light>0.5, ()=>{ S.light=0.85; S.seen.high=true; if(S.seen.low) S.seen.flip=true; buildOpts(); sync(); }));
+    row.appendChild(togBtn(T("night"), S.light<0.1, ()=>{ S.light=0; buildOpts(); sync(); }));
+    row.appendChild(togBtn(S.stoma?T("open"):T("shut"), S.stoma, ()=>{ S.stoma=!S.stoma; buildOpts(); sync(); }));
+    host.appendChild(row);
+  } else {
+    host.appendChild(sliderRow("light", S.light, n=>Math.round(n*100)+"%", n=>{ S.light=n; }));
+    host.appendChild(sliderRow("co2", S.co2, n=>Math.round(n*100)+"%", n=>{ S.co2=n; }));
+    host.appendChild(sliderRow("temp", S.temp, ()=>tempC()+" °C", n=>{ S.temp=n; }));
+  }
+}
+
+const TASKS = [
+  { t:"t1", h:"h1", p:"p1", done:()=> S.seen.dark, show:()=>{ S.mode=1; S.light=0; S.stoma=true; S.seen.dark=true; S.darkT=CONFIG.DARK_S; } },
+  { t:"t2", h:"h2", p:"p2", done:()=> S.seen.flip, show:()=>{ S.mode=1; S.light=0.9; S.seen.low=true; S.seen.high=true; S.seen.flip=true; } },
+  { t:"t3", h:"h3", p:"p3", done:()=> S.seen.comp, show:()=>{ S.mode=1; S.light=CONFIG.COMP; S.stoma=true; S.seen.comp=true; } },
+  { t:"t4", h:"h4", p:"p4", done:()=> S.seen.sliders.light && S.seen.sliders.co2 && S.seen.sliders.temp,
+    show:()=>{ S.mode=2; S.light=0.9; S.co2=0.9; S.temp=0.8; S.seen.sliders={light:true,co2:true,temp:true}; } },
+  { t:"t5", h:"h5", p:"p5", done:()=> S.seen.cap, show:()=>{ S.mode=2; S.light=0.9; S.co2=0.9; S.temp=0.12; S.seen.cap=true; } }
+];
+function renderGuide(){
+  const i=S.guide.i, task=TASKS[i];
+  el("gNum").textContent=(i+1)+"/5";
+  el("gTask").textContent=T(task.t);
+  el("gHint").textContent = S.guide.done ? T(task.p) : T(task.h);
+  el("gShow").textContent=T("show");
+  el("gNext").textContent=T("next");
+  el("tStep").textContent=T("task");
+  el("gNext").hidden = !S.guide.done || i>=4;
+  el("guide").classList.toggle("done", S.guide.done);
+  const dots=el("gDots"); dots.innerHTML="";
+  TASKS.forEach((_,k)=>{
+    const d=document.createElement("span"); d.className="guide__dot";
+    if(k<i) d.classList.add("on"); if(k===i) d.classList.add("now");
+    dots.appendChild(d);
+  });
+}
+function checkGuide(){
+  const task=TASKS[S.guide.i];
+  if(!S.guide.done && task.done()){ S.guide.done=true; renderGuide(); }
+}
+el("gShow").addEventListener("click", ()=>{
+  TASKS[S.guide.i].show();
+  buildModeTray(); buildOpts(); renderGuide(); sync();
+});
+el("gNext").addEventListener("click", ()=>{
+  if(S.guide.i<4){ S.guide.i++; S.guide.done=false; renderGuide(); }
+});
+
+const QUESTIONS = [
+  { q:"q1", opts:["q1a","q1b","q1c"], ans:1, why:"q1w" },
+  { q:"q2", opts:["q2a","q2b","q2c"], ans:1, why:"q2w" },
+  { q:"q3", opts:["q3a","q3b","q3c"], ans:1, why:"q3w" },
+  { q:"q4", opts:["q4a","q4b","q4c"], ans:1, why:"q4w" },
+  { q:"q5", opts:["q5a","q5b","q5c"], ans:1, why:"q5w" }
+];
+function buildQuiz(){
+  const host=el("quiz"); host.innerHTML="";
+  let score=0, answered=0;
+  QUESTIONS.forEach((Q, qi)=>{
+    const box=document.createElement("div"); box.className="panel q"; box.style.marginBottom="12px";
+    box.innerHTML = '<div class="q__n">Q '+(qi+1)+'</div><p class="q__t">'+T(Q.q)+'</p><div class="opts"></div><div class="fb"></div>';
+    const opts=box.querySelector(".opts"), fb=box.querySelector(".fb");
+    Q.opts.forEach((ok, oi)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="opt";
+      b.innerHTML='<span class="opt__k">'+"ABC"[oi]+'</span><span>'+T(ok)+'</span>';
+      b.addEventListener("click", ()=>{
+        if(b.disabled) return;
+        opts.querySelectorAll(".opt").forEach(o=>o.disabled=true);
+        const good = oi===Q.ans;
+        b.classList.add(good?"correct":"wrong");
+        opts.children[Q.ans].classList.add("correct");
+        fb.className="fb show "+(good?"ok":"no");
+        fb.textContent=T(Q.why);
+        answered++; if(good) score++;
+        if(answered===QUESTIONS.length){
+          const s=document.createElement("div"); s.className="panel score"; s.style.marginTop="12px";
+          s.innerHTML='<span>'+T("score")+'</span><span class="score__v">'+score+' / '+QUESTIONS.length+'</span>';
+          const again=document.createElement("button"); again.className="btn"; again.textContent=T("tryAgain");
+          again.addEventListener("click", buildQuiz); s.appendChild(again);
+          host.appendChild(s);
+        }
+      });
+      opts.appendChild(b);
+    });
+    host.appendChild(box);
+  });
+}
+
+const mqReduce = matchMedia("(prefers-reduced-motion: reduce)");
+let REDUCED = mqReduce.matches;
+mqReduce.addEventListener("change", ()=>{ REDUCED = mqReduce.matches; });
+let prev = performance.now(), acc=0, syncT=0;
+function frame(now){
+  const dt=Math.min(0.1,(now-prev)/1000); prev=now;
+  if(S.running){
+    if(REDUCED){ acc+=dt; if(acc>0.5){ acc=0; step(0.5*S.speed); syncT=1; } }
+    else { step(dt*S.speed); syncT+=dt; }
+    if(syncT>CONFIG.SAMPLE_DT){ syncT=0; sync(); }
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+function setRunning(on){
+  S.running=on;
+  el("icPlay").innerHTML = on
+    ? '<rect x="6" y="4" width="4.5" height="16" fill="#fff"/><rect x="13.5" y="4" width="4.5" height="16" fill="#fff"/>'
+    : '<path d="M7 4 L19 12 L7 20 Z" fill="#fff"/>';
+  el("btnPlay").setAttribute("aria-pressed", String(on));
+  el("btnPlay").setAttribute("aria-label", on ? T("pause") : T("play"));
+}
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.documentElement.dir=LANG==="ur"?"rtl":"ltr";
+  el("tTitle").textContent=T("title"); el("tSub").textContent=T("sub");
+  el("tNavTitle").textContent=T("navTitle");
+  el("navBench").textContent=T("bench"); el("navQuiz").textContent=T("quiz");
+  el("btnLang").textContent=T("lang");
+  el("btnProfile").textContent=dim?T("bright"):T("dim");
+  el("tReadings").textContent=T("readings");
+  el("tSpeed").textContent=T("speed"); el("btnStep").textContent=T("stepBtn");
+  el("btnReset").setAttribute("aria-label", T("reset"));
+  el("tQuizTitle").textContent=T("quizTitle"); el("tQuizSub").textContent=T("quizSub");
+  el("boardDesc").textContent=T("boardDesc");
+  el("legC").textContent="CO2"; el("legO").textContent="O2";
+  el("gShow").textContent=T("show"); el("gNext").textContent=T("next");
+  setRunning(S.running);
+  buildModeTray(); buildOpts(); renderGuide(); buildQuiz(); sync();
+}
+el("btnLang").addEventListener("click", ()=>{ LANG = LANG==="en"?"ur":"en"; applyLang(); });
+el("btnProfile").addEventListener("click", ()=>{
+  dim=!dim;
+  if(dim) document.documentElement.setAttribute("data-profile","dim");
+  else document.documentElement.removeAttribute("data-profile");
+  el("btnProfile").textContent=dim?T("bright"):T("dim");
+});
+el("btnPlay").addEventListener("click", ()=> setRunning(!S.running));
+el("btnStep").addEventListener("click", ()=>{ step(0.25); sync(); });
+el("speed").addEventListener("input", e=>{ S.speed=+e.target.value; });
+el("btnReset").addEventListener("click", ()=>{
+  const mode=S.mode, guide=S.guide, seen=S.seen;
+  S=initial(); S.mode=mode; S.guide=guide; S.seen=seen;
+  el("speed").value=1;
+  setRunning(true);
+  buildModeTray(); buildOpts(); renderGuide(); sync();
+});
+function showScreen(which){
+  el("scBench").classList.toggle("on", which==="bench");
+  el("scQuiz").classList.toggle("on", which==="quiz");
+  el("navBench").setAttribute("aria-current", which==="bench"?"page":"false");
+  el("navQuiz").setAttribute("aria-current", which==="quiz"?"page":"false");
+  scrollTo({top:0});
+  if(which==="bench") fitBoard();
+}
+el("navBench").addEventListener("click", ()=>showScreen("bench"));
+el("navQuiz").addEventListener("click", ()=>showScreen("quiz"));
+addEventListener("resize", ()=>{ fitBoard(); drawGraph(); });
+
+fitBoard();
+applyLang();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

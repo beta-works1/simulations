@@ -6,25 +6,40 @@ import { VitePWA } from 'vite-plugin-pwa'
 import tailwindcss from '@tailwindcss/vite'
 
 /**
- * Ensure /downloads/*.html always comes from public/, never SPA index fallback.
+ * Ensure standalone HTML under /downloads and /final-sims comes from public/,
+ * never SPA index fallback (dev server).
  */
-function serveDownloadHtml(): Plugin {
+function serveStandaloneHtml(): Plugin {
+  const prefixes = ['/downloads/', '/final-sims/']
   return {
-    name: 'serve-download-html',
+    name: 'serve-standalone-html',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = req.url?.split('?')[0] ?? ''
-        if (!url.startsWith('/downloads/') || !url.endsWith('.html')) {
+        const hit = prefixes.some(
+          (p) => url === p.slice(0, -1) || url.startsWith(p),
+        )
+        if (!hit) {
           next()
           return
         }
-        const filePath = path.join(server.config.root, 'public', url.slice(1))
-        if (!fs.existsSync(filePath)) {
+        const rel = url === '/final-sims' || url === '/final-sims/'
+          ? 'final-sims/index.html'
+          : url === '/downloads' || url === '/downloads/'
+            ? 'downloads/index.html'
+            : url.slice(1)
+        const filePath = path.join(server.config.root, 'public', rel)
+        if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
           next()
           return
         }
+        const type = filePath.endsWith('.html')
+          ? 'text/html; charset=utf-8'
+          : filePath.endsWith('.md')
+            ? 'text/markdown; charset=utf-8'
+            : 'application/octet-stream'
         res.statusCode = 200
-        res.setHeader('Content-Type', 'text/html; charset=utf-8')
+        res.setHeader('Content-Type', type)
         res.setHeader('Cache-Control', 'no-cache')
         fs.createReadStream(filePath).pipe(res)
       })
@@ -35,7 +50,7 @@ function serveDownloadHtml(): Plugin {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    serveDownloadHtml(),
+    serveStandaloneHtml(),
     react(),
     tailwindcss(),
     VitePWA({
@@ -60,9 +75,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        globIgnores: ['**/downloads/**'],
+        globIgnores: ['**/downloads/**', '**/final-sims/**'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/downloads\//],
+        navigateFallbackDenylist: [/^\/downloads\//, /^\/final-sims\//],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
     }),

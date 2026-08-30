@@ -1,3 +1,8 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/((?!downloads(?:/|$)|final-sims(?:/|$)|covers(?:/|$)|assets(?:/|$)|icons\\.svg$|favicon\\.svg$|og-image\\.svg$|offline\\.html$).*)",
+      "destination": "/index.html"
+    }
+  ]
 }

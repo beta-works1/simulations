@@ -141,6 +141,9 @@ export function Header({ onSearch }: HeaderProps) {
           {gradeLabel(grade)}
         </NavLink>
       ))}
+      <a href="/final-sims/" onClick={closeAll}>
+        Final PCTB Labs
+      </a>
     </>
   )
 
@@ -202,6 +205,9 @@ export function Header({ onSearch }: HeaderProps) {
                 >
                   About
                 </NavLink>
+                <a className="nav-link" href="/final-sims/">
+                  Final Labs
+                </a>
               </nav>
             )}
 
