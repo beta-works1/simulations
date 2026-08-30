@@ -141,11 +141,8 @@ export function Header({ onSearch }: HeaderProps) {
           {gradeLabel(grade)}
         </NavLink>
       ))}
-      <a href="/final-sims/" onClick={closeAll}>
-        Final labs hub
-      </a>
-      <NavLink to="/simulations?grade=8" onClick={closeAll}>
-        Grade 8 (all)
+      <NavLink to="/simulations?grade=8&chapter=final-pctb-labs" onClick={closeAll}>
+        Final simulations
       </NavLink>
     </>
   )
@@ -208,9 +205,12 @@ export function Header({ onSearch }: HeaderProps) {
                 >
                   About
                 </NavLink>
-                <a className="nav-link" href="/final-sims/">
+                <NavLink
+                  to="/simulations?grade=8&chapter=final-pctb-labs"
+                  className={({ isActive }) => `nav-link${isActive ? ' is-active' : ''}`}
+                >
                   Final Labs
-                </a>
+                </NavLink>
               </nav>
             )}
 

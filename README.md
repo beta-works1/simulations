@@ -60,7 +60,7 @@ Open the preview URL → DevTools → Network → **Offline** → reload. `/gs8`
 
 Twelve Class 8 science labs ship as single-file HTML under [`public/final-sims/`](public/final-sims/):
 
-- Catalog: [Grade 8 simulations](https://simulations-one.vercel.app/simulations?grade=8) (embedded in `/run/:id` like other labs)
+- Catalog: [Final simulations](https://simulations-one.vercel.app/simulations?grade=8&chapter=final-pctb-labs) (same card grid as Grade 8)
 - Hub: [`/final-sims/`](https://simulations-one.vercel.app/final-sims/)
 
 ## Offline download (PhET-style)

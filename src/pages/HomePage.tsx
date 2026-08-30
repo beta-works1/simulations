@@ -228,10 +228,10 @@ export function HomePage() {
               Browse every simulation
               <span aria-hidden="true"> →</span>
             </Link>
-            <a href="/final-sims/" className="closing-cta">
-              Open Final PCTB Labs
+            <Link to="/simulations?grade=8&chapter=final-pctb-labs" className="closing-cta">
+              Final simulations
               <span aria-hidden="true"> →</span>
-            </a>
+            </Link>
             <Link to="/about" className="closing-link">
               About SimLab
             </Link>

@@ -1122,7 +1122,7 @@ export const simulations: Simulation[] = [
     id: 'final-circuit-construction-kit',
     title: 'Circuit Construction Kit',
     grade: 8,
-    chapter: 'Ch 10 – Electricity & Magnetism',
+    chapter: 'Final PCTB Labs',
     description:
       'Build series and parallel circuits. Watch current flow around a closed loop — it is not used up.',
     learningGoals: [
@@ -1141,7 +1141,7 @@ export const simulations: Simulation[] = [
     id: 'final-ray-optics-bench',
     title: 'Ray Optics Bench',
     grade: 8,
-    chapter: 'Ch 9 – Light: Reflection & Refraction',
+    chapter: 'Final PCTB Labs',
     description:
       'Bounce rays off mirrors and through lenses. Measure angle of incidence and reflection from the normal.',
     learningGoals: [
@@ -1160,7 +1160,7 @@ export const simulations: Simulation[] = [
     id: 'final-force-pressure-fluids',
     title: 'Force, Pressure & Fluids',
     grade: 8,
-    chapter: 'Ch 8 – Force and Pressure',
+    chapter: 'Final PCTB Labs',
     description: 'Push, press, and sink. Feel P = F/A, and how liquid pressure grows with depth.',
     learningGoals: [
       'Relate pressure to force and area',
@@ -1178,7 +1178,7 @@ export const simulations: Simulation[] = [
     id: 'final-ph-neutralisation-lab',
     title: 'pH & Neutralisation Lab',
     grade: 8,
-    chapter: 'Ch 7 – Acids, Bases, Salts',
+    chapter: 'Final PCTB Labs',
     description:
       'Test household acids and bases, then watch neutralisation overshoot past pH 7.',
     learningGoals: [
@@ -1197,7 +1197,7 @@ export const simulations: Simulation[] = [
     id: 'final-reflex-arc-nerve-signal',
     title: 'Reflex Arc & Nerve Signal',
     grade: 8,
-    chapter: 'Ch 2 – Human Nervous System',
+    chapter: 'Final PCTB Labs',
     description:
       'Watch a reflex beat the brain: the arm pulls back before “Ouch!” arrives.',
     learningGoals: [
@@ -1216,7 +1216,7 @@ export const simulations: Simulation[] = [
     id: 'final-heat-transfer-equilibrium',
     title: 'Heat Transfer & Equilibrium',
     grade: 8,
-    chapter: 'More Grade 8',
+    chapter: 'Final PCTB Labs',
     description:
       'Heat always flows hot → cold. Race copper against wood, then watch convection and radiation.',
     learningGoals: [
@@ -1235,7 +1235,7 @@ export const simulations: Simulation[] = [
     id: 'final-states-of-matter',
     title: 'States of Matter',
     grade: 8,
-    chapter: 'More Grade 8',
+    chapter: 'Final PCTB Labs',
     description:
       'Same particles, three states. Watch the heating graph go flat while ice melts and water boils.',
     learningGoals: [
@@ -1254,7 +1254,7 @@ export const simulations: Simulation[] = [
     id: 'final-sound-vibration-pitch',
     title: 'Sound: Vibration, Pitch & Loudness',
     grade: 8,
-    chapter: 'More Grade 8',
+    chapter: 'Final PCTB Labs',
     description:
       'Sound is a vibration passed particle to particle. No medium, no sound — and pitch is not loudness.',
     learningGoals: [
@@ -1273,7 +1273,7 @@ export const simulations: Simulation[] = [
     id: 'final-photosynthesis-gas-exchange',
     title: 'Photosynthesis & Gas Exchange',
     grade: 8,
-    chapter: 'Ch 1 – Ecology',
+    chapter: 'Final PCTB Labs',
     description:
       'Two processes in one leaf. Slide the light and find where photosynthesis and respiration cancel.',
     learningGoals: [
@@ -1292,7 +1292,7 @@ export const simulations: Simulation[] = [
     id: 'final-simple-machines',
     title: 'Simple Machines',
     grade: 8,
-    chapter: 'Ch 8 – Force and Pressure',
+    chapter: 'Final PCTB Labs',
     description:
       'Less force always costs more distance. Slide the fulcrum and watch both numbers move.',
     learningGoals: [
@@ -1311,7 +1311,7 @@ export const simulations: Simulation[] = [
     id: 'final-circulatory-system',
     title: 'Heart, Blood Flow & Double Circulation',
     grade: 8,
-    chapter: 'More Grade 8',
+    chapter: 'Final PCTB Labs',
     description:
       'Two loops, one heart. Watch a drop go to the lungs and back, then to the body.',
     learningGoals: [
@@ -1330,7 +1330,7 @@ export const simulations: Simulation[] = [
     id: 'final-moon-phases-eclipses',
     title: 'Moon Phases & Eclipses',
     grade: 8,
-    chapter: 'Ch 12 – Our Universe',
+    chapter: 'Final PCTB Labs',
     description:
       'Half the Moon is always lit. A phase is which slice Earth can see — eclipses are rarer shadows.',
     learningGoals: [
@@ -1369,6 +1369,7 @@ export const GRADE_8_CHAPTERS = [
   'Ch 10 – Electricity & Magnetism',
   'Ch 11 – Technology in Everyday Life',
   'Ch 12 – Our Universe',
+  'Final PCTB Labs',
   'More Grade 8',
 ] as const
 
@@ -1397,6 +1398,7 @@ export function chapterIdFromTitle(chapter: string): string {
 export function chapterShortLabel(chapter: string): string {
   const match = chapter.match(/^Ch\s+(\d+)/i)
   if (match) return `Ch ${match[1]}`
+  if (chapter === 'Final PCTB Labs') return 'Final'
   if (chapter === 'More Grade 8') return 'More'
   return chapter
 }

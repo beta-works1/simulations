@@ -38,6 +38,8 @@ export function SimulationsPage() {
   const activeChapter = chapters.find((c) => c.id === activeChapterId)
   const showingAll = !hasChapters || activeChapterId === ALL_CHAPTERS_ID
 
+  const isFinalSuite = activeChapterId === 'final-pctb-labs'
+
   const sims = useMemo(
     () =>
       showingAll
@@ -155,18 +157,22 @@ export function SimulationsPage() {
 
         <section className="grade-sims" aria-labelledby="grade-sims-heading">
           <h2 id="grade-sims-heading">
-            {showingAll
-              ? `${gradeLabel(activeGrade)} simulations`
-              : activeChapter
-                ? activeChapter.title
-                : `${gradeLabel(activeGrade)} simulations`}
+            {isFinalSuite
+              ? 'Final simulations'
+              : showingAll
+                ? `${gradeLabel(activeGrade)} simulations`
+                : activeChapter
+                  ? activeChapter.title
+                  : `${gradeLabel(activeGrade)} simulations`}
           </h2>
           <p className="grade-sims-desc">
-            {showingAll
-              ? `All science experiment simulations for ${gradeLabel(activeGrade)}.`
-              : activeChapter
-                ? `Science experiment simulations for ${activeChapter.title} (${gradeLabel(activeGrade)}).`
-                : `Science experiment simulations for ${gradeLabel(activeGrade)}.`}
+            {isFinalSuite
+              ? 'Twelve Class 8 science experiment simulations — open any card to run it in the browser.'
+              : showingAll
+                ? `All science experiment simulations for ${gradeLabel(activeGrade)}.`
+                : activeChapter
+                  ? `Science experiment simulations for ${activeChapter.title} (${gradeLabel(activeGrade)}).`
+                  : `Science experiment simulations for ${gradeLabel(activeGrade)}.`}
           </p>
 
           {sims.length > 0 ? (
