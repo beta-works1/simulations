@@ -75,11 +75,10 @@ interface SimulationGridProps {
 }
 
 /**
- * PhET-style open target: SceneryStack HTML fills the tab like Color Vision;
- * other sims use the full-page /run shell.
+ * Catalog open target: all sims use the in-app /run shell.
+ * Scenery / final HTML labs embed there via iframe (same as React sims fill the stage).
  */
 export function simulationOpenHref(sim: Simulation) {
-  if (sim.sceneryHtml) return sim.sceneryHtml
   return `/run/${sim.id}`
 }
 

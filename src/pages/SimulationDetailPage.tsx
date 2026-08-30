@@ -113,7 +113,7 @@ export function SimulationDetailPage() {
       <div className="simulation-actions">
         <a
           className="btn btn-primary"
-          href={sim.sceneryHtml ?? `/run/${sim.id}`}
+          href={`/run/${sim.id}`}
           target="_blank"
           rel="noopener noreferrer"
         >

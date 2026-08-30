@@ -10,9 +10,9 @@ const SimulationViewer = lazy(() =>
 )
 
 /**
- * PhET-style full-viewport launcher.
- * SceneryStack sims fill the window with their own bottom nav bar;
- * React sims get the same edge-to-edge black stage.
+ * Full-viewport launcher.
+ * React canvas sims and Scenery / final HTML labs all embed in this shell
+ * (HTML labs via iframe) so catalog cards open the same way.
  */
 export function SimulationRunPage() {
   const { id } = useParams<{ id: string }>()
@@ -27,14 +27,6 @@ export function SimulationRunPage() {
     }
   }, [])
 
-  // Prefer the standalone SceneryStack HTML — same look as PhET Color Vision.
-  useEffect(() => {
-    if (!sim?.sceneryHtml) return
-    const target = sim.sceneryHtml
-    // Replace this shell with the real PhET-style sim document.
-    window.location.replace(target)
-  }, [sim])
-
   if (!sim) {
     return (
       <div className="sim-run-page sim-run-missing">
@@ -47,22 +39,15 @@ export function SimulationRunPage() {
     )
   }
 
-  // Scenery sims redirect above; show a brief loading frame meanwhile.
-  if (sim.sceneryHtml) {
-    return (
-      <div className="sim-run-page sim-run-phet">
-        <PageMeta title={sim.title} description={sim.description} path={`/run/${sim.id}`} />
-        <div className="sim-run-loading" role="status">
-          Opening {sim.title}…
-        </div>
-      </div>
-    )
-  }
+  const backHref =
+    sim.grade === 8
+      ? `/simulations?grade=8`
+      : `/simulations?grade=${sim.grade}`
 
   return (
     <div className="sim-run-page sim-run-phet">
       <PageMeta title={sim.title} description={sim.description} path={`/run/${sim.id}`} />
-      <a className="sim-run-exit" href="/simulations">
+      <a className="sim-run-exit" href={backHref}>
         ← Catalog
       </a>
       <div className="sim-run-stage">

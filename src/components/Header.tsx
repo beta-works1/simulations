@@ -142,8 +142,11 @@ export function Header({ onSearch }: HeaderProps) {
         </NavLink>
       ))}
       <a href="/final-sims/" onClick={closeAll}>
-        Final PCTB Labs
+        Final labs hub
       </a>
+      <NavLink to="/simulations?grade=8" onClick={closeAll}>
+        Grade 8 (all)
+      </NavLink>
     </>
   )
 

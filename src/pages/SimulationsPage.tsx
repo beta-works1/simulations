@@ -15,6 +15,7 @@ import {
 import './SimulationsPage.css'
 
 const ease = [0.22, 1, 0.36, 1] as const
+const ALL_CHAPTERS_ID = 'all'
 
 export function SimulationsPage() {
   const reduce = useReducedMotion()
@@ -29,28 +30,31 @@ export function SimulationsPage() {
 
   const activeChapterId = useMemo(() => {
     if (!hasChapters) return null
-    if (chapterParam && chapters.some((c) => c.id === chapterParam)) return chapterParam
-    return chapters[0]?.id ?? null
+    if (!chapterParam || chapterParam === ALL_CHAPTERS_ID) return ALL_CHAPTERS_ID
+    if (chapters.some((c) => c.id === chapterParam)) return chapterParam
+    return ALL_CHAPTERS_ID
   }, [hasChapters, chapterParam, chapters])
 
   const activeChapter = chapters.find((c) => c.id === activeChapterId)
+  const showingAll = !hasChapters || activeChapterId === ALL_CHAPTERS_ID
 
   const sims = useMemo(
     () =>
-      hasChapters
-        ? getSimulationsByGradeChapter(activeGrade, activeChapterId)
-        : getSimulationsByGrade(activeGrade),
-    [activeGrade, activeChapterId, hasChapters],
+      showingAll
+        ? getSimulationsByGrade(activeGrade)
+        : getSimulationsByGradeChapter(activeGrade, activeChapterId),
+    [activeGrade, activeChapterId, showingAll],
   )
 
   const selectGrade = (grade: Grade) => {
-    const nextChapters = getChaptersForGrade(grade)
-    const next: Record<string, string> = { grade: String(grade) }
-    if (nextChapters[0]) next.chapter = nextChapters[0].id
-    setSearchParams(next, { replace: true })
+    setSearchParams({ grade: String(grade) }, { replace: true })
   }
 
   const selectChapter = (chapterId: string) => {
+    if (chapterId === ALL_CHAPTERS_ID) {
+      setSearchParams({ grade: String(activeGrade) }, { replace: true })
+      return
+    }
     setSearchParams({ grade: String(activeGrade), chapter: chapterId }, { replace: true })
   }
 
@@ -115,6 +119,18 @@ export function SimulationsPage() {
               <p className="chapter-panel-hint">{gradeLabel(activeGrade)} textbook chapters</p>
             </div>
             <ul className="chapter-list" role="listbox" aria-label={`${gradeLabel(activeGrade)} chapters`}>
+              <li role="option" aria-selected={showingAll}>
+                <button
+                  type="button"
+                  className={`chapter-item${showingAll ? ' is-active' : ''}`}
+                  onClick={() => selectChapter(ALL_CHAPTERS_ID)}
+                >
+                  <span className="chapter-item-title">All chapters</span>
+                  <span className="chapter-item-count">
+                    {getSimulationsByGrade(activeGrade).length} sims
+                  </span>
+                </button>
+              </li>
               {chapters.map((chapter) => {
                 const count = getSimulationsByGradeChapter(activeGrade, chapter.id).length
                 const selected = chapter.id === activeChapterId
@@ -139,21 +155,25 @@ export function SimulationsPage() {
 
         <section className="grade-sims" aria-labelledby="grade-sims-heading">
           <h2 id="grade-sims-heading">
-            {activeChapter
-              ? activeChapter.title
-              : `${gradeLabel(activeGrade)} simulations`}
+            {showingAll
+              ? `${gradeLabel(activeGrade)} simulations`
+              : activeChapter
+                ? activeChapter.title
+                : `${gradeLabel(activeGrade)} simulations`}
           </h2>
           <p className="grade-sims-desc">
-            {activeChapter
-              ? `Science experiment simulations for ${activeChapter.title} (${gradeLabel(activeGrade)}).`
-              : `Science experiment simulations for ${gradeLabel(activeGrade)}.`}
+            {showingAll
+              ? `All science experiment simulations for ${gradeLabel(activeGrade)}.`
+              : activeChapter
+                ? `Science experiment simulations for ${activeChapter.title} (${gradeLabel(activeGrade)}).`
+                : `Science experiment simulations for ${gradeLabel(activeGrade)}.`}
           </p>
 
           {sims.length > 0 ? (
             <SimulationGrid items={sims} showTags />
           ) : (
             <div className="grade-empty" role="status">
-              <p>No simulations for this {hasChapters ? 'chapter' : 'grade'} yet. Check back soon.</p>
+              <p>No simulations for this {hasChapters && !showingAll ? 'chapter' : 'grade'} yet. Check back soon.</p>
             </div>
           )}
         </section>
