@@ -72,6 +72,7 @@ interface SimulationGridProps {
   title?: string
   showTags?: boolean
   animated?: boolean
+  featured?: boolean
 }
 
 /**
@@ -92,11 +93,12 @@ export function SimulationGrid({
   title,
   showTags = true,
   animated = false,
+  featured = false,
 }: SimulationGridProps) {
   const reduce = useReducedMotion()
 
   return (
-    <div className="simulation-grid-section">
+    <div className={`simulation-grid-section${featured ? ' simulation-grid-featured' : ''}`}>
       {title && <h2 className="simulation-grid-title">{title}</h2>}
       <ul className="simulation-grid">
         {items.map((sim, i) => {
@@ -111,12 +113,14 @@ export function SimulationGrid({
               >
                 <SimulationThumbnail sim={sim} />
                 <span className="simulation-list-title">{sim.title}</span>
+                {featured && <span className="simulation-description">{sim.description}</span>}
                 {showTags && (
                   <span className="simulation-card-tags">
                     <span className="tag tag-grade">{gradeLabel(sim.grade)}</span>
                     {sim.chapter ? <span className="tag">{sim.chapter}</span> : null}
                   </span>
                 )}
+                {featured && <span className="simulation-open">Open simulation <span aria-hidden="true">↗</span></span>}
               </a>
               <OfflineDownloadButton sim={sim} />
             </>
@@ -134,11 +138,11 @@ export function SimulationGrid({
             <motion.li
               key={sim.id}
               className="simulation-list-item"
-              initial={reduce ? false : { opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={reduce ? false : { opacity: 0, y: 36, scale: 0.96 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.5, delay: Math.min(i * 0.06, 0.4), ease }}
-              whileHover={reduce ? undefined : { y: -4, transition: { duration: 0.2 } }}
+              whileHover={reduce ? undefined : { y: featured ? -9 : -4, transition: { duration: 0.2 } }}
             >
               {body}
             </motion.li>

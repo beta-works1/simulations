@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'motion/react'
 import { Hero } from '../components/Hero'
@@ -83,6 +83,7 @@ function Reveal({
 
 export function HomePage() {
   const reduce = useReducedMotion()
+  const [orbitsPaused, setOrbitsPaused] = useState(false)
   const featured = byId(FEATURED_IDS)
   const showcase = byId(SHOWCASE_IDS)
 
@@ -210,12 +211,29 @@ export function HomePage() {
           </ul>
         </Reveal>
 
-        <Reveal className="featured">
-          <header className="section-head">
-            <p className="section-kicker">Start somewhere</p>
-            <h2>Open one of these.</h2>
-          </header>
-          <SimulationGrid items={featured} animated />
+        <Reveal id="featured" className={`featured${orbitsPaused ? ' orbits-paused' : ''}`}>
+          <div className="featured-intro">
+            <header className="section-head">
+              <p className="section-kicker"><span className="featured-dot" /> The curiosity collection</p>
+              <h2>Small experiments.<br /><em>Big discoveries.</em></h2>
+              <p className="section-lede">Bend light. Build a food web. Explore a galaxy.<br />Pick a question and see where it takes you.</p>
+              <Link to="/simulations" className="featured-browse">Explore the full library <span aria-hidden="true">↗</span></Link>
+            </header>
+            <div className="discovery-art" aria-hidden="true">
+              <div className="discovery-grid" />
+              <div className="discovery-orbit orbit-one"><i /></div>
+              <div className="discovery-orbit orbit-two"><i /></div>
+              <div className="discovery-orbit orbit-three"><i /></div>
+              <div className="discovery-core">✦</div>
+              <span className="discovery-note">A little curiosity changes everything.</span>
+            </div>
+          </div>
+          <div className="featured-toolbar">
+            <span>06 experiments to get you started</span>
+            {!reduce && <button type="button" aria-pressed={orbitsPaused} onClick={() => setOrbitsPaused(value => !value)}>{orbitsPaused ? 'Resume' : 'Pause'} orbital animation</button>}
+          </div>
+          <SimulationGrid items={featured} animated featured />
+          <p className="featured-footnote">Made for curious minds. Free to explore. Available offline.</p>
         </Reveal>
 
         <Reveal className="closing">
